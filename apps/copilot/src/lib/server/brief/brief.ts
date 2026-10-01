@@ -3,7 +3,7 @@ import { BRIEF_HEADINGS_ENGLISH } from '$lib/lookups'
 import { USFM_BOOK_CODES } from '@tabitha/types/patterns'
 import { AiResponseError, check_input_safety, type AiClient } from '@tabitha/ai'
 import translate_prompt from './translate_prompt.md?raw'
-import brief_main_prompt from './brief_main_prompt.md?raw'
+import brief_main_prompt from './brief_short_prompt.md?raw'
 import { json_response_schema } from './json_response_schema'
 import type { VerseReference, CopilotBriefResult, CopilotErrorResult, CopilotBriefHeadingsResult } from '@tabitha/types'
 import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '$lib/types'
@@ -203,7 +203,6 @@ export async function create_brief_for_verse({ input, ai, on_step }: BriefOption
 				term: to_translate(note.term),
 				summary: to_translate(note.summary),
 			})),
-			image_keywords: tnn_based_info.section6.keywords.map(keyword => to_translate(keyword)),
 			consultant_decisions: tnn_based_info.section7.decisions.map(decision => ({
 				status: to_translate(decision.status),
 				text: to_translate(decision.text),
