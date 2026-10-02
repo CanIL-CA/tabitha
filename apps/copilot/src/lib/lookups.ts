@@ -127,6 +127,8 @@ export const default_settings: CopilotSettings = {
 		noun_clusivity: false,
 		as_third_handling: 'apposition',
 
+		modifier_degree: [],
+
 		passive: 'agent_allowed',
 		rhetorical_questions: true,
 		honorifics: false,

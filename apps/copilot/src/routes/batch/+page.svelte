@@ -21,7 +21,7 @@
 	let end_verse = $state(0)
 	let verse_count = $derived(end_verse - start_verse + 1)
 
-	let settings = $state(persisted<CopilotSettings>({ key: 'saved_settings@1.5', defaultValue: default_settings }).value)
+	let settings = $state(persisted<CopilotSettings>({ key: 'saved_settings@1.6', defaultValue: default_settings }).value)
 	
 	let error_text = $state('')
 

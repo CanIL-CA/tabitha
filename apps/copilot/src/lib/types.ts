@@ -14,21 +14,25 @@ export type ProfileCustomCombination = {
 	prompt: string
 }
 
+type ContrastiveGrouping = string[][]
+
 export type LanguageProfile = {
 	multiple_past: boolean
 	multiple_future: boolean
 	noun_number: string[]
-	noun_proximity: string[]
+	noun_proximity: ContrastiveGrouping
 	noun_clusivity: boolean
 	as_third_handling: 'third' | 'first_second' | 'apposition'
+
+	modifier_degree: ContrastiveGrouping
 
 	passive: 'none' | 'agent_forbidden' | 'agent_allowed' | 'other'
 	rhetorical_questions: boolean
 	honorifics: boolean
 	speech_formula_position: 'before' | 'after' | 'both' | 'either'
 
-	custom_weights: Record<string, Record<string, number>>
-	custom_combinations: ProfileCustomCombination[]
+	custom_weights?: Record<string, Record<string, number>>
+	custom_combinations?: ProfileCustomCombination[]
 }
 
 export type CopilotNoteSettings = {
