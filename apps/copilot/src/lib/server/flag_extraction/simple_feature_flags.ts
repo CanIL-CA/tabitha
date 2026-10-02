@@ -103,6 +103,21 @@ export const simple_feature_flags: FlagExtractionRule[] = [
 		}],
 	},
 	{
+		flag: 'Noun Proximity',
+		rules: [{
+			value: '$proximity',
+			pattern: {
+				name: '$anchor',
+				category: 'Noun',
+				concept: '$concept',
+				features: {
+					'Proximity': '$proximity',
+					'Noun List Index': '$noun_index',
+				},
+			},
+		}],
+	},
+	{
 		flag: 'Noun Participant Status',
 		rules: [{
 			value: '$status',

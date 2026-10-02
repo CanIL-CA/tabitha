@@ -73,6 +73,13 @@ const triggers: TriggerTemplate[] = [
 		trigger_grouper: t => `${t.flags[0].encoding_anchor['noun_index']}-${t.flags[0].value}`,
 	},
 	{
+		name: 'Noun Proximity',
+		flags: ['Noun Proximity'],
+		weight_calculator: flags => flags[0].weight,
+		trigger_grouper: t => `${t.flags[0].encoding_anchor['noun_index']}-${t.flags[0].value}`,
+		prompt: (flags, profile) => contrasting_value_prompt({ value: flags[0].value, groupings: profile.noun_proximity }) ?? '',
+	},
+	{
 		name: 'Noun Emphasis/Focus',
 		flags: ['Noun Participant Status'],
 		weight_calculator: flags => flags[0].weight,
@@ -83,15 +90,19 @@ const triggers: TriggerTemplate[] = [
 			} else {
 				return 'In your note, mention that {noun} may need to be emphasized in some way.'
 			}
-		}
+		},
 	},
 	{
 		name: 'Modifier Degree',
 		flags: ['Modifier Degree'],
 		weight_calculator: flags => flags[0].weight,
 		trigger_grouper: t => `${t.flags[0].encoding_anchor['concept']}-${t.flags[0].value}`,
-		prompt: flags => {
-			if (flags[0].value === "'too'") {
+		prompt: (flags, profile) => {
+			const degree = flags[0].value
+			const contrasting_prompt = contrasting_value_prompt({ value: degree, groupings: profile.modifier_degree })
+			if (contrasting_prompt) {
+				return contrasting_prompt
+			} else if (degree === "'too'") {
 				return 'In your note, mention how there is a negative sense of excess, not just a lot.'
 			}
 			return ''
@@ -271,4 +282,18 @@ function power_sum(flags: CopilotEncodingFlag[]): number {
 	const pow_avg = Math.pow(pow_sum, 1 / pow)
 	const rounded = Math.round(pow_avg)
 	return Math.min(5, rounded)
+}
+
+function contrasting_value_prompt({ value, groupings }: { value: string, groupings: string[][] }): string | undefined {
+	const contrastive_grouping = groupings.find(group => group.includes(value))
+	if (!contrastive_grouping) {
+		return undefined
+	}
+	const contrasting_values = contrastive_grouping.filter(v => v !== value)
+	if (!contrasting_values.length) {
+		// a grouping may have a single value, indicating that it should get a note, but without any contrasting values
+		return undefined
+	}
+	return `In your note, explain the value, contrasting it with these other values: ${contrasting_values.join(', ')}.
+	Do not simply repeat the values, but explain their meanings.`
 }

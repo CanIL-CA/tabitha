@@ -17,7 +17,7 @@
 	} }).value)
 	let submitted_reference = $state<VerseReference>($state.snapshot(reference))
 
-	let settings = $state(persisted<CopilotSettings>({ key: 'saved_settings@1.5', defaultValue: default_settings }).value)
+	let settings = $state(persisted<CopilotSettings>({ key: 'saved_settings@1.6', defaultValue: default_settings }).value)
 
 	let fetching_english = $state(false)
 	let english_text = $state<TargetTextData | null>(null)
