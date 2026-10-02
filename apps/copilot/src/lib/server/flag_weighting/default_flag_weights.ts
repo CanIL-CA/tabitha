@@ -32,18 +32,26 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 		'First Inclusive as Third': 3,
 		'First Exclusive as Third': 3,
 	},
+	'Noun Participant Status': {
+		'Significant Location': 3,
+		'Significant Time': 3,
+		'Emphasized': 5,
+	},
 	'Modifier Degree': {
-		'Comparative': 2,
-		'Superlative': 3,
-		'Intensified': 2,
+		'Comparative': 1,
+		'Superlative': 2,
+		'Intensified': 1,
 		'Extremely Intensified': 5,
 		"'too'": 5,
-		"'less'": 3,
+		"'less'": 1,
 		"'least'": 5,
 		'Equality': 5,
 		'Intensified Comparative': 5,
 		"Intensified 'less'": 5,
-		'Superlative of 2 items': 3,
+		'Superlative of 2 items': 2,
+	},
+	'Emphasized Agent of Imperative': {
+		'*': 4,
 	},
 	'Speaker Attitude': {
 		'Anger': 4,
@@ -55,12 +63,12 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 		'*': 5,
 	},
 	'Intent/Result': {
-		'Intent': 4,
-		'Logical Consequence': 3,
-		'Simple Result': 2,
+		'Intent': 2,
+		'Logical Consequence': 1,
+		'Simple Result': 0,
 	},
 	'Means/Reason': {
-		'Means': 3,
+		'Means': 1,
 		'Reason': 0,
 	},
 	'Metaphor': {
@@ -70,9 +78,12 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 		'Equivalent Statement': 0,
 		'*': 5,
 	},
+	'Vocabulary Alternate': {
+		'*': 5,
+	},
 }
 
-export const default_flag_weights_for_brief = {
+export const default_flag_weights_for_brief: FlagWeightingMap = {
 	'Verb Time': {
 		'Historic Past': 2,
 		'Eternity Past': 3,
@@ -104,18 +115,20 @@ export const default_flag_weights_for_brief = {
 		'First Inclusive as Third': 5,
 		'First Exclusive as Third': 5,
 	},
+	'Noun Participant Status': {
+		'Significant Location': 3,
+		'Significant Time': 3,
+		'Emphasized': 5,
+	},
 	'Modifier Degree': {
-		'Comparative': 2,
-		'Superlative': 3,
-		'Intensified': 2,
 		'Extremely Intensified': 5,
 		"'too'": 5,
-		"'less'": 3,
 		"'least'": 5,
-		'Equality': 3,
 		'Intensified Comparative': 5,
 		"Intensified 'less'": 5,
-		'Superlative of 2 items': 3,
+	},
+	'Emphasized Agent of Imperative': {
+		'*': 4,
 	},
 	'Speaker Attitude': {
 		'Anger': 4,
@@ -126,20 +139,14 @@ export const default_flag_weights_for_brief = {
 	'Metonymy': {
 		'*': 5,
 	},
-	'Intent/Result': {
-		'Intent': 3,
-		'Logical Consequence': 2,
-		'Simple Result': 2,
-	},
-	'Means/Reason': {
-		'Means': 3,
-		'Reason': 0,
-	},
 	'Metaphor': {
 		'*': 5,
 	},
 	'Rhetorical Question': {
 		'Equivalent Statement': 0,
+		'*': 5,
+	},
+	'Vocabulary Alternate': {
 		'*': 5,
 	},
 }

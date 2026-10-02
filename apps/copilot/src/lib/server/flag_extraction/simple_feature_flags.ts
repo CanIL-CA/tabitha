@@ -197,14 +197,27 @@ export const simple_feature_flags: FlagExtractionRule[] = [
 		}],
 	},
 	{
-		flag: 'Emphasized',
+		flag: 'Vocabulary Alternate',
 		rules: [{
-			value: '$force',
+			value: '$alternate_type',
 			pattern: {
 				name: '$anchor',
 				category: 'Clause',
 				features: {
-					'Illocutionary Force': '$force',
+					'Vocabulary Alternate': '$alternate_type',
+				},
+			},
+		}],
+	},
+	{
+		flag: 'Emphasized Agent of Imperative',
+		rules: [{
+			value: '$agent',
+			pattern: {
+				name: '$clause',
+				category: 'Clause',
+				features: {
+					'Illocutionary Force': 'Imperative with emphasized Agent',
 				},
 				children: [
 					{
