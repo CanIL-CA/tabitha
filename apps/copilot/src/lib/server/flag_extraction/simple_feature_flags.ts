@@ -103,6 +103,21 @@ export const simple_feature_flags: FlagExtractionRule[] = [
 		}],
 	},
 	{
+		flag: 'Noun Participant Status',
+		rules: [{
+			value: '$status',
+			pattern: {
+				name: '$anchor',
+				category: 'Noun',
+				concept: '$concept',
+				features: {
+					'Participant Status': '$status',
+					'Noun List Index': '$noun_index',
+				},
+			},
+		}],
+	},
+	{
 		flag: 'Modifier Degree',
 		rules: [{
 			value: '$degree',
@@ -178,6 +193,39 @@ export const simple_feature_flags: FlagExtractionRule[] = [
 				features: {
 					'Rhetorical Question': '$question_type',
 				},
+			},
+		}],
+	},
+	{
+		flag: 'Emphasized',
+		rules: [{
+			value: '$force',
+			pattern: {
+				name: '$anchor',
+				category: 'Clause',
+				features: {
+					'Illocutionary Force': '$force',
+				},
+				children: [
+					{
+						name: '$anchor',
+						category: 'Noun Phrase',
+						features: {
+							'Semantic Role': 'Most Agent-like',
+						},
+						children: [{
+							category: 'Noun',
+							concept: '$agent',
+						}],
+					},
+					{
+						category: 'Verb Phrase',
+						children: [{
+							category: 'Verb',
+							concept: '$verb',
+						}],
+					},
+				],
 			},
 		}],
 	},
