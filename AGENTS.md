@@ -582,7 +582,7 @@ shipped from this:
   like it worked while still holding a Windows file lock, so deleting the file (or its containing
   directory) fails with `EBUSY`. Use **`.close(true)`**, which finalizes everything and releases
   immediately. This is what actually broke `migrate_source_texts.test.ts` on Windows in
-  [#105](https://github.com/presciencelabs/tabitha/issues/105) -- and it stayed broken after a
+  [#105](https://github.com/CanIL-CA/tabitha/issues/105) -- and it stayed broken after a
   first fix that added a bare `.close()`, because the deferred release looked correct on macOS.
 
 A further pattern to avoid on the same grounds: hardcoded POSIX-only absolute paths (`/tmp/...`,

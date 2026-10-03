@@ -1,7 +1,7 @@
 # TaBiThA Monorepo
 
 <p align="left">
-  <a href="https://github.com/presciencelabs/tabitha/actions/workflows/ci.yml"><img src="https://github.com/presciencelabs/tabitha/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
+  <a href="https://github.com/CanIL-CA/tabitha/actions/workflows/ci.yml"><img src="https://github.com/CanIL-CA/tabitha/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /></a>
   <a href="https://svelte.dev"><img src="https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white" alt="Svelte 5" /></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>

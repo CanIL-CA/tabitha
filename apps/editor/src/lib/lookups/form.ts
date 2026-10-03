@@ -71,7 +71,7 @@ export async function check_forms(lookup_token: Token) {
 
 const MISSING_FORMS = new Map<string, { stem: string, part_of_speech: PartOfSpeech, forms: string }>([
 	// TODO add more or remove some when we include Analyzer inflections as well
-	// see https://github.com/presciencelabs/tabitha-editor/issues/37
+	// see https://github.com/CanIL-CA/tabitha/issues/92
 	['chiefer', { stem: 'chief', part_of_speech: 'Adjective', forms: 'comparative' }],
 	['chiefest', { stem: 'chief', part_of_speech: 'Adjective', forms: 'superlative' }],
 	['am', { stem: 'be', part_of_speech: 'Verb', forms: 'present' }],

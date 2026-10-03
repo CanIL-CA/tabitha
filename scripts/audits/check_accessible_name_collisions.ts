@@ -7,7 +7,7 @@ const script_dir = fileURLToPath(new URL('.', import.meta.url))
 const root_dir = resolve(script_dir, '../..')
 
 // Where this check's rationale is documented -- see the "Custom check" section.
-const DOC_LINK = 'https://github.com/presciencelabs/tabitha/issues/99'
+const DOC_LINK = 'https://github.com/CanIL-CA/tabitha/issues/99'
 
 export type NameCollisionFinding = {
 	readonly app: string
