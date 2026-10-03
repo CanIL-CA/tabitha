@@ -230,7 +230,7 @@ const part_of_speech_rules_json = [
 		'context': {
 			'followedby': { 'category': 'Verb' },
 		},
-		'remove': 'Noun',
+		'remove': 'Adjective',
 		'comment': 'Daniel 3:4 The one official(N/Adj) shouted ...',
 	},
 	{
@@ -251,6 +251,28 @@ const part_of_speech_rules_json = [
 		},
 		'remove': 'Noun',
 		'comment': "Infected Eye 1:1 Melissa's eye is sore(N/Adj).  Infected Eye 1:15 Janet's eyes were still sore(N/Adj).",
+	},
+	{
+		'name': 'If Noun-Adjective "silver" or "gold" is preceded by \'have\' and not followed by Noun, remove Adjective',
+		'category': 'Noun|Adjective',
+		'trigger': { 'stem': 'silver|gold' },
+		'context': {
+			'precededby': { 'stem': 'have', 'skip': 'adjp_attributive' },
+			'notfollowedby': { 'category': 'Noun', 'skip': 'adjp_attributive' },
+		},
+		'remove': 'Adjective',
+		'comment': 'Acts 3:6 Peter did not have silver(N/Adj).',
+	},
+	{
+		'name': 'If Noun-Adjective "silver" or "gold" is preceded by \'of\' and not followed by Noun, remove Adjective',
+		'category': 'Noun|Adjective',
+		'trigger': { 'stem': 'silver|gold' },
+		'context': {
+			'precededby': { 'token': 'of' },
+			'notfollowedby': { 'category': 'Noun', 'skip': 'adjp_attributive' },
+		},
+		'remove': 'Adjective',
+		'comment': 'Acts 19:24 Demetrius made shrines of silver(N/Adj).',
 	},
 	{
 		'name': 'If Noun-Adverb preceded by a determiner or possessive, remove Adverb',

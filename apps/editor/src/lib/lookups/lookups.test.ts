@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { perform_form_lookups, perform_ontology_lookups } from './index'
 import { TOKEN_TYPE, create_token } from '$lib/token'
-import type { Sentence } from '$lib/types'
+import { create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '$lib/test_helps'
+import type { Sentence, Token } from '$lib/types'
 
 describe('lookups module', () => {
 	beforeEach(() => {
@@ -43,5 +44,43 @@ describe('lookups module', () => {
 		const result = await perform_ontology_lookups(sentences)
 
 		expect(result).toBeDefined()
+	})
+})
+
+describe('removing results that are only in the English lexicon', () => {
+	const life_noun_in_ontology = { id: 2013, stem: 'life', sense: 'A', part_of_speech: 'Noun', level: '1', gloss: '', categorization: 'A', categories: [], status: 'in ontology', how_to_hints: [] }
+
+	afterEach(() => {
+		vi.unstubAllGlobals()
+	})
+
+	function stub_ontology_search(results: object[]) {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => results }))
+	}
+
+	function lookup_sentence_with(token: Token): Sentence[] {
+		return [create_sentence_for_test([token])]
+	}
+
+	test('a lexicon-only part of speech is removed when the word is in the Ontology: God gives life to all people. (cf. Acts 17:25)', async () => {
+		stub_ontology_search([life_noun_in_ontology])
+		const life_token = create_lookup_token_for_test({ token: 'life', lookup_terms: ['life'], lookup_results: [
+			lookup_result_for_test({ stem: 'life', sense: '', part_of_speech: 'Noun', ontology_status: 'unknown' }),
+			lookup_result_for_test({ stem: 'life', sense: '', part_of_speech: 'Adjective', ontology_status: 'unknown' }),
+		] })
+
+		await perform_ontology_lookups(lookup_sentence_with(life_token))
+
+		expect(life_token.lookup_results.map(result => `${result.stem}-${result.sense} ${result.part_of_speech}`)).toEqual(['life-A Noun'])
+	})
+	test('lexicon results are kept when the word is not in the Ontology at all: Peter looked intently at him. (cf. Acts 3:4)', async () => {
+		stub_ontology_search([])
+		const intently_token = create_lookup_token_for_test({ token: 'intently', lookup_terms: ['intently'], lookup_results: [
+			lookup_result_for_test({ stem: 'intently', sense: '', part_of_speech: 'Adverb', ontology_status: 'unknown' }),
+		] })
+
+		await perform_ontology_lookups(lookup_sentence_with(intently_token))
+
+		expect(intently_token.lookup_results.map(result => result.part_of_speech)).toEqual(['Adverb'])
 	})
 })

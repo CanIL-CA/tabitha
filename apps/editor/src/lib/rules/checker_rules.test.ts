@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest'
 import { CHECKER_RULES } from './checker_rules'
 import {
 	expect_error,
+	expect_error_to_match,
 	expect_message_to_match,
 	expect_no_message,
 	create_lookup_token_for_test,
@@ -12,6 +13,7 @@ import {
 	create_sentence_for_test,
 	lookup_result_for_test,
 } from '$lib/test_helps'
+import type { Token } from '$lib/types'
 
 describe('built-in checker rules', () => {
 	describe('sentence capitalization', () => {
@@ -287,5 +289,94 @@ describe('built-in checker rules', () => {
 			const comma_token = checked_tokens.find(t => t.token === ',')
 			expect(comma_token?.messages.some(m => m.message.includes("Add a comma after 'One morning'"))).toBe(true)
 		})
+	})
+})
+
+describe('Adjective used as a Noun after a determiner', () => {
+	const ADJECTIVE_AS_NOUN_RULE = CHECKER_RULES.filter(rule => rule.name === 'Check for an Adjective used as a Noun after a determiner')
+
+	const create_word_token = ({ token, stem, part_of_speech }: { token: string, stem: string, part_of_speech: 'Noun' | 'Verb' | 'Adjective' }) =>
+		create_lookup_token_for_test({ token, lookup_results: [lookup_result_for_test({ stem, part_of_speech })] })
+	const create_predicative_adjective_token = ({ token, stem }: { token: string, stem: string }) =>
+		create_lookup_token_for_test({ token, tag: { 'adj_usage': 'predicative' }, lookup_results: [lookup_result_for_test({ stem, part_of_speech: 'Adjective' })] })
+	const create_article_token = (token: string) => create_token({ token, type: TOKEN_TYPE.FUNCTION_WORD, tag: { 'determiner': 'definite_article' } })
+	const create_function_word_token = (token: string) => create_token({ token, type: TOKEN_TYPE.FUNCTION_WORD })
+	const create_period_token = () => create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION })
+	const check = (tokens: Token[]) => apply_rules({ sentences: [create_sentence_for_test(tokens)], rules: ADJECTIVE_AS_NOUN_RULE }).flatMap(flatten_sentence)
+
+	test('flags an Adjective at the end of a sentence: God raised Jesus from the dead. (cf. Romans 10:9)', () => {
+		const checked_tokens = check([
+			create_word_token({ token: 'God', stem: 'God', part_of_speech: 'Noun' }),
+			create_word_token({ token: 'raised', stem: 'raise', part_of_speech: 'Verb' }),
+			create_word_token({ token: 'Jesus', stem: 'Jesus', part_of_speech: 'Noun' }),
+			create_function_word_token('from'),
+			create_article_token('the'),
+			create_predicative_adjective_token({ token: 'dead', stem: 'dead' }),
+			create_period_token(),
+		])
+
+		expect_error_to_match({ token: checked_tokens[5], regex: /^An Adjective cannot be used as a Noun/ })
+	})
+	test('does not flag an Adjective that is not predicative: God raised Jesus from the dead. (cf. Romans 10:9)', () => {
+		const checked_tokens = check([
+			create_word_token({ token: 'God', stem: 'God', part_of_speech: 'Noun' }),
+			create_word_token({ token: 'raised', stem: 'raise', part_of_speech: 'Verb' }),
+			create_word_token({ token: 'Jesus', stem: 'Jesus', part_of_speech: 'Noun' }),
+			create_function_word_token('from'),
+			create_article_token('the'),
+			create_word_token({ token: 'dead', stem: 'dead', part_of_speech: 'Adjective' }),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[5])
+	})
+	test('flags an Adjective before a relative clause: The one who believes will live. (cf. John 11:25)', () => {
+		const checked_tokens = check([
+			create_article_token('The'),
+			create_predicative_adjective_token({ token: 'one', stem: 'one' }),
+			create_function_word_token('who'),
+			create_word_token({ token: 'believes', stem: 'believe', part_of_speech: 'Verb' }),
+			create_function_word_token('will'),
+			create_word_token({ token: 'live', stem: 'live', part_of_speech: 'Verb' }),
+			create_period_token(),
+		])
+
+		expect_error_to_match({ token: checked_tokens[1], regex: /^An Adjective cannot be used as a Noun/ })
+	})
+	test('does not flag an Adjective followed by its Noun: God loves the poor people.', () => {
+		const checked_tokens = check([
+			create_word_token({ token: 'God', stem: 'God', part_of_speech: 'Noun' }),
+			create_word_token({ token: 'loves', stem: 'love', part_of_speech: 'Verb' }),
+			create_article_token('the'),
+			create_word_token({ token: 'poor', stem: 'poor', part_of_speech: 'Adjective' }),
+			create_word_token({ token: 'people', stem: 'people', part_of_speech: 'Noun' }),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[3])
+	})
+	test('does not flag "the same": Both corners should be the same. (cf. Exodus 26:24)', () => {
+		const checked_tokens = check([
+			create_function_word_token('Both'),
+			create_word_token({ token: 'corners', stem: 'corner', part_of_speech: 'Noun' }),
+			create_function_word_token('should'),
+			create_word_token({ token: 'be', stem: 'be', part_of_speech: 'Verb' }),
+			create_article_token('the'),
+			create_predicative_adjective_token({ token: 'same', stem: 'same' }),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[5])
+	})
+	test('does not flag a predicate Adjective: Their idols are silver. (Psalm 115:4)', () => {
+		const checked_tokens = check([
+			create_function_word_token('Their'),
+			create_word_token({ token: 'idols', stem: 'idol', part_of_speech: 'Noun' }),
+			create_word_token({ token: 'are', stem: 'be', part_of_speech: 'Verb' }),
+			create_word_token({ token: 'silver', stem: 'silver', part_of_speech: 'Adjective' }),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[3])
 	})
 })
