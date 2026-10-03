@@ -50,14 +50,12 @@ Each application uses the shared helper in `playwright.config.js`:
 
 ```javascript
 import { create_app_playwright_config } from '@tabitha/vite-config/playwright'
+import { PORTS } from '@tabitha/vite-config/ports'
 
-export default create_app_playwright_config({
-	port: 3056,
-	host: 'localhost.tabitha.bible',
-})
+export default create_app_playwright_config({ port: PORTS.ontology.port })
 ```
 
-- In CI and local dev, `webServer.command` runs `bun run dev` with `reuseExistingServer: !process.env.CI`.
+- `webServer.command` runs `bun run dev:e2e` with `reuseExistingServer: true`, so the root `test:e2e` script (`scripts/ci/run_e2e.ts`) can start every app's dev server up front.
 
 ---
 

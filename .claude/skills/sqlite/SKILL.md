@@ -13,7 +13,7 @@ Guidelines for high-performance SQLite schema design, query optimization, and to
 
 ## 1. High-Throughput Bulk Operations & Pragmas
 
-When performing bulk inserts, migrations, or snapshot loading (e.g. `tools/databases/scripts/load_d1.ts`), always wrap operations in a single transaction with memory pragmas:
+When performing bulk inserts, migrations, or snapshot loading (e.g. `scripts/dx/db_load.ts`), always wrap operations in a single transaction with memory pragmas:
 
 ```sql
 PRAGMA synchronous = OFF;

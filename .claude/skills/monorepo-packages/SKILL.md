@@ -17,7 +17,12 @@ Guidelines for architecting shared packages and adhering to coding standards acr
 | --- | --- |
 | **`@tabitha/types`** | Central repository for all universal TypeScript interfaces (linguistic concepts, clauses, token representations, and API payloads). Keep free of runtime dependencies. |
 | **`@tabitha/ui`** | Reusable Svelte 5 components styled with daisyUI 5. Export components from `src/index.ts`. |
-| **`@tabitha/api-client`** | Typed HTTP client for inter-service communication across the 5 Cloudflare Worker applications. |
+| **`@tabitha/api-client`** | Typed HTTP client for inter-service communication between the apps. |
+| **`@tabitha/ai`** | Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI. |
+| **`@tabitha/cors`** | Shared CORS middleware for Worker request handlers. |
+| **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows; shared by `apps/ontology` and `tools/databases`. |
+| **`@tabitha/rate-limit`** | Workers-native rate limiting for public read APIs (`enforce_rate_limit`, a SvelteKit handle). |
+| **`@tabitha/usage`** | Anonymous feature-usage events written to Workers Analytics Engine (`record_usage_event`). |
 | **`@tabitha/vite-config`** | Centralized Vite, SvelteKit, Vitest, and Playwright configuration generators. |
 | **`@tabitha/eslint-config`** | Standardized ESLint 9 flat configuration. |
 | **`@tabitha/tsconfig`** | Base TypeScript compiler configurations (`base.json`, `svelte.json`). |
@@ -34,13 +39,17 @@ Guidelines for architecting shared packages and adhering to coding standards acr
 
 ## 3. YAGNI & The Rule of Three for Shared Packages
 
-Before extracting code into `packages/*`, apply the **Rule of Three** (Philosophy #12):
+Shared runtime code and shared types follow different rules, because they fail differently.
+
+**Runtime code** (components, clients, helpers): before extracting it into `packages/*`, apply the **Rule of Three** (Philosophy #12):
 
 1. **First Use**: Implement directly inside the specific app (`apps/editor`, `apps/ontology`, etc.).
 2. **Second Use**: Duplicate or keep localized if requirements diverge between the two callers.
-3. **Third Use**: When 3 distinct applications or packages require identical behavior, extract into `@tabitha/ui`, `@tabitha/api-client`, or `@tabitha/types`.
+3. **Third Use**: When 3 distinct applications or packages require identical behavior, extract into `@tabitha/ui`, `@tabitha/api-client`, or another shared package.
 
-> For universal code conventions, naming rules, and the complete 12 Development Philosophies, see [AGENTS.md](../../../AGENTS.md).
+**Types** follow AGENTS.md's `@tabitha/types` boundary rule instead: a type moves there as soon as it crosses an app boundary (imported by 2+ apps, or the shape of another app's API or DB contract, even with one consumer), since two copies of a contract type drift silently at runtime. Types used inside one app stay local.
+
+> For universal code conventions, naming rules, and the complete Development Philosophies, see [AGENTS.md](../../../AGENTS.md).
 
 ---
 

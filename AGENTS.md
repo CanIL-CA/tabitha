@@ -408,6 +408,8 @@ import system_instruction from './review_prompt.md?raw'
    - `@tabitha/api-client` — Typed HTTP client for inter-service communication.
    - `@tabitha/cors` — Shared CORS middleware for Worker request handlers.
    - `@tabitha/complex-terms` — Reads the how-to Google Sheet into `Complex_Terms` rows (sheet parsing plus the table's SQL), shared by `apps/ontology`'s scheduled sync and `tools/databases`' Ontology migration. It has two consumers, not three, for the same reason API/DB contract types get a two-party bar: both write a table the app reads, so two copies would drift silently.
+   - `@tabitha/rate-limit` — Workers-native rate limiting for public read APIs, as a SvelteKit handle.
+   - `@tabitha/usage` — Anonymous feature-usage events written to Workers Analytics Engine.
    - `@tabitha/ai` — Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI.
    - `@tabitha/vite-config` — Shared Vite, SvelteKit, Vitest, and Playwright configurations.
    - `@tabitha/eslint-config` — ESLint flat configurations.

@@ -8,6 +8,7 @@ import type { AiGatewayConfig } from '@tabitha/ai'
 import { parse_wrangler_jsonc } from './db_load'
 import { parse_env_file } from './setup_env'
 import { probe_gateway_token, type GatewayTokenStatus } from './lib/ai_gateway_token'
+import { is_claude_cli_available, list_installed_plugin_ids, read_project_plugins } from './lib/claude_plugins'
 import { check_cloudflare_configs } from '../audits/check_cloudflare'
 import { sync_readme_badges } from '../audits/check_readme_badges'
 import { scan_secrets } from '../audits/check_secrets'
@@ -478,6 +479,31 @@ async function check_security_and_cloudflare(): Promise<DiagnosticResult[]> {
 	return results
 }
 
+// Only for developers who use Claude Code: without the CLI there is nothing to report.
+async function check_claude_plugins(): Promise<DiagnosticResult[]> {
+	const project_plugins = read_project_plugins({ root_dir: process.cwd() })
+	if (project_plugins.length === 0 || !is_claude_cli_available()) return []
+
+	const installed_ids = await list_installed_plugin_ids()
+	if (!installed_ids) {
+		return [{ category: 'Claude Code', name: 'Project plugins', status: 'WARN', message: 'Could not list installed Claude Code plugins' }]
+	}
+
+	return project_plugins.map((plugin): DiagnosticResult => {
+		if (installed_ids.has(plugin.plugin_id)) {
+			return { category: 'Claude Code', name: plugin.plugin_id, status: 'PASS', message: 'Installed' }
+		}
+
+		return {
+			category: 'Claude Code',
+			name: plugin.plugin_id,
+			status: 'WARN',
+			message: 'Enabled in .claude/settings.json but not installed on this machine',
+			fix: `Run \`bun run setup\`, or install it from Claude Code with \`/plugin install ${plugin.plugin_id}\``,
+		}
+	})
+}
+
 export async function run_doctor(): Promise<{ all_passed: boolean; fixes: string[] }> {
 	console.log(`
 ============================================================
@@ -491,6 +517,7 @@ export async function run_doctor(): Promise<{ all_passed: boolean; fixes: string
 		...await check_ai_gateway_tokens(),
 		...await check_local_databases(),
 		...await check_security_and_cloudflare(),
+		...await check_claude_plugins(),
 	]
 
 	// Group by category

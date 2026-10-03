@@ -1,6 +1,7 @@
 import { $ } from 'bun'
 import { platform } from 'node:os'
 import { load_database } from './db_load'
+import { find_missing_plugins, install_project_plugin, is_claude_cli_available, list_installed_plugin_ids, read_project_plugins } from './lib/claude_plugins'
 import { load_r2 } from './r2_load'
 import { setup_env } from './setup_env'
 
@@ -21,6 +22,38 @@ async function check_sqlite_prerequisite(): Promise<boolean> {
 			console.error('   👉 Install on Linux: sudo apt-get install -y sqlite3\n')
 		}
 		return false
+	}
+}
+
+async function install_claude_plugins() {
+	const project_plugins = read_project_plugins({ root_dir: process.cwd() })
+	if (project_plugins.length === 0) return
+
+	if (!is_claude_cli_available()) {
+		console.log('🤖 Claude Code CLI not found -- skipping the project\'s Claude Code plugins (only needed if you use Claude Code).\n')
+		return
+	}
+
+	const installed_ids = await list_installed_plugin_ids()
+	if (!installed_ids) {
+		console.warn('⚠️  Could not list installed Claude Code plugins; skipping. Run `bun run doctor` to re-check.\n')
+		return
+	}
+
+	const missing = find_missing_plugins({ project_plugins, installed_ids })
+	if (missing.length === 0) {
+		console.log('🤖 Claude Code plugins already installed.\n')
+		return
+	}
+
+	for (const plugin of missing) {
+		console.log(`🤖 Installing Claude Code plugin ${plugin.plugin_id}...`)
+		const installed = await install_project_plugin({ plugin })
+		if (installed) {
+			console.log(`   ✅ Installed ${plugin.plugin_id}\n`)
+		} else {
+			console.warn(`   ⚠️  Could not install ${plugin.plugin_id}. Install it from Claude Code with: /plugin install ${plugin.plugin_id}\n`)
+		}
 	}
 }
 
@@ -68,7 +101,10 @@ async function setup_workspace() {
 		console.warn('⚠️  Playwright browser install encountered an issue:', err instanceof Error ? err.message : err, '\n')
 	}
 
-	// 6. Run workspace verification
+	// 6. Install the Claude Code plugins the tracked .claude/settings.json enables
+	await install_claude_plugins()
+
+	// 7. Run workspace verification
 	console.log('🔍 Running initial workspace verification check...')
 	try {
 		await $`bun run check`

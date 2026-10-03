@@ -211,13 +211,13 @@ TaBiThA is set up to make AI coding agents effective contributors here, whicheve
 
 ### `AGENTS.md` — the shared source of truth
 
-[**`AGENTS.md`**](AGENTS.md) is the canonical constitution for this repo: the 14 development philosophies, architecture and package boundaries, and secrets-vs-config rules. It's written for humans first (README and this guide both link to it), but its filename is also a convention several AI coding agents auto-discover and load as project context — so pointing an agent at this repo tends to get you conventions-aware output without extra prompting.
+[**`AGENTS.md`**](AGENTS.md) is the canonical constitution for this repo: the 15 development philosophies, architecture and package boundaries, and secrets-vs-config rules. It's written for humans first (README and this guide both link to it), but its filename is also a convention several AI coding agents auto-discover and load as project context — so pointing an agent at this repo tends to get you conventions-aware output without extra prompting.
 
 ### `.claude/skills/` — narrower, task-scoped guidance
 
 Some conventions are too specific to belong in AGENTS.md but still worth writing down once — e.g. `.claude/skills/typography/SKILL.md` covers when `prose` belongs on an element vs. when to escape it with `not-prose`. These are loaded contextually by Claude Code when relevant. Add a new skill here when you notice an agent (or a human) repeatedly getting a narrow, specific convention wrong.
 
-Several skills document a specific library's usage patterns and pin the version they cover in their frontmatter (e.g. `svelte: 5.x`, `tailwindcss: 4.x`). If a PR bumps one of those libraries to a new **major** version, review the matching skill alongside it — a `bun run update`/`bun run update:safe` run only advances dependencies within their existing SemVer range, so it never triggers this on its own. The `daisyui` skill is the one exception: it pins a minor (`5.7.x`) rather than a major, since it's sourced from daisyUI's own `SKILL.md`, so `bun run update:safe` checks it against the installed package automatically on every run instead of relying on someone to notice.
+Several skills document a specific library's usage patterns and pin the version they cover in their frontmatter (e.g. `svelte: 5.x`, `tailwindcss: 4.x`). If a PR bumps one of those libraries to a new **major** version, review the matching skill alongside it — a `bun run update`/`bun run update:safe` run only advances dependencies within their existing SemVer range, so it never triggers this on its own. daisyUI guidance isn't vendored here: it comes from daisyUI's official Claude Code plugin, which the tracked `.claude/settings.json` enables for everyone working in the repo, and which tracks daisyUI's own releases. Enabling a plugin there doesn't download it, so `bun run setup` installs any missing project plugin when the `claude` CLI is on your PATH, and `bun run doctor` warns when one is missing.
 
 ### `docs/decisions/` — don't relitigate settled choices
 

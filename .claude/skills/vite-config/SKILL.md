@@ -33,7 +33,7 @@ export default create_app_vite_config({
 - **Copilot**: `9000`
 - **Www**: `1455`
 
-`create_app_vite_config` automatically binds `host: 'localhost.tabitha.bible'`, enables `strictPort: true`, wires `@tailwindcss/vite`, registers `sveltekit()`, and embeds Vitest test configurations.
+`create_app_vite_config` enables `strictPort: true`, wires `@tailwindcss/vite`, registers `sveltekit()`, and embeds Vitest test configurations.
 
 ---
 
@@ -58,10 +58,7 @@ Applications with E2E tests use `create_app_playwright_config`:
 ```javascript
 import { create_app_playwright_config } from '@tabitha/vite-config/playwright'
 
-export default create_app_playwright_config({
-	port: 1337,
-	host: 'localhost.tabitha.bible',
-})
+export default create_app_playwright_config({ port: 1337 })
 ```
 
-- Manages the `webServer` lifecycle running `bun run dev` with proper port checks.
+- Manages the `webServer` lifecycle, running `bun run dev:e2e` on the app's port.

@@ -15,7 +15,7 @@ Guidelines for writing ultra-fast, deterministic, pure in-memory unit tests acro
 
 - **Zero Network Calls**: Never make live HTTP/fetch requests in unit tests. Mock external services with `vi.fn()` or in-memory fixtures.
 - **Zero Live Database Connections**: Never connect to live D1 or external SQLite files in unit tests. Test pure logic, parsers, and data transformations in memory. (Use Playwright E2E for full database integration tests).
-- **Execution Target**: The entire workspace test suite (420+ tests) must execute in `< 4 seconds` (`bun run test:unit`).
+- **Execution Target**: Keep the workspace unit suite (`bun run test:unit`) fast enough to run on every change; a test that needs the network or a database belongs in Playwright.
 
 ---
 
