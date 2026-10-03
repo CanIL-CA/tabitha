@@ -12,6 +12,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The org's default GITHUB_TOKEN is read-only; jobs that comment on the PR request
+# `pull-requests: write` for themselves rather than using a PAT.
 permissions:
   contents: read
 
@@ -140,6 +142,9 @@ jobs:
     # production Worker.
     if: github.event_name == 'pull_request' && needs.plan.outputs.run_build == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -177,7 +182,6 @@ jobs:
         env:
           DEPLOYED_APPS: ${{ steps.deployed_apps.outputs.apps }}
         with:
-          github-token: ${{ secrets.PR_SUMMARY_TOKEN }}
           script: |
             const marker = '<!-- ci-preview-links -->'
             const apps = process.env.DEPLOYED_APPS.split(',').filter(Boolean)
@@ -417,12 +421,13 @@ jobs:
     name: 📝 Post PR Advisory Summary (Running)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     continue-on-error: true
     steps:
       - name: Post CI-Running Placeholder Comment
         uses: actions/github-script@v9
         with:
-          github-token: ${{ secrets.PR_SUMMARY_TOKEN }}
           script: |
             const marker = '<!-- ci-pr-summary -->'
             const body = `${marker}\n### 🔎 CI Advisory Summary\n\n⏳ CI is running — this comment will update with results once checks finish.`
@@ -459,8 +464,8 @@ jobs:
     if: always() && github.event_name == 'pull_request'
     needs: [plan, security_compliance, production_build, typecheck, eslint, unit_tests, e2e_tests, windows_dx_smoke]
     runs-on: ubuntu-latest
-    # Org policy caps the default GITHUB_TOKEN at read-only, so this uses a fine-grained
-    # PAT (repo-scoped to tabitha, Issues: write) stored as PR_SUMMARY_TOKEN instead.
+    permissions:
+      pull-requests: write
     continue-on-error: true
     steps:
       - name: Build & Upsert PR Summary Comment
@@ -468,7 +473,6 @@ jobs:
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         with:
-          github-token: ${{ secrets.PR_SUMMARY_TOKEN }}
           script: |
             const needs = JSON.parse(process.env.NEEDS_JSON)
             const marker = '<!-- ci-pr-summary -->'
