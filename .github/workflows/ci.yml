@@ -62,6 +62,7 @@ jobs:
       md: ${{ steps.check_md.outcome }}
       a11y_names: ${{ steps.check_a11y_names.outcome }}
       cross_platform: ${{ steps.check_cross_platform.outcome }}
+      github_actions: ${{ steps.check_github_actions.outcome }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -115,6 +116,11 @@ jobs:
       - name: Cross-Platform DX Tooling Audit
         id: check_cross_platform
         run: bun run check:cross-platform
+        continue-on-error: true
+
+      - name: GitHub Actions Token & Permissions Audit
+        id: check_github_actions
+        run: bun run check:github-actions
         continue-on-error: true
 
   production_build:
@@ -493,6 +499,7 @@ jobs:
               ['Markdown Lint', needs.security_compliance.outputs.md],
               ['Accessible-Name Collision Audit', needs.security_compliance.outputs.a11y_names],
               ['Cross-Platform DX Tooling Audit', needs.security_compliance.outputs.cross_platform],
+              ['GitHub Actions Token & Permissions Audit', needs.security_compliance.outputs.github_actions],
               ['Typecheck & Svelte Diagnostics', needs.typecheck.outputs.typecheck],
               ['ESLint', needs.eslint.outputs.eslint],
               ['Unit Test Coverage', needs.unit_tests.outputs.coverage],

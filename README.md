@@ -203,6 +203,9 @@ bun run check:storage
 # Audit for accessible-name collisions between persistent nav/chrome and page content
 bun run check:a11y-names
 
+# Audit GitHub Actions workflows for PATs used as GitHub tokens and missing permissions blocks
+bun run check:github-actions
+
 # Run Markdown linting across all documentation
 bun run check:md
 
