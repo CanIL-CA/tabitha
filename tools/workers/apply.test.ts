@@ -1,125 +1,165 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { reconcile_workers } from './apply'
-import { build_command, production_deploy_command } from './config'
+import { build_command, preview_deploy_command, production_deploy_command } from './config'
 
 const credentials = { account_id: 'account-1', api_token: 'token-1' }
 
 // Reuses apps/www as the fixture app -- derive_watch_paths reads a real package.json off disk,
-// and www's dependency list is the smallest of the 6 real apps.
-const test_app = { worker_name: 'www', app_dir: 'www', worker_tag: 'tag-www' }
+// and www's dependency list is the smallest of the real apps.
+const test_app = { worker_name: 'www', app_dir: 'www' }
+const template_app = { worker_name: 'sources', app_dir: 'sources' }
 const www_watch_paths = ['apps/www/*', 'packages/api-client/*', 'packages/types/*', 'packages/ui/*', 'packages/vite-config/*', 'package.json', 'bun.lock']
 
-const matching_production_trigger = {
-	trigger_uuid: 'trigger-prod',
-	build_command,
-	deploy_command: production_deploy_command,
-	branch_includes: ['main'],
-	path_includes: www_watch_paths,
-	build_caching_enabled: true,
+const git_repository = {
+	provider_type: 'github',
+	provider_account_id: '336682665',
+	provider_account_name: 'CanIL-CA',
+	repo_id: '680338472',
+	repo_name: 'tabitha',
+	branch: 'main',
+	grant_id: null,
 }
 
-// The older build model's second trigger, which a Worker loses when it switches to Worker Previews
-const legacy_non_production_trigger = {
-	trigger_uuid: 'trigger-preview',
-	build_command,
-	deploy_command: 'bunx wrangler versions upload',
-	branch_includes: ['*'],
-	path_includes: www_watch_paths,
-	build_caching_enabled: true,
+function matching_config(path_includes = www_watch_paths) {
+	return {
+		git_repository,
+		production_settings: {
+			build_command,
+			deploy_command: production_deploy_command,
+			build_caching_enabled: true,
+			path_includes,
+			build_token_uuid: 'build-token-1',
+			environment_variables: { SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } } as Record<string, { value: string; is_secret: boolean }>,
+		},
+		previews_enabled: false,
+	}
 }
 
-function router_fetch(handler: (url: string, init?: RequestInit) => Response): typeof fetch {
-	return mock(async (url: string, init?: RequestInit) => handler(url, init)) as unknown as typeof fetch
+type Config = ReturnType<typeof matching_config>
+
+function json_response(result: unknown, status = 200, errors: unknown[] = []) {
+	return new Response(JSON.stringify({ success: status < 400, errors, result }), { status })
 }
 
-function json_response(result: unknown) {
-	return new Response(JSON.stringify({ result }), { status: 200 })
-}
+const not_connected = () => json_response(null, 404, [{ code: 12040, message: 'No build configuration associated with that script tag was found for this account' }])
 
-type Overrides = {
-	triggers?: unknown[]
-	env_vars?: Record<string, { value: string; is_secret: boolean }>
-	previews_enabled?: boolean
-	patched_bodies?: unknown[]
-}
+type Request = { method: string; url: string; body: unknown }
 
-function account_fetch({
-	triggers = [matching_production_trigger],
-	env_vars = { SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } },
-	previews_enabled = false,
-	patched_bodies,
-}: Overrides = {}): typeof fetch {
-	return router_fetch((url, init) => {
+/** Fakes the account: `workers` maps each existing Worker's name to its build config, or `null`
+ * for a Worker that isn't connected to the repo yet. */
+function account_fetch(workers: Record<string, Config | null>, requests: Request[] = []): typeof fetch {
+	return mock(async (url: string, init?: RequestInit) => {
 		const method = init?.method ?? 'GET'
-		if (url.endsWith('/builds/workers/tag-www') && method === 'GET') return json_response({ previews_enabled })
-		if (url.endsWith('/triggers') && method === 'GET') return json_response(triggers)
-		if (url.endsWith('/environment_variables') && method === 'GET') return json_response(env_vars)
-		if (method === 'PATCH' && patched_bodies) {
-			patched_bodies.push(JSON.parse(String(init?.body)))
-			return json_response({})
+		requests.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+
+		if (method === 'GET' && url.endsWith('/workers/scripts')) {
+			return json_response(Object.keys(workers).map(name => ({ id: name, tag: `tag-${name}` })))
 		}
+		const tag_match = url.match(/\/builds\/workers\/tag-(\w+)$/)
+		if (method === 'GET' && tag_match) {
+			const config = workers[tag_match[1]]
+			return config ? json_response(config) : not_connected()
+		}
+		if (method === 'PATCH' || method === 'POST') return json_response({})
 		throw new Error(`Unexpected request: ${method} ${url}`)
-	})
+	}) as unknown as typeof fetch
 }
+
+const writes = (requests: Request[]) => requests.filter(request => request.method !== 'GET')
 
 describe('reconcile_workers', () => {
-	it('reports the production trigger unchanged and no problems when everything already matches', async () => {
-		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, account_fetch())
+	it('reports nothing to change when everything already matches', async () => {
+		const requests: Request[] = []
+		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, account_fetch({ www: matching_config() }, requests))
 
-		expect(plan.production.field_changes).toEqual([])
-		expect(plan.production.env_var_changes).toEqual([])
-		expect(plan.problems).toEqual([])
+		expect(plan).toEqual({ worker_name: 'www', create: false, field_changes: [], env_var_changes: [], problems: [] })
+		expect(writes(requests)).toEqual([])
 	})
 
 	it('detects a stale build_command and missing environment variable without writing anything when apply is false', async () => {
-		const patched_bodies: unknown[] = []
-		const fetch_impl = account_fetch({
-			triggers: [{ ...matching_production_trigger, build_command: 'pnpm run build' }],
-			env_vars: {},
-			patched_bodies,
-		})
+		const config = matching_config()
+		config.production_settings.build_command = 'pnpm run build'
+		config.production_settings.environment_variables = {}
+		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)
+		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, account_fetch({ www: config }, requests))
 
-		expect(plan.production.field_changes).toEqual([{ field: 'build_command', from: 'pnpm run build', to: build_command }])
-		expect(plan.production.env_var_changes).toEqual([{ field: 'SKIP_DEPENDENCY_INSTALL', from: '(unset)', to: 'true' }])
-		expect(patched_bodies).toEqual([])
+		expect(plan.field_changes).toEqual([{ field: 'build_command', from: 'pnpm run build', to: build_command }])
+		expect(plan.env_var_changes).toEqual([{ field: 'SKIP_DEPENDENCY_INSTALL', from: '(unset)', to: 'true' }])
+		expect(writes(requests)).toEqual([])
 	})
 
-	it('PATCHes the drifted fields when apply is true', async () => {
-		const patched_bodies: unknown[] = []
-		const fetch_impl = account_fetch({
-			triggers: [{ ...matching_production_trigger, path_includes: ['*'] }],
-			env_vars: {},
-			patched_bodies,
-		})
+	it('PATCHes only the drifted production settings when apply is true', async () => {
+		const config = matching_config(['*'])
+		config.production_settings.environment_variables = { OTHER: { value: 'kept', is_secret: false } }
+		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, fetch_impl)
+		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, account_fetch({ www: config }, requests))
 
-		expect(plan.production.field_changes).toEqual([{ field: 'path_includes', from: ['*'], to: www_watch_paths }])
-		expect(patched_bodies).toContainEqual(expect.objectContaining({ path_includes: www_watch_paths }))
-		expect(patched_bodies).toContainEqual({ SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } })
+		expect(plan.field_changes).toEqual([{ field: 'path_includes', from: ['*'], to: www_watch_paths }])
+		expect(writes(requests)).toEqual([{
+			method: 'PATCH',
+			url: 'https://api.cloudflare.com/client/v4/accounts/account-1/builds/workers/tag-www',
+			body: { production_settings: { path_includes: www_watch_paths, environment_variables: { SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } } } },
+		}])
 	})
 
 	it('reports Workers Builds preview builds being on, without trying to change them', async () => {
-		const patched_bodies: unknown[] = []
-		const fetch_impl = account_fetch({ previews_enabled: true, patched_bodies })
+		const config = { ...matching_config(), previews_enabled: true }
+		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, fetch_impl)
+		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, account_fetch({ www: config }, requests))
 
 		expect(plan.problems).toEqual([expect.stringMatching(/preview builds are on/)])
-		expect(patched_bodies).toEqual([])
+		expect(writes(requests)).toEqual([])
 	})
 
-	it('throws if a worker is still on the older build model, with a non-production trigger', async () => {
-		const fetch_impl = account_fetch({ triggers: [matching_production_trigger, legacy_non_production_trigger] })
+	it('reports a Worker that has never been deployed, and still reconciles the others', async () => {
+		const [missing, template] = await reconcile_workers(credentials, { apply: true, apps: [test_app, template_app] }, account_fetch({ sources: matching_config() }))
 
-		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)).rejects.toThrow(/Expected exactly one \(production\) trigger/)
+		expect(missing.problems).toEqual([expect.stringMatching(/No Worker named "www" exists yet/)])
+		expect(template.problems).toEqual([])
 	})
 
-	it('throws if a worker has no production trigger', async () => {
-		const fetch_impl = account_fetch({ triggers: [] })
+	it('connects an unconnected Worker, copying the git repository and build token from a connected one', async () => {
+		const requests: Request[] = []
 
-		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)).rejects.toThrow(/Expected exactly one \(production\) trigger/)
+		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app, template_app] }, account_fetch({ www: null, sources: matching_config() }, requests))
+
+		expect(plan).toEqual({ worker_name: 'www', create: true, field_changes: [], env_var_changes: [], problems: [] })
+		const settings = {
+			build_command,
+			deploy_command: production_deploy_command,
+			build_caching_enabled: true,
+			path_includes: www_watch_paths,
+			root_directory: '/apps/www',
+			build_token_uuid: 'build-token-1',
+			environment_variables: { SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } },
+		}
+		// The template's fixture reuses www's watch paths, so sources also gets a PATCH; only the POST matters here
+		expect(requests.filter(request => request.method === 'POST')).toEqual([{
+			method: 'POST',
+			url: 'https://api.cloudflare.com/client/v4/accounts/account-1/builds/workers',
+			body: {
+				script_tag: 'tag-www',
+				git_repository: { provider_type: 'github', provider_account_id: '336682665', provider_account_name: 'CanIL-CA', repo_id: '680338472', repo_name: 'tabitha', branch: 'main' },
+				production_settings: settings,
+				previews_base_config: { ...settings, deploy_command: preview_deploy_command },
+				previews_enabled: false,
+			},
+		}])
+	})
+
+	it('plans the connection without writing when apply is false', async () => {
+		const requests: Request[] = []
+
+		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app, template_app] }, account_fetch({ www: null, sources: matching_config() }, requests))
+
+		expect(plan.create).toBe(true)
+		expect(writes(requests)).toEqual([])
+	})
+
+	it('throws if no Worker is connected to copy the git repository and build token from', async () => {
+		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, account_fetch({ www: null }))).rejects.toThrow(/no other Worker is connected/)
 	})
 })

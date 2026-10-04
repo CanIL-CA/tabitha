@@ -3,6 +3,7 @@ import {
 	build_command,
 	desired_apps,
 	managed_environment_variables,
+	preview_deploy_command,
 	production_deploy_command,
 	type DesiredApp,
 } from './config'
@@ -10,8 +11,11 @@ import {
 const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4'
 const REPO_ROOT = join(import.meta.dir, '..', '..')
 
+/** Cloudflare's error code for a Worker that exists but isn't connected to a repo yet. */
+const NO_BUILD_CONFIGURATION_ERROR = 12040
+
 /** Workspace packages whose changes don't affect an app's built output, so they're left out of
- * the production trigger's watch paths even though the app genuinely depends on them. */
+ * the production watch paths even though the app genuinely depends on them. */
 const build_irrelevant_packages = new Set(['@tabitha/eslint-config', '@tabitha/tsconfig'])
 
 export type CloudflareCredentials = {
@@ -19,22 +23,35 @@ export type CloudflareCredentials = {
 	api_token: string
 }
 
-/** Cloudflare's Workers Builds trigger shape, trimmed to the fields this tool reads or writes.
- * Every Worker is on Cloudflare's Worker Previews build model, which leaves exactly one trigger:
- * the production branch's. The older model added a second "Deploy non-production branches"
- * trigger, whose settings the dashboard silently left stale (see the "Workers Builds Git
- * Integration" section of the `cloudflare-workers` skill); PR previews are now built by CI
- * instead (docs/decisions/0020-per-pr-worker-previews.md). */
-type CloudflareTrigger = {
-	trigger_uuid: string
-	build_command: string
-	deploy_command: string
-	branch_includes: string[]
-	path_includes: string[]
-	build_caching_enabled: boolean
+type EnvironmentVariables = Record<string, { value: string; is_secret: boolean }>
+
+/** A Worker's Workers Builds settings on Cloudflare's Worker Previews build model, trimmed to the
+ * fields this tool reads or writes. Every Worker is on that model: production builds from `main`
+ * use `production_settings`, and PR previews are built by CI instead
+ * (docs/decisions/0020-per-pr-worker-previews.md). The older model's per-branch triggers, whose
+ * settings the dashboard silently left stale, are described in the "Workers Builds Git
+ * Integration" section of the `cloudflare-workers` skill. */
+type WorkerBuildConfig = {
+	git_repository: {
+		provider_type: string
+		provider_account_id: string
+		provider_account_name: string
+		repo_id: string
+		repo_name: string
+		branch: string
+	}
+	production_settings: {
+		build_command: string
+		deploy_command: string
+		build_caching_enabled: boolean
+		path_includes: string[]
+		build_token_uuid: string
+		environment_variables: EnvironmentVariables
+	}
+	previews_enabled: boolean
 }
 
-type DesiredTriggerFields = {
+type DesiredSettings = {
 	build_command: string
 	deploy_command: string
 	build_caching_enabled: boolean
@@ -43,126 +60,155 @@ type DesiredTriggerFields = {
 
 export type FieldChange = { field: string; from: unknown; to: unknown }
 
-export type TriggerPlan = {
-	trigger_uuid: string
-	field_changes: FieldChange[]
-	env_var_changes: FieldChange[]
-}
-
 export type AppPlan = {
 	worker_name: string
-	production: TriggerPlan
-	/** Drift this tool reports but doesn't fix, because the Workers Builds API for it is
-	 * undocumented -- fix it in the dashboard. */
+	/** True when the Worker isn't connected to the repo yet, so `apply` creates its build settings. */
+	create: boolean
+	field_changes: FieldChange[]
+	env_var_changes: FieldChange[]
+	/** Drift this tool reports but doesn't fix -- fix it by hand. */
 	problems: string[]
 }
 
-/** Computes (and, if `apply` is true, performs) the changes needed to bring every app's
- * production Workers Builds trigger in line with `config.ts`, and reports any Worker whose
- * Workers Builds preview builds are switched on. Never touches `branch_includes`,
- * `path_excludes`, `root_directory`, or any environment variable this tool doesn't itself declare
- * in `managed_environment_variables` -- anything else already set on a trigger, by hand or by
+/** Computes (and, if `apply` is true, performs) the changes needed to bring every app's Workers
+ * Builds production settings in line with `config.ts`. A Worker that exists but isn't connected
+ * to the repo yet gets connected, with the git repository and build token copied from an
+ * already-connected Worker. Never touches `branch`, `path_excludes`, `root_directory` (except
+ * when connecting), the Previews settings, or any environment variable this tool doesn't itself
+ * declare in `managed_environment_variables` -- anything else already set, by hand or by
  * something else, is left alone. */
 export async function reconcile_workers(
 	credentials: CloudflareCredentials,
 	{ apply, apps = desired_apps }: { apply: boolean; apps?: DesiredApp[] },
 	fetch_impl: typeof fetch = fetch,
 ): Promise<AppPlan[]> {
-	const plans: AppPlan[] = []
+	const worker_tags = await get_worker_tags(credentials, fetch_impl)
 
+	const current_configs = new Map<string, WorkerBuildConfig | null>()
 	for (const app of apps) {
-		const triggers = await get_triggers(credentials, app.worker_tag, fetch_impl)
-		const production = triggers.find(t => t.branch_includes.includes('main'))
-		if (!production || triggers.length !== 1) {
-			// A second trigger means the Worker is still on the older build model: switch it with
-			// Settings -> Builds -> "Set up Worker Previews" (one-way), then turn preview builds off.
-			throw new Error(`Expected exactly one (production) trigger for "${app.worker_name}", found ${triggers.length}. Switch it to Worker Previews first; see tools/workers/README.md.`)
+		const tag = worker_tags.get(app.worker_name)
+		if (tag) current_configs.set(app.worker_name, await get_build_config(credentials, tag, fetch_impl))
+	}
+	const template = [...current_configs.values()].find(config => config !== null)
+
+	const plans: AppPlan[] = []
+	for (const app of apps) {
+		const tag = worker_tags.get(app.worker_name)
+		if (!tag) {
+			plans.push({
+				worker_name: app.worker_name,
+				create: false,
+				field_changes: [],
+				env_var_changes: [],
+				problems: [`No Worker named "${app.worker_name}" exists yet; run its first \`bunx wrangler deploy\` from apps/${app.app_dir}, then re-run this tool`],
+			})
+			continue
 		}
 
-		const production_plan = await reconcile_trigger(
-			credentials,
-			production,
-			{ build_command, deploy_command: production_deploy_command, build_caching_enabled: true, path_includes: await derive_watch_paths(app.app_dir) },
-			apply,
-			fetch_impl,
-		)
-
-		const problems: string[] = []
-		if ((await get_build_settings(credentials, app.worker_tag, fetch_impl)).previews_enabled) {
-			problems.push('Workers Builds preview builds are on; CI builds PR previews, so turn off "Builds for Preview branches" in Settings -> Builds')
+		const desired: DesiredSettings = {
+			build_command,
+			deploy_command: production_deploy_command,
+			build_caching_enabled: true,
+			path_includes: await derive_watch_paths(app.app_dir),
 		}
 
-		plans.push({ worker_name: app.worker_name, production: production_plan, problems })
+		const current = current_configs.get(app.worker_name)
+		if (!current) {
+			if (!template) throw new Error(`Can't connect "${app.worker_name}": no other Worker is connected to the repo to copy its git repository and build token from.`)
+			if (apply) await create_build_config(credentials, tag, app, desired, template, fetch_impl)
+			plans.push({ worker_name: app.worker_name, create: true, field_changes: [], env_var_changes: [], problems: [] })
+			continue
+		}
+
+		const changes = await reconcile_production_settings(credentials, tag, current, desired, apply, fetch_impl)
+		plans.push({
+			worker_name: app.worker_name,
+			create: false,
+			...changes,
+			problems: current.previews_enabled
+				? ['Workers Builds preview builds are on; CI builds PR previews, so turn off "Builds for Preview branches" in Settings -> Builds']
+				: [],
+		})
 	}
 
 	return plans
 }
 
-async function reconcile_trigger(
+async function reconcile_production_settings(
 	credentials: CloudflareCredentials,
-	current: CloudflareTrigger,
-	desired: DesiredTriggerFields,
+	worker_tag: string,
+	current: WorkerBuildConfig,
+	desired: DesiredSettings,
 	apply: boolean,
 	fetch_impl: typeof fetch,
-): Promise<TriggerPlan> {
+): Promise<{ field_changes: FieldChange[]; env_var_changes: FieldChange[] }> {
+	const settings = current.production_settings
 	const field_changes: FieldChange[] = []
+	const patch: Record<string, unknown> = {}
 
-	if (current.build_command !== desired.build_command) field_changes.push({ field: 'build_command', from: current.build_command, to: desired.build_command })
+	if (settings.build_command !== desired.build_command) field_changes.push({ field: 'build_command', from: settings.build_command, to: desired.build_command })
 	// Cloudflare's dashboard has been observed leaving stray leading/trailing whitespace on this
 	// field from manual edits -- trim before comparing so that alone doesn't register as drift.
-	if (current.deploy_command.trim() !== desired.deploy_command) field_changes.push({ field: 'deploy_command', from: current.deploy_command, to: desired.deploy_command })
-	if (current.build_caching_enabled !== desired.build_caching_enabled) {
-		field_changes.push({ field: 'build_caching_enabled', from: current.build_caching_enabled, to: desired.build_caching_enabled })
+	if (settings.deploy_command.trim() !== desired.deploy_command) field_changes.push({ field: 'deploy_command', from: settings.deploy_command, to: desired.deploy_command })
+	if (settings.build_caching_enabled !== desired.build_caching_enabled) {
+		field_changes.push({ field: 'build_caching_enabled', from: settings.build_caching_enabled, to: desired.build_caching_enabled })
 	}
-	if (!same_string_set(current.path_includes, desired.path_includes)) {
-		field_changes.push({ field: 'path_includes', from: current.path_includes, to: desired.path_includes })
+	if (!same_string_set(settings.path_includes, desired.path_includes)) {
+		field_changes.push({ field: 'path_includes', from: settings.path_includes, to: desired.path_includes })
 	}
+	for (const change of field_changes) patch[change.field] = change.to
 
-	if (apply && field_changes.length > 0) {
-		await patch_trigger(
-			credentials,
-			current.trigger_uuid,
-			{
-				build_command: desired.build_command,
-				deploy_command: desired.deploy_command,
-				build_caching_enabled: desired.build_caching_enabled,
-				path_includes: desired.path_includes,
-			},
-			fetch_impl,
-		)
-	}
-
-	const env_var_changes = await reconcile_environment_variables(credentials, current.trigger_uuid, apply, fetch_impl)
-
-	return { trigger_uuid: current.trigger_uuid, field_changes, env_var_changes }
-}
-
-async function reconcile_environment_variables(
-	credentials: CloudflareCredentials,
-	trigger_uuid: string,
-	apply: boolean,
-	fetch_impl: typeof fetch,
-): Promise<FieldChange[]> {
-	const current = await get_environment_variables(credentials, trigger_uuid, fetch_impl)
-	const changes: FieldChange[] = []
-	const to_set: Record<string, { value: string; is_secret: boolean }> = {}
-
+	const env_var_changes: FieldChange[] = []
+	const env_vars_to_set: EnvironmentVariables = {}
 	for (const [key, desired_value] of Object.entries(managed_environment_variables)) {
-		const current_value = current[key]?.value
+		const current_value = settings.environment_variables[key]?.value
 		if (current_value !== desired_value) {
-			changes.push({ field: key, from: current_value ?? '(unset)', to: desired_value })
-			to_set[key] = { value: desired_value, is_secret: false }
+			env_var_changes.push({ field: key, from: current_value ?? '(unset)', to: desired_value })
+			env_vars_to_set[key] = { value: desired_value, is_secret: false }
 		}
 	}
+	// The API merges environment variables by key, so variables not listed here are left as they are.
+	if (env_var_changes.length > 0) patch.environment_variables = env_vars_to_set
 
-	if (apply && Object.keys(to_set).length > 0) {
-		await patch_environment_variables(credentials, trigger_uuid, to_set, fetch_impl)
+	if (apply && Object.keys(patch).length > 0) {
+		await cloudflare_request(credentials, 'PATCH', `/builds/workers/${worker_tag}`, { production_settings: patch }, fetch_impl)
 	}
 
-	return changes
+	return { field_changes, env_var_changes }
 }
 
-/** Derives a trigger's watch paths from the app's own `package.json`, rather than
+async function create_build_config(
+	credentials: CloudflareCredentials,
+	worker_tag: string,
+	app: DesiredApp,
+	desired: DesiredSettings,
+	template: WorkerBuildConfig,
+	fetch_impl: typeof fetch,
+): Promise<void> {
+	const { provider_type, provider_account_id, provider_account_name, repo_id, repo_name, branch } = template.git_repository
+	const settings = {
+		...desired,
+		root_directory: `/apps/${app.app_dir}`,
+		build_token_uuid: template.production_settings.build_token_uuid,
+		environment_variables: Object.fromEntries(Object.entries(managed_environment_variables).map(([key, value]) => [key, { value, is_secret: false }])),
+	}
+
+	await cloudflare_request(
+		credentials,
+		'POST',
+		'/builds/workers',
+		{
+			script_tag: worker_tag,
+			git_repository: { provider_type, provider_account_id, provider_account_name, repo_id, repo_name, branch },
+			production_settings: settings,
+			previews_base_config: { ...settings, deploy_command: preview_deploy_command },
+			previews_enabled: false,
+		},
+		fetch_impl,
+	)
+}
+
+/** Derives the production watch paths from the app's own `package.json`, rather than
  * hand-maintaining a list per app: every declared workspace dependency (excluding
  * `build_irrelevant_packages`) becomes a `packages/<name>/*` entry, so a newly added dependency
  * is picked up automatically on the next `apply` run instead of silently going unwatched. */
@@ -187,58 +233,38 @@ function same_string_set(a: string[], b: string[]): boolean {
 	return sorted_a.every((value, index) => value === sorted_b[index])
 }
 
-async function get_triggers(credentials: CloudflareCredentials, worker_tag: string, fetch_impl: typeof fetch): Promise<CloudflareTrigger[]> {
-	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/workers/${worker_tag}/triggers`, {
-		headers: auth_headers(credentials.api_token),
-	})
-	if (!response.ok) throw new Error(`Failed to fetch triggers for worker tag "${worker_tag}": ${response.status} ${await response.text()}`)
-	const body = (await response.json()) as { result: CloudflareTrigger[] }
-	return body.result
+/** Maps each Worker's name to its tag, Cloudflare's stable per-Worker identifier that the
+ * Workers Builds API is keyed by. */
+async function get_worker_tags(credentials: CloudflareCredentials, fetch_impl: typeof fetch): Promise<Map<string, string>> {
+	const scripts = (await cloudflare_request(credentials, 'GET', '/workers/scripts', undefined, fetch_impl)) as { id: string; tag: string }[]
+	return new Map(scripts.map(script => [script.id, script.tag]))
 }
 
-async function get_build_settings(credentials: CloudflareCredentials, worker_tag: string, fetch_impl: typeof fetch): Promise<{ previews_enabled: boolean }> {
+/** Returns `null` for a Worker that isn't connected to the repo yet. */
+async function get_build_config(credentials: CloudflareCredentials, worker_tag: string, fetch_impl: typeof fetch): Promise<WorkerBuildConfig | null> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/workers/${worker_tag}`, {
 		headers: auth_headers(credentials.api_token),
 	})
-	if (!response.ok) throw new Error(`Failed to fetch build settings for worker tag "${worker_tag}": ${response.status} ${await response.text()}`)
-	const body = (await response.json()) as { result: { previews_enabled: boolean } }
+	const body = (await response.json()) as { result: WorkerBuildConfig | null; errors?: { code: number }[] }
+	if (response.status === 404 && body.errors?.some(error => error.code === NO_BUILD_CONFIGURATION_ERROR)) return null
+	if (!response.ok) throw new Error(`Failed to fetch build settings for worker tag "${worker_tag}": ${response.status} ${JSON.stringify(body)}`)
 	return body.result
 }
 
-async function patch_trigger(credentials: CloudflareCredentials, trigger_uuid: string, fields: Record<string, unknown>, fetch_impl: typeof fetch): Promise<void> {
-	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/triggers/${trigger_uuid}`, {
-		method: 'PATCH',
-		headers: auth_headers(credentials.api_token),
-		body: JSON.stringify(fields),
-	})
-	if (!response.ok) throw new Error(`Failed to update trigger "${trigger_uuid}": ${response.status} ${await response.text()}`)
-}
-
-async function get_environment_variables(
+async function cloudflare_request(
 	credentials: CloudflareCredentials,
-	trigger_uuid: string,
+	method: 'GET' | 'PATCH' | 'POST',
+	path: string,
+	body: unknown,
 	fetch_impl: typeof fetch,
-): Promise<Record<string, { value: string; is_secret: boolean }>> {
-	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/triggers/${trigger_uuid}/environment_variables`, {
+): Promise<unknown> {
+	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}${path}`, {
+		method,
 		headers: auth_headers(credentials.api_token),
+		body: body === undefined ? undefined : JSON.stringify(body),
 	})
-	if (!response.ok) throw new Error(`Failed to fetch environment variables for trigger "${trigger_uuid}": ${response.status} ${await response.text()}`)
-	const body = (await response.json()) as { result: Record<string, { value: string; is_secret: boolean }> }
-	return body.result
-}
-
-async function patch_environment_variables(
-	credentials: CloudflareCredentials,
-	trigger_uuid: string,
-	vars: Record<string, { value: string; is_secret: boolean }>,
-	fetch_impl: typeof fetch,
-): Promise<void> {
-	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/triggers/${trigger_uuid}/environment_variables`, {
-		method: 'PATCH',
-		headers: auth_headers(credentials.api_token),
-		body: JSON.stringify(vars),
-	})
-	if (!response.ok) throw new Error(`Failed to update environment variables for trigger "${trigger_uuid}": ${response.status} ${await response.text()}`)
+	if (!response.ok) throw new Error(`${method} ${path} failed: ${response.status} ${await response.text()}`)
+	return ((await response.json()) as { result: unknown }).result
 }
 
 function auth_headers(api_token: string): HeadersInit {
@@ -259,9 +285,15 @@ if (import.meta.main) {
 	for (const plan of plans) {
 		for (const problem of plan.problems) console.log(`${plan.worker_name}: ⚠️ ${problem}`)
 
-		const all_changes = [...plan.production.field_changes, ...plan.production.env_var_changes]
+		if (plan.create) {
+			any_changes = true
+			console.log(`${plan.worker_name}: ${apply ? 'connected' : 'would connect'} to the repo, with production builds from main and preview builds off`)
+			continue
+		}
+
+		const all_changes = [...plan.field_changes, ...plan.env_var_changes]
 		if (all_changes.length === 0) {
-			console.log(`${plan.worker_name}: unchanged`)
+			if (plan.problems.length === 0) console.log(`${plan.worker_name}: unchanged`)
 			continue
 		}
 		any_changes = true
