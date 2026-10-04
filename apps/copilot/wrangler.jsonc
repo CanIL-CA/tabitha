@@ -44,7 +44,10 @@
 	"routes": [
 		{
 			"pattern": "copilot.tabitha.bible",
-			"custom_domain": true
+			"custom_domain": true,
+			// Also serves per-PR Previews at pr-<N>.copilot.tabitha.bible (ADR 0020). Declared here
+			// because every wrangler deploy resets the domain's settings to match this file.
+			"previews_enabled": true
 		}
 	],
 	"observability": {

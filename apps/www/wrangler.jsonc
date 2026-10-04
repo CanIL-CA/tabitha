@@ -19,6 +19,15 @@
 		{
 			"pattern": "tabitha.bible",
 			"custom_domain": true
+		},
+		// Preview-only domain for per-PR Previews at pr-<N>.www-pr.tabitha.bible (see the previews
+		// block below). Declared here because every wrangler deploy resets this Worker's custom
+		// domains to match this file.
+		{
+			"pattern": "www-pr.tabitha.bible",
+			"custom_domain": true,
+			"previews_enabled": true,
+			"enabled": false
 		}
 	],
 	// Per-PR Worker Previews, served at `pr-<N>.www-pr.tabitha.bible`. CI's preview_deploy job creates
