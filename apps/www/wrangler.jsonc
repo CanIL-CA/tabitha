@@ -21,20 +21,12 @@
 			"custom_domain": true
 		}
 	],
-	// Deployed via CI (not Workers Builds -- see docs/decisions/0015-cross-app-preview-custom-domains.md) to
-	// its own custom domain, so this fully-prerendered site's one dynamic route
-	// (remaining-work/+page.server.ts) can call sources-preview over normal public HTTPS exactly
-	// like production does.
-	"env": {
-		"preview": {
-			// "routes" is otherwise inherited from the top level, which would attach the production
-			// custom domain (tabitha.bible) to this separate preview Worker too.
-			"routes": [
-				{
-					"pattern": "www-preview.tabitha.bible",
-					"custom_domain": true
-				}
-			]
-		}
-	}
+	// Per-PR Worker Previews, served at `pr-<N>.www-pr.tabitha.bible`. CI's preview_deploy job creates
+	// them with `wrangler preview --name pr-<N>` (docs/decisions/0020-per-pr-worker-previews.md).
+	// A Preview inherits nothing from the top level, so every var and binding it needs is redeclared.
+	// Production lives on the apex (tabitha.bible), so Previews get their own preview-only custom
+	// domain, www-pr.tabitha.bible, instead of a *.tabitha.bible wildcard on the apex
+	// (www.tabitha.bible is taken by a DNS record that redirects to the apex). This Worker has no
+	// vars or bindings, so the block is empty, but Wrangler requires it to exist.
+	"previews": {}
 }

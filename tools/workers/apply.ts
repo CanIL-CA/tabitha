@@ -3,7 +3,6 @@ import {
 	build_command,
 	desired_apps,
 	managed_environment_variables,
-	non_production_deploy_command,
 	production_deploy_command,
 	type DesiredApp,
 } from './config'
@@ -20,14 +19,12 @@ export type CloudflareCredentials = {
 	api_token: string
 }
 
-type TriggerRole = 'production' | 'non_production'
-
 /** Cloudflare's Workers Builds trigger shape, trimmed to the fields this tool reads or writes.
- * Every Worker has exactly two of these -- one for its production branch, one named "Deploy
- * non-production branches" that fires for every other branch/PR -- and Cloudflare's dashboard
- * settings page only ever writes `build_command` and Build Variables to the production one,
- * silently leaving the non-production trigger's copies stale. That's the whole reason this tool
- * exists: see the "Workers Builds Git Integration" section of the `cloudflare-workers` skill. */
+ * Every Worker is on Cloudflare's Worker Previews build model, which leaves exactly one trigger:
+ * the production branch's. The older model added a second "Deploy non-production branches"
+ * trigger, whose settings the dashboard silently left stale (see the "Workers Builds Git
+ * Integration" section of the `cloudflare-workers` skill); PR previews are now built by CI
+ * instead (docs/decisions/0020-per-pr-worker-previews.md). */
 type CloudflareTrigger = {
 	trigger_uuid: string
 	build_command: string
@@ -47,7 +44,6 @@ type DesiredTriggerFields = {
 export type FieldChange = { field: string; from: unknown; to: unknown }
 
 export type TriggerPlan = {
-	role: TriggerRole
 	trigger_uuid: string
 	field_changes: FieldChange[]
 	env_var_changes: FieldChange[]
@@ -56,11 +52,14 @@ export type TriggerPlan = {
 export type AppPlan = {
 	worker_name: string
 	production: TriggerPlan
-	non_production: TriggerPlan
+	/** Drift this tool reports but doesn't fix, because the Workers Builds API for it is
+	 * undocumented -- fix it in the dashboard. */
+	problems: string[]
 }
 
-/** Computes (and, if `apply` is true, performs) the changes needed to bring every app's two
- * Workers Builds triggers in line with `config.ts`. Never touches `branch_includes`,
+/** Computes (and, if `apply` is true, performs) the changes needed to bring every app's
+ * production Workers Builds trigger in line with `config.ts`, and reports any Worker whose
+ * Workers Builds preview builds are switched on. Never touches `branch_includes`,
  * `path_excludes`, `root_directory`, or any environment variable this tool doesn't itself declare
  * in `managed_environment_variables` -- anything else already set on a trigger, by hand or by
  * something else, is left alone. */
@@ -74,39 +73,26 @@ export async function reconcile_workers(
 	for (const app of apps) {
 		const triggers = await get_triggers(credentials, app.worker_tag, fetch_impl)
 		const production = triggers.find(t => t.branch_includes.includes('main'))
-		const non_production = triggers.find(t => t !== production)
-		if (!production || !non_production) {
-			throw new Error(`Expected exactly one production and one non-production trigger for "${app.worker_name}", found ${triggers.length} trigger(s).`)
+		if (!production || triggers.length !== 1) {
+			// A second trigger means the Worker is still on the older build model: switch it with
+			// Settings -> Builds -> "Set up Worker Previews" (one-way), then turn preview builds off.
+			throw new Error(`Expected exactly one (production) trigger for "${app.worker_name}", found ${triggers.length}. Switch it to Worker Previews first; see tools/workers/README.md.`)
 		}
-
-		const watch_paths = await derive_watch_paths(app.app_dir)
 
 		const production_plan = await reconcile_trigger(
 			credentials,
-			'production',
 			production,
-			{ build_command, deploy_command: production_deploy_command, build_caching_enabled: true, path_includes: watch_paths },
+			{ build_command, deploy_command: production_deploy_command, build_caching_enabled: true, path_includes: await derive_watch_paths(app.app_dir) },
 			apply,
 			fetch_impl,
 		)
 
-		const non_production_plan = await reconcile_trigger(
-			credentials,
-			'non_production',
-			non_production,
-			// Deliberately the same watch paths as production: Cloudflare's own default here is
-			// "*", which fires a full preview build+deploy of every app on every push to every
-			// branch, no matter which app actually changed (GitHub issue #74). That was long
-			// believed to be unavoidable -- Cloudflare was thought not to enforce path_includes
-			// on non-production triggers at all -- but a direct test on 2026-09-03 showed it
-			// does, so scoping this matches each app's previews to the same diffs its production
-			// builds already respond to.
-			{ build_command, deploy_command: non_production_deploy_command, build_caching_enabled: true, path_includes: watch_paths },
-			apply,
-			fetch_impl,
-		)
+		const problems: string[] = []
+		if ((await get_build_settings(credentials, app.worker_tag, fetch_impl)).previews_enabled) {
+			problems.push('Workers Builds preview builds are on; CI builds PR previews, so turn off "Builds for Preview branches" in Settings -> Builds')
+		}
 
-		plans.push({ worker_name: app.worker_name, production: production_plan, non_production: non_production_plan })
+		plans.push({ worker_name: app.worker_name, production: production_plan, problems })
 	}
 
 	return plans
@@ -114,7 +100,6 @@ export async function reconcile_workers(
 
 async function reconcile_trigger(
 	credentials: CloudflareCredentials,
-	role: TriggerRole,
 	current: CloudflareTrigger,
 	desired: DesiredTriggerFields,
 	apply: boolean,
@@ -149,7 +134,7 @@ async function reconcile_trigger(
 
 	const env_var_changes = await reconcile_environment_variables(credentials, current.trigger_uuid, apply, fetch_impl)
 
-	return { role, trigger_uuid: current.trigger_uuid, field_changes, env_var_changes }
+	return { trigger_uuid: current.trigger_uuid, field_changes, env_var_changes }
 }
 
 async function reconcile_environment_variables(
@@ -211,6 +196,15 @@ async function get_triggers(credentials: CloudflareCredentials, worker_tag: stri
 	return body.result
 }
 
+async function get_build_settings(credentials: CloudflareCredentials, worker_tag: string, fetch_impl: typeof fetch): Promise<{ previews_enabled: boolean }> {
+	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/workers/${worker_tag}`, {
+		headers: auth_headers(credentials.api_token),
+	})
+	if (!response.ok) throw new Error(`Failed to fetch build settings for worker tag "${worker_tag}": ${response.status} ${await response.text()}`)
+	const body = (await response.json()) as { result: { previews_enabled: boolean } }
+	return body.result
+}
+
 async function patch_trigger(credentials: CloudflareCredentials, trigger_uuid: string, fields: Record<string, unknown>, fetch_impl: typeof fetch): Promise<void> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/triggers/${trigger_uuid}`, {
 		method: 'PATCH',
@@ -263,18 +257,18 @@ if (import.meta.main) {
 
 	let any_changes = false
 	for (const plan of plans) {
-		for (const trigger_plan of [plan.production, plan.non_production]) {
-			const all_changes = [...trigger_plan.field_changes, ...trigger_plan.env_var_changes]
-			if (all_changes.length === 0) {
-				console.log(`${plan.worker_name} (${trigger_plan.role}): unchanged`)
-				continue
-			}
-			any_changes = true
-			const verb = apply ? 'updated' : 'would update'
-			console.log(`${plan.worker_name} (${trigger_plan.role}): ${verb} ${all_changes.map(c => c.field).join(', ')}`)
-			for (const change of all_changes) {
-				console.log(`  ${change.field}: ${JSON.stringify(change.from)} -> ${JSON.stringify(change.to)}`)
-			}
+		for (const problem of plan.problems) console.log(`${plan.worker_name}: ⚠️ ${problem}`)
+
+		const all_changes = [...plan.production.field_changes, ...plan.production.env_var_changes]
+		if (all_changes.length === 0) {
+			console.log(`${plan.worker_name}: unchanged`)
+			continue
+		}
+		any_changes = true
+		const verb = apply ? 'updated' : 'would update'
+		console.log(`${plan.worker_name}: ${verb} ${all_changes.map(c => c.field).join(', ')}`)
+		for (const change of all_changes) {
+			console.log(`  ${change.field}: ${JSON.stringify(change.from)} -> ${JSON.stringify(change.to)}`)
 		}
 	}
 

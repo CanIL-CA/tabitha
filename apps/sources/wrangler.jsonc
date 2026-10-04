@@ -51,43 +51,28 @@
 		// https://developers.cloudflare.com/d1/concepts/sessions/
 		"mode": "off"
 	},
-	// Deployed via CI (not Workers Builds -- see docs/decisions/0015-cross-app-preview-custom-domains.md) to
-	// its own custom domain, so cross-app preview calls (e.g. a PR's targets-preview calling this)
-	// go over normal public HTTPS exactly like production does -- Cloudflare's Custom Domains
-	// (unlike *.workers.dev routes) are explicitly exempt from the Worker-to-Worker Error 1042
-	// restriction that motivated this whole setup, so no service binding is needed here.
-	"env": {
-		"preview": {
-			// "analytics_engine_datasets" is non-inheritable, and intentionally left undeclared here:
-			// usage is only tracked in production, and recording is a no-op without the binding.
-			// "routes" is otherwise inherited from the top level, which would attach the production
-			// custom domain (sources.tabitha.bible) to this separate preview Worker too.
-			"routes": [
-				{
-					"pattern": "sources-preview.tabitha.bible",
-					"custom_domain": true
+	// Per-PR Worker Previews, served at `pr-<N>.sources.tabitha.bible`. CI's preview_deploy job creates
+	// them with `wrangler preview --name pr-<N>` (docs/decisions/0020-per-pr-worker-previews.md).
+	// A Preview inherits nothing from the top level, so every var and binding it needs is redeclared.
+	"previews": {
+		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
+		// production, and recording is a no-op without the binding.
+		"ratelimits": [
+			{
+				"name": "RATE_LIMITER",
+				"namespace_id": "2",
+				"simple": {
+					"limit": 60,
+					"period": 60
 				}
-			],
-			// "d1_databases" and "ratelimits" are non-inheritable -- each must be redeclared here or
-			// this preview Worker silently loses its database (every request throwing "database
-			// missing from platform arg") and its rate limiting.
-			"ratelimits": [
-				{
-					"name": "RATE_LIMITER",
-					"namespace_id": "2",
-					"simple": {
-						"limit": 60,
-						"period": 60
-					}
-				}
-			],
-			"d1_databases": [
-				{
-					"binding": "DB_Sources",
-					"database_name": "Sources_2026-07-27",
-					"database_id": "38e626c1-4edb-4b0d-b0b0-ed47b0d8d671"
-				}
-			]
-		}
+			}
+		],
+		"d1_databases": [
+			{
+				"binding": "DB_Sources",
+				"database_name": "Sources_2026-07-27",
+				"database_id": "38e626c1-4edb-4b0d-b0b0-ed47b0d8d671"
+			}
+		]
 	}
 }

@@ -44,8 +44,7 @@
         "tsconfig.json",
         "vite.config.*",
         "svelte.config.*",
-        "wrangler.jsonc",
-        ".env.preview"
+        "wrangler.jsonc"
       ],
       "outputs": [".svelte-kit/**", "dist/**", "build/**"]
     },

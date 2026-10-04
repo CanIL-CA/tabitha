@@ -139,13 +139,14 @@ jobs:
         run: bunx turbo run build:ci ${{ needs.plan.outputs.turbo_filter }}
 
   preview_deploy:
-    name: 🌐 Cross-App Preview Deploy
+    name: 🌐 Per-PR Preview Deploy
     needs: [plan, security_compliance, production_build]
-    # Only PRs -- a push to main deploys production via Workers Builds, unrelated to this shared
-    # preview stack. See docs/decisions/0015-cross-app-preview-custom-domains.md for why this
-    # deploys via CI (each app to its own `<app>-preview.tabitha.bible` custom domain) rather than
-    # Workers Builds: Workers Builds silently redirects a named-environment deploy back onto the
-    # production Worker.
+    # Only PRs -- a push to main deploys production via Workers Builds. Each changed app gets its
+    # own Worker Preview named `pr-<N>` on its production Worker, served at
+    # `pr-<N>.<app>.tabitha.bible`, so concurrent PRs never overwrite each other's previews. A
+    # Preview calls production sibling apps; a PR that changes an app-to-app contract is tested
+    # locally instead. preview_cleanup.yml deletes the Previews when the PR closes. See
+    # docs/decisions/0020-per-pr-worker-previews.md.
     if: github.event_name == 'pull_request' && needs.plan.outputs.run_build == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -172,27 +173,44 @@ jobs:
           apps=$(echo "$dry_run" | sed -n '/^{/,$p' | jq -r '[.tasks[] | select(.task == "deploy:preview" and .command != "<NONEXISTENT>") | .package | sub("@tabitha/"; "")] | join(",")')
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
 
+      - name: Build Changed Apps for Preview
+        if: steps.deployed_apps.outputs.apps != ''
+        run: bunx turbo run build:preview ${{ needs.plan.outputs.turbo_filter }}
+
+      # Runs `wrangler preview` per app rather than `turbo run deploy:preview -- --name ...`:
+      # turbo passes `--` args to every task in the graph, including each app's vite build. Every
+      # app is attempted before the step fails, so one broken app doesn't hide the others' previews.
       - name: Deploy Changed Apps to Preview
-        run: bunx turbo run deploy:preview ${{ needs.plan.outputs.turbo_filter }}
+        if: steps.deployed_apps.outputs.apps != ''
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PREVIEW_DEPLOY }}
+          DEPLOYED_APPS: ${{ steps.deployed_apps.outputs.apps }}
+          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
+        run: |
+          failed=()
+          for app in ${DEPLOYED_APPS//,/ }; do
+            (cd "apps/$app" && bunx wrangler preview --name "$PREVIEW_NAME") || failed+=("$app")
+          done
+          if (( ${#failed[@]} )); then
+            echo "::error::Preview deploy failed for: ${failed[*]}"
+            exit 1
+          fi
 
-      # Replaces Cloudflare Workers Builds' own "Deploying with Cloudflare Workers" bot comment,
-      # retired repo-wide (workers_dev/preview_urls set to false in every app's wrangler.jsonc)
-      # since its *.workers.dev URLs can't call each other (Error 1042) and are superseded by
-      # these real, stable custom-domain previews -- see docs/decisions/0015.
+      # Replaces Cloudflare Workers Builds' own preview bot comment; Workers Builds' preview builds
+      # are turned off on every Worker, since CI builds the Previews itself. Apps deployed by an
+      # earlier push stay listed: their Previews remain live until the PR closes.
       - name: Post Preview Links Comment
         if: steps.deployed_apps.outputs.apps != ''
         uses: actions/github-script@v9
         env:
           DEPLOYED_APPS: ${{ steps.deployed_apps.outputs.apps }}
+          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
         with:
           script: |
             const marker = '<!-- ci-preview-links -->'
-            const apps = process.env.DEPLOYED_APPS.split(',').filter(Boolean)
-            const links = apps.map(app => `- **${app}**: https://${app}-preview.tabitha.bible`).join('\n')
-            const body = `${marker}\n### 🌐 Preview Deployments\n\n${links}`
+            // www's production domain is the apex, so its Previews use a preview-only www host
+            const host = (app) => app === 'www' ? 'www-pr.tabitha.bible' : `${app}.tabitha.bible`
 
             try {
               const { data: comments } = await github.rest.issues.listComments({
@@ -201,6 +219,11 @@ jobs:
                 issue_number: context.issue.number,
               })
               const existing = comments.find((c) => c.body.includes(marker))
+
+              const previous = [...(existing?.body ?? '').matchAll(/^- \*\*([\w-]+)\*\*/gm)].map(m => m[1])
+              const apps = [...new Set([...previous, ...process.env.DEPLOYED_APPS.split(',').filter(Boolean)])].sort()
+              const links = apps.map(app => `- **${app}**: https://${process.env.PREVIEW_NAME}.${host(app)}`).join('\n')
+              const body = `${marker}\n### 🌐 Preview Deployments\n\nPreviews call the production versions of other apps.\n\n${links}`
 
               if (existing) {
                 await github.rest.issues.updateComment({

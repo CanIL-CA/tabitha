@@ -62,34 +62,42 @@ function generate_local_env_content(template_content: string, existing_content?:
 			continue
 		}
 
-		// Priority 2: Trust cross-app localhost origins for CORS in local dev only
+		// Priority 2: Auth.js's redirect-proxy target only makes sense for a genuine Cloudflare
+		// deployment (prod or preview) -- always force it blank for local dev, overriding any stale
+		// value a developer might already have from a prior run
+		if (key === 'OAUTH_REDIRECT_PROXY_URL') {
+			output_lines.push('OAUTH_REDIRECT_PROXY_URL=')
+			continue
+		}
+
+		// Priority 3: Trust cross-app localhost origins for CORS in local dev only
 		if (key === 'PUBLIC_CORS_ALLOW_LOCALHOST') {
 			output_lines.push('PUBLIC_CORS_ALLOW_LOCALHOST=true')
 			continue
 		}
 
-		// Priority 2b: Local dev and CI e2e runs fire fast, unpaced request bursts that a
+		// Priority 3b: Local dev and CI e2e runs fire fast, unpaced request bursts that a
 		// real-world-abuse threshold isn't meant to survive -- disable rate limiting locally only
 		if (key === 'PUBLIC_RATE_LIMIT_DISABLED') {
 			output_lines.push('PUBLIC_RATE_LIMIT_DISABLED=true')
 			continue
 		}
 
-		// Priority 3: If the developer already supplied a custom value in existing .env.local, preserve it
+		// Priority 4: If the developer already supplied a custom value in existing .env.local, preserve it
 		const existing_value = existing_vars.get(key)
 		if (existing_value) {
 			output_lines.push(`${key}=${existing_value}`)
 			continue
 		}
 
-		// Priority 4: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
+		// Priority 5: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
 		if (key === 'AUTH_SECRET') {
 			const dev_secret = randomBytes(32).toString('hex')
 			output_lines.push(`AUTH_SECRET=${dev_secret}`)
 			continue
 		}
 
-		// Priority 5: Fall back to the template line
+		// Priority 6: Fall back to the template line
 		output_lines.push(line)
 	}
 

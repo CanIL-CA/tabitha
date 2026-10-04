@@ -1,6 +1,7 @@
-import { AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET } from '$env/static/private'
+import { AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$env/static/private'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/static/public'
 import { is_authorized } from '$lib/server/auth'
+import { resolve_redirect_proxy_url } from '$lib/server/redirect_proxy'
 import { create_cors_handle } from '@tabitha/cors'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import { SvelteKitAuth } from '@auth/sveltekit'
@@ -37,6 +38,26 @@ async function initialize_config(event: RequestEvent) {
 	const clientSecret = event.platform?.env.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT_SECRET
 	const secret = event.platform?.env.AUTH_SECRET || AUTH_SECRET
 
+	/**
+	 * GOOGLE OAUTH REDIRECT PROXY FOR PREVIEW ENVIRONMENTS:
+	 * Google OAuth 2.0 strictly disallows wildcards in Authorized Redirect URIs (RFC 6749 security restriction).
+	 * Each PR gets its own Worker Preview host (`pr-<N>.ontology.tabitha.bible`, see
+	 * docs/decisions/0020-per-pr-worker-previews.md), so none of them can be registered ahead of time.
+	 *
+	 * Setting `redirectProxyUrl` to `https://ontology.tabitha.bible/auth`:
+	 * - On a Preview (`pr-<N>.ontology.tabitha.bible`): Auth.js sees it is not on the proxy host, so it sends
+	 *   `redirect_uri = https://ontology.tabitha.bible/auth/callback/google` to Google.
+	 * - On Production (`ontology.tabitha.bible`): Auth.js sees `url.origin === redirectProxyUrl.origin` and sets
+	 *   `isOnRedirectProxy = true`, allowing production to receive the OAuth callback, decrypt the state, and
+	 *   forward the user back to the preview deployment. That only works because Previews share
+	 *   production's AUTH_SECRET and Google client (see the `previews` block in wrangler.jsonc).
+	 *
+	 * OAUTH_REDIRECT_PROXY_URL holds this value in `.env` for production, and as a runtime var in
+	 * wrangler.jsonc's `previews` block for Previews (CI builds them with setup:env's `.env.local`, which
+	 * blanks the build-time value). Local dev gets neither, so Auth.js uses its own no-proxy default.
+	 */
+	const redirectProxyUrl = resolve_redirect_proxy_url({ runtime: event.platform?.env.OAUTH_REDIRECT_PROXY_URL, build: OAUTH_REDIRECT_PROXY_URL })
+
 	return {
 		providers: [
 			Google({ clientId, clientSecret }),
@@ -44,6 +65,7 @@ async function initialize_config(event: RequestEvent) {
 
 		secret,
 		trustHost: true,
+		redirectProxyUrl,
 	}
 }
 

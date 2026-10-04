@@ -42,4 +42,4 @@ Follow the existing pattern in `ci.yml`'s `security_compliance` job:
 
 - Pin actions at the major versions already used: `actions/checkout@v7`, `actions/github-script@v9`, `oven-sh/setup-bun@v2`.
 - Non-sensitive config goes in repository variables (`vars.*`), and only real credentials go in secrets (see AGENTS.md, "Reserve Secret Storage for Genuinely Sensitive Values").
-- Production deploys happen in Cloudflare Workers Builds, not in Actions. CI only deploys the shared PR preview stack (ADR 0015).
+- Production deploys happen in Cloudflare Workers Builds, not in Actions. CI only deploys per-PR Worker Previews (`preview_deploy` in `ci.yml`) and deletes them when the PR closes (`preview_cleanup.yml`); see ADR 0020.

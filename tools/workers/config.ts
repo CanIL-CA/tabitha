@@ -31,19 +31,16 @@ export const desired_apps: DesiredApp[] = [
 	{ worker_name: 'www', app_dir: 'www', worker_tag: 'f0cbbb74c7464674ac9e5871be861ae5' },
 ]
 
-/** Every trigger -- production and non-production alike -- installs its own deps and builds
- * itself. Cloudflare's automatic dependency-install step doesn't reliably detect Bun's
- * text-based `bun.lock` and silently falls back to `npm install`, which fails on a Bun-only
- * workspace; making the build command self-sufficient sidesteps that regardless of whether
+/** The production trigger installs its own deps and builds itself. Cloudflare's automatic
+ * dependency-install step doesn't reliably detect Bun's text-based `bun.lock` and silently falls
+ * back to `npm install`, which fails on a Bun-only workspace; making the build command self-sufficient sidesteps that regardless of whether
  * Cloudflare's detection ever improves. */
 export const build_command = 'bun install && bun run build'
 
 export const production_deploy_command = 'bunx wrangler deploy'
-export const non_production_deploy_command = 'bunx wrangler versions upload'
 
 /** Skips Cloudflare's own automatic dependency-install step, since `build_command` above already
- * runs `bun install` itself -- see the note on `build_command`. Applied identically to both
- * triggers; only keys listed here are ever compared or written, so any other Build Variable
+ * runs `bun install` itself -- see the note on `build_command`. Only keys listed here are ever compared or written, so any other Build Variable
  * already set on a trigger (by hand or otherwise) is left untouched. */
 export const managed_environment_variables: Record<string, string> = {
 	SKIP_DEPENDENCY_INSTALL: 'true',

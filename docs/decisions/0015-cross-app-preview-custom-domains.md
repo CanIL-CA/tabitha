@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0020](./0020-per-pr-worker-previews.md). Concurrent PRs kept overwriting each other's previews in the shared slot, so each PR now gets its own Worker Preview, which calls production siblings.
 
 ## Context
 

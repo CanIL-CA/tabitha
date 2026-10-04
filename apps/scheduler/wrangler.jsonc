@@ -24,6 +24,6 @@
 			"service": "ontology"
 		}
 	]
-	// No "env.preview": preview builds only upload versions (`wrangler versions upload`), which
-	// never run crons, and the service binding would target production ontology anyway.
+	// No "previews" block: scheduler gets no per-PR Previews (it has no deploy:preview script), since
+	// a Preview never runs crons and its service binding would target production ontology anyway.
 }

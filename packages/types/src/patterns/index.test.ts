@@ -36,6 +36,18 @@ describe('@tabitha/types/patterns', () => {
 			const result = JSON.parse(strip_jsonc_comments(jsonc))
 			expect(result).toEqual({ key: 'value', numbers: [1, 2] })
 		})
+
+		test('strip_jsonc_comments leaves URLs inside strings intact', () => {
+			const jsonc = '{\n  "proxy": "https://ontology.tabitha.bible/auth", // production\'s callback\n  "next": 1\n}'
+			const result = JSON.parse(strip_jsonc_comments(jsonc))
+			expect(result).toEqual({ proxy: 'https://ontology.tabitha.bible/auth', next: 1 })
+		})
+
+		test('strip_jsonc_comments leaves comment markers and escaped quotes inside strings intact', () => {
+			const jsonc = '{\n  "glob": "src/**/*.ts", /* block */\n  "quote": "say \\"//hi\\"",\n  "commas": ",}"\n}'
+			const result = JSON.parse(strip_jsonc_comments(jsonc))
+			expect(result).toEqual({ glob: 'src/**/*.ts', quote: 'say "//hi"', commas: ',}' })
+		})
 	})
 
 	describe('Date patterns & helpers', () => {

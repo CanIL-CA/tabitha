@@ -1,0 +1,45 @@
+name: Preview Cleanup
+
+permissions:
+  contents: read
+
+# Deletes a closed (or merged) PR's Worker Previews, which ci.yml's preview_deploy job created as
+# `pr-<N>` on each changed app's production Worker. Cloudflare would eventually evict them on its
+# own (oldest first, past 500 Previews per Worker), but a closed PR's preview shouldn't stay
+# reachable until then. See docs/decisions/0020-per-pr-worker-previews.md.
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete_previews:
+    name: 🧹 Delete PR Previews
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
+
+      # The job doesn't know which apps the PR actually deployed, so it tries every app with a
+      # deploy:preview script and skips the ones that have no such Preview (code 10025). Any other
+      # failure is only a warning: a leftover Preview is harmless and eventually evicted.
+      - name: Delete pr-${{ github.event.pull_request.number }} Previews
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_PREVIEW_DEPLOY }}
+          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
+        run: |
+          for package_json in apps/*/package.json; do
+            jq -e '.scripts["deploy:preview"]' "$package_json" > /dev/null || continue
+            worker=$(basename "$(dirname "$package_json")")
+            if output=$(bunx wrangler preview delete --worker-name "$worker" --name "$PREVIEW_NAME" -y 2>&1); then
+              echo "Deleted $PREVIEW_NAME from $worker"
+            elif grep -q 'code: 10025' <<< "$output"; then
+              echo "No $PREVIEW_NAME Preview on $worker"
+            else
+              echo "$output"
+              echo "::warning::Could not delete $PREVIEW_NAME from $worker"
+            fi
+          done

@@ -1,6 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { reconcile_workers } from './apply'
-import { build_command, non_production_deploy_command, production_deploy_command } from './config'
+import { build_command, production_deploy_command } from './config'
 
 const credentials = { account_id: 'account-1', api_token: 'token-1' }
 
@@ -18,12 +18,11 @@ const matching_production_trigger = {
 	build_caching_enabled: true,
 }
 
-// Both triggers are expected to carry the same derived watch paths -- the non-production one
-// included, so a PR only fires previews for the apps it actually touches (GitHub issue #74).
-const matching_non_production_trigger = {
+// The older build model's second trigger, which a Worker loses when it switches to Worker Previews
+const legacy_non_production_trigger = {
 	trigger_uuid: 'trigger-preview',
 	build_command,
-	deploy_command: non_production_deploy_command,
+	deploy_command: 'bunx wrangler versions upload',
 	branch_includes: ['*'],
 	path_includes: www_watch_paths,
 	build_caching_enabled: true,
@@ -33,105 +32,94 @@ function router_fetch(handler: (url: string, init?: RequestInit) => Response): t
 	return mock(async (url: string, init?: RequestInit) => handler(url, init)) as unknown as typeof fetch
 }
 
-function triggers_response(triggers: unknown[]) {
-	return new Response(JSON.stringify({ result: triggers }), { status: 200 })
+function json_response(result: unknown) {
+	return new Response(JSON.stringify({ result }), { status: 200 })
 }
 
-function env_vars_response(vars: Record<string, { value: string; is_secret: boolean }>) {
-	return new Response(JSON.stringify({ result: vars }), { status: 200 })
+type Overrides = {
+	triggers?: unknown[]
+	env_vars?: Record<string, { value: string; is_secret: boolean }>
+	previews_enabled?: boolean
+	patched_bodies?: unknown[]
+}
+
+function account_fetch({
+	triggers = [matching_production_trigger],
+	env_vars = { SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } },
+	previews_enabled = false,
+	patched_bodies,
+}: Overrides = {}): typeof fetch {
+	return router_fetch((url, init) => {
+		const method = init?.method ?? 'GET'
+		if (url.endsWith('/builds/workers/tag-www') && method === 'GET') return json_response({ previews_enabled })
+		if (url.endsWith('/triggers') && method === 'GET') return json_response(triggers)
+		if (url.endsWith('/environment_variables') && method === 'GET') return json_response(env_vars)
+		if (method === 'PATCH' && patched_bodies) {
+			patched_bodies.push(JSON.parse(String(init?.body)))
+			return json_response({})
+		}
+		throw new Error(`Unexpected request: ${method} ${url}`)
+	})
 }
 
 describe('reconcile_workers', () => {
-	it('reports both triggers unchanged when everything already matches', async () => {
-		const fetch_impl = router_fetch((url, init) => {
-			const method = init?.method ?? 'GET'
-			if (url.includes('/triggers') && url.endsWith('/triggers') && method === 'GET') return triggers_response([matching_production_trigger, matching_non_production_trigger])
-			if (url.endsWith('/environment_variables') && method === 'GET') return env_vars_response({ SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } })
-			throw new Error(`Unexpected request: ${method} ${url}`)
-		})
-
-		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)
+	it('reports the production trigger unchanged and no problems when everything already matches', async () => {
+		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, account_fetch())
 
 		expect(plan.production.field_changes).toEqual([])
 		expect(plan.production.env_var_changes).toEqual([])
-		expect(plan.non_production.field_changes).toEqual([])
-		expect(plan.non_production.env_var_changes).toEqual([])
+		expect(plan.problems).toEqual([])
 	})
 
 	it('detects a stale build_command and missing environment variable without writing anything when apply is false', async () => {
-		const stale_trigger = { ...matching_non_production_trigger, build_command: 'pnpm run build' }
-		let patch_calls = 0
-		const fetch_impl = router_fetch((url, init) => {
-			const method = init?.method ?? 'GET'
-			if (url.endsWith('/triggers') && method === 'GET') return triggers_response([matching_production_trigger, stale_trigger])
-			if (url.endsWith('/environment_variables') && method === 'GET') return env_vars_response({})
-			if (method === 'PATCH') {
-				patch_calls++
-				return new Response(JSON.stringify({ result: {} }), { status: 200 })
-			}
-			throw new Error(`Unexpected request: ${method} ${url}`)
+		const patched_bodies: unknown[] = []
+		const fetch_impl = account_fetch({
+			triggers: [{ ...matching_production_trigger, build_command: 'pnpm run build' }],
+			env_vars: {},
+			patched_bodies,
 		})
 
 		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)
 
-		expect(plan.non_production.field_changes).toEqual([{ field: 'build_command', from: 'pnpm run build', to: build_command }])
-		expect(plan.non_production.env_var_changes).toEqual([{ field: 'SKIP_DEPENDENCY_INSTALL', from: '(unset)', to: 'true' }])
-		expect(patch_calls).toBe(0)
+		expect(plan.production.field_changes).toEqual([{ field: 'build_command', from: 'pnpm run build', to: build_command }])
+		expect(plan.production.env_var_changes).toEqual([{ field: 'SKIP_DEPENDENCY_INSTALL', from: '(unset)', to: 'true' }])
+		expect(patched_bodies).toEqual([])
 	})
 
 	it('PATCHes the drifted fields when apply is true', async () => {
-		const stale_trigger = { ...matching_non_production_trigger, build_command: 'pnpm run build' }
 		const patched_bodies: unknown[] = []
-		const fetch_impl = router_fetch((url, init) => {
-			const method = init?.method ?? 'GET'
-			if (url.endsWith('/triggers') && method === 'GET') return triggers_response([matching_production_trigger, stale_trigger])
-			if (url.endsWith('/environment_variables') && method === 'GET') return env_vars_response({})
-			if (url.endsWith('/environment_variables') && method === 'PATCH') {
-				patched_bodies.push(JSON.parse(String(init?.body)))
-				return new Response(JSON.stringify({ result: {} }), { status: 200 })
-			}
-			if (url.includes('/builds/triggers/') && method === 'PATCH') {
-				patched_bodies.push(JSON.parse(String(init?.body)))
-				return new Response(JSON.stringify({ result: {} }), { status: 200 })
-			}
-			throw new Error(`Unexpected request: ${method} ${url}`)
+		const fetch_impl = account_fetch({
+			triggers: [{ ...matching_production_trigger, path_includes: ['*'] }],
+			env_vars: {},
+			patched_bodies,
 		})
 
 		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, fetch_impl)
 
-		expect(plan.non_production.field_changes).toEqual([{ field: 'build_command', from: 'pnpm run build', to: build_command }])
-		expect(patched_bodies).toContainEqual(expect.objectContaining({ build_command }))
+		expect(plan.production.field_changes).toEqual([{ field: 'path_includes', from: ['*'], to: www_watch_paths }])
+		expect(patched_bodies).toContainEqual(expect.objectContaining({ path_includes: www_watch_paths }))
 		expect(patched_bodies).toContainEqual({ SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } })
 	})
 
-	it('scopes an unscoped non-production trigger down to the app\'s own watch paths', async () => {
-		const unscoped_trigger = { ...matching_non_production_trigger, path_includes: ['*'] }
+	it('reports Workers Builds preview builds being on, without trying to change them', async () => {
 		const patched_bodies: unknown[] = []
-		const fetch_impl = router_fetch((url, init) => {
-			const method = init?.method ?? 'GET'
-			if (url.endsWith('/triggers') && method === 'GET') return triggers_response([matching_production_trigger, unscoped_trigger])
-			if (url.endsWith('/environment_variables') && method === 'GET') return env_vars_response({ SKIP_DEPENDENCY_INSTALL: { value: 'true', is_secret: false } })
-			if (url.includes('/builds/triggers/') && method === 'PATCH') {
-				patched_bodies.push(JSON.parse(String(init?.body)))
-				return new Response(JSON.stringify({ result: {} }), { status: 200 })
-			}
-			throw new Error(`Unexpected request: ${method} ${url}`)
-		})
+		const fetch_impl = account_fetch({ previews_enabled: true, patched_bodies })
 
 		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, fetch_impl)
 
-		expect(plan.non_production.field_changes).toEqual([{ field: 'path_includes', from: ['*'], to: www_watch_paths }])
-		expect(plan.production.field_changes).toEqual([])
-		expect(patched_bodies).toEqual([expect.objectContaining({ path_includes: www_watch_paths })])
+		expect(plan.problems).toEqual([expect.stringMatching(/preview builds are on/)])
+		expect(patched_bodies).toEqual([])
 	})
 
-	it('throws if a worker does not have exactly one production and one non-production trigger', async () => {
-		const fetch_impl = router_fetch((url, init) => {
-			const method = init?.method ?? 'GET'
-			if (url.endsWith('/triggers') && method === 'GET') return triggers_response([matching_production_trigger])
-			throw new Error(`Unexpected request: ${method} ${url}`)
-		})
+	it('throws if a worker is still on the older build model, with a non-production trigger', async () => {
+		const fetch_impl = account_fetch({ triggers: [matching_production_trigger, legacy_non_production_trigger] })
 
-		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)).rejects.toThrow(/exactly one production and one non-production trigger/)
+		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)).rejects.toThrow(/Expected exactly one \(production\) trigger/)
+	})
+
+	it('throws if a worker has no production trigger', async () => {
+		const fetch_impl = account_fetch({ triggers: [] })
+
+		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, fetch_impl)).rejects.toThrow(/Expected exactly one \(production\) trigger/)
 	})
 })

@@ -78,67 +78,63 @@
 		// https://developers.cloudflare.com/d1/concepts/sessions/
 		"mode": "off"
 	},
-	// Deployed via CI (not Workers Builds -- see docs/decisions/0015-cross-app-preview-custom-domains.md) to
-	// its own custom domain, so a preview build of a sibling app (e.g. sources-preview) can call
-	// this preview build over normal public HTTPS exactly like production does.
-	"env": {
-		"preview": {
-			// "routes" is otherwise inherited from the top level, which would attach the production
-			// custom domain (ontology.tabitha.bible) to this separate preview Worker too.
-			"routes": [
-				{
-					"pattern": "ontology-preview.tabitha.bible",
-					"custom_domain": true
+	// Per-PR Worker Previews, served at `pr-<N>.ontology.tabitha.bible`. CI's preview_deploy job creates
+	// them with `wrangler preview --name pr-<N>` (docs/decisions/0020-per-pr-worker-previews.md).
+	// A Preview inherits nothing from the top level, so every var and binding it needs is redeclared.
+	"previews": {
+		// Production's client, not a preview one: Google rejects wildcard redirect URIs, so a Preview
+		// signs in through production's registered callback via Auth.js's redirect proxy
+		// (OAUTH_REDIRECT_PROXY_URL below -- a runtime var, because CI's setup:env blanks the .env value
+		// in the Preview build; see src/lib/server/redirect_proxy.ts). The proxy only accepts state
+		// sealed with its own AUTH_SECRET, so a Preview's AUTH_SECRET and GOOGLE_OAUTH_CLIENT_SECRET (set
+		// once with `wrangler preview base-config secret put`) must be production's too.
+		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
+		// production, and recording is a no-op without the binding.
+		"vars": {
+			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // Ontology (prod)
+			"OAUTH_REDIRECT_PROXY_URL": "https://ontology.tabitha.bible/auth",
+			"CLOUDFLARE_ACCOUNT_ID": "8582954a9e4c6f0259c6236be794d7d3",
+			"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
+			"GEMINI_LOCATION": "global"
+		},
+		"ratelimits": [
+			{
+				"name": "RATE_LIMITER",
+				"namespace_id": "1",
+				"simple": {
+					"limit": 60,
+					"period": 60
 				}
-			],
-			// "vars", "r2_buckets", "d1_databases", "ratelimits", and "vectorize" are non-inheritable --
-			// each must be redeclared here or this preview Worker silently loses them (breaking
-			// OAuth/Gemini config, the /downloads page, every DB-backed request, rate limiting, and
-			// semantic search respectively).
-			"vars": {
-				"GOOGLE_OAUTH_CLIENT_ID": "839335496347-cjfdqt75n7fc3gjusoesh7cajecc6arp.apps.googleusercontent.com", // Ontology (preview)
-				"CLOUDFLARE_ACCOUNT_ID": "8582954a9e4c6f0259c6236be794d7d3",
-				"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
-				"GEMINI_LOCATION": "global"
+			}
+		],
+		// DB_Ontology is a Previews-only copy loaded from the same dump as production's, because
+		// suggest/approve write to it; tools/databases creates and repoints it with each new Ontology
+		// database. DB_Auth is only read here, so it stays shared with production.
+		"d1_databases": [
+			{
+				"binding": "DB_Ontology",
+				"database_name": "Ontology_9494_preview_2026-09-29",
+				"database_id": "ca205317-9f12-45c1-8e5b-bdae570f67b1"
 			},
-			"ratelimits": [
-				{
-					"name": "RATE_LIMITER",
-					"namespace_id": "1",
-					"simple": {
-						"limit": 60,
-						"period": 60
-					}
-				}
-			],
-			"d1_databases": [
-				{
-					"binding": "DB_Ontology",
-					"database_name": "Ontology_9494_2026-09-29",
-					"database_id": "a2f52867-bcbd-4477-af7e-ff702de3c5ef"
-				},
-				{
-					"binding": "DB_Auth",
-					"database_name": "Auth",
-					"database_id": "c547b234-05fd-4923-ab0e-689d993894ad"
-				}
-			],
-			"r2_buckets": [
-				{
-					"binding": "R2_db_backups",
-					"bucket_name": "db-backups"
-				}
-			],
-			// Shares production's index, the same way it shares production's DB_Ontology -- the
-			// embeddings describe that same data.
-			"vectorize": [
-				{
-					"binding": "VECTORIZE_Concepts",
-					"index_name": "ontology-concepts"
-				}
-			],
-			// "analytics_engine_datasets" is also non-inheritable, and intentionally left undeclared:
-			// usage is only tracked in production, and recording is a no-op without the binding.
-		}
+			{
+				"binding": "DB_Auth",
+				"database_name": "Auth",
+				"database_id": "c547b234-05fd-4923-ab0e-689d993894ad"
+			}
+		],
+		"r2_buckets": [
+			{
+				"binding": "R2_db_backups",
+				"bucket_name": "db-backups"
+			}
+		],
+		// Shares production's index, the same way it shares production's DB_Ontology -- the
+		// embeddings describe that same data.
+		"vectorize": [
+			{
+				"binding": "VECTORIZE_Concepts",
+				"index_name": "ontology-concepts"
+			}
+		]
 	}
 }
