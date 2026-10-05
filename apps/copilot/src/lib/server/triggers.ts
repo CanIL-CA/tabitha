@@ -116,10 +116,10 @@ const triggers: TriggerTemplate[] = [
 		trigger_grouper: t => t.flags.map(f => `${f.name}-${f.value}`).join(';'),
 		prompt: flags => {
 			if (flags.some(f => f.value === 'Crowd')) {
-				return `Don't include anything about the 'Speaker-Listener Age' in your note.`
+				return "Don't include anything about the 'Speaker-Listener Age' in your note."
 			}
 			if (flags.some(f => f.name === 'Speaker-Listener Age')) {
-				return `Speaker-Listener Age refers to the speaker's age relative to the listener's age. It is usually an estimate and cannot be strongly stated, so write your note accordingly.`
+				return "Speaker-Listener Age refers to the speaker's age relative to the listener's age. It is usually an estimate and cannot be strongly stated, so write your note accordingly."
 			}
 			return ''
 		},
@@ -226,7 +226,7 @@ const triggers: TriggerTemplate[] = [
 
 				const current_group = groups.at(-1)
 				// the complex alternate always appears first
-				if (!current_group || (previous_complexity === 'simple' && complexity === 'complex')) {
+				if (!current_group || previous_complexity === 'simple' && complexity === 'complex') {
 					groups.push([current])
 				} else {
 					current_group.push(current)
