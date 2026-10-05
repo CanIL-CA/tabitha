@@ -9,6 +9,8 @@ metadata:
 
 This document defines mandatory guidelines and code standards for Svelte 5 (Runes) and SvelteKit 2.
 
+**Validate with the Svelte MCP server.** The repo's `.mcp.json` connects the official Svelte server (`mcp.svelte.dev`). After writing or changing a `.svelte` file or a `.svelte.ts`/`.svelte.js` module, run its `svelte-autofixer` tool on the result and resolve what it reports. Its suggestions don't override these repo rules: when one conflicts with a rule below, follow the rule. When unsure of Svelte 5 or SvelteKit syntax, look it up with `list-sections` and `get-documentation` instead of guessing.
+
 ---
 
 ## 1. Component Props (`$props()`)
