@@ -27,6 +27,6 @@
     "@tabitha/tsconfig": "workspace:*",
     "eslint": "^10.11.0",
     "typescript": "^6.0.3",
-    "vitest": "^3.2.7"
+    "vitest": "^5.0.3"
   }
 }
