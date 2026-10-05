@@ -69,7 +69,7 @@ function get_profile_weights(profile: LanguageProfile): FlagWeightingMap {
 	}
 
 	if (profile.modifier_degree.length > 0) {
-		weights['Adjective Degree'] = Object.fromEntries(profile.modifier_degree.flat().map(value => [value, 5]))
+		weights['Modifier Degree'] = Object.fromEntries(profile.modifier_degree.flat().map(value => [value, 5]))
 	}
 
 	if (profile.passive !== 'agent_allowed') {

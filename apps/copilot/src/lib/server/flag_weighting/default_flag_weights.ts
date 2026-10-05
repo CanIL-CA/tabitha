@@ -4,8 +4,8 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 	'Verb Time': {
 		'Historic Past': 2,
 		'Eternity Past': 3,
-		'Unknown Past': 3,
-		'Unknown Future': 3,
+		'Unknown Past': 1,
+		'Unknown Future': 1,
 	},
 	'Verb Aspect': {
 		'Inceptive': 3,
@@ -38,16 +38,14 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 		'Emphasized': 5,
 	},
 	'Modifier Degree': {
-		'Comparative': 1,
 		'Superlative': 2,
-		'Intensified': 1,
-		'Extremely Intensified': 5,
-		"'too'": 5,
-		"'less'": 1,
-		"'least'": 5,
-		'Equality': 5,
-		'Intensified Comparative': 5,
-		"Intensified 'less'": 5,
+		'Extremely Intensified': 4,
+		"'too'": 3,
+		"'less'": 2,
+		"'least'": 3,
+		'Equality': 3,
+		'Intensified Comparative': 3,
+		"Intensified 'less'": 3,
 		'Superlative of 2 items': 2,
 	},
 	'Emphasized Agent of Imperative': {
@@ -120,12 +118,13 @@ export const default_flag_weights_for_brief: FlagWeightingMap = {
 		'Significant Time': 3,
 		'Emphasized': 5,
 	},
+	
 	'Modifier Degree': {
-		'Extremely Intensified': 5,
-		"'too'": 5,
-		"'least'": 5,
-		'Intensified Comparative': 5,
-		"Intensified 'less'": 5,
+		'Extremely Intensified': 3,
+		"'too'": 3,
+		"'least'": 3,
+		'Intensified Comparative': 3,
+		"Intensified 'less'": 3,
 	},
 	'Emphasized Agent of Imperative': {
 		'*': 4,

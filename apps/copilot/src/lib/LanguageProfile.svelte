@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import ValueGroups from './ValueGroups.svelte'
-	import type { LanguageProfile } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
+	import type { LanguageProfile } from '$lib/types'
 
 	type Props = {
 		profile: LanguageProfile
@@ -25,19 +25,19 @@
 		{ value: 'Contextually Near with Focus', label: m.proximity_contextually_near_with_focus },
 		{ value: 'Contextually Near', label: m.proximity_contextually_near },
 	]
-	// const modifier_degree_options = [
-	// 	{ value: 'Comparative', label: '' },
-	// 	{ value: 'Superlative', label: '' },
-	// 	{ value: 'Intensified', label: '' },
-	// 	{ value: 'Extremely Intensified', label: '' },
-	// 	{ value: "'too'", label: '' },
-	// 	{ value: "'less'", label: '' },
-	// 	{ value: "'least'", label: '' },
-	// 	{ value: 'Equality', label: '' },
-	// 	{ value: 'Intensified Comparative', label: '' },
-	// 	{ value: "Intensified 'less'", label: '' },
-	// 	{ value: 'Superlative of 2 items', label: '' },
-	// ]
+	const modifier_degree_options = [
+		{ value: 'Comparative', label: m.degree_comparative },
+		{ value: 'Superlative', label: m.degree_superlative },
+		{ value: 'Intensified', label: m.degree_intensified },
+		{ value: 'Extremely Intensified', label: m.degree_extremely_intensified },
+		{ value: "'too'", label: m.degree_too },
+		{ value: "'less'", label: m.degree_less },
+		{ value: "'least'", label: m.degree_least },
+		{ value: 'Equality', label: m.degree_equality },
+		{ value: 'Intensified Comparative', label: m.degree_intensified_comparative },
+		{ value: "Intensified 'less'", label: m.degree_intensified_less },
+		{ value: 'Superlative of 2 items', label: m.degree_superlative_2_items },
+	]
 </script>
 
 {#snippet info_popup(info: string)}
@@ -55,10 +55,6 @@
 
 <div class="text-sm">
 	<table class="table table-sm">
-		<colgroup>
-			<col class="w-1/4" />
-			<col class="w-3/4" />
-		</colgroup>
 		<tbody>
 			<tr>
 				<td>
@@ -113,6 +109,15 @@
 						<input type="checkbox" bind:checked={profile.noun_clusivity} class="checkbox checkbox-sm" />
 						{m.noun_clusivity()}
 					</label>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					{m.modifier_degree()}
+					{@render info_popup(m.modifier_degree_info())}
+				</td>
+				<td>
+					<ValueGroups options={modifier_degree_options} bind:groups={profile.modifier_degree} />
 				</td>
 			</tr>
 			<tr>
