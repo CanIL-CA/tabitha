@@ -87,7 +87,7 @@ function resolve_local_svelte_import(importer_path: string, specifier: string, a
 }
 
 function extract_local_svelte_imports(content: string, file_path: string, app_src_dir: string): string[] {
-	const script_match = content.match(/<script[^>]*>([\s\S]*?)<\/script\s*>/i)
+	const script_match = content.match(/<script[^>]*>([\s\S]*?)<\/script[^>]*>/i)
 	if (!script_match) return []
 
 	const imports: string[] = []
