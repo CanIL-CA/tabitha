@@ -68,7 +68,6 @@
 	"move_selected": "Move selected here",
 	"ungrouped_heading": "Ungrouped",
 	"group_heading": "Contrastive group",
-	"all_values_grouped": "All values are in a group.",
 	"create_group": "Create group",
 	"create_group_tooltip": "Group values that could be confused or conflated.",
 

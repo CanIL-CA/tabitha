@@ -73,72 +73,58 @@
 	}
 </script>
 
-{#snippet option_list(options: GroupOption[], group_index: number)}
-	<div class="flex flex-col gap-2">
-		{#each options as option (option.value)}
-			<label class="cursor-pointer justify-start">
-				<input
-					type="checkbox"
-					checked={selected_values.includes(option.value)}
-					onchange={event =>
-						toggle_selected(option.value, event.currentTarget.checked)}
-					aria-label={`Select ${option.label()}`}
-					class="checkbox checkbox-sm"
-				/>
-				<span class="text-xs">{option.label()}</span>
-			</label>
-		{/each}
-		
-		{#if selected_count > 0}
-			{#if group_index === -1}
-				<button
-					type="button"
-					onclick={ungroup_selected}
-					class="btn btn-ghost btn-xs justify-start"
-				>
-					{m.ungroup_selected()}
-				</button>
-			{:else}
-				<button
-					type="button"
-					disabled={selected_count === 0}
-					onclick={() => move_selected_to_group(group_index)}
-					class="btn btn-ghost btn-xs justify-start"
-				>
-					{m.move_selected()}
-				</button>
-			{/if}
-		{/if}
-	</div>
+{#snippet group_card(options: GroupOption[], group_index: number)}
+	{@const heading = group_index === -1 ? m.ungrouped_heading() : m.group_heading()}
+	<section class="card card-sm card-border bg-base-100">
+		<div class="card-body gap-2">
+			<div class="card-title text-sm">{heading}</div>
+
+			<div class="flex flex-col gap-2">
+				{#each options as option (option.value)}
+					<label class="cursor-pointer justify-start text-xs">
+						<input
+							type="checkbox"
+							checked={selected_values.includes(option.value)}
+							onchange={event =>
+								toggle_selected(option.value, event.currentTarget.checked)}
+							class="checkbox checkbox-sm"
+						/>
+						{option.label()}
+					</label>
+				{/each}
+				
+				{#if selected_count > 0}
+					{#if group_index === -1}
+						<button
+							type="button"
+							onclick={ungroup_selected}
+							class="btn btn-ghost btn-xs justify-start"
+						>
+							{m.ungroup_selected()}
+						</button>
+					{:else}
+						<button
+							type="button"
+							disabled={selected_count === 0}
+							onclick={() => move_selected_to_group(group_index)}
+							class="btn btn-ghost btn-xs justify-start"
+						>
+							{m.move_selected()}
+						</button>
+					{/if}
+				{/if}
+			</div>
+		</div>
+	</section>
 {/snippet}
 
 <div class="flex flex-col gap-3">
 	<div class="flex gap-2">
-		<section aria-labelledby="ungrouped-heading" class="card card-sm card-border bg-base-100">
-			<div class="card-body gap-2">
-				<div class="card-title">
-					<h2 id="ungrouped-heading">{m.ungrouped_heading()}</h2>
-				</div>
-
-				{#if ungrouped_options.length > 0}
-					{@render option_list(ungrouped_options, -1)}
-				{:else}
-					<p class="text-xs text-base-content/60">{m.all_values_grouped()}</p>
-				{/if}
-			</div>
-		</section>
+		{@render group_card(ungrouped_options, -1)}
 
 		{#each groups as group, group_index (group_index)}
 			{@const group_options = options.filter(option => group.includes(option.value))}
-			<section aria-labelledby={`group-heading-${group_index}`} class="card card-sm card-border bg-base-100">
-				<div class="card-body gap-2">
-					<div class="card-title">
-						<h2 id={`group-heading-${group_index}`}>{m.group_heading()}</h2>
-					</div>
-
-					{@render option_list(group_options, group_index)}
-				</div>
-			</section>
+			{@render group_card(group_options, group_index)}
 		{/each}
 
 		<div data-tip={m.create_group_tooltip()} class="tooltip mt-3 h-fit">
