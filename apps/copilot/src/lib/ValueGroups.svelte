@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte'
+	import { m } from '$lib/paraglide/messages'
+
 	type GroupOption = {
 		value: string
 		label: () => string
@@ -13,7 +16,7 @@
 	let selected_values = $state<string[]>([])
 
 	let ungrouped_options = $derived(
-		options.filter(option => !groups.some(group => group.includes(option.value))),
+		options.filter(option => groups && !groups.some(group => group.includes(option.value))),
 	)
 	let selected_count = $derived(selected_values.length)
 
@@ -70,61 +73,57 @@
 	}
 </script>
 
-{#snippet option_list(options: GroupOption[])}
-	<ul class="list">
+{#snippet option_list(options: GroupOption[], group_index: number)}
+	<div class="flex flex-col gap-2">
 		{#each options as option (option.value)}
-			<li class="py-1">
-				<label class="label cursor-pointer justify-start">
-					<input
-						type="checkbox"
-						checked={selected_values.includes(option.value)}
-						onchange={event =>
-							toggle_selected(option.value, event.currentTarget.checked)}
-						aria-label={`Select ${option.label()}`}
-						class="checkbox checkbox-sm"
-					/>
-					<span class="text-xs">{option.label()}</span>
-				</label>
-			</li>
+			<label class="cursor-pointer justify-start">
+				<input
+					type="checkbox"
+					checked={selected_values.includes(option.value)}
+					onchange={event =>
+						toggle_selected(option.value, event.currentTarget.checked)}
+					aria-label={`Select ${option.label()}`}
+					class="checkbox checkbox-sm"
+				/>
+				<span class="text-xs">{option.label()}</span>
+			</label>
 		{/each}
-	</ul>
+		
+		{#if selected_count > 0}
+			{#if group_index === -1}
+				<button
+					type="button"
+					onclick={ungroup_selected}
+					class="btn btn-ghost btn-xs justify-start"
+				>
+					{m.ungroup_selected()}
+				</button>
+			{:else}
+				<button
+					type="button"
+					disabled={selected_count === 0}
+					onclick={() => move_selected_to_group(group_index)}
+					class="btn btn-ghost btn-xs justify-start"
+				>
+					{m.move_selected()}
+				</button>
+			{/if}
+		{/if}
+	</div>
 {/snippet}
 
 <div class="flex flex-col gap-3">
-	<div class="flex flex-wrap items-center justify-between gap-2">
-		<p class="text-sm text-base-content/70">
-			Select values, then create a group or move them into an existing group.
-		</p>
-		<button
-			type="button"
-			disabled={selected_count === 0}
-			onclick={create_group_from_selected}
-			class="btn btn-sm"
-		>
-			Create group from selected
-		</button>
-	</div>
-
 	<div class="flex gap-2">
 		<section aria-labelledby="ungrouped-heading" class="card card-sm card-border bg-base-100">
 			<div class="card-body gap-2">
-				<div class="card-title flex-wrap justify-between">
-					<h2 id="ungrouped-heading">Ungrouped</h2>
-					{#if selected_count > 0}
-						<button
-							type="button"
-							onclick={ungroup_selected}
-							class="btn btn-ghost btn-xs"
-						>
-							Ungroup selected
-						</button>
-					{/if}
+				<div class="card-title">
+					<h2 id="ungrouped-heading">{m.ungrouped_heading()}</h2>
 				</div>
 
 				{#if ungrouped_options.length > 0}
-					{@render option_list(ungrouped_options)}
+					{@render option_list(ungrouped_options, -1)}
 				{:else}
-					<p class="text-xs text-base-content/60">All values are in a group.</p>
+					<p class="text-xs text-base-content/60">{m.all_values_grouped()}</p>
 				{/if}
 			</div>
 		</section>
@@ -134,19 +133,24 @@
 			<section aria-labelledby={`group-heading-${group_index}`} class="card card-sm card-border bg-base-100">
 				<div class="card-body gap-2">
 					<div class="card-title">
-						<button
-							type="button"
-							disabled={selected_count === 0}
-							onclick={() => move_selected_to_group(group_index)}
-							class="btn btn-ghost btn-xs"
-						>
-							Move selected here
-						</button>
+						<h2 id={`group-heading-${group_index}`}>{m.group_heading()}</h2>
 					</div>
 
-					{@render option_list(group_options)}
+					{@render option_list(group_options, group_index)}
 				</div>
 			</section>
 		{/each}
+
+		<div data-tip={m.create_group_tooltip()} class="tooltip mt-3 h-fit">
+			<button
+				type="button"
+				disabled={selected_count === 0}
+				onclick={create_group_from_selected}
+				class="btn btn-sm"
+			>
+				<Icon icon="mdi:plus" class="h-5 w-5" />
+				{m.create_group()}
+			</button>
+		</div>
 	</div>
 </div>
