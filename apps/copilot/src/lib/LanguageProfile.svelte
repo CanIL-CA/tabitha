@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
+	import ValueGroups from './ValueGroups.svelte'
 	import type { LanguageProfile } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
@@ -24,6 +25,19 @@
 		{ value: 'Contextually Near with Focus', label: m.proximity_contextually_near_with_focus },
 		{ value: 'Contextually Near', label: m.proximity_contextually_near },
 	]
+	// const modifier_degree_options = [
+	// 	{ value: 'Comparative', label: '' },
+	// 	{ value: 'Superlative', label: '' },
+	// 	{ value: 'Intensified', label: '' },
+	// 	{ value: 'Extremely Intensified', label: '' },
+	// 	{ value: "'too'", label: '' },
+	// 	{ value: "'less'", label: '' },
+	// 	{ value: "'least'", label: '' },
+	// 	{ value: 'Equality', label: '' },
+	// 	{ value: 'Intensified Comparative', label: '' },
+	// 	{ value: "Intensified 'less'", label: '' },
+	// 	{ value: 'Superlative of 2 items', label: '' },
+	// ]
 </script>
 
 {#snippet info_popup(info: string)}
@@ -86,14 +100,7 @@
 					{@render info_popup(m.noun_proximity_info())}
 				</td>
 				<td>
-					<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-						{#each noun_proximity_options as { value, label }}
-							<label>
-								<input type="checkbox" {value} bind:group={profile.noun_proximity} class="checkbox checkbox-sm" />
-								{label()}
-							</label>
-						{/each}
-					</div>
+					<ValueGroups options={noun_proximity_options} bind:groups={profile.noun_proximity} />
 				</td>
 			</tr>
 			<tr>
