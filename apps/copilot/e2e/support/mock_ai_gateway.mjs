@@ -51,7 +51,7 @@ globalThis.fetch = async (input, init) => {
 	const url = typeof input === 'string' ? input : input.url
 	const method = init?.method ?? 'GET'
 
-	if (url.startsWith('https://gateway.ai.cloudflare.com') && url.includes(':generateContent') && method === 'POST') {
+	if (new URL(url).hostname === 'gateway.ai.cloudflare.com' && url.includes(':generateContent') && method === 'POST') {
 		const wire_request = JSON.parse(init.body)
 		const llm_input = JSON.parse(wire_request.contents[0].parts[0].text)
 		const schema = wire_request.generationConfig?.responseJsonSchema

@@ -3,7 +3,6 @@ import {
 	strip_jsonc_comments,
 	is_iso_date,
 	CONCEPT_SENSE_REGEX,
-	CONCEPT_KEY_REGEX,
 	normalize_wildcards,
 	parse_concept_sense,
 	parse_concept_key,
@@ -88,19 +87,29 @@ describe('@tabitha/types/patterns', () => {
 			expect(normalize_wildcards('plain')).toBe('plain')
 		})
 
-		test('CONCEPT_KEY_REGEX matches composite concept keys', () => {
-			expect(CONCEPT_KEY_REGEX.test('love-A-Verb')).toBe(true)
-			expect(CONCEPT_KEY_REGEX.test('grace-B-Noun')).toBe(true)
-			expect(CONCEPT_KEY_REGEX.test('holy_spirit-A-Noun')).toBe(true)
-			expect(CONCEPT_KEY_REGEX.test('love-A')).toBe(false)
-			expect(CONCEPT_KEY_REGEX.test('love')).toBe(false)
-		})
-
 		test('parse_concept_key extracts stem, sense, and part of speech', () => {
 			expect(parse_concept_key('love-A-Verb')).toEqual({ stem: 'love', sense: 'A', part_of_speech: 'Verb' })
+			expect(parse_concept_key('grace-B-Noun')).toEqual({ stem: 'grace', sense: 'B', part_of_speech: 'Noun' })
 			expect(parse_concept_key('holy_spirit-Z-Noun')).toEqual({ stem: 'holy_spirit', sense: 'Z', part_of_speech: 'Noun' })
 			expect(parse_concept_key('love-A')).toBeNull()
 			expect(parse_concept_key('invalid')).toBeNull()
+		})
+
+		test('parse_concept_key splits at the first <SENSE_LETTER> separator after a non-empty stem', () => {
+			expect(parse_concept_key('father-in-law-A-Noun')).toEqual({ stem: 'father-in-law', sense: 'A', part_of_speech: 'Noun' })
+			expect(parse_concept_key('a-B-c-D-e')).toEqual({ stem: 'a', sense: 'B', part_of_speech: 'c-D-e' })
+			expect(parse_concept_key('-A-B-Noun')).toEqual({ stem: '-A', sense: 'B', part_of_speech: 'Noun' })
+			expect(parse_concept_key('  love-A-Verb  ')).toEqual({ stem: 'love', sense: 'A', part_of_speech: 'Verb' })
+			expect(parse_concept_key('love-A-')).toBeNull()
+			expect(parse_concept_key('love-a-Verb')).toBeNull()
+			expect(parse_concept_key('love-A-Ve\nrb')).toBeNull()
+		})
+
+		test('parse_concept_key stays linear on adversarial input', () => {
+			const adversarial = `${'x-A-'.repeat(20_000)}\nx`
+			const started = performance.now()
+			expect(parse_concept_key(adversarial)).toBeNull()
+			expect(performance.now() - started).toBeLessThan(100)
 		})
 
 		test('strip_gloss_classifiers removes dictionary tags', () => {
@@ -183,6 +192,14 @@ describe('@tabitha/types/patterns', () => {
 			expect(clean_trailing_slash('http://localhost:5173///')).toBe('http://localhost:5173')
 			expect(clean_trailing_slash('http://localhost:5173')).toBe('http://localhost:5173')
 			expect(clean_trailing_slash('/api/v1/')).toBe('/api/v1')
+			expect(clean_trailing_slash('///')).toBe('')
+		})
+
+		test('clean_trailing_slash stays linear on adversarial input', () => {
+			const adversarial = `${'/'.repeat(50_000)}x`
+			const started = performance.now()
+			expect(clean_trailing_slash(adversarial)).toBe(adversarial)
+			expect(performance.now() - started).toBeLessThan(100)
 		})
 	})
 })
