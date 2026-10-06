@@ -39,7 +39,7 @@
 
 ### 1. Configure Local Auth
 
-`apps/ontology/.env.local` is created by the monorepo's onboarding step (`bun run setup`, from the root), including a generated dev `AUTH_SECRET`. Fill in `GOOGLE_OAUTH_CLIENT_SECRET` there — grab it from the same Google Cloud Console client as `GOOGLE_OAUTH_CLIENT_ID`. The OAuth callback redirects to `http://localhost:3056/auth/callback`.
+`apps/ontology/.env.local` is created by the monorepo's onboarding step (`bun run setup`, from the root), including a generated dev `AUTH_SECRET`. Fill in `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` there with the *dev* Web client from the verified Google project (https://console.cloud.google.com/auth/clients), never production's client from `.env`. It needs `http://localhost:3056/auth/callback` as an authorized redirect URI; `bun run doctor` warns if the ID is blank or production's.
 
 (If `.env.local` doesn't exist yet, or is missing a var after pulling a `.env` template change, run `bun run setup:env` from the root to (re)generate it.)
 

@@ -35,6 +35,12 @@ export function parse_env_file(content: string): Map<string, string> {
 }
 
 /**
+ * Keys whose committed `.env` value belongs to production, so local dev must never inherit it. A
+ * developer supplies their own in `.env.local`; until then it stays blank, and `doctor` says so.
+ */
+export const dev_own_keys = ['GOOGLE_OAUTH_CLIENT_ID']
+
+/**
  * The value a key always has in a local `.env.local`, or `undefined` when the developer's own
  * value is kept. Shared with `doctor`, which flags an `.env.local` that has drifted from these.
  */
@@ -93,14 +99,20 @@ function generate_local_env_content(template_content: string, existing_content?:
 			continue
 		}
 
-		// Priority 3: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
+		// Priority 3: Don't seed production's value; the developer brings their own
+		if (dev_own_keys.includes(key)) {
+			output_lines.push(`${key}=`)
+			continue
+		}
+
+		// Priority 4: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
 		if (key === 'AUTH_SECRET') {
 			const dev_secret = randomBytes(32).toString('hex')
 			output_lines.push(`AUTH_SECRET=${dev_secret}`)
 			continue
 		}
 
-		// Priority 4: Fall back to the template line
+		// Priority 5: Fall back to the template line
 		output_lines.push(line)
 	}
 

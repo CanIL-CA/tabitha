@@ -6,7 +6,7 @@ import { Database } from 'bun:sqlite'
 import { $ } from 'bun'
 import type { AiGatewayConfig } from '@tabitha/ai'
 import { parse_wrangler_jsonc } from './db_load'
-import { forced_local_value, parse_env_file } from './setup_env'
+import { dev_own_keys, forced_local_value, parse_env_file } from './setup_env'
 import { probe_gateway_token, type GatewayTokenStatus } from './lib/ai_gateway_token'
 import { is_claude_cli_available, list_installed_plugin_ids, read_project_plugins } from './lib/claude_plugins'
 import { check_cloudflare_configs } from '../audits/check_cloudflare'
@@ -239,6 +239,39 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 			status: 'WARN',
 			message: `Missing or blank: ${unpopulated.join('; ')}`,
 			fix: 'See the "# SECRETS" section in that app\'s .env for where to obtain each value, then set it in the app\'s .env.local',
+		})
+	}
+
+	const prod_values: string[] = []
+	for (const app of APPS) {
+		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
+		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
+		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue
+
+		const template_vars = parse_env_file(readFileSync(env_template_path, 'utf-8'))
+		const local_vars = parse_env_file(readFileSync(env_local_path, 'utf-8'))
+		const not_own = dev_own_keys.filter(key => {
+			if (!template_vars.has(key)) return false
+			const local_value = local_vars.get(key) ?? ''
+			return !local_value || local_value === template_vars.get(key)
+		})
+		if (not_own.length > 0) prod_values.push(`${app.name} (${not_own.join(', ')})`)
+	}
+
+	if (prod_values.length === 0) {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Dev Identifiers',
+			status: 'PASS',
+			message: 'No .env.local reuses a production identifier',
+		})
+	} else {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Dev Identifiers',
+			status: 'WARN',
+			message: `Blank or production's value: ${prod_values.join('; ')}`,
+			fix: 'Set your own dev value in the app\'s .env.local, not the production one from .env (see the app README, e.g. apps/ontology)',
 		})
 	}
 
