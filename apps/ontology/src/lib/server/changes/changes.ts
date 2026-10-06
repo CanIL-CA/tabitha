@@ -122,7 +122,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 		version: null,
 	}
 
-	const version = await get_next_version(db)
+	const version = await get_next_version({ db, changes: [change] })
 	const applied = await apply_one_change({ db, change, version, applied_date: new Date().toISOString() })
 
 	if (applied.applied_date) {
@@ -213,7 +213,7 @@ export async function apply_pending_changes(db: D1Database): Promise<ApplyPendin
 		}
 	}
 
-	const version = await get_next_version(db)
+	const version = await get_next_version({ db, changes: pending_changes })
 	const applied_date = new Date().toISOString()
 
 	const changes: OntologyChange[] = []
@@ -299,22 +299,25 @@ async function set_version({ db, version }: { db: D1Database, version: string })
 	await db.prepare(sql).bind(version).run()
 }
 
-async function get_next_version(db: D1Database): Promise<string> {
+async function get_next_version({ db, changes }: { db: D1Database, changes: OntologyChange[] }): Promise<string> {
 	const current_version = await get_version(db)
 
-	// e.g. "3.0.9495" -> [3, 0, 9495]
-	const parts = current_version.split('.').map(Number)
+	// We bump the minor version number when concepts are added or removed.
+	// Currently only adding is supported. Updating the properties of existing
+	// concepts bump the patch version number.
+	// See CONTRIBUTING.md for what would bump a major version.
+	const minor_bump = changes.some(change => change.action === 'create')
+	const patch_bump = changes.some(change => change.action === 'update')
 
-	if (parts[2] < 9999) {
-		parts[2]++
-	} else if (parts[1] < 9999) {
-		parts[2] = 0
-		parts[1]++
-	} else {
-		parts[2] = 0
-		parts[1] = 0
-		parts[0]++
+	// e.g. "3.0.9495" -> [3, 0, 9495]
+	let [major, minor, patch] = current_version.split('.').map(Number)
+
+	if (minor_bump) {
+		minor++
+		patch = 0
+	} else if (patch_bump) {
+		patch++
 	}
 
-	return parts.join('.')
+	return [major, minor, patch].join('.')
 }
