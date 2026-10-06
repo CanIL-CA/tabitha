@@ -1,17 +1,16 @@
 import type { R2Object, R2Objects } from '@cloudflare/workers-types'
 import type { PageServerLoad } from './$types'
 import { get_version } from '$lib/server/ontology'
+import { get_version_applied_date } from '$lib/server/changes/changes'
 
 type Backup = {
-	name: string,
 	size_mb: number,
 	created_at: Date,
 	url: string,
 	version: string,
 }
 
-const OLD_VERSION_REGEX = /^Ontology[._](\d{4}).+?\.tabitha.sqlite$/
-const NEW_VERSION_REGEX = /^Ontology_([\d-]+)\.tabitha.sqlite$/
+const VERSION_REGEX = /^Ontology_([\d-]+)\.tabitha.sqlite$/
 
 export async function load({ locals: { db_ontology }, platform }: Parameters<PageServerLoad>[0]) {
 	console.info('checking for downloads...')
@@ -23,7 +22,7 @@ export async function load({ locals: { db_ontology }, platform }: Parameters<Pag
 		return { backups: [], pending: true }
 	}
 
-	const backups = objects.map(transform).toSorted(most_recent_first)
+	const backups = (await Promise.all(objects.map(transform))).toSorted(most_recent_first)
 
 	const current_version = await get_version(db_ontology)
 	const most_recent_backup_version = backups[0]?.version
@@ -34,27 +33,21 @@ export async function load({ locals: { db_ontology }, platform }: Parameters<Pag
 		pending,
 	}
 
-	function transform(obj: R2Object): Backup {
+	async function transform(obj: R2Object): Promise<Backup> {
+		// get the created_at date from a change applied in this version
+		const version = extract_version(obj.key)
+		const applied_date = await get_version_applied_date({ db: db_ontology, version })
 		return {
-			name: obj.key,
 			size_mb: bytes_to_mb(obj.size),
-			created_at: new Date(obj.uploaded),
+			created_at: applied_date ?? new Date(obj.uploaded),
 			url: `https://db-backups.tabitha.bible/${obj.key}`,
-			version: extract_version(obj.key),
+			version,
 		}
 	}
 
 	function extract_version(key: string) {
-		// TODO only use the new one once the old backups are gone
-		let match = key.match(NEW_VERSION_REGEX)
-		if (match) {
-			return match[1].replaceAll('-', '.')
-		}
-		match = key.match(OLD_VERSION_REGEX)
-		if (match) {
-			return `3.0.${match[1]}`
-		}
-		return ''
+		let match = key.match(VERSION_REGEX)
+		return match?.[1].replaceAll('-', '.') ?? ''
 	}
 
 	function bytes_to_mb(bytes: number) {

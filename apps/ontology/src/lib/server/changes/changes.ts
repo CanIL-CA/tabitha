@@ -29,6 +29,18 @@ export async function get_pending_changes(db: D1Database): Promise<OntologyChang
 	return results.map(transform)
 }
 
+export async function get_version_applied_date({ db, version }: { db: D1Database, version: string }): Promise<Date | null> {
+	const sql = `
+		SELECT applied_date
+		FROM Changes
+		WHERE version = ?
+		LIMIT 1
+	`
+	// If the version has been set, the applied_date is guaranteed to be non-null
+	const result = await db.prepare(sql).bind(version).first<{ applied_date: string }>()
+	return result ? new Date(result.applied_date) : null
+}
+
 type GetChangeOptions = {
 	readonly db: D1Database
 	readonly id: number

@@ -24,7 +24,7 @@ log.step(`Uploading ${db_from_dump.filename} to R2...`)
 // content-disposition filename ends in ".new" so that a downloaded backup, dropped into the legacy
 // TBTA app's directory, triggers that app's upgrade cycle (see downloads/+page.svelte for the
 // download-side half of this: the link is cross-origin, so this header controls the saved filename)
-await $`wrangler r2 object put db-backups/${backup_name} --file ${db_from_dump.filename} --content-disposition 'attachment; filename="${DB_NAME}.new"' --remote`
+await $`wrangler r2 object put db-backups/${backup_name} --file ${db_from_dump.filename} --content-disposition 'attachment; filename="${DB_NAME}.sqlite"' --remote`
 
 db_from_dump.close()
 
