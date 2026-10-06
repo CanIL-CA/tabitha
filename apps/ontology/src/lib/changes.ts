@@ -79,7 +79,8 @@ export function change_made_between_versions({ since, before }: { since: string,
 	}
 
 	function version_as_number(version: string): number {
-		return version.split('.').map(Number).reduce((sum, part) => sum + part, 0)
+		const [major, minor, patch] = version.split('.').map(Number)
+		return major * 10_000_000 + minor * 10_000 + patch
 	}
 }
 
