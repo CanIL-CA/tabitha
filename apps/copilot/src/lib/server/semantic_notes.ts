@@ -10,9 +10,10 @@ import type { CopilotLlmInput, CopilotLlmOutput } from '$lib/types'
 const MAX_VERSE_TEXT_LENGTH = 2000
 
 // Longer than the AI Gateway's 1-hour default (tools/gateway/config.ts) -- workshop settings
-// often re-check or regenerate the same verse's notes well past an hour, and this call is fully
-// deterministic (fixed model/temperature/seed, JSON-schema output, no per-request-unique data),
-// so a stale cache entry is never a correctness concern, only a cost one.
+// often re-check or regenerate the same verse's notes well past an hour. This call is close to
+// deterministic (fixed model and seed, JSON-schema output, no per-request-unique data), and any
+// response cached for the same input is as valid as a fresh one, so a stale cache entry is a
+// cost concern, not a correctness one.
 const ONE_WEEK_IN_SECONDS = 7 * 24 * 60 * 60
 
 export async function get_semantic_notes({ llm_input, ai }: { llm_input: CopilotLlmInput, ai: AiClient }): Promise<CopilotLlmOutput> {
