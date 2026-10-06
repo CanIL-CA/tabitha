@@ -34,6 +34,28 @@ export function parse_env_file(content: string): Map<string, string> {
 	return result
 }
 
+/**
+ * The value a key always has in a local `.env.local`, or `undefined` when the developer's own
+ * value is kept. Shared with `doctor`, which flags an `.env.local` that has drifted from these.
+ */
+export function forced_local_value(key: string): string | undefined {
+	// Point known service hosts at their local ports
+	if (key in local_hosts) return local_hosts[key]
+
+	// Auth.js's redirect-proxy target only makes sense for a genuine Cloudflare deployment (prod
+	// or preview); set locally, Google would be sent a redirect_uri it has no client registered for
+	if (key === 'OAUTH_REDIRECT_PROXY_URL') return ''
+
+	// Trust cross-app localhost origins for CORS in local dev only
+	if (key === 'PUBLIC_CORS_ALLOW_LOCALHOST') return 'true'
+
+	// Local dev and CI e2e runs fire fast, unpaced request bursts that a real-world-abuse
+	// threshold isn't meant to survive -- disable rate limiting locally only
+	if (key === 'PUBLIC_RATE_LIMIT_DISABLED') return 'true'
+
+	return undefined
+}
+
 function generate_local_env_content(template_content: string, existing_content?: string): string {
 	const existing_vars = existing_content ? parse_env_file(existing_content) : new Map<string, string>()
 	const lines = template_content.split('\n')
@@ -56,48 +78,29 @@ function generate_local_env_content(template_content: string, existing_content?:
 
 		const key = trimmed.slice(0, eq_idx).trim()
 
-		// Priority 1: If it's a known service host, point it to local port
-		if (key in local_hosts) {
-			output_lines.push(`${key}=${local_hosts[key]}`)
+		// Priority 1: Keys whose local-dev value is fixed, overriding any stale value a developer
+		// might already have from a prior run
+		const forced_value = forced_local_value(key)
+		if (forced_value !== undefined) {
+			output_lines.push(`${key}=${forced_value}`)
 			continue
 		}
 
-		// Priority 2: Auth.js's redirect-proxy target only makes sense for a genuine Cloudflare
-		// deployment (prod or preview) -- always force it blank for local dev, overriding any stale
-		// value a developer might already have from a prior run
-		if (key === 'OAUTH_REDIRECT_PROXY_URL') {
-			output_lines.push('OAUTH_REDIRECT_PROXY_URL=')
-			continue
-		}
-
-		// Priority 3: Trust cross-app localhost origins for CORS in local dev only
-		if (key === 'PUBLIC_CORS_ALLOW_LOCALHOST') {
-			output_lines.push('PUBLIC_CORS_ALLOW_LOCALHOST=true')
-			continue
-		}
-
-		// Priority 3b: Local dev and CI e2e runs fire fast, unpaced request bursts that a
-		// real-world-abuse threshold isn't meant to survive -- disable rate limiting locally only
-		if (key === 'PUBLIC_RATE_LIMIT_DISABLED') {
-			output_lines.push('PUBLIC_RATE_LIMIT_DISABLED=true')
-			continue
-		}
-
-		// Priority 4: If the developer already supplied a custom value in existing .env.local, preserve it
+		// Priority 2: If the developer already supplied a custom value in existing .env.local, preserve it
 		const existing_value = existing_vars.get(key)
 		if (existing_value) {
 			output_lines.push(`${key}=${existing_value}`)
 			continue
 		}
 
-		// Priority 5: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
+		// Priority 3: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
 		if (key === 'AUTH_SECRET') {
 			const dev_secret = randomBytes(32).toString('hex')
 			output_lines.push(`AUTH_SECRET=${dev_secret}`)
 			continue
 		}
 
-		// Priority 6: Fall back to the template line
+		// Priority 4: Fall back to the template line
 		output_lines.push(line)
 	}
 

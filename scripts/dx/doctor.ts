@@ -6,7 +6,7 @@ import { Database } from 'bun:sqlite'
 import { $ } from 'bun'
 import type { AiGatewayConfig } from '@tabitha/ai'
 import { parse_wrangler_jsonc } from './db_load'
-import { parse_env_file } from './setup_env'
+import { forced_local_value, parse_env_file } from './setup_env'
 import { probe_gateway_token, type GatewayTokenStatus } from './lib/ai_gateway_token'
 import { is_claude_cli_available, list_installed_plugin_ids, read_project_plugins } from './lib/claude_plugins'
 import { check_cloudflare_configs } from '../audits/check_cloudflare'
@@ -173,6 +173,21 @@ function get_required_secret_keys(env_template_content: string): string[] {
 	return keys
 }
 
+// An .env.local written before setup_env.ts learned a key keeps working until that key matters:
+// it lacks the key entirely, or holds a value the script would now force (e.g. a blank
+// OAUTH_REDIRECT_PROXY_URL), which surfaces as a confusing failure like Google's
+// redirect_uri_mismatch. Keys under "# SECRETS" are the secrets check's job, not this one's.
+function get_stale_local_keys(env_template_content: string, env_local_content: string): string[] {
+	const local_vars = parse_env_file(env_local_content)
+	const secret_keys = new Set(get_required_secret_keys(env_template_content))
+
+	return [...parse_env_file(env_template_content).keys()].filter(key => {
+		if (secret_keys.has(key)) return false
+		const forced_value = forced_local_value(key)
+		return forced_value === undefined ? !local_vars.has(key) : local_vars.get(key) !== forced_value
+	})
+}
+
 async function check_env_files(): Promise<DiagnosticResult[]> {
 	const results: DiagnosticResult[] = []
 	const missing_apps = APPS
@@ -224,6 +239,33 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 			status: 'WARN',
 			message: `Missing or blank: ${unpopulated.join('; ')}`,
 			fix: 'See the "# SECRETS" section in that app\'s .env for where to obtain each value, then set it in the app\'s .env.local',
+		})
+	}
+
+	const stale: string[] = []
+	for (const app of APPS) {
+		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
+		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
+		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue
+
+		const stale_keys = get_stale_local_keys(readFileSync(env_template_path, 'utf-8'), readFileSync(env_local_path, 'utf-8'))
+		if (stale_keys.length > 0) stale.push(`${app.name} (${stale_keys.join(', ')})`)
+	}
+
+	if (stale.length === 0) {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Freshness',
+			status: 'PASS',
+			message: 'All .env.local files match the current .env templates',
+		})
+	} else {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Freshness',
+			status: 'WARN',
+			message: `Out of date: ${stale.join('; ')}`,
+			fix: 'Run `bun run setup:env` to regenerate them (your own values are preserved)',
 		})
 	}
 
