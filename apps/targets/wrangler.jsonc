@@ -51,8 +51,8 @@
 		},
 		{
 			"binding": "DB_Targets_Indonesian",
-			"database_name": "Targets_Indonesian_2026-07-31",
-			"database_id": "3925008c-d42f-49b5-8552-88a1902dbe2c"
+			"database_name": "Targets_Indonesian_2026-10-06",
+			"database_id": "3d2efd35-291a-46df-a349-f1965898a0aa"
 		},
 		{
 			"binding": "DB_Targets_Tagalog",
@@ -102,8 +102,8 @@
 			},
 			{
 				"binding": "DB_Targets_Indonesian",
-				"database_name": "Targets_Indonesian_2026-07-31",
-				"database_id": "3925008c-d42f-49b5-8552-88a1902dbe2c"
+				"database_name": "Targets_Indonesian_2026-10-06",
+				"database_id": "3d2efd35-291a-46df-a349-f1965898a0aa"
 			},
 			{
 				"binding": "DB_Targets_Tagalog",
