@@ -15,6 +15,16 @@ import type {
 const FIXED_MODEL = 'gemini-3.5-flash'
 const FIXED_SEED = 42 // 😏
 const GATEWAY_NAME = 'tabitha'
+// The gateway retries failed requests (retry_* in tools/gateway/config.ts), but a slow provider
+// response never fails on its own, so without this each attempt waits indefinitely. Cuts an
+// attempt whose first byte takes longer, so the gateway retries it. Healthy calls' first byte
+// arrives within about 80s at p99, and most calls during a Vertex slowdown still answer
+// within 60s, so a retry usually lands. https://developers.cloudflare.com/ai-gateway/configuration/request-handling/
+const GATEWAY_ATTEMPT_TIMEOUT_MS = 60_000
+// The gateway's final retry attempt waits however long the provider takes, and fetch has no
+// timeout of its own, so this bounds the whole call: room for two timed-out attempts plus a
+// final one, after which the caller gets a retryable error instead of hanging indefinitely.
+const REQUEST_TIMEOUT_MS = 240_000
 // Vertex AI's REST API version the gateway forwards to -- matches what @google/genai's SDK sent
 // by default (its internal VERTEX_AI_API_DEFAULT_VERSION), kept in sync now that this package
 // builds the request by hand instead of going through that SDK.
@@ -161,11 +171,14 @@ async function post_to_gateway({ url, token, app, feature, headers, body }: Post
 				'content-type': 'application/json',
 				'cf-aig-authorization': `Bearer ${token}`,
 				'cf-aig-metadata': JSON.stringify({ app, feature }),
+				'cf-aig-request-timeout': String(GATEWAY_ATTEMPT_TIMEOUT_MS),
 				...headers,
 			},
 			body: JSON.stringify(body),
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 		})
 	} catch (cause) {
+		throw_if_timed_out({ cause, app, feature, url })
 		console.error(`AI Gateway request failed for app "${app}", feature "${feature}": network error calling ${url}`, cause)
 		throw new AiResponseError(`AI Gateway request failed (app "${app}", feature "${feature}"): network error`, { cause })
 	}
@@ -176,7 +189,20 @@ async function post_to_gateway({ url, token, app, feature, headers, body }: Post
 		throw new AiResponseError(`AI Gateway request failed with status ${response.status} (app "${app}", feature "${feature}")`)
 	}
 
-	return response.json()
+	// The timeout signal also covers reading the body, so a stall mid-response times out here.
+	try {
+		return await response.json()
+	} catch (cause) {
+		throw_if_timed_out({ cause, app, feature, url })
+		throw cause
+	}
+}
+
+function throw_if_timed_out({ cause, app, feature, url }: { cause: unknown, app: string, feature: string, url: string }): void {
+	if (!(cause instanceof DOMException && cause.name === 'TimeoutError')) return
+
+	console.error(`AI Gateway request timed out for app "${app}", feature "${feature}" after ${REQUEST_TIMEOUT_MS / 1000}s calling ${url}`)
+	throw new AiResponseError(`AI Gateway request timed out after ${REQUEST_TIMEOUT_MS / 1000}s (app "${app}", feature "${feature}")`, { cause })
 }
 
 function merge_defaults(...layers: (AiCallDefaults | undefined)[]): AiCallDefaults {
