@@ -19,10 +19,9 @@ import { CopilotError } from '../copilot_core'
 const MAX_TNN_TEXT_LENGTH = 50000
 
 // Longer than the AI Gateway's 1-hour default (tools/gateway/config.ts) -- workshop settings
-// often re-check or regenerate the same verse's brief well past an hour. These calls are close to
-// deterministic (fixed model and seed, JSON-schema output, no per-request-unique data), and any
-// response cached for the same input is as valid as a fresh one, so a stale cache entry is a
-// cost concern, not a correctness one.
+// often re-check or regenerate the same verse's brief well past an hour, and these calls are
+// fully deterministic (fixed model/temperature/seed, JSON-schema output, no per-request-unique
+// data), so a stale cache entry is never a correctness concern, only a cost one.
 const ONE_WEEK_IN_SECONDS = 7 * 24 * 60 * 60
 
 // Aquifer answers a missing api-key header (and a rate-limited request) with 406, not 401.

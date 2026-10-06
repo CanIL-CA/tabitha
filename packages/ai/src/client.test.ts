@@ -183,18 +183,7 @@ describe('@tabitha/ai', () => {
 			expect(url).toContain(':generateContent')
 			expect(url).toContain('/models/gemini-3.5-flash')
 			const body = JSON.parse(init.body)
-			expect(body.generationConfig).toEqual(expect.objectContaining({ seed: 42 }))
-		})
-
-		test('leaves temperature at the model default unless a caller overrides it', async () => {
-			mock_response('{}')
-			const ai = create_ai_client({ app: 'ontology', feature: 'semantic-search', gateway })
-
-			await ai.generate_json({ contents: {}, schema: { type: 'object' } })
-
-			const [, init] = fetch_mock.mock.calls[0]
-			const body = JSON.parse(init.body)
-			expect(body.generationConfig).not.toHaveProperty('temperature')
+			expect(body.generationConfig).toEqual(expect.objectContaining({ seed: 42, temperature: 0.0 }))
 		})
 
 		test('ignores an attempt to override the fixed seed', async () => {

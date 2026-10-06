@@ -39,10 +39,8 @@ const EMBEDDING_LOCATION = 'global'
 // sizes, and the model normalizes reduced-size output itself, so cosine and dot-product agree.
 export const EMBEDDING_DIMENSIONS = 768
 
-// No `temperature` here on purpose: Google strongly recommends leaving Gemini 3 models at their
-// default of 1.0, warning that lower values can cause looping or degraded performance,
-// particularly on reasoning tasks: https://ai.google.dev/gemini-api/docs/gemini-3#temperature
 const PACKAGE_DEFAULTS: AiCallDefaults = {
+	temperature: 0.0,
 	frequencyPenalty: 0.0,
 	presencePenalty: 0.0,
 }
