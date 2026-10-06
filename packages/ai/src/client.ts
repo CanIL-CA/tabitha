@@ -15,6 +15,10 @@ import type {
 const FIXED_MODEL = 'gemini-3.5-flash'
 const FIXED_SEED = 42 // 😏
 const GATEWAY_NAME = 'tabitha'
+// fetch has no timeout of its own, so a call the model never finishes (e.g. a generation loop)
+// would otherwise hang its caller indefinitely -- a whole copilot batch stalls behind one verse.
+// Generous enough for a long structured-output generation; failing turns it into a retryable error.
+const REQUEST_TIMEOUT_MS = 120_000
 // Vertex AI's REST API version the gateway forwards to -- matches what @google/genai's SDK sent
 // by default (its internal VERTEX_AI_API_DEFAULT_VERSION), kept in sync now that this package
 // builds the request by hand instead of going through that SDK.
@@ -164,8 +168,10 @@ async function post_to_gateway({ url, token, app, feature, headers, body }: Post
 				...headers,
 			},
 			body: JSON.stringify(body),
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 		})
 	} catch (cause) {
+		throw_if_timed_out({ cause, app, feature, url })
 		console.error(`AI Gateway request failed for app "${app}", feature "${feature}": network error calling ${url}`, cause)
 		throw new AiResponseError(`AI Gateway request failed (app "${app}", feature "${feature}"): network error`, { cause })
 	}
@@ -176,7 +182,20 @@ async function post_to_gateway({ url, token, app, feature, headers, body }: Post
 		throw new AiResponseError(`AI Gateway request failed with status ${response.status} (app "${app}", feature "${feature}")`)
 	}
 
-	return response.json()
+	// The timeout signal also covers reading the body, so a stall mid-response times out here.
+	try {
+		return await response.json()
+	} catch (cause) {
+		throw_if_timed_out({ cause, app, feature, url })
+		throw cause
+	}
+}
+
+function throw_if_timed_out({ cause, app, feature, url }: { cause: unknown, app: string, feature: string, url: string }): void {
+	if (!(cause instanceof DOMException && cause.name === 'TimeoutError')) return
+
+	console.error(`AI Gateway request timed out for app "${app}", feature "${feature}" after ${REQUEST_TIMEOUT_MS / 1000}s calling ${url}`)
+	throw new AiResponseError(`AI Gateway request timed out after ${REQUEST_TIMEOUT_MS / 1000}s (app "${app}", feature "${feature}")`, { cause })
 }
 
 function merge_defaults(...layers: (AiCallDefaults | undefined)[]): AiCallDefaults {

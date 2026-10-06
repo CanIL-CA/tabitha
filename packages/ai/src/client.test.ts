@@ -78,6 +78,39 @@ describe('@tabitha/ai', () => {
 			await expect(ai.generate_text({ contents: 'hi' })).rejects.toThrow(AiResponseError)
 			expect(console.error).toHaveBeenCalled()
 		})
+
+		test('gives every gateway request a timeout signal, so a hung call cannot stall its caller forever', async () => {
+			mock_response('{}')
+			const ai = create_ai_client({ app: 'copilot', feature: 'copilot', gateway })
+
+			await ai.generate_text({ contents: 'hi' })
+
+			const [, init] = fetch_mock.mock.calls[0]
+			expect(init.signal).toBeInstanceOf(AbortSignal)
+		})
+
+		test('throws AiResponseError naming the timeout when the gateway request times out', async () => {
+			fetch_mock.mockRejectedValue(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
+			const ai = create_ai_client({ app: 'copilot', feature: 'copilot', gateway })
+
+			const result = ai.generate_text({ contents: 'hi' })
+
+			await expect(result).rejects.toThrow(AiResponseError)
+			await expect(result).rejects.toThrow('timed out')
+		})
+
+		test('throws AiResponseError naming the timeout when the response body stalls past the timeout', async () => {
+			fetch_mock.mockResolvedValue({
+				ok: true,
+				json: async () => { throw new DOMException('The operation was aborted due to timeout', 'TimeoutError') },
+			})
+			const ai = create_ai_client({ app: 'copilot', feature: 'copilot', gateway })
+
+			const result = ai.generate_text({ contents: 'hi' })
+
+			await expect(result).rejects.toThrow(AiResponseError)
+			await expect(result).rejects.toThrow('timed out')
+		})
 	})
 
 	describe('generate_json', () => {
