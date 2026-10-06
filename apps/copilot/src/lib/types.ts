@@ -14,21 +14,25 @@ export type ProfileCustomCombination = {
 	prompt: string
 }
 
+type ContrastiveGrouping = string[][]
+
 export type LanguageProfile = {
 	multiple_past: boolean
 	multiple_future: boolean
 	noun_number: string[]
-	noun_proximity: string[]
+	noun_proximity: ContrastiveGrouping
 	noun_clusivity: boolean
 	as_third_handling: 'third' | 'first_second' | 'apposition'
+
+	modifier_degree: ContrastiveGrouping
 
 	passive: 'none' | 'agent_forbidden' | 'agent_allowed' | 'other'
 	rhetorical_questions: boolean
 	honorifics: boolean
 	speech_formula_position: 'before' | 'after' | 'both' | 'either'
 
-	custom_weights: Record<string, Record<string, number>>
-	custom_combinations: ProfileCustomCombination[]
+	custom_weights?: Record<string, Record<string, number>>
+	custom_combinations?: ProfileCustomCombination[]
 }
 
 export type CopilotNoteSettings = {
@@ -153,24 +157,7 @@ export type BriefInput = {
 export type BriefTnnBasedOutput = {
 	section4: {
 		// SIL Translator Notes
-		sourcePointabilityRows: {
-			note: string
-			tnnSource: string
-			function: 'MECHANICS' | 'CULTURAL' | 'BACKGROUND'
-			verseTerm: string | null
-			lwcSpan: string | null
-			verdict: {
-				type: 'RETAIN' | 'SECTION 5' | 'CUT' | 'NOT APPLICABLE' | 'SOLVED'
-				subtype: null | 'CULTURAL' | 'BACKGROUND' | 'OUT OF SCOPE' | 'NULL PAYLOAD'
-				pointer: string | null
-				reason: string | null
-			}
-		}[]
 		notes: { text: string }[]
-		excluded: {
-			note: string
-			reason: string
-		}[]
 	}
 	section5: {
 		// Cultural context summary
@@ -183,19 +170,11 @@ export type BriefTnnBasedOutput = {
 			summary: string
 		}[]
 	}
-	section6: {
-		// Image keywords
-		keywords: string[]
-	}
 	section7: {
 		// Consultant note candidates
 		decisions: {
 			status: 'RESOLVED UPSTREAM' | 'CONFLICT' | 'UNRESOLVED'
 			text: string
-		}[]
-		resolvedUpstream: {
-			label: string
-			reason: string
 		}[]
 	}
 }

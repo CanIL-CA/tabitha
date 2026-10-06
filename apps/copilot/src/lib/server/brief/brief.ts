@@ -203,7 +203,6 @@ export async function create_brief_for_verse({ input, ai, on_step }: BriefOption
 				term: to_translate(note.term),
 				summary: to_translate(note.summary),
 			})),
-			image_keywords: tnn_based_info.section6.keywords.map(keyword => to_translate(keyword)),
 			consultant_decisions: tnn_based_info.section7.decisions.map(decision => ({
 				status: to_translate(decision.status),
 				text: to_translate(decision.text),

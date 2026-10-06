@@ -58,7 +58,7 @@ function get_profile_weights(profile: LanguageProfile): FlagWeightingMap {
 	}
 
 	if (profile.noun_proximity.length > 0) {
-		weights['Noun Proximity'] = Object.fromEntries(profile.noun_proximity.map(value => [value, 5]))
+		weights['Noun Proximity'] = Object.fromEntries(profile.noun_proximity.flat().map(value => [value, 5]))
 	}
 
 	if (profile.noun_clusivity) {
@@ -66,6 +66,10 @@ function get_profile_weights(profile: LanguageProfile): FlagWeightingMap {
 			'First Inclusive': 3,
 			'First Exclusive': 5,
 		}
+	}
+
+	if (profile.modifier_degree.length > 0) {
+		weights['Modifier Degree'] = Object.fromEntries(profile.modifier_degree.flat().map(value => [value, 5]))
 	}
 
 	if (profile.passive !== 'agent_allowed') {
@@ -112,7 +116,7 @@ function get_profile_weights(profile: LanguageProfile): FlagWeightingMap {
 		}
 	}
 
-	for (const [flag, value_weights] of Object.entries(profile.custom_weights)) {
+	for (const [flag, value_weights] of Object.entries(profile.custom_weights ?? {})) {
 		weights[flag] = value_weights
 	}
 

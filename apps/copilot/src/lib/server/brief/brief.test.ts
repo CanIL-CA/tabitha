@@ -15,10 +15,9 @@ const input: BriefInput = {
 }
 
 const EMPTY_TNN_OUTPUT: BriefTnnBasedOutput = {
-	section4: { sourcePointabilityRows: [], notes: [], excluded: [] },
+	section4: { notes: [] },
 	section5: { cultural: [], background: [] },
-	section6: { keywords: [] },
-	section7: { decisions: [], resolvedUpstream: [] },
+	section7: { decisions: [] },
 }
 
 function fake_ai(): AiClient {
