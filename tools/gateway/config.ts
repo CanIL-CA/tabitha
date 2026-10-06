@@ -48,6 +48,9 @@ export const desired_gateway_config: DesiredGatewayConfig = {
 	// a single shared gateway means one app's burst can throttle another's.
 	rate_limiting_limit: 6000,
 	rate_limiting_technique: 'sliding',
+	// Retries only fire on a failed attempt; @tabitha/ai's per-request `cf-aig-request-timeout`
+	// is what makes a slow one fail. Its overall client timeout is sized for these 3 attempts, so
+	// change the two together (packages/ai/src/client.ts).
 	retry_max_attempts: 3,
 	retry_delay: 500,
 	retry_backoff: 'exponential',

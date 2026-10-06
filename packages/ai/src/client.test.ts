@@ -89,6 +89,16 @@ describe('@tabitha/ai', () => {
 			expect(init.signal).toBeInstanceOf(AbortSignal)
 		})
 
+		test('sends a per-attempt gateway timeout, so the gateway retries a slow provider response instead of waiting on it', async () => {
+			mock_response('{}')
+			const ai = create_ai_client({ app: 'copilot', feature: 'copilot', gateway })
+
+			await ai.generate_text({ contents: 'hi' })
+
+			const [, init] = fetch_mock.mock.calls[0]
+			expect(init.headers).toEqual(expect.objectContaining({ 'cf-aig-request-timeout': '60000' }))
+		})
+
 		test('throws AiResponseError naming the timeout when the gateway request times out', async () => {
 			fetch_mock.mockRejectedValue(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
 			const ai = create_ai_client({ app: 'copilot', feature: 'copilot', gateway })
