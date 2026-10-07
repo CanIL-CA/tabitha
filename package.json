@@ -38,7 +38,7 @@
     "ci:plan": "bun scripts/ci/plan.ts",
     "precommit": "bun run check && bun run check:lint && bun run test && bun run build",
     "check": "turbo run check",
-    "check:audits": "bun run check:secrets && bun run check:cloudflare && bun run check:storage && bun run check:badges && bun run check:philosophy-docs && bun run check:md && bun run check:deps && bun run check:package-boundaries && bun run check:a11y-names && bun run check:noindex && bun run check:cross-platform && bun run check:github-actions",
+    "check:audits": "bun scripts/audits/run.ts",
     "check:deps": "bun scripts/audits/check_missing_bin_deps.ts",
     "check:cross-platform": "bun scripts/audits/check_cross_platform.ts",
     "check:github-actions": "bun scripts/audits/check_github_actions.ts",

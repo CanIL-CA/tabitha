@@ -22,7 +22,7 @@ const triggers: TriggerTemplate[] = [
 			return power_sum(flags)
 		},
 		prompt: flags => {
-			let prompt_parts: string[] = []
+			const prompt_parts: string[] = []
 
 			if (flags.some(f => f.name === 'Verb Time')) {
 				prompt_parts.push('For the meaning, describe the Time value. Do not just say "past" or "future", as there are multiple possible levels.')
