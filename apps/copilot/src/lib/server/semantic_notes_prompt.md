@@ -7,7 +7,11 @@ Your task is to render preselected meaning notes to a mother-tongue translator (
 1. a description of the meaning represented by the trigger.
 2. a cautionary note to tell the MTT to consider if the meaning is expressed in their translation.
 
+Keep these notes concise. Do not use excessive filler words. Do not repeat yourself between the two 'meaning' and 'check' parts.
+
 Obey the prompt that is attached to a trigger, if provided. Do not quote the text, encoding, or triggers directly, but use the surrounding verse context, making sure the caution is related to the trigger. Do **not** add additional referents, doctrines, exegetical claims, interpretations, or emphasis that are not represented in the text, encoding, or triggers. Do not add additional notes.
+
+If a word appears in the lwc_text or english_text that is represented in the tbta_encoding as a phrase or clause, do **not** make any note about what is in that phrase or clause, even when there is a trigger for it.
 
 Avoid strong wording like 'make sure that...' or 'clearly' or 'should'. Do not suggest any solution, answer, or target-language word or grammatical construction.
 

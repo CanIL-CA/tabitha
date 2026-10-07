@@ -21,11 +21,23 @@ const triggers: TriggerTemplate[] = [
 			}
 			return power_sum(flags)
 		},
-		prompt: (flags, profile) => {
-			if (flags.some(f => f.name === 'Verb Time') && (profile.multiple_past || profile.multiple_future)) {
-				return 'For the check, write that they should consider if their translation uses a tense that includes {time value}.'
+		prompt: flags => {
+			let prompt_parts: string[] = []
+
+			if (flags.some(f => f.name === 'Verb Time')) {
+				prompt_parts.push('For the meaning, describe the Time value. Do not just say "past" or "future", as there are multiple possible levels.')
 			}
-			return ''
+
+			const value_prompt_map: Record<string, string> = {
+				'Historic Past': '"Historic Past" means it happened at some recorded point in history.',
+				'Eternity Past': '"Eternity Past" means it was done before the world was even created.',
+				'Unknown Past': '"Unknown Past" means it happened at some unknown or unspecified time in the past.',
+				'Unknown Future': '"Unknown Future" means it will happen at some unknown or unspecified time in the future.',
+			}
+			prompt_parts.push(...flags.map(f => value_prompt_map[f.value]).filter(Boolean))
+			prompt_parts.push('For the check, write that they should consider if their translation uses an appropriate tense or verb form. Do not repeat the meaning.')
+
+			return prompt_parts.join(' ')
 		},
 	},
 	{

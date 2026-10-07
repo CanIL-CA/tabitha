@@ -108,9 +108,9 @@ type MttLevelInfo = {
 	code: string
 }
 export const mtt_level_info: Record<MttLevel, MttLevelInfo> = {
-	'grade5': { code: 'G5' },
-	'high_school': { code: 'HS' },
-	'undergraduate': { code: 'UG' },
+	'grade5': { code: 'Direct' },
+	'high_school': { code: 'Detailed' },
+	'undergraduate': { code: 'Technical' },
 }
 
 export const copilot_modes: CopilotMode[] = [
