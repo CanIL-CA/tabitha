@@ -3,7 +3,7 @@ import type { FlagWeightingMap } from '$lib/types'
 export const default_flag_weights_for_discern: FlagWeightingMap = {
 	'Verb Time': {
 		'Historic Past': 2,
-		'Eternity Past': 3,
+		'Eternity Past': 2,
 		'Unknown Past': 1,
 		'Unknown Future': 1,
 	},
@@ -11,7 +11,7 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 		'Inceptive': 3,
 		'Completive': 3,
 		'Cessative': 3,
-		'Continuative': 5,
+		'Continuative': 2,
 		'Imperfective': 0,
 		'Routine': 3,
 		'Gnomic': 5,
@@ -84,18 +84,16 @@ export const default_flag_weights_for_discern: FlagWeightingMap = {
 export const default_flag_weights_for_brief: FlagWeightingMap = {
 	'Verb Time': {
 		'Historic Past': 2,
-		'Eternity Past': 3,
-		'Unknown Past': 3,
-		'Unknown Future': 3,
+		'Eternity Past': 2,
 	},
 	'Verb Aspect': {
 		'Inceptive': 1,
 		'Completive': 2,
 		'Cessative': 2,
-		'Continuative': 2,
+		'Continuative': 0,
 		'Imperfective': 0,
-		'Routine': 3,
-		'Gnomic': 4,
+		'Routine': 2,
+		'Gnomic': 3,
 	},
 	'Verb Mood': {
 		'Definite Potential': 5,
