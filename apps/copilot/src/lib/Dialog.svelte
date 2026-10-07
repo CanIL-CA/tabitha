@@ -19,7 +19,6 @@
 	let w_classes = $derived(fit_content ? '' : 'max-w-none w-3/4')
 </script>
 
-
 <!-- https://daisyui.com/components/modal -->
 <dialog bind:this={dialog} onclose={onclose} class="modal">
 	<section class="modal-box {w_classes}">

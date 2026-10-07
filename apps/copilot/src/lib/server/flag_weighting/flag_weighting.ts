@@ -37,6 +37,9 @@ function get_profile_weights(profile: LanguageProfile): FlagWeightingMap {
 			'A Month Ago': 4,
 			'A Year Ago': 4,
 			"During Speaker's Lifetime": 4,
+			'Historic Past': 3,
+			'Eternity Past': 3,
+			'Unknown Past': 2,
 		}
 	}
 	if (profile.multiple_future) {
@@ -50,6 +53,7 @@ function get_profile_weights(profile: LanguageProfile): FlagWeightingMap {
 			'A Month from Now': 4,
 			'A Year from Now': 4,
 			"During Speaker's Lifetime (future)": 4,
+			'Unknown Future': 2,
 		}
 	}
 
