@@ -398,6 +398,16 @@ When you make a choice where the "why" isn't obvious from the code alone — pic
 1. Add `docs/decisions/NNNN-short-title.md`, numbered sequentially, following the format in [`docs/decisions/README.md`](docs/decisions/README.md) (Status, Context, Decision, Alternatives considered, Consequences).
 2. Link it from any related ADRs, and from PR/commit descriptions where relevant.
 
+### Semantic Versioning for the Ontology
+
+The Ontology uses a three-part semantic version number (`MAJOR.MINOR.PATCH`), and each part increments for a different kind of change:
+
+- `MAJOR` gets bumped when there is a breaking change to the schema that requires being packaged with a new TBTA executable to read the data properly. For example, if the rule tables are removed, or a column is renamed or removed.
+- `MINOR` gets bumped when there is a non-breaking change to the schema. For example, if we add a log table to record changes made to concepts, or we add another column to Properties.
+- `PATCH` gets bumped when any concept data changes, such as adding or removing concepts, or updating properties of existing concepts, such as glosses, usage, or other metadata. Changes to things like the Examples or How-to information should not bump the patch version. When TBTA sees a new Ontology and it detects that concepts were added or removed, it will automatically adjust the target-language mappings accordingly.
+
+The `PATCH` bumps are handled automatically through the changes tracking system. A `MAJOR` or `MINOR` bump will need to be decided and updated manually through the web app.
+
 ---
 
 ## 🧪 Pre-Commit / Pre-PR Verification Gate
