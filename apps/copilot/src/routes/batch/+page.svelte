@@ -2,6 +2,8 @@
 	import { persisted } from '$lib/store.svelte'
 	import BookSelect from '$lib/BookSelect.svelte'
 	import Settings from '$lib/Settings.svelte'
+	import Dialog from '$lib/Dialog.svelte'
+	import CopilotResultDisplay from '$lib/CopilotResultDisplay.svelte'
 	import Icon from '@iconify/svelte'
 	import { SvelteSet } from 'svelte/reactivity'
 	import { convert_to_usfm } from '$lib/usfm'
@@ -108,7 +110,7 @@
 			const a = document.createElement('a')
 			a.href = url
 			const ref_string = `${book_code} ${chapter} ${start_verse}-${end_verse}`
-			const setting_codes = `${lwc_info[settings.lwc].code} ${mtt_level_info[settings.mtt_level].code}`
+			const setting_codes = `${lwc_info[settings.lwc].code} - ${mtt_level_info[settings.mtt_level].code} ${settings.sensitivity}`
 			a.download = `${ref_string} - TaBiThA ${settings.mode} notes - ${setting_codes}.sfm` // File name
 			document.body.appendChild(a)
 			a.click()
@@ -122,6 +124,14 @@
 		} finally {
 			generating_sfm = false
 		}
+	}
+	
+	let result_to_show = $state<CopilotResult | null>(null)
+	function show_result_dialog(result: CopilotResult) {
+		result_to_show = result
+	}
+	function close_result_dialog() {
+		result_to_show = null
 	}
 </script>
 
@@ -172,21 +182,22 @@
 	<div class="text-error">{error_text}</div>
 {/if}
 
-<div class="flex items-center gap-1">
-	{#if fetching_results}
+{#if fetching_results}
+	<div class="flex items-center gap-1">
 		<Icon icon="line-md:loading-twotone-loop" class="h-5 w-5" />
 		{#if settings.mode === 'brief'}
 			{m.loading_brief_progress({ completed: completed_verses, total: verse_count })}
 		{:else}
 			{m.loading_notes_progress({ completed: completed_verses, total: verse_count })}
 		{/if}
-	{:else if completed_verses > 0}
-		<Icon icon="mdi:check" class="h-6 w-6 text-success" />
-		{m.loaded_verses({ count: verse_count })}
-	{/if}
-</div>
-{#if fetching_results || completed_verses > 0}
+	</div>
 	<progress value={completed_verses} max={verse_count} class="progress progress-primary w-100"></progress>
+{:else if completed_verses > 0}
+	<div class="flex items-center gap-1">
+		<Icon icon="mdi:check" class="h-6 w-6 text-success" />
+		{m.loaded_verses({ count: completed_verses })}
+	</div>
+	<progress value={1} max={1} class="progress progress-primary w-100"></progress>
 {/if}
 
 {#if fetched_results.length > 0}
@@ -223,16 +234,31 @@
 						</td>
 					{:else if result.type === 'discern'}
 						<td><span class="badge badge-success">{m.status_ready()}</span></td>
-						<td colspan="2">{m.discern_summary({ count: result.notes.length })}</td>
+						<td>{m.discern_summary({ count: result.notes.length })}</td>
+						<td>
+							<button type="button" onclick={() => show_result_dialog(result)} class="btn btn-sm my-4">
+								<Icon icon="mdi:eye-outline" class="h-5 w-5" />
+							</button>
+						</td>
 					{:else if result.type === 'brief'}
 						{@const other_notes_length = result.cultural_background.length + result.image_keywords.length + result.consultant_decisions.length}
 						<td><span class="badge badge-success">{m.status_ready()}</span></td>
-						<td colspan="2">
-							{m.brief_summary({ semantic: result.semantic_notes.length, tnn: result.tnn_notes.length, other: other_notes_length })}
+						<td>{m.brief_summary({ semantic: result.semantic_notes.length, tnn: result.tnn_notes.length, other: other_notes_length })}</td>
+						<td>
+							<button type="button" onclick={() => show_result_dialog(result)} class="btn btn-sm my-4">
+								<Icon icon="mdi:eye-outline" class="h-5 w-5" />
+							</button>
 						</td>
 					{/if}
 				</tr>
 			{/each}
 		</tbody>
 	</table>
+{/if}
+
+{#if result_to_show}
+	{@const { book, chapter, verse } = result_to_show.verse}
+	<Dialog heading={m.notes_for({ reference: `${book} ${chapter}:${verse}` })} onclose={close_result_dialog}>
+		<CopilotResultDisplay result={result_to_show} {settings} />
+	</Dialog>
 {/if}
