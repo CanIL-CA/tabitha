@@ -80,6 +80,8 @@ export function change_made_between_versions({ since, before }: { since: string,
 
 	function version_as_number(version: string): number {
 		const [major, minor, patch] = version.split('.').map(Number)
+		// Multiply the minor by 10000 because the patch was at 9494 when this was first implemented.
+		// Moving forward, the patch should never get that big, but it still needs to be accounted for.
 		return major * 10_000_000 + minor * 10_000 + patch
 	}
 }
