@@ -51,4 +51,14 @@ export const desired_redirect_rules: DesiredRedirectRule[] = [
 		status_code: 301,
 		preserve_query_string: true,
 	},
+	// Zone-wide, so every app subdomain redirects too. Listed after www-to-apex so a plain-HTTP
+	// www request reaches the apex in one hop. Without this, http://tabitha.bible/ answers 200 and
+	// Search Console reports it as an alternate of the https page.
+	{
+		ref: 'http-to-https',
+		expression: '(not ssl)',
+		target_url_expression: 'concat("https://", http.host, http.request.uri.path)',
+		status_code: 301,
+		preserve_query_string: true,
+	},
 ]
