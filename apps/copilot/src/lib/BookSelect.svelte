@@ -1,9 +1,8 @@
-<script>
+<script lang="ts">
 	import { polished_books } from '$lib/lookups'
 	import { m } from '$lib/paraglide/messages'
 
-	/** @type {{ book: string, disabled?: boolean }}*/
-	let { book = $bindable(), disabled = false } = $props()
+	let { book = $bindable(), disabled = false }: { book: string, disabled?: boolean } = $props()
 
 	const NT_index_start = polished_books.findIndex(book => book === 'Matthew')
 	const OT_books = polished_books.slice(0, NT_index_start)

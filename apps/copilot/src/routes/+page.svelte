@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { default_settings, get_no_notes_text, get_no_tnn_text } from '$lib/lookups'
+	import { default_settings } from '$lib/lookups'
 	import { fetch_notes, fetch_target_text } from '$lib/fetches'
 	import { persisted } from '$lib/store.svelte'
 	import Icon from '@iconify/svelte'
 	import BookSelect from '$lib/BookSelect.svelte'
 	import Settings from '$lib/Settings.svelte'
-	import type { TargetTextData, CopilotResult, CopilotNote, VerseReference } from '@tabitha/types'
+	import CopilotResultDisplay from '$lib/CopilotResultDisplay.svelte'
+	import type { TargetTextData, CopilotResult, VerseReference } from '@tabitha/types'
 	import type { CopilotSettings, CopilotStep } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 	import { MODE_LABELS } from '$lib/labels'
@@ -96,38 +97,11 @@
 	</div>
 </form>
 
-{#snippet empty_section(text: string)}
-	<p class="text-base-content/70">{text}</p>
-{/snippet}
-
-{#snippet semantic_notes(notes: CopilotNote[])}
-	{#if notes.length === 0}
-		{@render empty_section(get_no_notes_text(settings.lwc))}
-	{:else}
-		<ul class="list list-disc text-base ms-5">
-			{#each notes as note}
-				<li>
-					{#if note.quoted_text}
-						"...{note.quoted_text}..." -
-					{/if}
-					{note.meaning} {note.check}
-					{#if settings.show_note_sources}
-						<ul class="list ms-5">
-							<li>- {JSON.stringify(note.trigger.flags)}</li>
-						</ul>
-					{/if}
-				</li>
-			{/each}
-		</ul>
-	{/if}
-{/snippet}
-
-{#snippet notes_title(reference: VerseReference)}
-	<div class="prose"><h2>{m.notes_for({ reference: `${reference.book} ${reference.chapter}:${reference.verse}` })}</h2></div>
-{/snippet}
+<div class="prose">
+	<h2>{m.notes_for({ reference: `${reference.book} ${reference.chapter}:${reference.verse}` })}</h2>
+</div>
 
 {#if fetching_notes}
-	{@render notes_title(submitted_reference)}
 	<ul>
 		{#each steps_reached as step, i (step)}
 			<li class="flex items-center gap-1">
@@ -146,92 +120,6 @@
 		{/each}
 	</ul>
 	<progress value={Math.max(0, steps_reached.length - 1)} max={expected_step_count} class="progress progress-primary w-100"></progress>
-
-{:else if result?.type === 'error'}
-	{@render notes_title(result.verse)}
-	<div class="text-error">{result.error}</div>
-
-{:else if result?.type === 'discern'}
-	<div class="w-full pb-8">
-		{@render notes_title(result.verse)}
-
-		{#if settings.lwc === 'English' || settings.show_english}
-			<div class="mt-3">
-				<div class="prose"><h4>{m.english_text()}</h4></div>
-				<p>{result.english_text}</p>
-			</div>
-		{/if}
-
-		{#if result.lwc_text && settings.lwc !== 'English'}
-			<div class="mt-3">
-				<div class="prose"><h4>{m.lwc_text({ lwc: settings.lwc })}</h4></div>
-				<p>{result.lwc_text}</p>
-			</div>
-		{/if}
-
-		<div class="mt-3">
-			<div class="prose"><h4>{m.notes_cautions()}</h4></div>
-			{@render semantic_notes(result.notes)}
-		</div>
-	</div>
-{:else if result?.type === 'brief'}
-	<div class="w-full pb-8">
-		{@render notes_title(result.verse)}
-
-		<div class="mt-3">
-			<div class="prose"><h4>{m.lwc_named_text({ lwc: settings.lwc })}</h4></div>
-			<p>{result.lwc_text}</p>
-		</div>
-
-		<div class="mt-3">
-			<div class="prose"><h4>{m.semantic_notes()}</h4></div>
-			{@render semantic_notes(result.semantic_notes)}
-		</div>
-
-		<div class="mt-3">
-			<div class="prose"><h4>{m.tnn_notes()}</h4></div>
-			{#if result.tnn_notes.length === 0}
-				{@render empty_section(get_no_tnn_text({ lwc: settings.lwc, tnn_available: result.tnn_available }))}
-			{:else}
-				<ul class="list list-disc text-base ms-5">
-					{#each result.tnn_notes as note}
-						<li>{note}</li>
-					{/each}
-				</ul>
-			{/if}
-		</div>
-
-		{#if result.cultural_background.length > 0}
-			<div class="mt-3">
-				<div class="prose"><h4>{m.cultural_background()}</h4></div>
-				<ul class="list list-disc text-base ms-5">
-					{#each result.cultural_background as { term, summary }}
-						<li>{term} - {summary}</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-
-		{#if result.image_keywords.length > 0}
-			<div class="mt-3">
-				<div class="prose"><h4>{m.image_keywords()}</h4></div>
-				<ul class="list list-disc text-base ms-5">
-					{#each result.image_keywords as kw}
-						<li>{kw}</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-
-		{#if result.consultant_decisions.length > 0}
-			<div class="mt-3">
-				<div class="prose"><h4>{m.consultant_decisions()}</h4></div>
-				<ul class="list list-disc text-base ms-5">
-					{#each result.consultant_decisions as { status, text }}
-						<li>{status} - {text}</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-	</div>
+{:else if result}
+	<CopilotResultDisplay {result} {settings} />
 {/if}
