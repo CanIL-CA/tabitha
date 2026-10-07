@@ -20,6 +20,7 @@ Guidelines for architecting shared packages and adhering to coding standards acr
 | **`@tabitha/api-client`** | Typed HTTP client for inter-service communication between the apps. |
 | **`@tabitha/ai`** | Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI. |
 | **`@tabitha/cors`** | Shared CORS middleware for Worker request handlers. |
+| **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
 | **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows; shared by `apps/ontology` and `tools/databases`. |
 | **`@tabitha/rate-limit`** | Workers-native rate limiting for public read APIs (`enforce_rate_limit`, a SvelteKit handle). |
 | **`@tabitha/usage`** | Anonymous feature-usage events written to Workers Analytics Engine (`record_usage_event`). |

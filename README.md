@@ -87,6 +87,7 @@ tabitha/
 │   ├── complex-terms/  # How-to sheet -> Complex_Terms rows, for sync and migration (@tabitha/complex-terms)
 │   ├── cors/           # Shared CORS allowed-origin handling for app APIs (@tabitha/cors)
 │   ├── eslint-config/  # Shared ESLint 9 configuration (@tabitha/eslint-config)
+│   ├── noindex/        # X-Robots-Tag noindex handle for the tool and API apps (@tabitha/noindex)
 │   ├── tsconfig/       # Base TypeScript configurations (@tabitha/tsconfig)
 │   ├── types/          # Shared cross-app domain types (@tabitha/types)
 │   ├── ui/             # Shared Svelte 5 / daisyUI components (@tabitha/ui)

@@ -3,6 +3,7 @@ import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/st
 import { is_authorized } from '$lib/server/auth'
 import { resolve_redirect_proxy_url } from '$lib/server/redirect_proxy'
 import { create_cors_handle } from '@tabitha/cors'
+import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import { SvelteKitAuth } from '@auth/sveltekit'
 import Google from '@auth/sveltekit/providers/google'
@@ -89,4 +90,4 @@ const authz_handle: Handle = async function authz_handle({ event, resolve }) {
 	}
 }
 
-export const handle = sequence(cors_handle, rate_limit_handle, db_config_handle, authn_handle, authz_handle)
+export const handle = sequence(noindex_handle, cors_handle, rate_limit_handle, db_config_handle, authn_handle, authz_handle)

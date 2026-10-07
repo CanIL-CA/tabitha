@@ -33,6 +33,7 @@
     "@tabitha/api-client": "workspace:*",
     "@tabitha/complex-terms": "workspace:*",
     "@tabitha/cors": "workspace:*",
+    "@tabitha/noindex": "workspace:*",
     "@tabitha/rate-limit": "workspace:*",
     "@tabitha/types": "workspace:*",
     "@tabitha/ui": "workspace:*",

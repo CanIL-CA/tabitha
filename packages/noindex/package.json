@@ -1,0 +1,26 @@
+{
+  "name": "@tabitha/noindex",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "check:lint": "eslint .",
+    "check:lint:fix": "eslint . --fix",
+    "test": "bun run test:unit",
+    "test:unit": "vitest run src"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2.70.3",
+    "@tabitha/eslint-config": "workspace:*",
+    "@tabitha/tsconfig": "workspace:*",
+    "eslint": "^10.11.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
+  }
+}
