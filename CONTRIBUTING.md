@@ -226,7 +226,7 @@ Architecture Decision Records capture the "why" behind non-obvious technical cho
 
 ### The safety net: automated enforcement
 
-`scripts/audits/check_philosophies.ts`, run as part of `bun run check`/`bun run precommit`, mechanically enforces several of the 14 philosophies. This applies equally to human- and AI-authored code, which is what keeps "let an agent try it" low-risk here — drift gets caught by the same gate either way.
+`scripts/audits/check_philosophies.ts`, run as part of `bun run check:audits` (locally and in CI), mechanically enforces several of the 14 philosophies. This applies equally to human- and AI-authored code, which is what keeps "let an agent try it" low-risk here — drift gets caught by the same gate either way.
 
 ### Commit messages
 

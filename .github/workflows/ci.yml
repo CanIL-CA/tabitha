@@ -54,15 +54,7 @@ jobs:
     name: 🛡️ Security & Compliance (Blocking)
     runs-on: ubuntu-latest
     outputs:
-      philosophies: ${{ steps.check_philosophies.outcome }}
-      cloudflare: ${{ steps.check_cloudflare.outcome }}
-      storage: ${{ steps.check_storage.outcome }}
-      badges: ${{ steps.check_badges.outcome }}
-      philosophy_docs: ${{ steps.check_philosophy_docs.outcome }}
-      md: ${{ steps.check_md.outcome }}
-      a11y_names: ${{ steps.check_a11y_names.outcome }}
-      cross_platform: ${{ steps.check_cross_platform.outcome }}
-      github_actions: ${{ steps.check_github_actions.outcome }}
+      audits: ${{ steps.audits.outputs.results }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -72,56 +64,11 @@ jobs:
       - name: Setup Workspace
         uses: ./.github/actions/setup-workspace
 
-      - name: Secret & Credential Leak Scan (Blocking)
-        run: bun run check:secrets
-
-      - name: Architectural Philosophy Verification
-        id: check_philosophies
-        run: bun run check:philosophies
-        continue-on-error: true
-
-      - name: Cloudflare Workers Configuration Audit
-        id: check_cloudflare
-        run: bun run check:cloudflare
-        continue-on-error: true
-
-      - name: Storage Hygiene & Cookie Security Audit
-        id: check_storage
-        run: bun run check:storage
-        continue-on-error: true
-
-      - name: README Badge & Version Sync Audit
-        id: check_badges
-        run: bun run check:badges
-        continue-on-error: true
-
-      - name: Philosophy Count Doc Sync Audit
-        id: check_philosophy_docs
-        run: bun run check:philosophy-docs
-        continue-on-error: true
-
-      - name: Markdown Specification Lint
-        id: check_md
-        run: bun run check:md
-        continue-on-error: true
-
-      - name: Accessible-Name Collision Audit
-        id: check_a11y_names
-        run: bun run check:a11y-names
-        continue-on-error: true
-
-      - name: Undeclared CLI Dependency Audit (changed packages, Blocking)
-        run: bun run check:deps
-
-      - name: Cross-Platform DX Tooling Audit
-        id: check_cross_platform
-        run: bun run check:cross-platform
-        continue-on-error: true
-
-      - name: GitHub Actions Token & Permissions Audit
-        id: check_github_actions
-        run: bun run check:github-actions
-        continue-on-error: true
+      # Runs every audit in scripts/audits/registry.ts, the same list `bun run check:audits` runs
+      # locally. Fails only when a blocking audit fails; advisory results go to pr_summary as JSON.
+      - name: Repo Audits (scripts/audits/registry.ts)
+        id: audits
+        run: bun run check:audits
 
   production_build:
     name: 📦 Production Bundle Build (Blocking)
@@ -513,16 +460,15 @@ jobs:
               return '❓'
             }
 
+            // Written by scripts/audits/run.ts; empty if the audit runner never got to report.
+            const audits = JSON.parse(needs.security_compliance.outputs.audits || '[]')
+            const audit_checks = audits.length > 0
+              ? audits.filter((a) => !a.blocking).map((a) => [a.label, a.outcome])
+              : [['Repo Audits', undefined]]
+            const failed_blocking_audits = audits.filter((a) => a.blocking && a.outcome === 'failure').map((a) => a.label)
+
             const checks = [
-              ['Architectural Philosophies', needs.security_compliance.outputs.philosophies],
-              ['Cloudflare Workers Config Audit', needs.security_compliance.outputs.cloudflare],
-              ['Storage & Cookie Hygiene', needs.security_compliance.outputs.storage],
-              ['README Badge & Version Sync', needs.security_compliance.outputs.badges],
-              ['Philosophy Count Doc Sync', needs.security_compliance.outputs.philosophy_docs],
-              ['Markdown Lint', needs.security_compliance.outputs.md],
-              ['Accessible-Name Collision Audit', needs.security_compliance.outputs.a11y_names],
-              ['Cross-Platform DX Tooling Audit', needs.security_compliance.outputs.cross_platform],
-              ['GitHub Actions Token & Permissions Audit', needs.security_compliance.outputs.github_actions],
+              ...audit_checks,
               ['Typecheck & Svelte Diagnostics', needs.typecheck.outputs.typecheck],
               ['ESLint', needs.eslint.outputs.eslint],
               ['Unit Test Coverage', needs.unit_tests.outputs.coverage],
@@ -538,7 +484,8 @@ jobs:
             }
 
             if (needs.security_compliance.result === 'failure') {
-              body += `🚫 **Blocking gate failed:** secret/dependency scan (\`security_compliance\`). Advisory checks below may not have run.\n\n`
+              const which = failed_blocking_audits.length > 0 ? failed_blocking_audits.join(', ') : 'repo audits'
+              body += `🚫 **Blocking gate failed:** ${which} (\`security_compliance\`). Stage 2 checks below did not run.\n\n`
             }
             if (needs.production_build.result === 'failure') {
               body += `🚫 **Blocking gate failed:** production build (\`production_build\`).\n\n`

@@ -197,7 +197,6 @@ async function write_github_output(plan: CiPlan) {
 async function execute_plan(plan: CiPlan) {
 	console.log('▶️  Running audits (always-on)...\n')
 	await $`bun run check:audits`
-	await $`bun run check:philosophies`
 
 	if (plan.run_build) {
 		console.log('\n▶️  Running production build...\n')

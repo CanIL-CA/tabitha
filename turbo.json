@@ -78,15 +78,6 @@
     "check:lint:fix": {
       "cache": false
     },
-    "check:audits": {
-      "dependsOn": [
-        "check:secrets",
-        "check:cloudflare",
-        "check:storage",
-        "check:badges",
-        "check:md"
-      ]
-    },
     "check:secrets": {
       "inputs": [
         "src/**",

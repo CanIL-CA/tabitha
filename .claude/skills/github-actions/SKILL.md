@@ -31,12 +31,12 @@ Advisory steps use `continue-on-error: true`, and the PR-comment scripts wrap th
 
 ## Adding an advisory audit
 
-Follow the existing pattern in `ci.yml`'s `security_compliance` job:
+Audits are listed once, in `scripts/audits/registry.ts`. `bun run check:audits` runs that list locally, and `ci.yml`'s `security_compliance` job runs the same command, so the two can't drift.
 
-1. Add a `bun run check:<name>` script to `package.json` and append it to `check:audits`.
-2. Add a step with an `id` and `continue-on-error: true`.
-3. Expose `${{ steps.<id>.outcome }}` in the job's `outputs`.
-4. Add a row to the `checks` array in `pr_summary` so the result shows in the PR's advisory summary.
+1. Add a `bun run check:<name>` script to `package.json`.
+2. Add an entry to `AUDITS` in `scripts/audits/registry.ts` with a label and `blocking: false` (only `check:secrets` and `check:deps` block today).
+
+That's all. `pr_summary` builds its advisory table from the runner's JSON output, and `scripts/audits/run.test.ts` fails if a `scripts/audits/check_*` script is left out of the registry or if `ci.yml` runs an audit as its own step.
 
 ## Repo conventions
 

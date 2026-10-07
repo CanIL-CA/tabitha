@@ -65,7 +65,7 @@ This repo is set up to support work with AI coding agents, not just humans.
 
 - **Canonical instructions:** [`AGENTS.md`](AGENTS.md) — the 15 Development Philosophies enforced across the codebase (see the table further down). Many agent tools auto-detect this filename; if yours doesn't, read it before making changes.
 - **Narrower, task-scoped conventions:** [`.claude/skills/`](.claude/skills/) — per-library/domain guidance (Svelte, Tailwind CSS, Cloudflare Workers, SQLite, etc.) loaded contextually rather than kept in `AGENTS.md`. See [CONTRIBUTING.md](CONTRIBUTING.md) for when to add a new one.
-- **Before calling a task done**, run the relevant commands from [Verification & Testing](#verification--testing) below — at minimum `bun run check` (typecheck + lint), `bun run check:philosophies` (Development Philosophies audit), and `bun run check:secrets`.
+- **Before calling a task done**, run the relevant commands from [Verification & Testing](#verification--testing) below — at minimum `bun run check` (typecheck + lint) and `bun run check:audits` (every repo audit, including the Development Philosophies and secrets scans; the same list CI runs).
 
 ---
 
@@ -188,6 +188,9 @@ bun run check:lint:fix
 
 # Run full workspace environment and health diagnostics
 bun run check:doctor
+
+# Run every repo audit in scripts/audits/registry.ts (what CI runs), with a summary at the end
+bun run check:audits
 
 # Audit codebase compliance against Development Philosophies
 bun run check:philosophies

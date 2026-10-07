@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { get_no_notes_text, get_no_tnn_text } from '$lib/lookups'
 	import { m } from '$lib/paraglide/messages'
-	import type { CopilotNote, CopilotResult, VerseReference } from '@tabitha/types'
+	import type { CopilotNote, CopilotResult } from '@tabitha/types'
 	import type { CopilotSettings } from './types'
 
 	let { result, settings }: { result: CopilotResult, settings: CopilotSettings } = $props()
