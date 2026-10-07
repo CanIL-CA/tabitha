@@ -6,7 +6,7 @@ import { Database } from 'bun:sqlite'
 import { $ } from 'bun'
 import type { AiGatewayConfig } from '@tabitha/ai'
 import { parse_wrangler_jsonc } from './db_load'
-import { dev_own_keys, forced_local_value, parse_env_file } from './setup_env'
+import { dev_defaults, forced_local_value, parse_env_file } from './setup_env'
 import { probe_gateway_token, type GatewayTokenStatus } from './lib/ai_gateway_token'
 import { is_claude_cli_available, list_installed_plugin_ids, read_project_plugins } from './lib/claude_plugins'
 import { check_cloudflare_configs } from '../audits/check_cloudflare'
@@ -188,9 +188,10 @@ function get_stale_local_keys(env_template_content: string, env_local_content: s
 	})
 }
 
-async function check_env_files(): Promise<DiagnosticResult[]> {
+export async function check_env_files(app_names?: string[]): Promise<DiagnosticResult[]> {
+	const apps = app_names ? APPS.filter(app => app_names.includes(app.name)) : APPS
 	const results: DiagnosticResult[] = []
-	const missing_apps = APPS
+	const missing_apps = apps
 		.filter(app => !existsSync(join(process.cwd(), 'apps', app.name, '.env.local')))
 		.map(app => app.name)
 
@@ -199,7 +200,7 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 			category: 'Environment',
 			name: 'App .env.local Files',
 			status: 'PASS',
-			message: `All ${APPS.length} applications configured with local service endpoints`,
+			message: `All ${apps.length} applications configured with local service endpoints`,
 		})
 	} else {
 		results.push({
@@ -212,7 +213,7 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 	}
 
 	const unpopulated: string[] = []
-	for (const app of APPS) {
+	for (const app of apps) {
 		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
 		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
 		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue // already flagged above
@@ -243,14 +244,14 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 	}
 
 	const prod_values: string[] = []
-	for (const app of APPS) {
+	for (const app of apps) {
 		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
 		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
 		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue
 
 		const template_vars = parse_env_file(readFileSync(env_template_path, 'utf-8'))
 		const local_vars = parse_env_file(readFileSync(env_local_path, 'utf-8'))
-		const not_own = dev_own_keys.filter(key => {
+		const not_own = Object.keys(dev_defaults).filter(key => {
 			if (!template_vars.has(key)) return false
 			const local_value = local_vars.get(key) ?? ''
 			return !local_value || local_value === template_vars.get(key)
@@ -271,12 +272,12 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 			name: 'App .env.local Dev Identifiers',
 			status: 'WARN',
 			message: `Blank or production's value: ${prod_values.join('; ')}`,
-			fix: 'Set your own dev value in the app\'s .env.local, not the production one from .env (see the app README, e.g. apps/ontology)',
+			fix: 'Run `bun run setup:env` to seed the dev value, or set your own in the app\'s .env.local (never the production one from .env)',
 		})
 	}
 
 	const stale: string[] = []
-	for (const app of APPS) {
+	for (const app of apps) {
 		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
 		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
 		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue

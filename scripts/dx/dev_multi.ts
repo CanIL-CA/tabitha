@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline/promises'
 import { execFileSync } from 'node:child_process'
 import { platform } from 'node:os'
+import { check_env_files } from './doctor'
 
 type AppInfo = {
 	id: string
@@ -78,6 +79,12 @@ export async function run_dev_applications(app_keys: string[]) {
 	if (apps_to_run.length === 0) {
 		console.log('⚠️  No valid apps selected.')
 		process.exit(0)
+	}
+
+	// Warn, don't block: a stale .env.local only breaks the features that read the stale value
+	const env_problems = (await check_env_files(apps_to_run.map(app => app.id))).filter(result => result.status !== 'PASS')
+	for (const problem of env_problems) {
+		console.warn(`⚠️  ${problem.name}: ${problem.message}${problem.fix ? `\n   👉 ${problem.fix}` : ''}`)
 	}
 
 	console.log(`
