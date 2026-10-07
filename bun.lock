@@ -20,6 +20,7 @@
         "@tabitha/ai": "workspace:*",
         "@tabitha/api-client": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/types": "workspace:*",
         "@tabitha/ui": "workspace:*",
@@ -60,6 +61,7 @@
         "@tabitha/ai": "workspace:*",
         "@tabitha/api-client": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/types": "workspace:*",
         "@tabitha/ui": "workspace:*",
@@ -99,6 +101,7 @@
         "@tabitha/api-client": "workspace:*",
         "@tabitha/complex-terms": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/types": "workspace:*",
         "@tabitha/ui": "workspace:*",
@@ -153,6 +156,7 @@
         "@sveltejs/kit": "^2.70.3",
         "@tabitha/api-client": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/types": "workspace:*",
         "@tabitha/ui": "workspace:*",
@@ -192,6 +196,7 @@
         "@sveltejs/kit": "^2.70.3",
         "@tabitha/api-client": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/types": "workspace:*",
         "@tabitha/ui": "workspace:*",
@@ -320,6 +325,18 @@
         "globals": "^17.12.0",
         "svelte-eslint-parser": "^1.8.1",
         "typescript-eslint": "^8.70.0",
+      },
+    },
+    "packages/noindex": {
+      "name": "@tabitha/noindex",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@sveltejs/kit": "^2.70.3",
+        "@tabitha/eslint-config": "workspace:*",
+        "@tabitha/tsconfig": "workspace:*",
+        "eslint": "^10.11.0",
+        "typescript": "^6.0.3",
+        "vitest": "^5.0.3",
       },
     },
     "packages/rate-limit": {
@@ -1170,6 +1187,8 @@
     "@tabitha/eslint-config": ["@tabitha/eslint-config@workspace:packages/eslint-config"],
 
     "@tabitha/gateway": ["@tabitha/gateway@workspace:tools/gateway"],
+
+    "@tabitha/noindex": ["@tabitha/noindex@workspace:packages/noindex"],
 
     "@tabitha/ontology": ["@tabitha/ontology@workspace:apps/ontology"],
 

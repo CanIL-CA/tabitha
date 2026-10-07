@@ -95,6 +95,7 @@ graph TD
 | **`@tabitha/ui`** | Shared Svelte 5 components (buttons, badges, concept cards, headers, layouts) styled with daisyUI 5. |
 | **`@tabitha/api-client`** | Typed HTTP client for inter-service communication across applications. |
 | **`@tabitha/cors`** | Shared CORS middleware for Cloudflare Worker request handlers. |
+| **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
 | **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows, for both Ontology's scheduled sync and the Ontology migration. |
 | **`@tabitha/ai`** | Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI. |
 | **`@tabitha/vite-config`** | Standardized configuration helpers for Vite (`vite.config.js`), SvelteKit (`svelte.config.js`), Vitest, and Playwright (`playwright.config.js`). |

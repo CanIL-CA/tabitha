@@ -407,6 +407,7 @@ import system_instruction from './review_prompt.md?raw'
    - `@tabitha/ui` — Reusable Svelte 5 components styled with daisyUI 5.
    - `@tabitha/api-client` — Typed HTTP client for inter-service communication.
    - `@tabitha/cors` — Shared CORS middleware for Worker request handlers.
+   - `@tabitha/noindex` — `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps; `apps/www` stays indexable.
    - `@tabitha/complex-terms` — Reads the how-to Google Sheet into `Complex_Terms` rows (sheet parsing plus the table's SQL), shared by `apps/ontology`'s scheduled sync and `tools/databases`' Ontology migration. It has two consumers, not three, for the same reason API/DB contract types get a two-party bar: both write a table the app reads, so two copies would drift silently.
    - `@tabitha/rate-limit` — Workers-native rate limiting for public read APIs, as a SvelteKit handle.
    - `@tabitha/usage` — Anonymous feature-usage events written to Workers Analytics Engine.
