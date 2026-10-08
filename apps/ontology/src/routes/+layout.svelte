@@ -73,7 +73,7 @@
 	<div class="divider w-full divider-accent"></div>
 	<a href="/downloads" class="link link-hover">Ontology downloads</a>
 	<a href="/history" class="link link-hover">Ontology change log</a>
-	{#if data.has_protected_access}
+	{#if data.user?.permissions.has_protected_access}
 		<a href="/protected" class="link link-hover">Ontology management</a>
 	{/if}
 </Footer>

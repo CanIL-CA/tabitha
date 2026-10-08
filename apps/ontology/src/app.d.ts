@@ -1,8 +1,8 @@
 /// <reference types="svelte" />
 /// <reference types="vite-plugin-pwa/client" />
-import type { Auth, User } from '@auth/sveltekit'
+import type { Auth } from '@auth/sveltekit'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { SaveResult } from '$lib/types'
+import type { OntologyUser, SaveResult } from '$lib/types'
 
 declare global {
 	namespace App {
@@ -11,7 +11,7 @@ declare global {
 			db_ontology: D1Database
 			db_auth: D1Database
 			auth: Auth
-			user: User | undefined
+			user: OntologyUser | undefined
 		}
 		interface PageState {
 			save_result?: SaveResult

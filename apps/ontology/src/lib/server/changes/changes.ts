@@ -1,10 +1,9 @@
-import type { User } from '@auth/sveltekit'
 import type { D1Database } from '@cloudflare/workers-types'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
 import { get_version } from '$lib/server/ontology'
 import { default_categories } from '$lib/lookups'
 import { create_change_fields, diff_change_fields } from '$lib/changes'
-import type { OntologyChange, OntologyChangeAction, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult } from '$lib/types'
+import type { OntologyChange, OntologyChangeAction, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult, UserPermissions, OntologyUser } from '$lib/types'
 import type { DbOntologyChange } from '$lib/server/types'
 import type { PartOfSpeech } from '@tabitha/types'
 
@@ -55,7 +54,7 @@ type ChangeSubmission = {
 	readonly db: D1Database
 	readonly action: OntologyChangeAction
 	readonly data: ConceptUpdateData
-	readonly user: User
+	readonly user: OntologyUser
 }
 
 async function prepare_change_data({ db, action, data }: Pick<ChangeSubmission, 'db' | 'action' | 'data'>) {
@@ -134,7 +133,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 
 type CanApproveChangeOptions = {
 	readonly change: OntologyChange
-	readonly permissions: { can_add: boolean, can_update: boolean }
+	readonly permissions: Pick<UserPermissions, 'can_add' | 'can_update'>
 }
 
 export function can_approve_change({ change, permissions }: CanApproveChangeOptions): boolean {
@@ -147,7 +146,7 @@ export function can_approve_change({ change, permissions }: CanApproveChangeOpti
 type ApproveChangeOptions = {
 	readonly db: D1Database
 	readonly id: number
-	readonly user: User
+	readonly user: OntologyUser
 }
 
 // Approves a suggested change so the existing apply-pending machinery will pick it up.

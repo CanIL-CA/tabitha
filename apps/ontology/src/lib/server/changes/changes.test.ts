@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { User } from '@auth/sveltekit'
-import type { OntologyChange, ConceptCreateData } from '$lib/types'
+import type { OntologyChange, ConceptCreateData, OntologyUser } from '$lib/types'
 
 vi.mock('./concepts', () => ({
 	create_concept: vi.fn().mockResolvedValue(undefined),
@@ -57,7 +56,16 @@ function make_change(overrides: Partial<OntologyChange> = {}): OntologyChange {
 	}
 }
 
-const user = { email: 'user@example.com' } as User
+const user: OntologyUser = {
+	id: 1,
+	email: 'user@example.com',
+	name: 'user',
+	permissions: {
+		has_protected_access: true,
+		can_add: false,
+		can_update: false,
+	}
+}
 
 describe('can_approve_change', () => {
 	it('returns false for a change that was never suggested (applied directly by an authorized user)', () => {

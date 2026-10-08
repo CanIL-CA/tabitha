@@ -1,6 +1,6 @@
 import { AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$env/static/private'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/static/public'
-import { is_authorized } from '$lib/server/auth'
+import { get_user_info } from '$lib/server/auth'
 import { resolve_redirect_proxy_url } from '$lib/server/redirect_proxy'
 import { create_cors_handle } from '@tabitha/cors'
 import { noindex_handle } from '@tabitha/noindex'
@@ -80,10 +80,17 @@ const authz_handle: Handle = async function authz_handle({ event, resolve }) {
 		const { route, locals } = event
 
 		const session = await locals.auth()
-		locals.user = session?.user
+
+		if (session?.user?.email) {
+			locals.user = {
+				email: session.user.email,
+				name: session.user.name ?? '',
+				...await get_user_info({ locals, email: session.user.email })
+			}
+		}
 
 		if (route.id?.startsWith('/protected')) {
-			if (!await is_authorized({ locals, permission: 'PROTECTED_ACCESS' })) {
+			if (!locals.user?.permissions.has_protected_access) {
 				throw error(401, AUTH_ERROR_MESSAGE)
 			}
 		}

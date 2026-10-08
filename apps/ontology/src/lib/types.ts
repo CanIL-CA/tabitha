@@ -109,8 +109,6 @@ export type OntologyChange = {
 	can_approve?: boolean
 }
 
-export type UserEmail = string
-
 export type WorkflowInfo = {
 	email: UserEmail
 	date: Date
@@ -125,3 +123,23 @@ export type ApplyPendingResult = {
 }
 
 export type SaveResult = 'applied' | 'pending' | 'queued'
+
+//===============
+// User types
+
+export type UserEmail = string
+
+export type UserPermissions = {
+	has_protected_access: boolean
+	can_add: boolean
+	can_update: boolean
+}
+
+export type OntologyUser = {
+	id: number | undefined
+	email: UserEmail
+	name: string
+	permissions: UserPermissions
+}
+
+export type UserInfo = Pick<OntologyUser, 'id' | 'permissions'>
