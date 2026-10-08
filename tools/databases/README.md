@@ -120,7 +120,7 @@ Creates default Auth permissions and role structures:
 
 ```bash
 cd tools/databases
-bun run migrate:auth databases/Auth.tabitha.sqlite
+bun run migrate:auth
 ```
 
 #### Status Update (Live D1)

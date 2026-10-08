@@ -59,13 +59,15 @@ async function grant_permission(email: string, permissions?: string[]) {
 		console.warn(`⚠️  Unknown permission "${permission}" for app "ontology", skipping. Known: ${app_permissions.map(p => p.permission).join(', ')}`)
 	}
 
-	db.prepare('INSERT OR REPLACE INTO Users (email, name) VALUES (?, ?)').run(email, email)
+	// 'email' is no longer a primary key, and so a REPLACE doesn't trigger anymore
+	const user_id = db.prepare<{ id: number }, [string]>('SELECT id FROM Users WHERE email = ?').get(email)?.id
+		?? db.prepare('INSERT INTO Users (email, name) VALUES (?, ?)').run(email, email).lastInsertRowid
 
 	let granted = 0
 	for (const { id } of to_grant) {
-		const existing = db.prepare('SELECT 1 FROM User_Permissions WHERE user_email = ? AND permission_id = ?').get(email, id)
+		const existing = db.prepare('SELECT 1 FROM User_Permissions WHERE user_id = ? AND permission_id = ?').get(user_id, id)
 		if (!existing) {
-			db.prepare('INSERT INTO User_Permissions (user_email, permission_id) VALUES (?, ?)').run(email, id)
+			db.prepare('INSERT INTO User_Permissions (user_id, permission_id) VALUES (?, ?)').run(user_id, id)
 			granted++
 		}
 	}
