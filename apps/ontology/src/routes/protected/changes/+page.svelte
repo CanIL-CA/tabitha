@@ -161,8 +161,7 @@
 						{#if change.suggested_by}
 							<div class="flex flex-col gap-0.5">
 								<span>{format_datetime({ date: change.suggested_by.date, ...data })}</span>
-								<!-- TODO: Show user name instead of email once user profile data is tracked in Changes -->
-								<span class="text-xs opacity-75 font-mono">{change.suggested_by.email}</span>
+								<span class="text-xs opacity-75 font-mono">{change.suggested_by.name}</span>
 							</div>
 						{/if}
 					</td>
@@ -170,9 +169,10 @@
 						{#if change.approved_by}
 							<div class="flex flex-col gap-0.5">
 								<span>{format_datetime({ date: change.approved_by.date, ...data })}</span>
-								<!-- TODO: Show user name instead of email once user profile data is tracked in Changes -->
-								<span class="text-xs opacity-75 font-mono">{change.approved_by.email}</span>
+								<span class="text-xs opacity-75 font-mono">{change.approved_by.name}</span>
 							</div>
+						{:else}
+							Awaiting approval
 						{/if}
 					</td>
 					<td>
@@ -181,8 +181,10 @@
 								<Icon icon="mdi:cloud-off-outline" class="h-4 w-4" />
 								Unsynced
 							</span>
-						{:else}
-							{change.applied_date ? format_datetime({ date: change.applied_date, ...data }) : 'Pending'}
+						{:else if change.applied_date}
+							{format_datetime({ date: change.applied_date, ...data })}
+						{:else if change.approved_by}
+							Pending
 						{/if}
 					</td>
 					<td>

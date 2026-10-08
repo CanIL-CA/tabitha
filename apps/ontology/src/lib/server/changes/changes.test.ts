@@ -64,31 +64,31 @@ const user: OntologyUser = {
 		has_protected_access: true,
 		can_add: false,
 		can_update: false,
-	}
+	},
 }
 
 describe('can_approve_change', () => {
 	it('returns false for a change that was never suggested (applied directly by an authorized user)', () => {
-		const change = make_change({ suggested_by: null, approved_by: { email: 'x@y.com', date: new Date() } })
+		const change = make_change({ suggested_by: null, approved_by: { name: 'x', date: new Date() } })
 		expect(can_approve_change({ change, permissions: { can_add: true, can_update: true } })).toBe(false)
 	})
 
 	it('returns false once a suggestion is already approved', () => {
 		const change = make_change({
-			suggested_by: { email: 'suggester@y.com', date: new Date() },
-			approved_by: { email: 'approver@y.com', date: new Date() },
+			suggested_by: { name: 'suggester', date: new Date() },
+			approved_by: { name: 'approver', date: new Date() },
 		})
 		expect(can_approve_change({ change, permissions: { can_add: true, can_update: true } })).toBe(false)
 	})
 
 	it("requires can_add for a 'create' suggestion", () => {
-		const change = make_change({ action: 'create', suggested_by: { email: 'a@b.com', date: new Date() } })
+		const change = make_change({ action: 'create', suggested_by: { name: 'a', date: new Date() } })
 		expect(can_approve_change({ change, permissions: { can_add: true, can_update: false } })).toBe(true)
 		expect(can_approve_change({ change, permissions: { can_add: false, can_update: true } })).toBe(false)
 	})
 
 	it("requires can_update for an 'update' suggestion", () => {
-		const change = make_change({ action: 'update', suggested_by: { email: 'a@b.com', date: new Date() } })
+		const change = make_change({ action: 'update', suggested_by: { name: 'a', date: new Date() } })
 		expect(can_approve_change({ change, permissions: { can_add: false, can_update: true } })).toBe(true)
 		expect(can_approve_change({ change, permissions: { can_add: true, can_update: false } })).toBe(false)
 	})
@@ -114,7 +114,7 @@ describe('suggest_change', () => {
 		expect(applied).toBe(false)
 		expect(create_concept).not.toHaveBeenCalled()
 		expect(statements).toHaveLength(1)
-		expect(statements[0].bind).toHaveBeenCalledWith('peace', 'A', 'Noun', expect.any(String), 'create', user.email, expect.any(String))
+		expect(statements[0].bind).toHaveBeenCalledWith('peace', 'A', 'Noun', expect.any(String), 'create', user.id, expect.any(String))
 	})
 })
 
@@ -145,8 +145,8 @@ describe('apply_change_directly', () => {
 })
 
 describe('approve_change', () => {
-	it('sets approved_by and returns the updated change', async () => {
-		const { db } = make_db([
+	it('records the approving user on the change', async () => {
+		const { db, statements } = make_db([
 			{}, // the UPDATE that records the approval
 			{
 				first: {
@@ -156,9 +156,9 @@ describe('approve_change', () => {
 					concept_part_of_speech: 'Verb',
 					data: '{}',
 					action: 'update',
-					suggested_by_email: 'suggester@y.com',
+					suggested_by_id: 2,
 					suggested_date: new Date().toISOString(),
-					approved_by_email: user.email,
+					approved_by_id: user.id,
 					approved_date: new Date().toISOString(),
 					applied_date: null,
 					version: null,
@@ -168,7 +168,8 @@ describe('approve_change', () => {
 
 		const updated = await approve_change({ db, id: 1, user })
 
-		expect(updated.approved_by?.email).toBe(user.email)
+		expect(statements[0].bind).toHaveBeenCalledWith(user.id, expect.any(String), 1)
+		expect(updated.approved_by?.id).toBe(user.id)
 		expect(updated.applied_date).toBeNull()
 	})
 })

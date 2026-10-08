@@ -85,7 +85,7 @@ const authz_handle: Handle = async function authz_handle({ event, resolve }) {
 			locals.user = {
 				email: session.user.email,
 				name: session.user.name ?? '',
-				...await get_user_info({ locals, email: session.user.email })
+				...await get_user_info({ locals, email: session.user.email }),
 			}
 		}
 

@@ -14,9 +14,9 @@ export function create_changes_table(tabitha_db: Database) {
 			'concept_part_of_speech'	TEXT,
 			'action'							TEXT,
 			'data'							TEXT,
-			'suggested_by_email'			TEXT,
+			'suggested_by_id'				INTEGER,
 			'suggested_date'				TEXT,
-			'approved_by_email'			TEXT,
+			'approved_by_id'				INTEGER,
 			'approved_date'				TEXT,
 			'applied_date'					TEXT,
 			'version'						TEXT

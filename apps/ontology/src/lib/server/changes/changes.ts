@@ -3,9 +3,19 @@ import { create_concept, get_concept_for_update, update_concept } from './concep
 import { get_version } from '$lib/server/ontology'
 import { default_categories } from '$lib/lookups'
 import { create_change_fields, diff_change_fields } from '$lib/changes'
-import type { OntologyChange, OntologyChangeAction, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult, UserPermissions, OntologyUser } from '$lib/types'
 import type { DbOntologyChange } from '$lib/server/types'
 import type { PartOfSpeech } from '@tabitha/types'
+import type {
+	OntologyChange,
+	OntologyChangeAction,
+	OntologyChangeDataFields,
+	ConceptCreateData, ConceptUpdateData,
+	ApplyPendingResult,
+	UserPermissions,
+	OntologyUser,
+	WorkflowInfo,
+} from '$lib/types'
+import { get_user_names } from '../auth'
 
 export async function get_all_changes(db: D1Database): Promise<OntologyChange[]> {
 	const sql = `
@@ -76,13 +86,13 @@ export async function suggest_change({ db, action, data, user }: ChangeSubmissio
 			concept_part_of_speech,
 			data,
 			action,
-			suggested_by_email,
+			suggested_by_id,
 			suggested_date
 			)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	await db.prepare(sql)
-		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.email!, new Date().toISOString())
+		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.id!, new Date().toISOString())
 		.run()
 	return false
 }
@@ -99,7 +109,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 			concept_part_of_speech,
 			data,
 			action,
-			approved_by_email,
+			approved_by_id,
 			approved_date
 			)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -107,7 +117,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 
 	const approved_date = new Date().toISOString()
 	const result = await db.prepare(sql)
-		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.email!, approved_date)
+		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.id!, approved_date)
 		.run()
 
 	const change: OntologyChange = {
@@ -116,7 +126,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 		data: change_data,
 		action,
 		suggested_by: null,
-		approved_by: { email: user.email!, date: new Date(approved_date) },
+		approved_by: { id: user.id!, name: '', date: new Date(approved_date) },
 		applied_date: null,
 		version: null,
 	}
@@ -153,10 +163,10 @@ type ApproveChangeOptions = {
 export async function approve_change({ db, id, user }: ApproveChangeOptions): Promise<OntologyChange> {
 	const sql = `
 		UPDATE Changes
-		SET approved_by_email = ?, approved_date = ?
+		SET approved_by_id = ?, approved_date = ?
 		WHERE id = ? AND approved_date IS NULL
 	`
-	await db.prepare(sql).bind(user.email!, new Date().toISOString(), id).run()
+	await db.prepare(sql).bind(user.id!, new Date().toISOString(), id).run()
 
 	return (await get_change({ db, id }))!
 }
@@ -169,9 +179,9 @@ function transform(db_change: DbOntologyChange): OntologyChange {
 		concept_part_of_speech,
 		data,
 		action,
-		suggested_by_email,
+		suggested_by_id,
 		suggested_date,
-		approved_by_email,
+		approved_by_id,
 		approved_date,
 		applied_date,
 		version,
@@ -186,11 +196,25 @@ function transform(db_change: DbOntologyChange): OntologyChange {
 		},
 		data: JSON.parse(data) as OntologyChangeDataFields,
 		action,
-		suggested_by: suggested_by_email && suggested_date ? { email: suggested_by_email, date: new Date(suggested_date) } : null,
-		approved_by: approved_by_email && approved_date ? { email: approved_by_email, date: new Date(approved_date) } : null,
+		suggested_by: suggested_by_id && suggested_date ? { id: suggested_by_id, date: new Date(suggested_date), name: '' } : null,
+		approved_by: approved_by_id && approved_date ? { id: approved_by_id, date: new Date(approved_date), name: '' } : null,
 		applied_date: applied_date ? new Date(applied_date) : null,
 		version,
 	}
+}
+
+export async function transform_with_users({ changes, locals }: { changes: OntologyChange[], locals: App.Locals }): Promise<OntologyChange[]> {
+	const user_names = locals ? await get_user_names(locals) : new Map()
+
+	function apply_username(info: WorkflowInfo | null): WorkflowInfo | null {
+		return info ? { id: undefined, name: user_names.get(info.id) ?? '', date: info.date } : null
+	}
+
+	return changes.map(change => ({
+		...change,
+		suggested_by: apply_username(change.suggested_by),
+		approved_by: apply_username(change.approved_by),
+	}))
 }
 
 export async function apply_pending_changes(db: D1Database): Promise<ApplyPendingResult> {

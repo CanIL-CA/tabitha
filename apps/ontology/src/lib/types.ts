@@ -110,7 +110,8 @@ export type OntologyChange = {
 }
 
 export type WorkflowInfo = {
-	email: UserEmail
+	id?: number
+	name: string
 	date: Date
 }
 
