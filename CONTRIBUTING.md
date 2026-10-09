@@ -408,6 +408,48 @@ The Ontology uses a three-part semantic version number (`MAJOR.MINOR.PATCH`), an
 
 The `PATCH` bumps are handled automatically through the changes tracking system. A `MAJOR` or `MINOR` bump will need to be decided and updated manually through the web app.
 
+### Making local changes to Database schemas
+
+Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). There are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
+
+The process for the Auth db is a bit different and described below.
+
+#### Auth
+
+Auth is a single, undated database shared by production and Previews, and `bun run migrate` never rebuilds it. Committing `create.ts` therefore doesn't change the deployed schema. The matching change has to be applied to the remote `Auth` database as its own step, timed with the deploy of the code that needs it. Teammates get the new local schema by running the below steps 2–3 themselves.
+
+The whole schema, including the seeded `Permissions` rows, lives in `tools/databases/migrations/auth/create.ts`. That script drops and recreates every table, so rebuilding from the script is the quickest path.
+
+These are the steps for making and using changes to the schema locally:
+
+1. Change the table definitions or seeded rows in `tools/databases/migrations/auth/create.ts`.
+2. Rebuild `raw/Auth.tabitha.sqlite` and dump it to its snapshot. The `grep` drops the `PRAGMA`/`BEGIN TRANSACTION`/`COMMIT` lines, as the migration orchestrator does, because `db:load` wraps the import in its own transaction. On Windows, run this in Git Bash or WSL.
+
+   ```bash
+   cd tools/databases
+   bun run migrate:auth
+   sqlite3 --escape off raw/Auth.tabitha.sqlite .dump | grep -vE '^(PRAGMA|BEGIN TRANSACTION|COMMIT)' > snapshots/Auth.tabitha.sqlite.sql
+   cd ../..
+   ```
+
+3. Load the new snapshot. It has no users, so grant your permissions again:
+
+   ```bash
+   bun run db:load:ontology
+   bun run db:grant your.email@example.com
+   ```
+
+The Auth db in the ontology app's .wrangler folder will not have the schema changes and you can run the server locally.
+
+Auth is a single, undated database shared by production and Previews, and `bun run migrate` never rebuilds it. Committing `create.ts` therefore doesn't change the deployed schema. The matching change has to be applied to the remote `Auth` database as its own step, timed with the deploy of the code that needs it. Teammates get the new local schema by running steps 2–3 themselves.
+
+#### Ontology/Sources/Targets
+
+At this point, there are two options for locally testing a schema change to these databases:
+
+1. Alter the tables in the existing db in .wrangler using 'DB Browser for Sqlite' or another similar program.
+2. Locally re-run the whole migration after making the sql changes in the migration scripts. See [`tools/databases/README.md`](tools/databases/README.md) for more details.
+
 ---
 
 ## 🧪 Pre-Commit / Pre-PR Verification Gate
