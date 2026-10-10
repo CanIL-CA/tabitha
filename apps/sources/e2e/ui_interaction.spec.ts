@@ -2,15 +2,15 @@
 import { expect, test } from '@playwright/test'
 
 test('search bar parses reference and redirects to verse page', async ({ page }) => {
-	// this is the first test to load a page on a cold dev server, where Vite's dependency optimizer
-	// can make that first load take several seconds; settle it before the 5s redirect assertion starts
-	await page.goto('/', { waitUntil: 'networkidle' })
+	await page.goto('/')
 
 	const searchInput = page.locator('#search_query')
 	await searchInput.fill('Genesis 1:1')
 	await page.locator('form[role="search"] button[type="submit"]').click()
 
-	await expect(page).toHaveURL(/\/Bible\/Genesis\/1\/1$/)
+	// this is the first test to load a page on a cold dev server, where Vite's dependency optimizer
+	// can stall that first load for several seconds, longer than the default 5s assertion timeout
+	await expect(page).toHaveURL(/\/Bible\/Genesis\/1\/1$/, { timeout: 20_000 })
 })
 
 test('search bar runs a Phase 1 text search for non-reference input, without a full page load', async ({ page }) => {
