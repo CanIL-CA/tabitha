@@ -14,9 +14,13 @@ const USAGE = 'Usage: bun sources/update_status.ts <d1_database_name> [csv_dir] 
  * defaults to today (both fall back to the latest available file if an exact match isn't found, the
  * same as everywhere else in the pipeline).
  */
-export async function apply_status_to_d1(d1_database_name: string, csv_dir: string, date: string): Promise<void> {
+export async function apply_status_to_d1({ d1_database_name, csv_dir, date }: {
+	d1_database_name: string
+	csv_dir: string
+	date: string
+}): Promise<void> {
 	const runner = collecting_sql_runner()
-	await migrate_source_status(runner, csv_dir, date)
+	await migrate_source_status({ runner, csv_dir, date })
 
 	const sql_file = `raw/.status-update-${d1_database_name}-${date}.sql`
 	await Bun.write(sql_file, render_sql_file(runner.statements))
@@ -36,5 +40,5 @@ if (import.meta.main) {
 	const csv_dir = Bun.argv[3] || join(import.meta.dir, '../../data/status')
 	const date = Bun.argv[4] || new Date().toISOString().slice(0, 10)
 
-	await apply_status_to_d1(d1_database_name, csv_dir, date)
+	await apply_status_to_d1({ d1_database_name, csv_dir, date })
 }

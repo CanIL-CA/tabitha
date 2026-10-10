@@ -1,215 +1,91 @@
-import { $ } from 'bun'
-import { appendFile } from 'node:fs/promises'
+import { $, Glob } from 'bun'
+import { existsSync } from 'node:fs'
+import { appendFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+	coverage_by_workspace,
+	coverage_markdown,
+	tests_by_workspace,
+	vitest_workspaces,
+	type CoverageSummaryJson,
+	type TestResultsJson,
+	type WorkspaceManifest,
+} from './coverage_summary'
 
-type PackageConfig = {
-	name: string
-	pkg: string
-	dir: string
-	/** Package has @vitest/coverage-v8 wired up and can run `vitest --coverage`. */
-	hasCoverage: boolean
-	/** Package has a `test:unit` script at all (some packages have none, e.g. packages/ui). */
-	hasTestScript: boolean
+const root_dir = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..')
+const coverage_dir = join(root_dir, 'coverage')
+// The merged summary; CI saves it from main as the next PRs' baseline (see the unit_tests job in ci.yml).
+const summary_path = join(coverage_dir, 'coverage-summary.json')
+const markdown_path = join(coverage_dir, 'report.md')
+// CI restores main's last summary here; locally it's usually absent, which leaves the delta out.
+const baseline_dir = join(root_dir, 'coverage-baseline')
+const baseline_path = join(baseline_dir, 'coverage-summary.json')
+const baseline_label_path = join(baseline_dir, 'label.txt')
+
+async function read_json<T>(path: string): Promise<T> {
+	return JSON.parse(await readFile(path, 'utf-8'))
 }
 
-type CoverageMetrics = {
-	name: string
-	pkg: string
-	testCount: number
-	fileCount: number
-	statements: string
-	branches: string
-	functions: string
-	lines: string
-	status: string
+async function read_manifests(): Promise<WorkspaceManifest[]> {
+	const manifests: WorkspaceManifest[] = []
+	for (const path of new Glob('{apps,packages}/*/package.json').scanSync({ cwd: root_dir })) {
+		const { scripts } = await read_json<{ scripts?: Record<string, string> }>(join(root_dir, path))
+		manifests.push({ dir: path.replace(/\/package\.json$/, ''), scripts })
+	}
+	return manifests
 }
-
-const PACKAGES_TO_COVER: PackageConfig[] = [
-	{ name: 'apps/editor (Linguistic Core)', pkg: '@tabitha/editor', dir: 'apps/editor', hasCoverage: true, hasTestScript: true },
-	{ name: 'apps/sources (Source Text & Encoding)', pkg: '@tabitha/sources', dir: 'apps/sources', hasCoverage: true, hasTestScript: true },
-	{ name: 'apps/ontology (Semantic Concepts)', pkg: '@tabitha/ontology', dir: 'apps/ontology', hasCoverage: true, hasTestScript: true },
-	{ name: 'apps/targets (Target Language Forms)', pkg: '@tabitha/targets', dir: 'apps/targets', hasCoverage: true, hasTestScript: true },
-	{ name: 'apps/copilot (AI Assist)', pkg: '@tabitha/copilot', dir: 'apps/copilot', hasCoverage: false, hasTestScript: true },
-	{ name: 'apps/www (Public Website)', pkg: '@tabitha/www', dir: 'apps/www', hasCoverage: false, hasTestScript: false },
-	{ name: 'apps/scheduler (Cron Triggers)', pkg: '@tabitha/scheduler', dir: 'apps/scheduler', hasCoverage: false, hasTestScript: true },
-	{ name: 'packages/api-client (Typed SDK)', pkg: '@tabitha/api-client', dir: 'packages/api-client', hasCoverage: true, hasTestScript: true },
-	{ name: 'packages/types (Shared Types)', pkg: '@tabitha/types', dir: 'packages/types', hasCoverage: false, hasTestScript: true },
-	{ name: 'packages/ui (Component Library)', pkg: '@tabitha/ui', dir: 'packages/ui', hasCoverage: false, hasTestScript: false },
-]
 
 async function run_coverage_report() {
-	console.log(`
-============================================================
-       📊 TaBiThA Unit Test Coverage & CI Reporter
-============================================================
-`)
+	await rm(coverage_dir, { recursive: true, force: true })
+	await mkdir(coverage_dir, { recursive: true })
 
-	const is_ci = process.env.GITHUB_ACTIONS === 'true'
+	// SvelteKit's Vite plugin resolves the app from the working directory, so each workspace runs
+	// in its own directory and the per-file summaries are merged here. Every workspace covers only
+	// its own src/, so no file appears twice.
+	const summary: CoverageSummaryJson = {}
+	const results: TestResultsJson = { success: true, numTotalTests: 0, testResults: [] }
+	let failed = false
+	for (const dir of vitest_workspaces(await read_manifests())) {
+		const out_dir = join(coverage_dir, 'workspaces', dir)
+		const results_path = join(out_dir, 'test-results.json')
+		console.log(`🧪 ${dir}`)
+		const run = await $`bunx vitest run src --passWithNoTests --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=${out_dir} --coverage.include=${'src/**/*.{js,ts,svelte}'} --coverage.exclude=${'src/lib/paraglide/**'} --reporter=dot --reporter=json --outputFile.json=${results_path}`
+			.cwd(join(root_dir, dir))
+			.nothrow()
+		if (run.exitCode !== 0) {
+			failed = true
+			console.error(`❌ ${dir}: unit tests failed`)
+		}
+
+		const workspace_summary = join(out_dir, 'coverage-summary.json')
+		if (existsSync(workspace_summary)) Object.assign(summary, await read_json<CoverageSummaryJson>(workspace_summary))
+		if (existsSync(results_path)) {
+			const workspace_results = await read_json<TestResultsJson>(results_path)
+			results.testResults.push(...workspace_results.testResults)
+			results.numTotalTests += workspace_results.numTotalTests
+		}
+	}
+	delete summary.total
+	await writeFile(summary_path, JSON.stringify(summary), 'utf-8')
+
+	const coverage = coverage_by_workspace({ root_dir, summary })
+	const tests = tests_by_workspace({ root_dir, results })
+	const baseline = existsSync(baseline_path)
+		? coverage_by_workspace({ root_dir, summary: await read_json<CoverageSummaryJson>(baseline_path) })
+		: undefined
+	const baseline_label = existsSync(baseline_label_path) ? (await readFile(baseline_label_path, 'utf-8')).trim() : undefined
+
+	const markdown = coverage_markdown({ coverage, tests, baseline, baseline_label })
+	await writeFile(markdown_path, markdown, 'utf-8')
+	console.log(`\n${markdown}`)
+
 	const summary_file = process.env.GITHUB_STEP_SUMMARY
+	if (summary_file) await appendFile(summary_file, markdown, 'utf-8')
 
-	// 1. Run unit tests across the monorepo
-	console.log('🧪 Executing workspace unit test suites...')
-	const test_proc = await $`bun run test:unit`
-	if (test_proc.exitCode !== 0) {
+	if (failed) {
 		console.error('❌ Unit tests failed.')
-		process.exit(test_proc.exitCode)
-	}
-
-	console.log('\n✅ All unit tests passed cleanly across workspace!\n')
-
-	// 2. Generate coverage breakdown for all active packages, reading real counts
-	//    out of each vitest run rather than trusting stale, hand-maintained numbers.
-	console.log('📊 Calculating code coverage metrics via v8 for all packages...')
-	const results: CoverageMetrics[] = []
-
-	for (const p of PACKAGES_TO_COVER) {
-		if (!p.hasTestScript) {
-			results.push({
-				name: p.name,
-				pkg: p.pkg,
-				fileCount: 0,
-				testCount: 0,
-				statements: 'N/A',
-				branches: 'N/A',
-				functions: 'N/A',
-				lines: 'N/A',
-				status: '⚪ No test script',
-			})
-			continue
-		}
-
-		try {
-			// `coverage.include` counts untested files too (Vitest 3's `coverage.all`); packages
-			// without a Vite config wouldn't get it from @tabitha/vite-config
-			const vitest_args = p.hasCoverage
-				? ['--coverage', '--coverage.reporter=text-summary', '--coverage.include=src/**/*.{js,ts,svelte}']
-				: []
-			const cov_proc = await $`cd ${p.dir} && bunx vitest run src --passWithNoTests ${vitest_args}`.quiet()
-			const output = cov_proc.text()
-
-			const file_match = output.match(/Test Files\s+.*\((\d+)\)/)
-			const tests_match = output.match(/Tests\s+.*\((\d+)\)/)
-			const fileCount = file_match ? Number(file_match[1]) : 0
-			const testCount = tests_match ? Number(tests_match[1]) : 0
-
-			if (fileCount === 0) {
-				results.push({
-					name: p.name,
-					pkg: p.pkg,
-					fileCount: 0,
-					testCount: 0,
-					statements: 'N/A',
-					branches: 'N/A',
-					functions: 'N/A',
-					lines: 'N/A',
-					status: '🟡 No test files found',
-				})
-				continue
-			}
-
-			if (!p.hasCoverage) {
-				results.push({
-					name: p.name,
-					pkg: p.pkg,
-					fileCount,
-					testCount,
-					statements: 'N/A',
-					branches: 'N/A',
-					functions: 'N/A',
-					lines: 'N/A',
-					status: '🟢 Passing (no coverage config)',
-				})
-				continue
-			}
-
-			const stmts_match = output.match(/Statements\s*:\s*([0-9.]+%)/)
-			const branch_match = output.match(/Branches\s*:\s*([0-9.]+%)/)
-			const funcs_match = output.match(/Functions\s*:\s*([0-9.]+%)/)
-			const lines_match = output.match(/Lines\s*:\s*([0-9.]+%)/)
-
-			if (stmts_match && lines_match) {
-				results.push({
-					name: p.name,
-					pkg: p.pkg,
-					fileCount,
-					testCount,
-					statements: stmts_match[1],
-					branches: branch_match ? branch_match[1] : 'N/A',
-					functions: funcs_match ? funcs_match[1] : 'N/A',
-					lines: lines_match[1],
-					status: '🟢 Passing',
-				})
-			} else {
-				results.push({
-					name: p.name,
-					pkg: p.pkg,
-					fileCount,
-					testCount,
-					statements: 'N/A',
-					branches: 'N/A',
-					functions: 'N/A',
-					lines: 'N/A',
-					status: '⚠️ Coverage unavailable',
-				})
-			}
-		} catch (err: unknown) {
-			console.warn(`⚠️  Could not extract coverage for ${p.pkg}:`, err)
-			results.push({
-				name: p.name,
-				pkg: p.pkg,
-				fileCount: 0,
-				testCount: 0,
-				statements: 'N/A',
-				branches: 'N/A',
-				functions: 'N/A',
-				lines: 'N/A',
-				status: '🔴 Run failed',
-			})
-		}
-	}
-
-	// 3. Print coverage summary table to console log
-	if (results.length > 0) {
-		console.log('\n============================= Coverage Summary =============================')
-		console.log('Package / App                          | Lines   | Stmts   | Branch  | Funcs')
-		console.log('---------------------------------------|---------|---------|---------|-------')
-		for (const r of results) {
-			const name = r.name.padEnd(38, ' ')
-			const lines = r.lines.padEnd(7, ' ')
-			const stmts = r.statements.padEnd(7, ' ')
-			const branches = r.branches.padEnd(7, ' ')
-			const funcs = r.functions.padEnd(7, ' ')
-			console.log(`${name} | ${lines} | ${stmts} | ${branches} | ${funcs}`)
-		}
-		console.log('============================================================================\n')
-	}
-
-	// 4. Output to GitHub Step Summary if running in CI
-	if (is_ci && summary_file) {
-		const total_tests = results.reduce((acc, r) => acc + r.testCount, 0)
-		const total_files = results.reduce((acc, r) => acc + r.fileCount, 0)
-
-		let markdown = '## 📊 Test Suite & Code Coverage Summary\n\n'
-		markdown += `✨ **${total_tests} Unit Tests Executed across ${total_files} Test Suites**\n\n`
-
-		markdown += '### 📈 Code Coverage Metrics\n\n'
-		markdown += '| Subsystem / Package | Statements | Branches | Functions | Lines | Status |\n'
-		markdown += '| :--- | :--- | :--- | :--- | :--- | :--- |\n'
-		for (const r of results) {
-			markdown += `| **${r.name}** | \`${r.statements}\` | \`${r.branches}\` | \`${r.functions}\` | \`${r.lines}\` | ${r.status} |\n`
-		}
-		markdown += '\n'
-
-		markdown += '### 🧪 Test Suite Breakdown\n\n'
-		markdown += '| Workspace Test Suite | Test Files | Total Tests | Status |\n'
-		markdown += '| :--- | :--- | :--- | :--- |\n'
-		for (const r of results) {
-			markdown += `| **${r.pkg}** | ${r.fileCount} files | ${r.testCount} tests | ${r.status} |\n`
-		}
-		markdown += '\n'
-		markdown += '> Pure in-memory unit tests with zero network or database dependencies.\n'
-
-		await appendFile(summary_file, markdown, 'utf-8')
-		console.log('📝 Published full coverage dashboard to GitHub Step Summary.')
+		process.exit(1)
 	}
 }
 

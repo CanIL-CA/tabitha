@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { default_settings } from '$lib/lookups'
+import { default_settings } from '#lib/lookups.js'
 import { get_customized_profile_fields, to_copilot_run_event } from './usage'
 import type { CopilotResult } from '@tabitha/types'
 

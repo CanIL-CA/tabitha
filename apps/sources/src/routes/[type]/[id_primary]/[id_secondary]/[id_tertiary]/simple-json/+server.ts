@@ -1,9 +1,9 @@
-import { get_source_data } from '$lib/data/read'
-import { transform_semantic_encoding } from '$lib/encoding/semantic_encoding'
-import { simplify_encoding } from '$lib/encoding/simplify'
+import { get_source_data } from '#lib/data/read.js'
+import { transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
+import { simplify_encoding } from '#lib/encoding/simplify.js'
 import { strip_gloss_classifiers } from '@tabitha/types/patterns'
 import { create_ontology_client } from '@tabitha/api-client'
-import { error, json } from '@sveltejs/kit'
+import { error } from '@sveltejs/kit'
 import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
 import type { Reference, SourceSimpleJsonResult, SourceEntity } from '@tabitha/types'
 import type { RequestHandler } from './$types'
@@ -25,10 +25,10 @@ export async function GET({ locals: { db }, params: { type, id_primary, id_secon
 
 	if (include_glosses) {
 		const glosses = await fetch_glosses(encoding)
-		return json({ encoding: simple_encoding, glosses } as SourceSimpleJsonResult)
+		return Response.json({ encoding: simple_encoding, glosses } as SourceSimpleJsonResult)
 	}
 
-	return json({ encoding: simple_encoding } as SourceSimpleJsonResult)
+	return Response.json({ encoding: simple_encoding } as SourceSimpleJsonResult)
 }
 
 // Using SourceEntity[] here is simpler because it's flat, whereas SimpleEncodingEntity[] is a structured json tree

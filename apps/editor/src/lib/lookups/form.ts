@@ -1,8 +1,8 @@
 import { PUBLIC_TARGETS_API_HOST } from '$env/static/public'
 import { create_targets_client } from '@tabitha/api-client'
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { create_lookup_result } from '$lib/token'
-import type { Token, LookupResult } from '$lib/types'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { create_lookup_result } from '#lib/token.js'
+import type { Token, LookupResult } from '#lib/types.js'
 import type { TargetFormResult, PartOfSpeech } from '@tabitha/types'
 
 const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST, cache: true })
@@ -14,7 +14,7 @@ export async function check_forms(lookup_token: Token) {
 
 	const lookup_results = (await targets_client.lookup_forms({ word: term, project: 'English' }))
 		.filter(result => !result.stem.includes(' '))
-		.reduce(transform_results, [])
+		.reduce<LookupResult[]>((transformed_results, form_result) => transform_results({ transformed_results, form_result }), [])
 
 	add_missing_forms({ results: lookup_results, term })
 
@@ -39,7 +39,10 @@ export async function check_forms(lookup_token: Token) {
 	 * with the same stem and part-of-speech (eg. Judah), simply take the id of the first one
 	 * and ignore the others. This is what the Analyzer does.
 	 */
-	function transform_results(transformed_results: LookupResult[], form_result: TargetFormResult): LookupResult[] {
+	function transform_results({ transformed_results, form_result }: {
+		transformed_results: LookupResult[]
+		form_result: TargetFormResult
+	}): LookupResult[] {
 		const existing_result = transformed_results.find(LOOKUP_FILTERS.MATCHES_LOOKUP(form_result))
 
 		if (!existing_result) {

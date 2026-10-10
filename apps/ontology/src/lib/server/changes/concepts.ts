@@ -1,7 +1,7 @@
 import type { D1Database } from '@cloudflare/workers-types'
-import { get_concepts } from '$lib/server/ontology'
-import { decode_categorization_for_update, encode_categorization } from '$lib/transformers'
-import type { Concept, DbRowConcept, ConceptCreateData, ConceptUpdateData } from '$lib/types'
+import { get_concepts } from '#lib/server/ontology.js'
+import { decode_categorization_for_update, encode_categorization } from '#lib/transformers.js'
+import type { Concept, DbRowConcept, ConceptCreateData, ConceptUpdateData } from '#lib/types.js'
 import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 
 export async function get_concept_for_update({ db, concept_key }: { db: D1Database, concept_key: ConceptKey }): Promise<ConceptUpdateData | null> {

@@ -1,5 +1,5 @@
 import type { CheckerAutoFix, EditorCheckResult } from '@tabitha/types'
-import { apply_text_insertions } from '$lib/text_insertions'
+import { apply_text_insertions } from '#lib/text_insertions.js'
 import { create_editor_client } from '@tabitha/api-client'
 
 type CheckedText = {

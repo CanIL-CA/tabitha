@@ -9,7 +9,7 @@ describe('GitHub Actions Token & Permissions Audit', () => {
         with:
           github-token: \${{ secrets.PR_SUMMARY_TOKEN }}
 `
-			const findings = find_secret_github_tokens('ci.yml', workflow)
+			const findings = find_secret_github_tokens({ file_path: 'ci.yml', content: workflow })
 			expect(findings.length).toBe(1)
 			expect(findings[0].line_number).toBe(4)
 			expect(findings[0].message).toContain('secrets.PR_SUMMARY_TOKEN')
@@ -22,7 +22,7 @@ describe('GitHub Actions Token & Permissions Audit', () => {
         env:
           GH_TOKEN: \${{ secrets.BOT_PAT }}
 `
-			expect(find_secret_github_tokens('ci.yml', workflow).length).toBe(2)
+			expect(find_secret_github_tokens({ file_path: 'ci.yml', content: workflow }).length).toBe(2)
 		})
 
 		it('allows the built-in secrets.GITHUB_TOKEN', () => {
@@ -31,7 +31,7 @@ describe('GitHub Actions Token & Permissions Audit', () => {
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
 `
-			expect(find_secret_github_tokens('ci.yml', workflow)).toEqual([])
+			expect(find_secret_github_tokens({ file_path: 'ci.yml', content: workflow })).toEqual([])
 		})
 
 		it('ignores non-GitHub tokens such as Cloudflare API tokens', () => {
@@ -39,14 +39,14 @@ describe('GitHub Actions Token & Permissions Audit', () => {
         env:
           CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN_PREVIEW_DEPLOY }}
 `
-			expect(find_secret_github_tokens('ci.yml', workflow)).toEqual([])
+			expect(find_secret_github_tokens({ file_path: 'ci.yml', content: workflow })).toEqual([])
 		})
 
 		it('ignores commented-out lines', () => {
 			const workflow = `
           # github-token: \${{ secrets.PR_SUMMARY_TOKEN }}
 `
-			expect(find_secret_github_tokens('ci.yml', workflow)).toEqual([])
+			expect(find_secret_github_tokens({ file_path: 'ci.yml', content: workflow })).toEqual([])
 		})
 	})
 
@@ -59,7 +59,7 @@ jobs:
     permissions:
       contents: read
 `
-			const findings = find_missing_top_level_permissions('backup.yml', workflow)
+			const findings = find_missing_top_level_permissions({ file_path: 'backup.yml', content: workflow })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('Missing Top-Level Permissions')
 		})
@@ -71,7 +71,7 @@ permissions:
   contents: read
 jobs: {}
 `
-			expect(find_missing_top_level_permissions('ci.yml', workflow)).toEqual([])
+			expect(find_missing_top_level_permissions({ file_path: 'ci.yml', content: workflow })).toEqual([])
 		})
 	})
 })

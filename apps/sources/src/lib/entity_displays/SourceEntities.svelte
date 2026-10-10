@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	import Concept from './Concept.svelte'
 	import BoundaryEnd from './BoundaryEnd.svelte'
 	import BoundaryStart from './BoundaryStart.svelte'
 	import { Punctuation } from '@tabitha/ui'
-	import { is_boundary_end, is_boundary_start } from '$lib/encoding/entity_filters'
+	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
 
 	type IndexRange = [number, number]
 

@@ -383,7 +383,7 @@ Only the letter needs choosing per app — color, shape, and sizing are shared, 
 UI text is translated with [Paraglide JS](https://paraglidejs.com/sveltekit), and the locale comes from the browser ([ADR 0019](docs/decisions/0019-i18n-via-paraglide.md)). `apps/copilot` is the reference implementation.
 
 1. Copy `apps/copilot/project.inlang/settings.json` into the app. Keep `packages/ui/messages` first in `pathPattern`, so the shared `@tabitha/ui` strings are compiled in. Inlang writes its own `.gitignore`, `README.md`, and cache into that folder; only `settings.json` is committed.
-2. Add `messages/en.json` and `messages/id.json` using `snake_case` keys, and use them as `import { m } from '$lib/paraglide/messages'` → `m.some_key()`.
+2. Add `messages/en.json` and `messages/id.json` using `snake_case` keys, and use them as `import { m } from '#lib/paraglide/messages.js'` → `m.some_key()`.
 3. Pass `i18n: true` to `create_app_vite_config`.
 4. Change the `check` script to `bun run prepare && tabitha-compile-messages && bun run check:svelte`, so svelte-check can see the generated modules. Keep the compile out of `prepare`: `bun install` runs `prepare` and can start it before Paraglide's dependencies finish linking, which fails the install.
 5. In `hooks.server.ts`, add a `handle` that wraps `paraglideMiddleware` and replaces `%paraglide.lang%`, and set `<html lang="%paraglide.lang%">` in `app.html` (copy both from copilot).

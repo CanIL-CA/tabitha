@@ -9,7 +9,7 @@ describe('Storage & Cookie Security Checker', () => {
 					document.cookie = 'user=test; path=/'
 				}
 			`
-			const findings = analyze_file_storage_rules('/apps/test/test.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/test.ts', content: code })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('No Direct document.cookie')
 			expect(findings[0].severity).toBe('error')
@@ -19,7 +19,7 @@ describe('Storage & Cookie Security Checker', () => {
 			const code = `
 				const cookies = document.cookie
 			`
-			const findings = analyze_file_storage_rules('/apps/test/test.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/test.ts', content: code })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('No Direct document.cookie')
 		})
@@ -30,7 +30,7 @@ describe('Storage & Cookie Security Checker', () => {
 			const code = `
 				localStorage.setItem('auth_token', token)
 			`
-			const findings = analyze_file_storage_rules('/apps/test/test.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/test.ts', content: code })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('No Sensitive Storage Keys')
 			expect(findings[0].snippet).toContain('auth_token')
@@ -40,7 +40,7 @@ describe('Storage & Cookie Security Checker', () => {
 			const code = `
 				sessionStorage.setItem('user_session_id', id)
 			`
-			const findings = analyze_file_storage_rules('/apps/test/test.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/test.ts', content: code })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('No Sensitive Storage Keys')
 		})
@@ -49,7 +49,7 @@ describe('Storage & Cookie Security Checker', () => {
 			const code = `
 				let user = persisted('user_jwt_token', {})
 			`
-			const findings = analyze_file_storage_rules('/apps/test/test.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/test.ts', content: code })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('No Sensitive Storage Keys')
 		})
@@ -60,7 +60,7 @@ describe('Storage & Cookie Security Checker', () => {
 				localStorage.setItem('search_scope', 'stems')
 				localStorage.setItem('source_view_settings', JSON.stringify({ show_hover_popups: true }))
 			`
-			const findings = analyze_file_storage_rules('/apps/test/test.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/test.ts', content: code })
 			expect(findings.length).toBe(0)
 		})
 	})
@@ -70,7 +70,7 @@ describe('Storage & Cookie Security Checker', () => {
 			const code = `
 				cookies.set('session', id, { httpOnly: false, path: '/' })
 			`
-			const findings = analyze_file_storage_rules('/apps/test/+server.ts', code)
+			const findings = analyze_file_storage_rules({ file_path: '/apps/test/+server.ts', content: code })
 			expect(findings.length).toBe(1)
 			expect(findings[0].rule_name).toBe('Enforce HttpOnly Cookies')
 		})

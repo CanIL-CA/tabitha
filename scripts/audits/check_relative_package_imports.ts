@@ -44,7 +44,10 @@ async function get_scannable_files(dir: string): Promise<string[]> {
 
 // A resolved specifier belongs to a package if it lands inside that package's directory --
 // prefixed with a path separator so e.g. "apps/targets" doesn't false-match "apps/targets-old".
-function find_containing_package(path: string, packages: WorkspacePackage[]): WorkspacePackage | undefined {
+function find_containing_package({ path, packages }: {
+	path: string
+	packages: WorkspacePackage[]
+}): WorkspacePackage | undefined {
 	return packages.find(pkg => path === pkg.dir || path.startsWith(`${pkg.dir}${sep}`))
 }
 
@@ -58,14 +61,14 @@ async function read_package_name(package_json_path: string): Promise<string> {
 // importing file's own package -- a same-directory `./sibling` import never needs checking, and
 // deliberately isn't flagged by this rule even when it could in principle be rewritten as a
 // package-qualified import (see AGENTS.md's "Cross-package relative imports" for why).
-export function scan_file_for_boundary_violations(
-	file_path: string,
-	content: string,
-	importing_pkg: WorkspacePackage,
-	importing_pkg_name: string,
-	all_packages: WorkspacePackage[],
-	package_names: ReadonlyMap<string, string>,
-): RelativePackageImportFinding[] {
+export function scan_file_for_boundary_violations({ file_path, content, importing_pkg, importing_pkg_name, all_packages, package_names }: {
+	file_path: string
+	content: string
+	importing_pkg: WorkspacePackage
+	importing_pkg_name: string
+	all_packages: WorkspacePackage[]
+	package_names: ReadonlyMap<string, string>
+}): RelativePackageImportFinding[] {
 	const findings: RelativePackageImportFinding[] = []
 	const dir = dirname(file_path)
 	const regex = new RegExp(PARENT_RELATIVE_IMPORT_PATTERN)
@@ -74,7 +77,7 @@ export function scan_file_for_boundary_violations(
 	while ((match = regex.exec(content)) !== null) {
 		const specifier = match[1]
 		const resolved = resolve(dir, specifier)
-		const target_pkg = find_containing_package(resolved, all_packages)
+		const target_pkg = find_containing_package({ path: resolved, packages: all_packages })
 		if (!target_pkg || target_pkg.dir === importing_pkg.dir) continue
 
 		const line_number = content.substring(0, match.index).split('\n').length
@@ -93,13 +96,17 @@ export function scan_file_for_boundary_violations(
 	return findings
 }
 
-async function analyze_package(pkg: WorkspacePackage, all_packages: WorkspacePackage[], package_names: ReadonlyMap<string, string>): Promise<RelativePackageImportFinding[]> {
+async function analyze_package({ pkg, all_packages, package_names }: {
+	pkg: WorkspacePackage
+	all_packages: WorkspacePackage[]
+	package_names: ReadonlyMap<string, string>
+}): Promise<RelativePackageImportFinding[]> {
 	const importing_pkg_name = package_names.get(pkg.dir) ?? pkg.name
 	const files = await get_scannable_files(pkg.dir)
 
 	const findings = (await Promise.all(files.map(async file_path => {
 		const content = await readFile(file_path, 'utf-8')
-		return scan_file_for_boundary_violations(file_path, content, pkg, importing_pkg_name, all_packages, package_names)
+		return scan_file_for_boundary_violations({ file_path, content, importing_pkg: pkg, importing_pkg_name, all_packages, package_names })
 	}))).flat()
 
 	return findings
@@ -109,7 +116,7 @@ export async function scan_relative_package_imports(): Promise<{ scanned: Worksp
 	const packages = await get_workspace_packages()
 	const package_names = new Map(await Promise.all(packages.map(async pkg => [pkg.dir, await read_package_name(pkg.package_json_path)] as const)))
 
-	const all_findings = (await Promise.all(packages.map(pkg => analyze_package(pkg, packages, package_names)))).flat()
+	const all_findings = (await Promise.all(packages.map(pkg => analyze_package({ pkg, all_packages: packages, package_names })))).flat()
 
 	return { scanned: packages, findings: all_findings }
 }

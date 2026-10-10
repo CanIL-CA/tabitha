@@ -33,6 +33,7 @@ playwright-report/
 blob-report/
 playwright/.cache/
 coverage/
+coverage-baseline/
 **/e2e/.auth/
 
 # OS & Logs

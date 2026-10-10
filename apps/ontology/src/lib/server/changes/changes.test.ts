@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { D1Database } from '@cloudflare/workers-types'
 import type { User } from '@auth/sveltekit'
-import type { OntologyChange, ConceptCreateData } from '$lib/types'
+import type { OntologyChange, ConceptCreateData } from '#lib/types.js'
 
 vi.mock('./concepts', () => ({
 	create_concept: vi.fn().mockResolvedValue(undefined),

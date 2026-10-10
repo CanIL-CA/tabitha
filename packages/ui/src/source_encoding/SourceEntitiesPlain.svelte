@@ -16,9 +16,7 @@
 
 	let { source_entities, ontology_base_url, highlight_terms, highlight_concept }: Props = $props()
 
-	let main_clauses = $derived(source_entities.reduce(clause_reducer, [] as SourceEntity[][]))
-
-	function clause_reducer(clauses: SourceEntity[][], entity: SourceEntity) {
+	let main_clauses = $derived(source_entities.reduce((clauses, entity) => {
 		if (entity.value === '{') {
 			clauses.push([])
 		}
@@ -29,7 +27,7 @@
 		}
 
 		return clauses
-	}
+	}, [] as SourceEntity[][]))
 
 	function is_boundary_start(entity: SourceEntity): boolean {
 		return ['{', '[', '('].includes(entity.value)

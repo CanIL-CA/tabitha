@@ -1,10 +1,10 @@
-import { TOKEN_TYPE, add_tag_to_token, create_token } from '$lib/token'
-import { REGEXES } from '$lib/regexes'
+import { TOKEN_TYPE, add_tag_to_token, create_token } from '#lib/token.js'
+import { REGEXES } from '#lib/regexes.js'
 import { PRONOUN_RULES } from './pronoun_rules'
 import { create_context_filter, create_token_filter, simple_rule_action, from_built_in_rule } from './rules_parser'
 import type { CheckerTokenType } from '@tabitha/types'
-import type { Token } from '$lib/types'
-import type { BuiltInRule } from '$lib/rules/types'
+import type { Token } from '#lib/types.js'
+import type { BuiltInRule } from '#lib/rules/types.js'
 
 /**
  * These rules are for tagging tokens based on the syntax. These cannot rely on any lookup data.

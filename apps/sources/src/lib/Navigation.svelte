@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Reference } from '@tabitha/types'
-	import type { NavData } from '$lib/types'
+	import type { NavData } from '#lib/types.js'
 	type Props = {
 		nav_data: NavData
 		url_end?: string

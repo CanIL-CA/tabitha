@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { usage_info } from '$lib/lookups'
+	import { usage_info } from '#lib/lookups.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
 	type Props = {

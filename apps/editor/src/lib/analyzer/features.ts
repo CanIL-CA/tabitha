@@ -1,7 +1,7 @@
-import { create_context_filter, create_token_filter } from '$lib/rules/rules_parser'
+import { create_context_filter, create_token_filter } from '#lib/rules/rules_parser.js'
 import type { SourceEntityCategory, EntityFeature, FeatureName, FeatureValue } from '@tabitha/types'
-import type { Token } from '$lib/types'
-import type { TokenRule, TokenRuleJsonBase } from '$lib/rules/types'
+import type { Token } from '#lib/types.js'
+import type { TokenRule, TokenRuleJsonBase } from '#lib/rules/types.js'
 
 type FeatureRuleJson = TokenRuleJsonBase | TokenRuleJsonBase[]
 type FeatureValueRules = [FeatureValue, TokenRule[]]

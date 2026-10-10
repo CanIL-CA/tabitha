@@ -1,5 +1,5 @@
-import { get_all_book_statuses } from '$lib/data/status'
-import { testament_groupings } from '$lib/data/lookups'
+import { get_all_book_statuses } from '#lib/data/status.js'
+import { testament_groupings } from '#lib/data/lookups.js'
 import { BIBLE_BOOKS } from '@tabitha/types/patterns'
 import type { PageServerLoad } from './$types'
 

@@ -14,7 +14,10 @@ import {
 // with nobody able to pass an is_authorized() check. This grants your own account access locally, in
 // the same Auth D1 file `db:load`/`vite dev` actually reads from -- resolved the same reliable way
 // db_load.ts does, rather than guessing a file name.
-async function grant_permission(email: string, permissions?: string[]) {
+async function grant_permission({ email, permissions }: {
+	email: string
+	permissions?: string[]
+}) {
 	const config = apps_config.ontology
 	const wrangler = parse_wrangler_jsonc(config.wrangler_path)
 	const auth_db = wrangler?.d1_databases?.find(d1 => d1.binding === 'DB_Auth')
@@ -30,7 +33,7 @@ async function grant_permission(email: string, permissions?: string[]) {
 	let hash = workerd_hash_cache[auth_db.database_id]
 	if (!hash || !existsSync(join(d1_state_dir, `${hash}.sqlite`))) {
 		console.log('🔍 Resolving the local Auth database file...')
-		Object.assign(workerd_hash_cache, await resolve_workerd_hashes(config, [auth_db], d1_state_dir))
+		Object.assign(workerd_hash_cache, await resolve_workerd_hashes({ config, entries: [auth_db], d1_state_dir }))
 		write_workerd_hash_cache(workerd_hash_cache)
 		hash = workerd_hash_cache[auth_db.database_id]
 	}
@@ -81,5 +84,5 @@ if (import.meta.main) {
 		console.error('       With no permissions listed, grants every "ontology" permission.')
 		process.exit(1)
 	}
-	await grant_permission(email, permissions.length ? permissions : undefined)
+	await grant_permission({ email, permissions: permissions.length ? permissions : undefined })
 }

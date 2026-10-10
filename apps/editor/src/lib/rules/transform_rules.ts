@@ -1,14 +1,14 @@
-import { add_tag_to_token, TOKEN_TYPE } from '$lib/token'
+import { add_tag_to_token, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_token_filter, create_token_transform, create_token_transforms, from_built_in_rule, simple_rule_action } from './rules_parser'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
-import type { Token, Tag } from '$lib/types'
+import type { Token, Tag } from '#lib/types.js'
 import type {
 	BuiltInRule,
 	RuleTriggerContext,
 	TokenRule,
 	TokenTransform,
 	TransformRuleJson,
-} from '$lib/rules/types'
+} from '#lib/rules/types.js'
 
 /**
  * These are words that may change their underlying data based on the context around them.
@@ -686,7 +686,10 @@ const transform_rules_json: TransformRuleJson[] = [
 	},
 ]
 
-export function parse_transform_rule(rule_json: TransformRuleJson, index: number): TokenRule {
+export function parse_transform_rule({ rule_json, index }: {
+	rule_json: TransformRuleJson
+	index: number
+}): TokenRule {
 	const trigger = create_token_filter(rule_json['trigger'])
 	const context = create_context_filter(rule_json['context'])
 	const transform = 'transform' in rule_json ? create_token_transform(rule_json['transform']) : null
@@ -782,5 +785,5 @@ function tag_nested_clauses({ clause_token, tag_to_set, rule_id }: { clause_toke
 	tag_clause_tokens(clause_token.sub_tokens)
 }
 
-export const TRANSFORM_RULES = transform_rules_json.map(parse_transform_rule)
+export const TRANSFORM_RULES = transform_rules_json.map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 	.concat(builtin_transform_rules.map(from_built_in_rule('transform')))

@@ -1,5 +1,5 @@
-import { json, type RequestHandler } from '@sveltejs/kit'
-import type { DbRowText } from '$lib/types'
+import type { RequestHandler } from '@sveltejs/kit'
+import type { DbRowText } from '#lib/types.js'
 import type { TargetTextData, TargetTextResult } from '@tabitha/types'
 
 type QueryTextResult = Pick<DbRowText, 'text' | 'audience'>
@@ -37,7 +37,7 @@ export async function GET({ locals: { db }, params: { project, book, chapter, ve
 		texts: merge_ideal_text_results({ text_results, ideal_results }),
 	}
 
-	return json(result)
+	return Response.json(result)
 }
 
 function merge_ideal_text_results({ text_results, ideal_results }: { text_results: QueryTextResult[], ideal_results: QueryTextResult[] }): TargetTextData[] {

@@ -3,11 +3,11 @@
 	import { page } from '$app/state'
 	import Icon from '@iconify/svelte'
 	import { fade } from 'svelte/transition'
-	import ChangeDiffData from '$lib/ChangeDiffData.svelte'
-	import { check_for_pending_creates } from '$lib/offline/pending'
-	import { apply_pending_changes, approve_change } from '$lib/changes'
-	import { format_datetime, format_time } from '$lib/format'
-	import type { OntologyChange } from '$lib/types'
+	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
+	import { check_for_pending_creates } from '#lib/offline/pending.js'
+	import { apply_pending_changes, approve_change } from '#lib/changes.js'
+	import { format_datetime, format_time } from '#lib/format.js'
+	import type { OntologyChange } from '#lib/types.js'
 	import { onMount } from 'svelte'
 
 	let { data }: PageProps = $props()

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { EditorCheckResult } from '@tabitha/types'
-	import BackTranslation from '$lib/BackTranslation.svelte'
-	import CopyButton from '$lib/CopyButton.svelte'
-	import { SaveButton, save_state } from '$lib/save'
-	import { Tokens } from '$lib/tokens'
-	import { check_text, remove_auto_fix } from '$lib/check'
-	import { set_remove_auto_fix } from '$lib/tokens/auto_fix_context'
+	import BackTranslation from '#lib/BackTranslation.svelte'
+	import CopyButton from '#lib/CopyButton.svelte'
+	import { SaveButton, save_state } from '#lib/save/index.js'
+	import { Tokens } from '#lib/tokens/index.js'
+	import { check_text, remove_auto_fix } from '#lib/check.js'
+	import { set_remove_auto_fix } from '#lib/tokens/auto_fix_context.js'
 	import Icon from '@iconify/svelte'
 
 	let entered_text = $state(save_state.value)
@@ -102,7 +102,7 @@
 {/if}
 
 <style lang="postcss">
-	@reference '$lib/app.css';
+	@reference '#lib/app.css';
 
 	/* had to override daisyui's sizing so I could make the line bigger */
 	.divider::before,

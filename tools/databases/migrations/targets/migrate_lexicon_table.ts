@@ -3,12 +3,16 @@ import { create_logger } from '../log'
 
 const log = create_logger('Targets migration')
 
-export function migrate_lexicon_table(tbta_db: Database, project: string, targets_db: Database) {
-	const transformed_data = transform_tbta_data(tbta_db, project)
+export function migrate_lexicon_table({ tbta_db, project, targets_db }: {
+	tbta_db: Database
+	project: string
+	targets_db: Database
+}) {
+	const transformed_data = transform_tbta_data({ tbta_db, project })
 
-	create_tabitha_table(targets_db, project)
+	create_tabitha_table({ targets_db, project })
 
-	load_data(targets_db, transformed_data)
+	load_data({ targets_db, transformed_data })
 }
 
 type TransformedData = {
@@ -21,7 +25,10 @@ type TransformedData = {
 	constituents: string
 }
 
-function transform_tbta_data(tbta_db: Database, project: string): TransformedData[] {
+function transform_tbta_data({ tbta_db, project }: {
+	tbta_db: Database
+	project: string
+}): TransformedData[] {
 	const table_names = [
 		'Adjectives',
 		'Adpositions',
@@ -61,7 +68,10 @@ function transform_tbta_data(tbta_db: Database, project: string): TransformedDat
 	}
 }
 
-function create_tabitha_table(targets_db: Database, project: string) {
+function create_tabitha_table({ targets_db, project }: {
+	targets_db: Database
+	project: string
+}) {
 	log.step(`Creating the "Lexicon" table in ${targets_db.filename} if it does not already exist...`)
 
 	targets_db.run(`
@@ -85,7 +95,10 @@ function create_tabitha_table(targets_db: Database, project: string) {
 	return targets_db
 }
 
-function load_data(targets_db: Database, transformed_data: TransformedData[]) {
+function load_data({ targets_db, transformed_data }: {
+	targets_db: Database
+	transformed_data: TransformedData[]
+}) {
 	log.step(`Loading ${transformed_data[0].project} data into the "Lexicon" table...`)
 
 	for (const { id, project, stem, part_of_speech, gloss, features, constituents } of transformed_data) {

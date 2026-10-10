@@ -56,7 +56,11 @@ type VertexGenerateContentResponse = {
 export function create_ai_client({ app, feature, gateway, defaults }: CreateAiClientOptions): AiClient {
 	const url = build_gateway_url(gateway)
 
-	async function call(contents: unknown, system_instruction: string | undefined, config: AiCallDefaults): Promise<string> {
+	async function call({ contents, system_instruction, config }: {
+		contents: unknown
+		system_instruction: string | undefined
+		config: AiCallDefaults
+	}): Promise<string> {
 		// `httpOptions` is a per-call escape hatch (e.g. ontology's AI-Gateway cache-TTL header) --
 		// it's HTTP transport config, not a Vertex generationConfig field, so it's pulled out here
 		// rather than forwarded into the request body.
@@ -88,10 +92,14 @@ export function create_ai_client({ app, feature, gateway, defaults }: CreateAiCl
 	}
 
 	async function generate_json<T>(params: GenerateJsonParams): Promise<T> {
-		const text = await call(params.contents, params.system_instruction, {
-			...resolve_config(params.config),
-			responseMimeType: 'application/json',
-			responseJsonSchema: params.schema,
+		const text = await call({
+			contents: params.contents,
+			system_instruction: params.system_instruction,
+			config: {
+				...resolve_config(params.config),
+				responseMimeType: 'application/json',
+				responseJsonSchema: params.schema,
+			},
 		})
 
 		try {
@@ -102,7 +110,7 @@ export function create_ai_client({ app, feature, gateway, defaults }: CreateAiCl
 	}
 
 	async function generate_text(params: GenerateTextParams): Promise<string> {
-		return call(params.contents, params.system_instruction, resolve_config(params.config))
+		return call({ contents: params.contents, system_instruction: params.system_instruction, config: resolve_config(params.config) })
 	}
 
 	return { generate_json, generate_text }

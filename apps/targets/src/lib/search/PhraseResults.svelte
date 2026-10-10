@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
-	import { by_book_order } from '@tabitha/types/patterns'
-	import { track_scripture_view } from '$lib/api_bible/fums'
+	import { book_order_index } from '@tabitha/types/patterns'
+	import { track_scripture_view } from '#lib/api_bible/fums.js'
 	import PhraseResultCard from './PhraseResultCard.svelte'
-	import type { PhraseSearchResults } from '$lib/types'
+	import type { PhraseSearchResults } from '#lib/types.js'
 
 	type Props = {
 		results: PhraseSearchResults
@@ -14,7 +14,7 @@
 
 	let { results, search_regex, highlight_terms, project }: Props = $props()
 
-	let sorted_hits = $derived(results.hits.toSorted(by_book_order))
+	let sorted_hits = $derived(results.hits.toSorted((a, b) => book_order_index(a) - book_order_index(b)))
 	let found = $derived(results.hits.length > 0)
 
 	let collapse_states = $state<boolean[]>([])

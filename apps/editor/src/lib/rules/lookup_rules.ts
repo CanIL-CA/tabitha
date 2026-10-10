@@ -1,6 +1,6 @@
-import { create_context_filter, create_token_filter } from '$lib/rules/rules_parser'
+import { create_context_filter, create_token_filter } from '#lib/rules/rules_parser.js'
 import { TOKEN_TYPE } from '../token'
-import type { LookupRuleJson, RuleTriggerContext, TokenRule } from '$lib/rules/types'
+import type { LookupRuleJson, RuleTriggerContext, TokenRule } from '#lib/rules/types.js'
 
 /**
  * These words/phrases (and some others) are accepted by the Analyzer as alternates for
@@ -123,7 +123,10 @@ const lookup_rules_json: LookupRuleJson[] = [
 	},
 ]
 
-export function parse_lookup_rule(rule_json: LookupRuleJson, index: number): TokenRule {
+export function parse_lookup_rule({ rule_json, index }: {
+	rule_json: LookupRuleJson
+	index: number
+}): TokenRule {
 	const trigger = create_token_filter(rule_json['trigger'])
 	const context = create_context_filter(rule_json['context'])
 
@@ -164,4 +167,4 @@ export function parse_lookup_rule(rule_json: LookupRuleJson, index: number): Tok
 	}
 }
 
-export const LOOKUP_RULES = lookup_rules_json.map(parse_lookup_rule)
+export const LOOKUP_RULES = lookup_rules_json.map((rule_json, index) => parse_lookup_rule({ rule_json, index }))

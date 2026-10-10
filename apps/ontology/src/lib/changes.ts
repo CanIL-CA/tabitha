@@ -1,4 +1,4 @@
-import type { OntologyChange, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult } from '$lib/types'
+import type { OntologyChange, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult } from '#lib/types.js'
 
 // fetch()'s res.json() leaves dates as strings, unlike SvelteKit's own load-data serialization, which revives them automatically.
 function revive_dates(raw: OntologyChange): OntologyChange {

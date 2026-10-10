@@ -46,7 +46,7 @@ Keep data normalized as close to the source as possible with deterministic, side
 
 ```typescript
 // Normalized entities by unique ID
-interface EntityState {
+type EntityState = {
 	by_id: Record<string, Word>
 	all_ids: string[]
 }
@@ -146,7 +146,7 @@ const process_concept = (concept: Concept | null): string | null => {
 Model linguistic entities (`Concept`, `SourceEntity`, `Word`, `Clause`) with explicit TypeScript types and discriminating unions. Avoid `any` or `as any`.
 
 ```typescript
-interface BaseEntity {
+type BaseEntity = {
 	readonly id: string
 	readonly created_at: number
 }
@@ -222,8 +222,8 @@ const get_badge_class = (status: string): string =>
 Use `snake_case` for all function, method, variable, file, and directory names. Reserve `PascalCase` strictly for Svelte component names and TypeScript types/interfaces.
 
 ```typescript
-// Types/Interfaces in PascalCase
-interface ConceptPayload {
+// Types in PascalCase
+type ConceptPayload = {
 	concept_id: string
 	root_term: string
 }
@@ -244,7 +244,7 @@ export const fetch_concept_data = async (payload: ConceptPayload): Promise<Conce
 
 ### 11. Pure functions
 
-Functions should be pure and free of side effects wherever practical. Receive one argument (destructuring an options object if multiple inputs are needed) and return one value.
+Functions should be pure and free of side effects wherever practical. Receive one argument (destructuring an options object if multiple inputs are needed) and return one value. ESLint enforces the one-argument half for named functions and class methods; inline callbacks keep whatever shape their API gives them (a sort comparator, `reduce`).
 
 ```typescript
 type FormatWordOptions = {
@@ -275,14 +275,14 @@ export const format_word_label = ({
 
 ```typescript
 // ❌ Avoid: Speculative over-generalized configuration flags
-interface FetchConceptOptions {
+type FetchConceptOptions = {
 	include_hypothetical_future_relations?: boolean
 	experimental_caching_layer_v2?: boolean
 	custom_unsupported_encoder?: (input: string) => unknown
 }
 
 // ✅ Preferred: Concrete, minimal surface area solving the active requirement
-interface FetchConceptOptions {
+type FetchConceptOptions = {
 	readonly concept_id: string
 	readonly include_glosses?: boolean
 }
@@ -333,12 +333,12 @@ export function create_app_vite_config({ port, ...rest }) {
 
 ### 14. SvelteKit data-loading boundaries
 
-Keep `.svelte` component scripts limited to presentation and event wiring. Data fetching, response shaping, derived properties the UI needs, and permission-dependent display decisions belong in the appropriate `load` function or a `$lib` data-layer module, never written inline in the component:
+Keep `.svelte` component scripts limited to presentation and event wiring. Data fetching, response shaping, derived properties the UI needs, and permission-dependent display decisions belong in the appropriate `load` function or a `src/lib` data-layer module, never written inline in the component:
 
-- **`+page.svelte` / `+layout.svelte`** — display only. Read already-shaped `data`, wire up events. No `fetch()` written directly in the component script — this holds regardless of what triggers the call (page load, a click, a keystroke) or where the request goes (our own backend or a third-party API); wrap it in a `$lib` data-layer function the component calls instead. No response parsing, no deriving new properties from raw data, in the component either. The only valid exception is Philosophy #12's YAGNI: a genuinely disposable, single-use, one-line call that will never be touched again, where a wrapper module would be pure ceremony — not a case-by-case judgment call for anything that might be reused or grow.
+- **`+page.svelte` / `+layout.svelte`** — display only. Read already-shaped `data`, wire up events. No `fetch()` written directly in the component script — this holds regardless of what triggers the call (page load, a click, a keystroke) or where the request goes (our own backend or a third-party API); wrap it in a `src/lib` data-layer function the component calls instead. No response parsing, no deriving new properties from raw data, in the component either. The only valid exception is Philosophy #12's YAGNI: a genuinely disposable, single-use, one-line call that will never be touched again, where a wrapper module would be pure ceremony — not a case-by-case judgment call for anything that might be reused or grow.
 - **`+page.ts` / `+layout.ts` (universal load)** — shapes data for the UI and may hold display-adjacent business logic. This is also the only place allowed to depend on browser-only context (e.g. `navigator.language`, `Intl.DateTimeFormat().resolvedOptions().timeZone`), since a universal load reruns once on the client right after SSR.
 - **`+page.server.ts` / `+layout.server.ts`** — a narrow role: server-only session/auth checks and assembling the data a page needs by calling server modules. Not the home for reusable business logic.
-- **`+server.ts` endpoints and `$lib/server/**` modules** — canonical, call-site-independent business logic and data access. A decision like "can this user approve this change?" is computed once here and reused by both an endpoint's authorization check and the value it returns — never re-derived separately in a loader or a component.
+- **`+server.ts` endpoints and `src/lib/server/**` modules** — canonical, call-site-independent business logic and data access. A decision like "can this user approve this change?" is computed once here and reused by both an endpoint's authorization check and the value it returns — never re-derived separately in a loader or a component.
 
 ```svelte
 <!-- ❌ Avoid: fetch, response parsing, and a derived permission decision inline in the component -->
@@ -355,7 +355,7 @@ Keep `.svelte` component scripts limited to presentation and event wiring. Data 
 
 <!-- ✅ Preferred: the component only reads already-shaped data and calls a data-layer function -->
 <script lang="ts">
-	import { approve_change } from '$lib/changes'
+	import { approve_change } from '#lib/changes.js'
 
 	async function approve(change) {
 		changes = changes.map(c => c.id === change.id ? await approve_change(change.id) : c)
@@ -402,7 +402,7 @@ import system_instruction from './review_prompt.md?raw'
 2. **Shared Packages (`packages/*`)**:
    - `@tabitha/types` — Universal TypeScript interfaces. Must remain free of runtime dependencies.
      - **Boundary rule**: a type belongs here if it crosses an app boundary — either it is actually imported by 2+ apps, or it is the shape of data one app sends to or receives from another app's API (even with a single consumer today). API/DB contract types get this lower two-party bar because duplicating them risks silent runtime drift, not just repeated code, so the Rule of Three (§12) does not apply to them.
-     - Everything else — route params, UI-only view models, internal helper shapes — stays local to the app, defined in an explicit module (e.g. `$lib/types.ts`) that `import type`s from `@tabitha/types` where needed.
+     - Everything else — route params, UI-only view models, internal helper shapes — stays local to the app, defined in an explicit module (e.g. `src/lib/types.ts`) that `import type`s from `@tabitha/types` where needed.
      - Do not declare domain types as ambient globals (`declare global { type X = ... }`) outside of SvelteKit's own generated `app.d.ts`. Ambient types hide where a type comes from and make accidental duplicates easy to introduce.
    - `@tabitha/ui` — Reusable Svelte 5 components styled with daisyUI 5.
    - `@tabitha/api-client` — Typed HTTP client for inter-service communication.
@@ -425,14 +425,14 @@ import system_instruction from './review_prompt.md?raw'
 
 ### App-internal lib/routes boundary
 
-`src/lib/**` is an app's shared, reusable layer; `src/routes/**` is page- and endpoint-specific and depends on lib, never the reverse. A type or helper needed by both a route and a `$lib` module belongs in `$lib` (e.g. `$lib/types.ts`) -- never defined inside a route and reached into from `$lib` via a relative import.
+`src/lib/**` is an app's shared, reusable layer; `src/routes/**` is page- and endpoint-specific and depends on lib, never the reverse. A type or helper needed by both a route and a `src/lib` module belongs in `src/lib` (e.g. `src/lib/types.ts`) -- never defined inside a route and reached into from `src/lib` via a relative import.
 
 ```typescript
-// ❌ Avoid: a $lib module reaching into src/routes for a type
+// ❌ Avoid: a src/lib module reaching into src/routes for a type
 import type { AnalysisResult } from '../../routes/analyze/types'
 
-// ✅ Preferred: the type lives in $lib; the route imports it from there too
-import type { AnalysisResult } from '$lib/types'
+// ✅ Preferred: the type lives in src/lib; the route imports it from there too
+import type { AnalysisResult } from '#lib/types.js'
 ```
 
 ### Cross-package relative imports

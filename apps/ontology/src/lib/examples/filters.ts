@@ -1,11 +1,11 @@
-import { by_book_order } from '@tabitha/types/patterns'
+import { book_order_index } from '@tabitha/types/patterns'
 import type {
 	Concept,
 	ContextArgumentMap,
 	FilterMap,
 	FilterRulesMap,
 	Options,
-} from '$lib/types'
+} from '#lib/types.js'
 
 import type { ContextArgumentName, ConceptExample } from '@tabitha/types'
 
@@ -105,7 +105,7 @@ export function derive_filters({ concept, examples }: { concept: Concept, exampl
 	const filters: FilterMap = new Map()
 
 	// The Book filter has to be handled separately because it's a little different than the context filters.
-	const book_names_found_in_examples = examples.toSorted(by_book_order).map(book_name)
+	const book_names_found_in_examples = examples.toSorted((a, b) => book_order_index(a) - book_order_index(b)).map(book_name)
 	filters.set('Book', new Set(['Any', ...book_names_found_in_examples]))
 
 	const context_filters: FilterMap = initialize_filter_map().get(concept.part_of_speech) ?? new Map()

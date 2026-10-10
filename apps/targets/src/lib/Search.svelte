@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { navigating, page } from '$app/state'
 	import Icon from '@iconify/svelte'
-	import { MODE, type SearchMode } from '$lib/search/modes'
+	import { MODE, type SearchMode } from '#lib/search/modes.js'
 
 	const MODE_LABELS: Record<SearchMode, string> = {
 		target: 'Target text',

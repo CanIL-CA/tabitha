@@ -8,7 +8,13 @@ const log = create_logger('File resolution')
  * most recently dated `{dir}/{prefix}_*.{ext}` file when the exact date isn't present. Returns
  * undefined if no file matching `{prefix}` exists at all.
  */
-export async function resolve_dated_file(dir: string, prefix: string, date: string, ext: string, { silent = false }: { silent?: boolean } = {}): Promise<string | undefined> {
+export async function resolve_dated_file({ dir, prefix, date, ext, silent = false }: {
+	dir: string
+	prefix: string
+	date: string
+	ext: string
+	silent?: boolean
+}): Promise<string | undefined> {
 	const exact_path = `${dir}/${prefix}_${date}.${ext}`
 	if (await Bun.file(exact_path).exists()) return exact_path
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { get_no_notes_text, get_no_tnn_text } from '$lib/lookups'
-	import { m } from '$lib/paraglide/messages'
+	import { get_no_notes_text, get_no_tnn_text } from '#lib/lookups.js'
+	import { m } from '#lib/paraglide/messages.js'
 	import type { CopilotNote, CopilotResult } from '@tabitha/types'
 	import type { CopilotSettings } from './types'
 

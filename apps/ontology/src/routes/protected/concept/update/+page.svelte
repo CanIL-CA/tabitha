@@ -2,14 +2,14 @@
 	import { onMount } from 'svelte'
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
-	import { Category } from '$lib/card/categorization/edit'
-	import { levels } from '$lib/lookups'
-	import { create_fallback_concept } from '$lib/transformers'
-	import Header from '$lib/card/Header.svelte'
+	import { Category } from '#lib/card/categorization/edit/index.js'
+	import { levels } from '#lib/lookups.js'
+	import { create_fallback_concept } from '#lib/transformers.js'
+	import Header from '#lib/card/Header.svelte'
 	import { Toast } from '@tabitha/ui'
-	import { enqueue } from '$lib/offline/sync'
-	import { check_for_pending_change } from '$lib/offline/pending'
-	import type { Concept, ConceptUpdateData, SaveResult } from '$lib/types'
+	import { enqueue } from '#lib/offline/sync.js'
+	import { check_for_pending_change } from '#lib/offline/pending.js'
+	import type { Concept, ConceptUpdateData, SaveResult } from '#lib/types.js'
 
 	let { data }: PageProps = $props()
 

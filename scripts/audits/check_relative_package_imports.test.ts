@@ -22,7 +22,7 @@ describe('Cross-Package Relative Import Checker', () => {
 		const file_path = join(root, 'scripts/dx/gematria.ts')
 		const content = "import { PORTS } from '../../packages/vite-config/ports.js'"
 
-		const findings = scan_file_for_boundary_violations(file_path, content, scripts_pkg, '@tabitha/scripts', all_packages, package_names)
+		const findings = scan_file_for_boundary_violations({ file_path, content, importing_pkg: scripts_pkg, importing_pkg_name: '@tabitha/scripts', all_packages, package_names })
 
 		expect(findings.length).toBe(1)
 		expect(findings[0].importing_package).toBe('@tabitha/scripts')
@@ -34,7 +34,7 @@ describe('Cross-Package Relative Import Checker', () => {
 		const file_path = join(root, 'scripts/dx/doctor.ts')
 		const content = "import { check_cloudflare_configs } from '../audits/check_cloudflare'"
 
-		const findings = scan_file_for_boundary_violations(file_path, content, scripts_pkg, '@tabitha/scripts', all_packages, package_names)
+		const findings = scan_file_for_boundary_violations({ file_path, content, importing_pkg: scripts_pkg, importing_pkg_name: '@tabitha/scripts', all_packages, package_names })
 
 		expect(findings).toEqual([])
 	})
@@ -43,7 +43,7 @@ describe('Cross-Package Relative Import Checker', () => {
 		const file_path = join(root, 'scripts/dx/doctor.ts')
 		const content = "import { parse_wrangler_jsonc } from './db_load'"
 
-		const findings = scan_file_for_boundary_violations(file_path, content, scripts_pkg, '@tabitha/scripts', all_packages, package_names)
+		const findings = scan_file_for_boundary_violations({ file_path, content, importing_pkg: scripts_pkg, importing_pkg_name: '@tabitha/scripts', all_packages, package_names })
 
 		expect(findings).toEqual([])
 	})
@@ -52,7 +52,7 @@ describe('Cross-Package Relative Import Checker', () => {
 		const file_path = join(root, 'scripts/dx/doctor.ts')
 		const content = "import { something } from '../../../outside-the-repo/foo'"
 
-		const findings = scan_file_for_boundary_violations(file_path, content, scripts_pkg, '@tabitha/scripts', all_packages, package_names)
+		const findings = scan_file_for_boundary_violations({ file_path, content, importing_pkg: scripts_pkg, importing_pkg_name: '@tabitha/scripts', all_packages, package_names })
 
 		expect(findings).toEqual([])
 	})
@@ -64,7 +64,7 @@ describe('Cross-Package Relative Import Checker', () => {
 			"import { PORTS } from '../../packages/vite-config/ports.js'",
 		].join('\n')
 
-		const findings = scan_file_for_boundary_violations(file_path, content, scripts_pkg, '@tabitha/scripts', all_packages, package_names)
+		const findings = scan_file_for_boundary_violations({ file_path, content, importing_pkg: scripts_pkg, importing_pkg_name: '@tabitha/scripts', all_packages, package_names })
 
 		expect(findings[0].line_number).toBe(2)
 	})

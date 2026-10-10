@@ -1,4 +1,4 @@
-import type { OntologyChangeAction, UserEmail } from '$lib/types'
+import type { OntologyChangeAction, UserEmail } from '#lib/types.js'
 import type { PartOfSpeech } from '@tabitha/types'
 
 export type Permission = 'PROTECTED_ACCESS' | 'ADD_CONCEPT' | 'UPDATE_CONCEPT' | 'DELETE_CONCEPT'

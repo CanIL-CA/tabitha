@@ -2,14 +2,14 @@
 	import Icon from '@iconify/svelte'
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
-	import { Category } from '$lib/card/categorization/edit'
-	import { default_categories, levels, parts_of_speech } from '$lib/lookups'
-	import { create_fallback_concept } from '$lib/transformers'
-	import { get_next_sense } from '$lib/changes'
-	import Header from '$lib/card/Header.svelte'
+	import { Category } from '#lib/card/categorization/edit/index.js'
+	import { default_categories, levels, parts_of_speech } from '#lib/lookups.js'
+	import { create_fallback_concept } from '#lib/transformers.js'
+	import { get_next_sense } from '#lib/changes.js'
+	import Header from '#lib/card/Header.svelte'
 	import { Toast } from '@tabitha/ui'
-	import { enqueue } from '$lib/offline/sync'
-	import type { SaveResult } from '$lib/types'
+	import { enqueue } from '#lib/offline/sync.js'
+	import type { SaveResult } from '#lib/types.js'
 
 	let { data }: PageProps = $props()
 

@@ -1,10 +1,10 @@
 import { textify, remove_some_gap_tokens, find_replace, backtranslate } from '.'
 import { describe, expect, test } from 'vitest'
-import { MESSAGE_TYPE, TOKEN_TYPE, create_token, create_added_token, create_gap_token, create_clause_token } from '$lib/token'
-import { tokenize_input } from '$lib/parser/tokenize'
-import { clausify } from '$lib/parser/clausify'
-import { RULES, rules_applier } from '$lib/rules'
-import type { Sentence } from '$lib/types'
+import { MESSAGE_TYPE, TOKEN_TYPE, create_token, create_added_token, create_gap_token, create_clause_token } from '#lib/token.js'
+import { tokenize_input } from '#lib/parser/tokenize.js'
+import { clausify } from '#lib/parser/clausify.js'
+import { RULES, rules_applier } from '#lib/rules/index.js'
+import type { Sentence } from '#lib/types.js'
 
 /**
  * textify simply produces the plain text equivalent for each token, joined by a space.

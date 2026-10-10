@@ -1,8 +1,8 @@
 import { get_all_mutations, type QueuedMutation } from './queue'
 import { concepts_match } from '@tabitha/types/patterns'
-import { create_change_fields, diff_change_fields } from '$lib/changes'
-import { decode_categorization_for_update } from '$lib/transformers'
-import type { Concept, OntologyChange } from '$lib/types'
+import { create_change_fields, diff_change_fields } from '#lib/changes.js'
+import { decode_categorization_for_update } from '#lib/transformers.js'
+import type { Concept, OntologyChange } from '#lib/types.js'
 import type { ConceptKey } from '@tabitha/types'
 
 // concept is only needed (and only available) for an update -- a create has nothing on the server yet to diff against.

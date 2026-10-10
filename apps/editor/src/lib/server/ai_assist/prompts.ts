@@ -1,4 +1,4 @@
-import { CLAUSE_NOTATIONS } from '$lib/parser/clause_notations'
+import { CLAUSE_NOTATIONS } from '#lib/parser/clause_notations.js'
 import system_instruction_template from './system_instruction.md?raw'
 import phase1_rules from './phase1_rules.md?raw'
 import repair_instruction_template from './repair_instruction.md?raw'

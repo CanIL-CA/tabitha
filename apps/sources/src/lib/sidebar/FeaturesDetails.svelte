@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { EntityFeature } from '@tabitha/types'
-	import type { PageSourceEntity } from '$lib/types'
-	import { is_used_in_source } from '$lib/encoding/features'
+	import type { PageSourceEntity } from '#lib/types.js'
+	import { is_used_in_source } from '#lib/encoding/features.js'
 
 	const { data }: { data: PageSourceEntity } = $props()
 

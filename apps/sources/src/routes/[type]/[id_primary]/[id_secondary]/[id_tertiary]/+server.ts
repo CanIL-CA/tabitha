@@ -1,6 +1,6 @@
-import { get_source_data } from '$lib/data/read'
-import { transform_semantic_encoding } from '$lib/encoding/semantic_encoding'
-import { error, json } from '@sveltejs/kit'
+import { get_source_data } from '#lib/data/read.js'
+import { transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
+import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import type { Reference, SourceResult } from '@tabitha/types'
 
@@ -17,5 +17,5 @@ export async function GET({ locals: { db }, params: { type, id_primary, id_secon
 		...source,
 		parsed_semantic_encoding,
 	}
-	return json(data)
+	return Response.json(data)
 }

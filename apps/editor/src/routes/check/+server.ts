@@ -1,7 +1,6 @@
-import { json } from '@sveltejs/kit'
 import { get_request_caller, record_usage_event } from '@tabitha/usage'
-import { run_check, run_check_with_auto_fixes } from '$lib/server/check'
-import { to_check_event } from '$lib/server/usage'
+import { run_check, run_check_with_auto_fixes } from '#lib/server/check.js'
+import { to_check_event } from '#lib/server/usage.js'
 
 import type { RequestEvent } from './$types'
 
@@ -15,5 +14,5 @@ export async function GET({ url: { searchParams }, request, platform }: RequestE
 		record_usage_event({ dataset: platform?.env.USAGE, app: 'editor', event: to_check_event({ result, caller: get_request_caller(request) }) })
 	}
 
-	return json(result)
+	return Response.json(result)
 }

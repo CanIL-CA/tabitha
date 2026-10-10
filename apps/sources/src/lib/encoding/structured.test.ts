@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { structure_entities } from './structured'
-import type { PageSourceEntity } from '$lib/types'
+import type { PageSourceEntity } from '#lib/types.js'
 
-function make_entity(value: string, category_abbr = 'C'): PageSourceEntity {
+function make_entity({ value, category_abbr = 'C' }: {
+	value: string
+	category_abbr?: string
+}): PageSourceEntity {
 	return {
 		category: 'Clause',
 		category_abbr,
@@ -21,7 +24,7 @@ function make_entity(value: string, category_abbr = 'C'): PageSourceEntity {
 
 describe('structure_entities', () => {
 	it('assigns sequential ids and a -1 parent_id to entities outside any boundary', () => {
-		const entities = [make_entity('God'), make_entity('created')]
+		const entities = [make_entity({ value: 'God' }), make_entity({ value: 'created' })]
 
 		structure_entities(entities)
 
@@ -31,11 +34,11 @@ describe('structure_entities', () => {
 
 	it('nests a boundary within a boundary, resolving each end to its own opener', () => {
 		const entities = [
-			make_entity('{', 'C'), // 0: outer clause open
-			make_entity('[', 'N'), // 1: inner noun phrase open
-			make_entity('God'), // 2
-			make_entity(']', 'N'), // 3: inner close
-			make_entity('}', 'C'), // 4: outer close
+			make_entity({ value: '{', category_abbr: 'C' }), // 0: outer clause open
+			make_entity({ value: '[', category_abbr: 'N' }), // 1: inner noun phrase open
+			make_entity({ value: 'God' }), // 2
+			make_entity({ value: ']', category_abbr: 'N' }), // 3: inner close
+			make_entity({ value: '}', category_abbr: 'C' }), // 4: outer close
 		]
 
 		structure_entities(entities)
@@ -50,14 +53,14 @@ describe('structure_entities', () => {
 
 	it('pops back to the correct enclosing boundary for sibling pairs at the same level', () => {
 		const entities = [
-			make_entity('{', 'C'), // 0: outer open
-			make_entity('(', 'V'), // 1: first sibling open
-			make_entity('said'), // 2
-			make_entity(')', 'V'), // 3: first sibling close
-			make_entity('(', 'N'), // 4: second sibling open
-			make_entity('God'), // 5
-			make_entity(')', 'N'), // 6: second sibling close
-			make_entity('}', 'C'), // 7: outer close
+			make_entity({ value: '{', category_abbr: 'C' }), // 0: outer open
+			make_entity({ value: '(', category_abbr: 'V' }), // 1: first sibling open
+			make_entity({ value: 'said' }), // 2
+			make_entity({ value: ')', category_abbr: 'V' }), // 3: first sibling close
+			make_entity({ value: '(', category_abbr: 'N' }), // 4: second sibling open
+			make_entity({ value: 'God' }), // 5
+			make_entity({ value: ')', category_abbr: 'N' }), // 6: second sibling close
+			make_entity({ value: '}', category_abbr: 'C' }), // 7: outer close
 		]
 
 		structure_entities(entities)

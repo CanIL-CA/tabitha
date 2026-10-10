@@ -1,5 +1,5 @@
 <script lang="ts">
-	import CopyButton from '$lib/CopyButton.svelte'
+	import CopyButton from '#lib/CopyButton.svelte'
 
 	type Props = {
 		back_translation: string

@@ -54,14 +54,17 @@ function describe_access(access: BucketAccess): string {
  * custom domain that isn't declared -- like `tools/dns`/`tools/workers`, this tool only ever adds
  * what it's told to, never tears down access another bucket already depends on based on a guess.
  * When `apply` is false, computes the same plan without writing anything. */
-export async function reconcile_r2(apply: boolean, buckets: DesiredBucket[] = desired_buckets): Promise<BucketPlan[]> {
+export async function reconcile_r2({ apply, buckets = desired_buckets }: {
+	apply: boolean
+	buckets?: DesiredBucket[]
+}): Promise<BucketPlan[]> {
 	const plans: BucketPlan[] = []
 
 	for (const bucket of buckets) {
 		const exists = await bucket_exists(bucket.name)
 		if (!exists && apply) await $`bun ${WRANGLER} r2 bucket create ${bucket.name}`.quiet()
 
-		const access_change = await reconcile_access(bucket, exists, apply)
+		const access_change = await reconcile_access({ bucket, bucket_exists_already: exists, apply })
 
 		plans.push({ name: bucket.name, bucket_created: !exists, access_change })
 	}
@@ -69,7 +72,11 @@ export async function reconcile_r2(apply: boolean, buckets: DesiredBucket[] = de
 	return plans
 }
 
-async function reconcile_access(bucket: DesiredBucket, bucket_exists_already: boolean, apply: boolean): Promise<AccessChange | null> {
+async function reconcile_access({ bucket, bucket_exists_already, apply }: {
+	bucket: DesiredBucket
+	bucket_exists_already: boolean
+	apply: boolean
+}): Promise<AccessChange | null> {
 	const { access } = bucket
 
 	if (access.type === 'r2_dev') {
@@ -96,7 +103,7 @@ if (import.meta.main) {
 	require_env('CLOUDFLARE_ACCOUNT_ID')
 	const apply = process.argv.includes('--run')
 
-	const plans = await reconcile_r2(apply)
+	const plans = await reconcile_r2({ apply })
 
 	let any_changes = false
 	for (const plan of plans) {

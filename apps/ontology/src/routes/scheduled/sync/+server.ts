@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private'
-import { error, json } from '@sveltejs/kit'
-import { is_scheduler_authorized, run_scheduled_sync } from '$lib/server/scheduled_sync'
+import { error } from '@sveltejs/kit'
+import { is_scheduler_authorized, run_scheduled_sync } from '#lib/server/scheduled_sync.js'
 import type { RequestHandler } from './$types'
 
 /**
@@ -13,5 +13,5 @@ export async function POST({ request, platform }: Parameters<RequestHandler>[0])
 	}
 	if (!platform) throw error(503, 'Scheduled sync needs the Cloudflare platform bindings')
 
-	return json(await run_scheduled_sync(platform.env))
+	return Response.json(await run_scheduled_sync(platform.env))
 }

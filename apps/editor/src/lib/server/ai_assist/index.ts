@@ -1,5 +1,5 @@
 import { AiResponseError, type AiClient } from '@tabitha/ai'
-import { expand_token, run_check } from '$lib/server/check'
+import { expand_token, run_check } from '#lib/server/check.js'
 import { check_input_safety } from './input_guard'
 import { build_repair_instruction, build_system_instruction, type CheckerFeedback } from './prompts'
 import { phase_1_response_schema } from './response_schema'

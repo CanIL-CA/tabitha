@@ -13,13 +13,16 @@ const context_argument_finder: FinderLookup = {
 	Adposition: find_adposition_context,
 }
 
-export function find_word_context(entity_index: number, source_entities: SourceEntity[]): [Concept, ContextArguments][] {
+export function find_word_context({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): [Concept, ContextArguments][] {
 	const entity = source_entities[entity_index]
 	if (!entity.concept) {
 		return []
 	}
 
-	const context_args = context_argument_finder[entity.label]?.(entity_index, source_entities) ?? {}
+	const context_args = context_argument_finder[entity.label]?.({ entity_index, source_entities }) ?? {}
 	if (entity.pairing) {
 		// A pairing will have the same context as the main concept.
 		// Add a context argument to indicate the word each half is paired with.
@@ -41,7 +44,7 @@ export function find_word_context(entity_index: number, source_entities: SourceE
 	} else if (entity.concept?.is_complex) {
 		return [[entity.concept, {
 			...context_args,
-			'Complex Handling': is_in_complex_alternate(entity_index, source_entities) ? 'Complex Alternate' : 'None',
+			'Complex Handling': is_in_complex_alternate({ entity_index, source_entities }) ? 'Complex Alternate' : 'None',
 		}]]
 
 	} else {
@@ -49,23 +52,27 @@ export function find_word_context(entity_index: number, source_entities: SourceE
 	}
 }
 
-function find_noun_context(entity_index: number, source_entities: SourceEntity[]): ContextArguments {
-	const np_index = find_containing_phrase(entity_index, source_entities)
+function find_noun_context({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): ContextArguments {
+	const np_index = find_containing_phrase({ index: entity_index, source_entities })
 
 	if (np_index === -1) {
 		throw new Error('Invalid semantic encoding - Noun not in a phrase')
 	}
 
-	const context_arguments = get_outer_context(np_index, source_entities, 'Outer')
+	const context_arguments = get_outer_context({ phrase_index: np_index, source_entities, outer_label: 'Outer' })
 
 	context_arguments['Role'] = context_arguments['Verb']
-		? get_feature_value(source_entities[np_index], FEATURES.NP.SEMANTIC_ROLE)
+		? get_feature_value({ entity: source_entities[np_index], feature: FEATURES.NP.SEMANTIC_ROLE })
 		: 'No Role'
 
-	const adp_index = find_entity_before(
-		(entity: SourceEntity) => entity.label === 'Adposition',
-		{ skip_phrases: true, break_condition: is_opening_phrase },
-	)(entity_index, source_entities)
+	const adp_index = find_entity_before({
+		entity_filter: (entity: SourceEntity) => entity.label === 'Adposition',
+		skip_phrases: true,
+		break_condition: is_opening_phrase,
+	})(entity_index, source_entities)
 
 	if (adp_index !== -1) {
 		context_arguments['Adposition'] = format_concept(source_entities[adp_index])
@@ -74,40 +81,46 @@ function find_noun_context(entity_index: number, source_entities: SourceEntity[]
 	return context_arguments
 }
 
-function find_verb_context(entity_index: number, source_entities: SourceEntity[]): ContextArguments {
+function find_verb_context({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): ContextArguments {
 	const arguments_finder = find_arguments([
 		{
-			filter: (entity: SourceEntity) => is_phrase(entity, 'NP') && !has_feature(entity, FEATURES.NP.SEMANTIC_ROLE, 'Oblique'),
-			key: (index: number) => get_feature_value(source_entities[index], FEATURES.NP.SEMANTIC_ROLE),
-			value: (index: number) => format_concept(get_head_word(index, source_entities)),
+			filter: (entity: SourceEntity) => is_phrase({ entity, label: 'NP' }) && !has_feature({ entity, feature: FEATURES.NP.SEMANTIC_ROLE, value: 'Oblique' }),
+			key: (index: number) => get_feature_value({ entity: source_entities[index], feature: FEATURES.NP.SEMANTIC_ROLE }),
+			value: (index: number) => format_concept(get_head_word({ phrase_index: index, source_entities })),
 		},
 		{
-			filter: (entity: SourceEntity) => is_phrase(entity, 'AdjP') && has_feature(entity, FEATURES.ADJP.USAGE, 'Predicative'),
+			filter: (entity: SourceEntity) => is_phrase({ entity, label: 'AdjP' }) && has_feature({ entity, feature: FEATURES.ADJP.USAGE, value: 'Predicative' }),
 			key: () => 'Predicate Adjective',
-			value: (index: number) => format_concept(get_head_word(index, source_entities)),
+			value: (index: number) => format_concept(get_head_word({ phrase_index: index, source_entities })),
 		},
 		{
 			filter: (entity: SourceEntity) => is_opening_sub_clause(entity)
-				&& has_features(entity, FEATURES.CLAUSE.TYPE, ['Propositional Patient', 'Propositional Agent']),
-			key: (index: number) => get_feature_value(source_entities[index], FEATURES.CLAUSE.TYPE),
-			value: (index: number) => format_clause(index, source_entities),
+				&& has_features({ entity, feature: FEATURES.CLAUSE.TYPE, values: ['Propositional Patient', 'Propositional Agent'] }),
+			key: (index: number) => get_feature_value({ entity: source_entities[index], feature: FEATURES.CLAUSE.TYPE }),
+			value: (index: number) => format_clause({ clause_index: index, source_entities }),
 		},
 	])
 
-	const clause_index = find_containing_clause(entity_index, source_entities)
+	const clause_index = find_containing_clause({ index: entity_index, source_entities })
 	if (clause_index === -1) {
 		throw new Error('Invalid semantic encoding - no containing clause')
 	}
 
 	return {
-		'Topic NP': get_feature_value(source_entities[clause_index], FEATURES.CLAUSE.TOPIC_NP),
-		'Polarity': get_feature_value(source_entities[entity_index], FEATURES.VERB.POLARITY),
-		...arguments_finder(clause_index, source_entities),
+		'Topic NP': get_feature_value({ entity: source_entities[clause_index], feature: FEATURES.CLAUSE.TOPIC_NP }),
+		'Polarity': get_feature_value({ entity: source_entities[entity_index], feature: FEATURES.VERB.POLARITY }),
+		...arguments_finder({ entity_index: clause_index, source_entities }),
 	}
 }
 
-function find_adjective_context(entity_index: number, source_entities: SourceEntity[]): ContextArguments {
-	const adjp_index = find_containing_phrase(entity_index, source_entities)
+function find_adjective_context({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): ContextArguments {
+	const adjp_index = find_containing_phrase({ index: entity_index, source_entities })
 
 	if (adjp_index === -1) {
 		throw new Error('Invalid semantic encoding - Adjective not in a phrase')
@@ -115,88 +128,102 @@ function find_adjective_context(entity_index: number, source_entities: SourceEnt
 
 	const arguments_finder = find_arguments([
 		{
-			filter: (entity: SourceEntity) => is_phrase(entity, 'NP'),
+			filter: (entity: SourceEntity) => is_phrase({ entity, label: 'NP' }),
 			key: () => 'Patient Noun',
-			value: (index: number) => format_concept(get_head_word(index, source_entities)),
+			value: (index: number) => format_concept(get_head_word({ phrase_index: index, source_entities })),
 		},
 		{
-			filter: (entity: SourceEntity) => is_opening_sub_clause(entity) && has_feature(entity, FEATURES.CLAUSE.TYPE, 'Attributive Patient'),
+			filter: (entity: SourceEntity) => is_opening_sub_clause(entity) && has_feature({ entity, feature: FEATURES.CLAUSE.TYPE, value: 'Attributive Patient' }),
 			key: () => 'Patient Clause',
-			value: (index: number) => format_clause(index, source_entities),
+			value: (index: number) => format_clause({ clause_index: index, source_entities }),
 		},
 	])
 
-	const outer_context = get_outer_context(adjp_index, source_entities, 'Modified')
+	const outer_context = get_outer_context({ phrase_index: adjp_index, source_entities, outer_label: 'Modified' })
 
 	// if predicative, also get the agent NP
 	if ('Verb' in outer_context) {
-		const agent_np_index = find_entity_before(
-			(entity: SourceEntity) => is_phrase(entity, 'NP') && has_feature(entity, FEATURES.NP.SEMANTIC_ROLE, 'Agent'),
-			{ skip_clauses: true, break_condition: is_opening_any_clause },
-		)(adjp_index, source_entities)
+		const agent_np_index = find_entity_before({
+			entity_filter: (entity: SourceEntity) => is_phrase({ entity, label: 'NP' }) && has_feature({ entity, feature: FEATURES.NP.SEMANTIC_ROLE, value: 'Agent' }),
+			skip_clauses: true,
+			break_condition: is_opening_any_clause,
+		})(adjp_index, source_entities)
 
 		if (agent_np_index !== -1) {
-			outer_context['Agent'] = format_concept(get_head_word(agent_np_index, source_entities))
+			outer_context['Agent'] = format_concept(get_head_word({ phrase_index: agent_np_index, source_entities }))
 		}
 	}
 
 	return {
-		'Degree': get_feature_value(source_entities[entity_index], FEATURES.ADJ.DEGREE),
-		'Usage': get_feature_value(source_entities[adjp_index], FEATURES.ADJP.USAGE),
+		'Degree': get_feature_value({ entity: source_entities[entity_index], feature: FEATURES.ADJ.DEGREE }),
+		'Usage': get_feature_value({ entity: source_entities[adjp_index], feature: FEATURES.ADJP.USAGE }),
 		...outer_context,
-		...arguments_finder(adjp_index, source_entities),
+		...arguments_finder({ entity_index: adjp_index, source_entities }),
 	}
 }
 
-function find_adverb_context(entity_index: number, source_entities: SourceEntity[]): ContextArguments {
-	const advp_index = find_containing_phrase(entity_index, source_entities)
+function find_adverb_context({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): ContextArguments {
+	const advp_index = find_containing_phrase({ index: entity_index, source_entities })
 
 	return {
-		'Degree': get_feature_value(source_entities[entity_index], FEATURES.ADV.DEGREE),
-		...get_outer_context(advp_index, source_entities, 'Modified'),
+		'Degree': get_feature_value({ entity: source_entities[entity_index], feature: FEATURES.ADV.DEGREE }),
+		...get_outer_context({ phrase_index: advp_index, source_entities, outer_label: 'Modified' }),
 	}
 }
 
-function find_adposition_context(entity_index: number, source_entities: SourceEntity[]): ContextArguments {
-	const phrase_index = find_containing_phrase(entity_index, source_entities)
+function find_adposition_context({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): ContextArguments {
+	const phrase_index = find_containing_phrase({ index: entity_index, source_entities })
 
 	if (phrase_index === -1) {
 		return {}	// no special arguments
 	}
 
-	const head_word = get_head_word(phrase_index, source_entities)
+	const head_word = get_head_word({ phrase_index, source_entities })
 
 	return {
 		[head_word.label]: format_concept(head_word),
-		...get_outer_context(phrase_index, source_entities, 'Outer'),
+		...get_outer_context({ phrase_index, source_entities, outer_label: 'Outer' }),
 	}
 }
 
-function is_in_complex_alternate(entity_index: number, source_entities: SourceEntity[]): boolean {
+function is_in_complex_alternate({ entity_index, source_entities }: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}): boolean {
 	// check if the concept is in a complex alternate
 	let containing_clause = entity_index
 	while (true) {
-		containing_clause = find_containing_clause(containing_clause, source_entities)
+		containing_clause = find_containing_clause({ index: containing_clause, source_entities })
 		if (containing_clause === -1) {
 			return false
 		}
-		if (has_feature(source_entities[containing_clause], FEATURES.CLAUSE.VOCABULARY_ALTERNATE, 'Complex Alternate')) {
+		if (has_feature({ entity: source_entities[containing_clause], feature: FEATURES.CLAUSE.VOCABULARY_ALTERNATE, value: 'Complex Alternate' })) {
 			return true
 		}
 	}
 }
 
-function get_outer_context(phrase_index: number, source_entities: SourceEntity[], outer_label: string): ContextArguments {
-	const outer_phrase_index = find_containing_phrase(phrase_index, source_entities)
+function get_outer_context({ phrase_index, source_entities, outer_label }: {
+	phrase_index: number
+	source_entities: SourceEntity[]
+	outer_label: string
+}): ContextArguments {
+	const outer_phrase_index = find_containing_phrase({ index: phrase_index, source_entities })
 
 	if (outer_phrase_index !== -1) {
 		// This is a phrase within another phrase
-		const outer_word = get_head_word(outer_phrase_index, source_entities)
+		const outer_word = get_head_word({ phrase_index: outer_phrase_index, source_entities })
 
 		return { [`${outer_label} ${outer_word.label}`]: format_concept(outer_word) }
 	}
 
-	const verb_index = find_verb(phrase_index, source_entities)
+	const verb_index = find_verb({ index: phrase_index, source_entities })
 
 	if (verb_index !== -1) {
 		// this is a main phrase relating to the Verb
@@ -218,29 +245,41 @@ function format_concept(entity: SourceEntity) {
 	return `${entity.concept.stem}-${entity.concept.sense}`
 }
 
-function format_clause(clause_index: number, source_entities: SourceEntity[]): string {
-	const verb_index = find_verb(clause_index + 1, source_entities)
+function format_clause({ clause_index, source_entities }: {
+	clause_index: number
+	source_entities: SourceEntity[]
+}): string {
+	const verb_index = find_verb({ index: clause_index + 1, source_entities })
 
 	return `[${verb_index !== -1 ? format_concept(source_entities[verb_index]) : ''}]`
 }
 
-function find_containing_phrase(index: number, source_entities: SourceEntity[]): number {
+function find_containing_phrase({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}): number {
 	// skip_clauses must also be true in case of a relative clause in a NP
-	return find_entity_before(is_opening_phrase, { skip_phrases: true, skip_clauses: true, break_condition: is_opening_any_clause })(index, source_entities)
+	return find_entity_before({ entity_filter: is_opening_phrase, skip_phrases: true, skip_clauses: true, break_condition: is_opening_any_clause })(index, source_entities)
 }
 
-function find_containing_clause(index: number, source_entities: SourceEntity[]): number {
+function find_containing_clause({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}): number {
 	if (is_opening_main_clause(source_entities[index])) {
 		// an opening main clause is never contained within any other clause
 		return -1
 	}
-	return find_entity_before(is_opening_any_clause, { skip_clauses: true })(index, source_entities)
+	return find_entity_before({ entity_filter: is_opening_any_clause, skip_clauses: true })(index, source_entities)
 }
 
 /**
  * Find the head word within the phrase at the given index. There is always exactly one head word.
  */
-function get_head_word(phrase_index: number, source_entities: SourceEntity[]): SourceEntity {
+function get_head_word({ phrase_index, source_entities }: {
+	phrase_index: number
+	source_entities: SourceEntity[]
+}): SourceEntity {
 	const phrase_type = source_entities[phrase_index].label
 
 	const word_type = {
@@ -250,10 +289,12 @@ function get_head_word(phrase_index: number, source_entities: SourceEntity[]): S
 		AdvP: ['Adverb'],
 	}[phrase_type] ?? ''
 
-	const head_index = find_entity_after(
-		(entity: SourceEntity) => word_type.includes(entity.label),
-		{ skip_phrases: true, skip_clauses: true, break_condition: is_closing_phrase },
-	)(phrase_index, source_entities)
+	const head_index = find_entity_after({
+		entity_filter: (entity: SourceEntity) => word_type.includes(entity.label),
+		skip_phrases: true,
+		skip_clauses: true,
+		break_condition: is_closing_phrase,
+	})(phrase_index, source_entities)
 
 	if (head_index === -1) {
 		encoding_warnings.push(`Invalid semantic encoding - missing head ${word_type} in ${phrase_type}`)
@@ -267,32 +308,37 @@ function get_head_word(phrase_index: number, source_entities: SourceEntity[]): S
 /**
  * Find the only verb within the clause that the index is within.
  */
-function find_verb(index: number, source_entities: SourceEntity[]): number {
-	const verb_index = find_entity_before(
-		(entity: SourceEntity) => entity.label === 'Verb',
-		{ skip_clauses: true, break_condition: is_opening_any_clause },
-	)(index, source_entities)
+function find_verb({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}): number {
+	const verb_index = find_entity_before({
+		entity_filter: (entity: SourceEntity) => entity.label === 'Verb',
+		skip_clauses: true,
+		break_condition: is_opening_any_clause,
+	})(index, source_entities)
 
 	if (verb_index !== -1) {
 		return verb_index
 	}
 
-	return find_entity_after(
-		(entity: SourceEntity) => entity.label === 'Verb',
-		{ skip_clauses: true, break_condition: is_closing_any_clause },
-	)(index, source_entities)
+	return find_entity_after({
+		entity_filter: (entity: SourceEntity) => entity.label === 'Verb',
+		skip_clauses: true,
+		break_condition: is_closing_any_clause,
+	})(index, source_entities)
 }
 
-function find_entity_before(entity_filter: EntityFilter, { skip_phrases = false, skip_clauses = false, break_condition = () => false }: EntityCrawlerInit = {}): EntityCrawlerNext {
+function find_entity_before({ entity_filter, skip_phrases = false, skip_clauses = false, break_condition = () => false }: EntityCrawlerInit & { entity_filter: EntityFilter }): EntityCrawlerNext {
 	return (start_index, source_entities) => {
 		for (let i = start_index - 1; i >= 0;) {
 			const entity = source_entities[i]
 			if (entity_filter(entity)) {
 				return i
 			} else if (skip_phrases && is_closing_phrase(entity)) {
-				i = skip_to_phrase_start(i, source_entities)
+				i = skip_to_phrase_start({ index: i, source_entities })
 			} else if (skip_clauses && is_closing_sub_clause(entity)) {
-				i = skip_to_clause_start(i, source_entities)
+				i = skip_to_clause_start({ index: i, source_entities })
 			} else if (break_condition(entity)) {
 				break
 			} else {
@@ -304,7 +350,7 @@ function find_entity_before(entity_filter: EntityFilter, { skip_phrases = false,
 	}
 }
 
-function find_entity_after(entity_filter: EntityFilter, { skip_phrases = false, skip_clauses = false, break_condition = () => false }: EntityCrawlerInit = {}): EntityCrawlerNext {
+function find_entity_after({ entity_filter, skip_phrases = false, skip_clauses = false, break_condition = () => false }: EntityCrawlerInit & { entity_filter: EntityFilter }): EntityCrawlerNext {
 	return (start_index, source_entities) => {
 		for (let i = start_index + 1; i < source_entities.length;) {
 			const entity = source_entities[i]
@@ -312,9 +358,9 @@ function find_entity_after(entity_filter: EntityFilter, { skip_phrases = false, 
 			if (entity_filter(entity)) {
 				return i
 			} else if (skip_phrases && is_opening_phrase(entity)) {
-				i = skip_to_phrase_end(i, source_entities)
+				i = skip_to_phrase_end({ index: i, source_entities })
 			} else if (skip_clauses && is_opening_sub_clause(entity)) {
-				i = skip_to_clause_end(i, source_entities)
+				i = skip_to_clause_end({ index: i, source_entities })
 			} else if (break_condition(entity)) {
 				break
 			} else {
@@ -331,9 +377,9 @@ function find_entity_after(entity_filter: EntityFilter, { skip_phrases = false, 
  * key and value getters. The argument is always at the top level within the phrase or clause located at the provided start_index.
  */
 function find_arguments(argument_infos: ArgumentInfo[]): ContextArgumentFinder {
-	return (start_index, source_entities) => {
+	return ({ entity_index, source_entities }) => {
 		const context_arguments: ContextArguments = {}
-		for (let i = start_index + 1; i < source_entities.length;) {
+		for (let i = entity_index + 1; i < source_entities.length;) {
 			const entity = source_entities[i]
 
 			const matched_filter = argument_infos.find(({ filter }) => filter(entity))
@@ -345,9 +391,9 @@ function find_arguments(argument_infos: ArgumentInfo[]): ContextArgumentFinder {
 			}
 
 			if (is_opening_phrase(entity)) {
-				i = skip_to_phrase_end(i, source_entities)
+				i = skip_to_phrase_end({ index: i, source_entities })
 			} else if (is_opening_sub_clause(entity)) {
-				i = skip_to_clause_end(i, source_entities)
+				i = skip_to_clause_end({ index: i, source_entities })
 			} else if ([')', ']', '}'].includes(entity.value)) {
 				break
 			} else {
@@ -359,7 +405,10 @@ function find_arguments(argument_infos: ArgumentInfo[]): ContextArgumentFinder {
 	}
 }
 
-function is_phrase(entity: SourceEntity, label: string) {
+function is_phrase({ entity, label }: {
+	entity: SourceEntity
+	label: string
+}) {
 	return entity.label === label
 }
 
@@ -391,15 +440,26 @@ function is_closing_any_clause(entity: SourceEntity) {
 	return [']', '}'].includes(entity.value)
 }
 
-function get_feature_value(entity: SourceEntity, feature: Feature): string {
+function get_feature_value({ entity, feature }: {
+	entity: SourceEntity
+	feature: Feature
+}): string {
 	return feature.values[entity.features[feature.index]]
 }
 
-function has_feature(entity: SourceEntity, feature: Feature, value: FeatureName): boolean {
+function has_feature({ entity, feature, value }: {
+	entity: SourceEntity
+	feature: Feature
+	value: FeatureName
+}): boolean {
 	return value === feature.values[entity.features[feature.index]]
 }
 
-function has_features(entity: SourceEntity, feature: Feature, values: FeatureName[]): boolean {
+function has_features({ entity, feature, values }: {
+	entity: SourceEntity
+	feature: Feature
+	values: FeatureName[]
+}): boolean {
 	return values.includes(feature.values[entity.features[feature.index]])
 }
 
@@ -407,30 +467,42 @@ function has_features(entity: SourceEntity, feature: Feature, values: FeatureNam
  * @param index the index in source_entities of an opening subordinate clause
  * @return the index after the corresponding closing clause boundary
  */
-function skip_to_clause_end(index: number, source_entities: SourceEntity[]) {
-	return find_entity_after(is_closing_sub_clause, { skip_clauses: true })(index, source_entities) + 1
+function skip_to_clause_end({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}) {
+	return find_entity_after({ entity_filter: is_closing_sub_clause, skip_clauses: true })(index, source_entities) + 1
 }
 
 /**
  * @param index the index in source_entities of a closing subordinate clause
  * @return the index before the corresponding opening clause boundary
  */
-function skip_to_clause_start(index: number, source_entities: SourceEntity[]) {
-	return find_entity_before(is_opening_sub_clause, { skip_clauses: true })(index, source_entities) - 1
+function skip_to_clause_start({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}) {
+	return find_entity_before({ entity_filter: is_opening_sub_clause, skip_clauses: true })(index, source_entities) - 1
 }
 
 /**
  * @param index the index in source_entities of an opening phrase boundary
  * @return the index after the corresponding closing phrase boundary
  */
-function skip_to_phrase_end(index: number, source_entities: SourceEntity[]) {
-	return find_entity_after(is_closing_phrase, { skip_phrases: true })(index, source_entities) + 1
+function skip_to_phrase_end({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}) {
+	return find_entity_after({ entity_filter: is_closing_phrase, skip_phrases: true })(index, source_entities) + 1
 }
 
 /**
  * @param index the index in source_entities of a closing phrase boundary
  * @return the index before the corresponding opening phrase boundary
  */
-function skip_to_phrase_start(index: number, source_entities: SourceEntity[]) {
-	return find_entity_before(is_opening_phrase, { skip_phrases: true })(index, source_entities) - 1
+function skip_to_phrase_start({ index, source_entities }: {
+	index: number
+	source_entities: SourceEntity[]
+}) {
+	return find_entity_before({ entity_filter: is_opening_phrase, skip_phrases: true })(index, source_entities) - 1
 }

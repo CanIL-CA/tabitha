@@ -2,12 +2,12 @@
 	import Icon from '@iconify/svelte'
 	import Header from './Header.svelte'
 	import SimplificationHints from './SimplificationHints.svelte'
-	import PendingChange from '$lib/PendingChange.svelte'
+	import PendingChange from '#lib/PendingChange.svelte'
 	import { Category } from './categorization'
-	import { DetailedCard, Meaning } from '$lib'
+	import { DetailedCard, Meaning } from '#lib/index.js'
 	import { page } from '$app/state'
-	import { CONCEPT_FILTERS } from '$lib/filters'
-	import type { Concept } from '$lib/types'
+	import { CONCEPT_FILTERS } from '#lib/filters.js'
+	import type { Concept } from '#lib/types.js'
 
 	type Props = {
 		concept: Concept

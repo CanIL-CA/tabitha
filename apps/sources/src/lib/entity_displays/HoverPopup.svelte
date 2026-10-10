@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { view_settings } from '$lib/settings/settings.svelte.js'
+	import { view_settings } from '#lib/settings/settings.svelte.js'
 
 	let { dropdown_content, button_content } = $props()
 	

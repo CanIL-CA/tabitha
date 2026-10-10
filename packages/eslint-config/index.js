@@ -8,8 +8,6 @@ import ts from 'typescript-eslint'
 import { includeIgnoreFile } from '@eslint/compat'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { plainInterfaceToType } from './rules/plain_interface_to_type.js'
-import { pureTypeTopLevel } from './rules/pure_type_top_level.js'
 
 const root_gitignore_path = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.gitignore')
 
@@ -29,12 +27,6 @@ export const baseConfig = [
 		plugins: {
 			'@stylistic': stylistic,
 			'import-x': import_x,
-			local: {
-				rules: {
-					'plain-interface-to-type': plainInterfaceToType,
-					'pure-type-top-level': pureTypeTopLevel,
-				},
-			},
 		},
 
 		rules: {
@@ -44,8 +36,9 @@ export const baseConfig = [
 				{ prefer: 'type-imports', fixStyle: 'separate-type-imports', disallowTypeAnnotations: false },
 			],
 			'import-x/no-duplicates': ['error', { 'prefer-inline': true }],
-			'local/plain-interface-to-type': 'error',
-			'local/pure-type-top-level': 'error',
+			'@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+			// `import { type A, type B }` becomes `import type { A, B }`; a mix of values and types is left alone.
+			'@typescript-eslint/no-import-type-side-effects': 'error',
 			'@stylistic/semi': ['error', 'never'],
 			'@stylistic/indent': ['error', 'tab'],
 			'@stylistic/quotes': [
@@ -68,9 +61,23 @@ export const baseConfig = [
 					],
 				},
 			],
-			'no-extra-parens': 'error',
+			'@stylistic/no-extra-parens': 'error',
 			'@stylistic/object-curly-spacing': ['error', 'always'],
 			'no-undef': 'off',
+			// Every unused parameter, not only those after the last one used. A leading `_` marks one an API's
+			// callback shape makes us take but we don't need, like `Array.from`'s value before its index.
+			'@typescript-eslint/no-unused-vars': ['error', { args: 'all', argsIgnorePattern: '^_' }],
+			// A function takes one parameter, and several values go in as one destructured object, so calls
+			// name what they pass. Only named functions and class methods are held to it: an inline callback
+			// or object method has the shape its API gives it (a sort comparator, `reduce`, a Vite hook).
+			'no-restricted-syntax': [
+				'error',
+				...[
+					'FunctionDeclaration[params.length>1]',
+					'VariableDeclarator > :matches(ArrowFunctionExpression, FunctionExpression)[params.length>1]',
+					'MethodDefinition > FunctionExpression[params.length>1]',
+				].map(selector => ({ selector, message: 'Take one object parameter, destructured, rather than several.' })),
+			],
 		},
 	},
 
@@ -79,7 +86,7 @@ export const baseConfig = [
 	{
 		files: ['**/app.d.ts'],
 		rules: {
-			'local/plain-interface-to-type': 'off',
+			'@typescript-eslint/consistent-type-definitions': 'off',
 		},
 	},
 ]

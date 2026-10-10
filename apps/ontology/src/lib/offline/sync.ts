@@ -1,5 +1,5 @@
 import { add_mutation, delete_mutation, get_pending_mutations, update_mutation, type QueuedMutation } from './queue'
-import type { OntologyChangeAction, ConceptCreateData, ConceptUpdateData } from '$lib/types'
+import type { OntologyChangeAction, ConceptCreateData, ConceptUpdateData } from '#lib/types.js'
 
 export type MutationOutcome =
 	| { type: 'synced', applied: boolean }

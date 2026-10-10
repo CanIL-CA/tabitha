@@ -1,5 +1,5 @@
 import { cached_json } from '@tabitha/api-client'
-import { get_simplification_hints } from '$lib/server/ontology'
+import { get_simplification_hints } from '#lib/server/ontology.js'
 import type { RequestHandler } from './$types'
 import type { ConceptSearchFilter } from '@tabitha/types'
 

@@ -1,6 +1,6 @@
-import { is_authorized } from '$lib/server/auth'
-import { approve_change, can_approve_change, get_change } from '$lib/server/changes/changes'
-import { error, json } from '@sveltejs/kit'
+import { is_authorized } from '#lib/server/auth.js'
+import { approve_change, can_approve_change, get_change } from '#lib/server/changes/changes.js'
+import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 
 export async function POST({ params, locals }: Parameters<RequestHandler>[0]) {
@@ -18,5 +18,5 @@ export async function POST({ params, locals }: Parameters<RequestHandler>[0]) {
 
 	const updated = await approve_change({ db: locals.db_ontology, id, user: locals.user! })
 
-	return json({ change: { ...updated, can_approve: can_approve_change({ change: updated, permissions: { can_add, can_update } }) } })
+	return Response.json({ change: { ...updated, can_approve: can_approve_change({ change: updated, permissions: { can_add, can_update } }) } })
 }

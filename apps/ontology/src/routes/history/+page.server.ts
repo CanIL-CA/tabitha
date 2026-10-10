@@ -1,4 +1,4 @@
-import { get_all_changes } from '$lib/server/changes/changes'
+import { get_all_changes } from '#lib/server/changes/changes.js'
 import type { PageServerLoad } from './$types'
 
 export async function load({ locals: { db_ontology }, url: { searchParams } }: Parameters<PageServerLoad>[0]) {

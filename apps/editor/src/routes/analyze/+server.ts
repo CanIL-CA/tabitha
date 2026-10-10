@@ -1,6 +1,5 @@
-import { analyze } from '$lib/analyzer'
-import { parse } from '$lib/parser'
-import { json } from '@sveltejs/kit'
+import { analyze } from '#lib/analyzer/index.js'
+import { parse } from '#lib/parser/index.js'
 
 import type { RequestEvent } from './$types'
 
@@ -10,5 +9,5 @@ export async function GET({ url: { searchParams } }: RequestEvent) {
 	const sentences = await parse(text)
 	const source_data = analyze(sentences)
 
-	return json(source_data)
+	return Response.json(source_data)
 }

@@ -6,7 +6,7 @@ import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/static/public'
 import { env } from '$env/dynamic/private'
-import { paraglideMiddleware } from '$lib/paraglide/server'
+import { paraglideMiddleware } from '#lib/paraglide/server.js'
 
 let ai: AiClient
 

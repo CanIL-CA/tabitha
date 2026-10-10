@@ -2,7 +2,7 @@ import type { RequestHandler } from '@sveltejs/kit'
 import { cached_json } from '@tabitha/api-client'
 import { normalize_wildcards } from '@tabitha/types/patterns'
 import type { TargetFormResult } from '@tabitha/types'
-import type { DbRowLexicon } from '$lib/types'
+import type { DbRowLexicon } from '#lib/types.js'
 
 export async function GET({ locals: { db }, params: { project }, url: { searchParams } }: Parameters<RequestHandler>[0]) {
 	const word = normalize_wildcards(searchParams.get('word') ?? '')

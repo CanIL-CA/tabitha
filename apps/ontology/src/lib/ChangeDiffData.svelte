@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { OntologyChange } from '$lib/types'
+	import type { OntologyChange } from '#lib/types.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
 	type Props = {

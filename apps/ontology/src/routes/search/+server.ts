@@ -1,7 +1,7 @@
 import { cached_json } from '@tabitha/api-client'
-import { get_concepts } from '$lib/server/ontology'
+import { get_concepts } from '#lib/server/ontology.js'
 import type { RequestHandler } from './$types'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 import type { HowToEntry, OntologyResult, ConceptSearchFilter, SimplificationHint, PartOfSpeech } from '@tabitha/types'
 
 export async function GET({ url: { searchParams }, locals: { db_ontology } }: Parameters<RequestHandler>[0]) {

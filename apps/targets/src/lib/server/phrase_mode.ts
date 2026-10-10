@@ -1,6 +1,6 @@
 import { create_sources_client } from '@tabitha/api-client'
-import { search_phrase } from '$lib/api_bible/search.server'
-import type { PhraseMatch, PhraseSearchHit, PhraseSearchResults } from '$lib/types'
+import { search_phrase } from '#lib/api_bible/search.server.js'
+import type { PhraseMatch, PhraseSearchHit, PhraseSearchResults } from '#lib/types.js'
 import type { SourceEncodedResult, TargetProject } from '@tabitha/types'
 
 /**

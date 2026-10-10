@@ -1,15 +1,15 @@
 import { env } from '$env/dynamic/private'
 import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
-import { parse_search_query, search_text } from '$lib/server/search'
-import { run_phrase_mode } from '$lib/server/phrase_mode'
-import { MODE } from '$lib/search/modes'
-import { json, type RequestHandler } from '@sveltejs/kit'
+import { parse_search_query, search_text } from '#lib/server/search.js'
+import { run_phrase_mode } from '#lib/server/phrase_mode.js'
+import { MODE } from '#lib/search/modes.js'
+import type { RequestHandler } from '@sveltejs/kit'
 import type { TargetProject } from '@tabitha/types'
 
 export async function GET({ locals: { db }, params: { project }, url: { searchParams } }: Parameters<RequestHandler>[0]) {
 	const q = searchParams.get('q')?.trim()
 	if (!q) {
-		return json([])
+		return Response.json([])
 	}
 
 	if (searchParams.get('mode') === MODE.REFERENCE) {
@@ -27,7 +27,7 @@ export async function GET({ locals: { db }, params: { project }, url: { searchPa
 		// their own license; see apps/targets/README.md. Every returned reference is guaranteed
 		// to have a semantic encoding -- hits without one are dropped before this point, since an
 		// exemplar with no structure to show isn't useful to whoever's searching.
-		return json({
+		return Response.json({
 			matches: hits.map(({ reference }) => ({ reference })),
 			complete,
 			notice,
@@ -36,5 +36,5 @@ export async function GET({ locals: { db }, params: { project }, url: { searchPa
 
 	const parsed_q = parse_search_query(q)
 	const results = await search_text({ db, project: project!, parsed_q })
-	return json(results)
+	return Response.json(results)
 }

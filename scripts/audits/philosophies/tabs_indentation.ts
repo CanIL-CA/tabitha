@@ -1,6 +1,9 @@
 import { create_multiline_literal_tracker, findings } from './types'
 
-export function check_tabs_indentation(file_path: string, lines: string[]) {
+export function check_tabs_indentation({ file_path, lines }: {
+	file_path: string
+	lines: string[]
+}) {
 	// Philosophy 3: Tabs for indentation
 	const line_is_inside_multiline_literal = create_multiline_literal_tracker()
 

@@ -22,7 +22,11 @@ export async function load_state(date: string): Promise<Set<MigrationStep>> {
 	return new Set(state.completed_steps)
 }
 
-export async function mark_done(date: string, step: MigrationStep, completed_steps: Set<MigrationStep>): Promise<void> {
+export async function mark_done({ date, step, completed_steps }: {
+	date: string
+	step: MigrationStep
+	completed_steps: Set<MigrationStep>
+}): Promise<void> {
 	completed_steps.add(step)
 	await Bun.write(state_file(date), JSON.stringify({ completed_steps: [...completed_steps] }, null, 2))
 }

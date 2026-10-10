@@ -50,7 +50,10 @@ async function get_script_files(dir: string): Promise<string[]> {
 // in it can only ever match a bare filename, sidestepping the issue entirely (see
 // resolve_dated_file.ts for the established safe shape: scan from the directory, reconstruct the
 // path manually).
-function check_multi_segment_glob(file_path: string, lines: string[]) {
+function check_multi_segment_glob({ file_path, lines }: {
+	file_path: string
+	lines: string[]
+}) {
 	lines.forEach((line, idx) => {
 		const match = line.match(/new Glob\(\s*(`[^`]*`|'[^']*'|"[^"]*")/)
 		if (!match) return
@@ -68,7 +71,10 @@ function check_multi_segment_glob(file_path: string, lines: string[]) {
 
 // A command string built for a POSIX shell (pipes, &&, ; chaining) handed to execSync/execFileSync
 // won't parse under cmd.exe, execSync's default shell on Windows.
-function check_posix_shell_syntax(file_path: string, lines: string[]) {
+function check_posix_shell_syntax({ file_path, lines }: {
+	file_path: string
+	lines: string[]
+}) {
 	lines.forEach((line, idx) => {
 		if (!/\bexec(?:File)?Sync\(/.test(line)) return
 		const match = line.match(/exec(?:File)?Sync\(\s*(`[^`]*`|'[^']*'|"[^"]*")/)
@@ -87,7 +93,10 @@ function check_posix_shell_syntax(file_path: string, lines: string[]) {
 
 // /tmp, /var, /usr, and /etc don't exist on Windows -- os.tmpdir() (or a path relative to the
 // project) is the portable equivalent.
-function check_hardcoded_posix_paths(file_path: string, lines: string[]) {
+function check_hardcoded_posix_paths({ file_path, lines }: {
+	file_path: string
+	lines: string[]
+}) {
 	lines.forEach((line, idx) => {
 		const match = line.match(/[`'"](\/(?:tmp|var|usr|etc)\/[^`'"]*)[`'"]/)
 		if (!match) return
@@ -118,7 +127,11 @@ function check_hardcoded_posix_paths(file_path: string, lines: string[]) {
 // The 2-tab threshold is a proxy, not real scope analysis: it's low enough to miss a
 // directly-nested function some call sites won't reach, and it can't see a handle closed by the
 // function's *caller* either -- a heuristic nudge, not a guarantee, same as the other checks here.
-function check_unclosed_database_handle(file_path: string, content: string, lines: string[]) {
+function check_unclosed_database_handle({ file_path, content, lines }: {
+	file_path: string
+	content: string
+	lines: string[]
+}) {
 	// A test file is never a one-shot script -- the runner process outlives each individual test, so
 	// any function-scoped handle (1 tab) is a risk there. Elsewhere, require 2 tabs so a CLI script's
 	// own top-level if/for blocks don't read as reusable functions.
@@ -159,10 +172,10 @@ async function audit_cross_platform_tooling() {
 	for (const file_path of all_files) {
 		const content = await readFile(file_path, 'utf-8')
 		const lines = content.split('\n')
-		check_multi_segment_glob(file_path, lines)
-		check_posix_shell_syntax(file_path, lines)
-		check_unclosed_database_handle(file_path, content, lines)
-		check_hardcoded_posix_paths(file_path, lines)
+		check_multi_segment_glob({ file_path, lines })
+		check_posix_shell_syntax({ file_path, lines })
+		check_unclosed_database_handle({ file_path, content, lines })
+		check_hardcoded_posix_paths({ file_path, lines })
 	}
 
 	const is_ci = process.env.GITHUB_ACTIONS === 'true'

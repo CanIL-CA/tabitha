@@ -1,12 +1,12 @@
 import { env } from '$env/dynamic/private'
-import { BRIEF_HEADINGS_ENGLISH } from '$lib/lookups'
+import { BRIEF_HEADINGS_ENGLISH } from '#lib/lookups.js'
 import { USFM_BOOK_CODES } from '@tabitha/types/patterns'
 import { AiResponseError, check_input_safety, type AiClient } from '@tabitha/ai'
 import translate_prompt from './translate_prompt.md?raw'
 import brief_main_prompt from './brief_main_prompt.md?raw'
 import { json_response_schema } from './json_response_schema'
 import type { VerseReference, CopilotBriefResult, CopilotErrorResult, CopilotBriefHeadingsResult } from '@tabitha/types'
-import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '$lib/types'
+import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '#lib/types.js'
 import { CopilotError } from '../copilot_core'
 
 // The AI Gateway's prompt-injection guardrail is off gateway-wide (see @tabitha/ai's input_guard
@@ -74,7 +74,8 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 
 	const aquifer_response = await fetch_aquifer(`/resources/${contentId}`)
 	const tnn_text = await aquifer_response.text()
-	const safety_issue = check_input_safety(tnn_text, {
+	const safety_issue = check_input_safety({
+		text: tnn_text,
 		max_length: MAX_TNN_TEXT_LENGTH,
 		too_long_message: 'The Aquifer translator notes for this verse are too long to process.',
 		suspicious_message: 'Potential safety issue found in the TNN notes.',

@@ -1,15 +1,15 @@
-import { ERRORS } from '$lib/parser/error_messages'
+import { ERRORS } from '#lib/parser/error_messages.js'
 import { create_context_filter, create_token_filter, from_built_in_rule, message_set_action, simple_rule_action } from './rules_parser'
-import { TOKEN_TYPE, create_lookup_result, is_one_part_of_speech } from '$lib/token'
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import type { Token } from '$lib/types'
+import { TOKEN_TYPE, create_lookup_result, is_one_part_of_speech } from '#lib/token.js'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import type { Token } from '#lib/types.js'
 import type {
 	BuiltInRule,
 	PartOfSpeechRuleJson,
 	RuleAction,
 	TokenFilter,
 	TokenRule,
-} from '$lib/rules/types'
+} from '#lib/rules/types.js'
 import type { PartOfSpeech } from '@tabitha/types'
 
 /**
@@ -625,7 +625,10 @@ const builtin_part_of_speech_rules: BuiltInRule[] = [
 	},
 ]
 
-export function parse_part_of_speech_rule(rule_json: PartOfSpeechRuleJson, index: number): TokenRule {
+export function parse_part_of_speech_rule({ rule_json, index }: {
+	rule_json: PartOfSpeechRuleJson
+	index: number
+}): TokenRule {
 	const category = category_filter(rule_json['category'])
 	const trigger = create_token_filter(rule_json['trigger'] ?? 'all')
 	const context = create_context_filter(rule_json['context'])
@@ -658,7 +661,7 @@ export function parse_part_of_speech_rule(rule_json: PartOfSpeechRuleJson, index
 }
 
 export const PART_OF_SPEECH_RULES = builtin_part_of_speech_rules.map(from_built_in_rule('part_of_speech'))
-	.concat(part_of_speech_rules_json.map(parse_part_of_speech_rule))
+	.concat(part_of_speech_rules_json.map((rule_json, index) => parse_part_of_speech_rule({ rule_json, index })))
 
 function has_part_of_speech({ token, part_of_speech }: { token: Token; part_of_speech: PartOfSpeech }): boolean {
 	return token.lookup_results.some(LOOKUP_FILTERS.IS_PART_OF_SPEECH(part_of_speech))

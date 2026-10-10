@@ -4,8 +4,8 @@ import { create_context_filter, create_token_filter, from_built_in_rule, simple_
 import { apply_rule_to_tokens } from '../rules/rules_processor'
 import { check_forms } from './form'
 import { check_ontology } from './ontology'
-import type { LookupResult, Sentence, Token } from '$lib/types'
-import type { BuiltInRule } from '$lib/rules/types'
+import type { LookupResult, Sentence, Token } from '#lib/types.js'
+import type { BuiltInRule } from '#lib/rules/types.js'
 
 // Keeps a large passage from opening dozens of simultaneous connections to the lookup services.
 // This is just connection hygiene, not a rate-limit workaround -- the services enforce their own
@@ -16,7 +16,7 @@ const MAX_CONCURRENT_LOOKUPS = 10
 export async function perform_form_lookups(sentences: Sentence[]): Promise<Sentence[]> {
 	const lookup_tokens = sentences.flatMap(flatten_for_lookup).filter(is_lookup_token)
 
-	await run_with_concurrency_limit(lookup_tokens, check_forms)
+	await run_with_concurrency_limit({ items: lookup_tokens, run: check_forms })
 
 	return sentences
 }
@@ -24,14 +24,17 @@ export async function perform_form_lookups(sentences: Sentence[]): Promise<Sente
 export async function perform_ontology_lookups(sentences: Sentence[]): Promise<Sentence[]> {
 	const lookup_tokens = sentences.flatMap(flatten_for_lookup).filter(is_lookup_token)
 
-	await run_with_concurrency_limit(lookup_tokens, check_ontology)
+	await run_with_concurrency_limit({ items: lookup_tokens, run: check_ontology })
 
 	result_filter_rules.map(from_built_in_rule('result_filter')).forEach(rule => apply_rule_to_tokens({ tokens: lookup_tokens, rule }))
 
 	return sentences
 }
 
-async function run_with_concurrency_limit<T>(items: T[], run: (item: T) => Promise<void>): Promise<void> {
+async function run_with_concurrency_limit<T>({ items, run }: {
+	items: T[]
+	run: (item: T) => Promise<void>
+}): Promise<void> {
 	const queue = [...items]
 
 	async function worker() {

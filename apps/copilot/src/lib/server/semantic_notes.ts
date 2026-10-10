@@ -1,7 +1,7 @@
 import { check_input_safety, type AiClient } from '@tabitha/ai'
 import { CopilotError } from './copilot_core'
 import system_instruction_template from './semantic_notes_prompt.md?raw'
-import type { CopilotLlmInput, CopilotLlmOutput } from '$lib/types'
+import type { CopilotLlmInput, CopilotLlmOutput } from '#lib/types.js'
 
 // The AI Gateway's prompt-injection guardrail is off gateway-wide (see @tabitha/ai's input_guard
 // and ADR 0007), so this is a local, best-effort substitute scoped to the translator-authored
@@ -106,7 +106,8 @@ function postprocess(caution: string) {
 }
 
 function check_verse_text_safety(text: string): string | undefined {
-	return check_input_safety(text, {
+	return check_input_safety({
+		text,
 		max_length: MAX_VERSE_TEXT_LENGTH,
 		too_long_message: `Verse text is too long (${text.length} characters, max ${MAX_VERSE_TEXT_LENGTH}).`,
 		suspicious_message: 'Verse text looks like it might contain instructions rather than scripture.',

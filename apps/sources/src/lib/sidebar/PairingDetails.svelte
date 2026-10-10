@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ConceptDetails from '$lib/sidebar/ConceptDetails.svelte'
+	import ConceptDetails from '#lib/sidebar/ConceptDetails.svelte'
 	import type { SourceEntity } from '@tabitha/types'
 	import Icon from '@iconify/svelte'
 

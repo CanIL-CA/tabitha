@@ -1,12 +1,12 @@
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { ERRORS } from '$lib/parser/error_messages'
-import { MESSAGE_TYPE, TOKEN_TYPE, create_added_token, format_token_message, is_one_part_of_speech, set_message_plain, token_has_tag } from '$lib/token'
-import { REGEXES } from '$lib/regexes'
-import { spaced_insertion_text } from '$lib/text_insertions'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { ERRORS } from '#lib/parser/error_messages.js'
+import { MESSAGE_TYPE, TOKEN_TYPE, create_added_token, format_token_message, is_one_part_of_speech, set_message_plain, token_has_tag } from '#lib/token.js'
+import { REGEXES } from '#lib/regexes.js'
+import { spaced_insertion_text } from '#lib/text_insertions.js'
 import { validate_case_frame } from './case_frame'
 import { create_context_filter, create_token_filter, from_built_in_rule, message_set_action } from './rules_parser'
 import type { CheckerMessage, CheckerMessageType, CheckerTextInsertion } from '@tabitha/types'
-import type { MessageInfo, Token } from '$lib/types'
+import type { MessageInfo, Token } from '#lib/types.js'
 import type {
 	BuiltInRule,
 	CheckerActionJson,
@@ -16,7 +16,7 @@ import type {
 	RuleTriggerContext,
 	TokenFilter,
 	TokenRule,
-} from '$lib/rules/types'
+} from '#lib/rules/types.js'
 
 const checker_rules_json: CheckerRuleJson[] = [
 	{
@@ -850,7 +850,10 @@ const builtin_checker_rules: BuiltInRule[] = [
 	},
 ]
 
-export function parse_checker_rule(rule_json: CheckerRuleJson, index: number): TokenRule {
+export function parse_checker_rule({ rule_json, index }: {
+	rule_json: CheckerRuleJson
+	index: number
+}): TokenRule {
 	const trigger = create_token_filter(rule_json['trigger'])
 	const context = create_context_filter(rule_json['context'])
 
@@ -914,7 +917,7 @@ export function parse_checker_rule(rule_json: CheckerRuleJson, index: number): T
 	}
 }
 
-export const CHECKER_RULES = builtin_checker_rules.map(from_built_in_rule('checker')).concat(checker_rules_json.map(parse_checker_rule))
+export const CHECKER_RULES = builtin_checker_rules.map(from_built_in_rule('checker')).concat(checker_rules_json.map((rule_json, index) => parse_checker_rule({ rule_json, index })))
 
 function check_token_level(level_check: LookupFilter): TokenFilter {
 	return token => {

@@ -5,7 +5,7 @@
 	import { testament } from '@tabitha/types/patterns'
 	import BibleFilter from './BibleFilter.svelte'
 	import Filter from './Filter.svelte'
-	import type { Concept, FilterMap, Option } from '$lib/types'
+	import type { Concept, FilterMap, Option } from '#lib/types.js'
 	import type { ContextArgumentName, ConceptExample } from '@tabitha/types'
 
 	type Props = {

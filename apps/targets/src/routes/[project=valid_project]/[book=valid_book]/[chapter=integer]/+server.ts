@@ -1,5 +1,5 @@
-import { error, json, type RequestHandler } from '@sveltejs/kit'
-import type { DbRowText } from '$lib/types'
+import { error, type RequestHandler } from '@sveltejs/kit'
+import type { DbRowText } from '#lib/types.js'
 
 type QueryVerseResult = Pick<DbRowText, 'verse'>
 
@@ -15,7 +15,7 @@ export async function GET({ locals: { db }, params: { project, book, chapter } }
 	const { results } = await db.prepare(sql).bind(project, book, chapter).all<QueryVerseResult>()
 
 	if (results.length) {
-		return json(results.map(({ verse }) => verse.toString()))
+		return Response.json(results.map(({ verse }) => verse.toString()))
 	}
 
 	return error(404, 'Not found')
