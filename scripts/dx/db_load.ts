@@ -90,18 +90,33 @@ export async function resolve_workerd_hashes({ config, entries, d1_state_dir }: 
 	return JSON.parse(json_output)
 }
 
-// Schema the snapshots don't carry (Better Auth's tables in DB_Auth) is owned by D1 migrations, so
-// they run on top of each freshly loaded snapshot, through wrangler, so that its d1_migrations
-// bookkeeping matches production's. stdin is closed so wrangler applies without asking.
-function apply_d1_migrations({ app_dir, entries }: {
+// A database with a `migrations_dir` (DB_Auth) is owned by its D1 migrations, not a snapshot: it's
+// emptied and rebuilt by applying them through wrangler, so that its d1_migrations bookkeeping
+// matches production's. stdin is closed so wrangler applies without asking.
+function build_from_migrations({ app_dir, binding, database_files }: {
 	app_dir: string
-	entries: D1DatabaseEntry[]
+	binding: string
+	database_files: string[]
 }) {
-	for (const { binding, migrations_dir } of entries) {
-		if (!binding || !migrations_dir) continue
-		console.log(`🧱 Applying ${binding}'s D1 migrations (${migrations_dir})...`)
-		execFileSync('bun', ['x', 'wrangler', 'd1', 'migrations', 'apply', binding, '--local'], { cwd: app_dir, stdio: ['ignore', 'inherit', 'inherit'] })
+	for (const file of database_files) {
+		for (const path of [file, `${file}-wal`, `${file}-shm`]) {
+			if (existsSync(path)) unlinkSync(path)
+		}
 	}
+	execFileSync('bun', ['x', 'wrangler', 'd1', 'migrations', 'apply', binding, '--local'], { cwd: app_dir, stdio: ['ignore', 'inherit', 'inherit'] })
+}
+
+// Every file Miniflare might open for a database: the hash of its id, the alternate hashes db_load
+// mirrors snapshots to (name, binding, name prefix), and the one workerd actually resolved.
+function local_database_files({ d1, d1_state_dir, workerd_hash }: {
+	d1: D1DatabaseEntry
+	d1_state_dir: string
+	workerd_hash?: string
+}): string[] {
+	const keys = [d1.database_id, d1.database_name, d1.binding, d1.database_name.split('_')[0]].filter((key): key is string => Boolean(key))
+	const hashes = new Set(keys.map(key => createHash('sha256').update(key).digest('hex')))
+	if (workerd_hash) hashes.add(workerd_hash)
+	return [...hashes].map(hash => join(d1_state_dir, `${hash}.sqlite`))
 }
 
 function import_sqlite_snapshot({ snapshot_file, target_db }: {
@@ -174,6 +189,22 @@ export async function load_database(target_app: string = 'all') {
 			const db_id = d1.database_id
 			console.log(`⏳ Loading database "${db_name}" (${db_id}) for ${app_key}...`)
 
+			if (d1.binding && d1.migrations_dir) {
+				console.log(`   🧱 Building from D1 migrations: ${relative(root_dir, join(config.app_dir, d1.migrations_dir))}`)
+				try {
+					build_from_migrations({
+						app_dir: config.app_dir,
+						binding: d1.binding,
+						database_files: local_database_files({ d1, d1_state_dir, workerd_hash: workerd_hash_cache[db_id] }),
+					})
+					console.log(`   ⚡ Built "${db_name}" from its migrations!\n`)
+					success_count++
+				} catch (err) {
+					console.error(`   ❌ Failed to build "${db_name}":`, err instanceof Error ? err.message : err)
+				}
+				continue
+			}
+
 			let snapshot_file = join(snapshots_dir, `${db_name}.tabitha.sqlite.sql`)
 			if (!existsSync(snapshot_file)) {
 				const prefix = db_name.split('_')[0]
@@ -240,8 +271,6 @@ export async function load_database(target_app: string = 'all') {
 				console.error(`   ❌ Failed to load "${db_name}":`, err instanceof Error ? err.message : err)
 			}
 		}
-
-		apply_d1_migrations({ app_dir: config.app_dir, entries: wrangler.d1_databases })
 	}
 
 	console.log(`🎉 Finished loading ${success_count}/${total_databases} database(s) into local Wrangler environment.\n`)

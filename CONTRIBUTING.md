@@ -175,7 +175,7 @@ dev ports are not random.
 bun run db:grant your.email@example.com
 ```
 
-Grants every Ontology permission to that email in your local Auth D1 only — production is untouched. Re-run after any `bun run db:load`/`db:load:ontology`, since a fresh snapshot resets local grants too, and signs you out: local Better Auth users and sessions live in the same Auth D1.
+Grants every Ontology permission to that email in your local Auth D1 only — production is untouched. Re-run after any `bun run db:load`/`db:load:ontology`, since it rebuilds the local Auth D1, which resets local grants and signs you out: local Better Auth users and sessions live in the same Auth D1.
 
 ### 5. Local R2 Objects (e.g. Ontology's `/downloads` page)
 

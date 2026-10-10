@@ -86,7 +86,7 @@ async function push(dirs: Dir[]) {
 
 const DATED_FILENAME = /^(.+)_(\d{4}-\d{2}-\d{2})\.(.+)$/
 
-/** Deletes stale dated versions from R2, keeping the latest `keep` per {prefix, extension} family. Undated files (e.g. Auth.tabitha.sqlite) are never pruned. */
+/** Deletes stale dated versions from R2, keeping the latest `keep` per {prefix, extension} family. Undated files are never pruned. */
 async function prune({ dirs, keep }: {
 	dirs: Dir[]
 	keep: number

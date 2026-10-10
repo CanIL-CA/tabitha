@@ -1,6 +1,5 @@
 {
 	"raw": [
-		"Auth.tabitha.sqlite",
 		"Bible_2026-06-25.tbta.sqlite",
 		"Bible_2026-07-27.tbta.sqlite",
 		"CommunityDevelopmentTexts_2026-02-19.tbta.sqlite",
@@ -34,7 +33,6 @@
 		"Targets_Tagalog_2026-07-31.tabitha.sqlite"
 	],
 	"snapshots": [
-		"Auth.tabitha.sqlite.sql",
 		"Ontology_9494_2026-04-29.tabitha.sqlite.sql",
 		"Ontology_9494_2026-06-25.tabitha.sqlite.sql",
 		"Ontology_9494_2026-09-29.tabitha.sqlite.sql",

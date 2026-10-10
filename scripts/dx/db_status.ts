@@ -88,7 +88,7 @@ function find_snapshot_file(db_name: string): { path: string; size: number } | n
 	if (!existsSync(snapshots_dir)) return null
 	try {
 		const files = readdirSync(snapshots_dir)
-		// 1. Exact match (e.g. Auth.tabitha.sqlite.sql)
+		// 1. Exact match (e.g. Targets_English_2026-07-31.tabitha.sqlite.sql)
 		const exact = files.find(f => f.startsWith(`${db_name}.`) && (f.endsWith('.sql') || f.endsWith('.sqlite')))
 		if (exact) {
 			const full = join(snapshots_dir, exact)
