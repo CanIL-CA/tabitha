@@ -32,7 +32,8 @@
 
 	let fetching_results = $state(false)
 	let fetched_results = $state<CopilotResult[]>([])
-	let completed_verses = $derived(fetched_results.length)
+	let fetched_result_count = $derived(fetched_results.length)
+	let error_result_count = $derived(fetched_results.filter(r => r.type === 'error').length)
 
 	let retry_set = $state(new SvelteSet<number>())
 
@@ -186,16 +187,19 @@
 	<div class="flex items-center gap-1">
 		<Icon icon="line-md:loading-twotone-loop" class="h-5 w-5" />
 		{#if settings.mode === 'brief'}
-			{m.loading_brief_progress({ completed: completed_verses, total: verse_count })}
+			{m.loading_brief_progress({ completed: fetched_result_count, total: verse_count })}
 		{:else}
-			{m.loading_notes_progress({ completed: completed_verses, total: verse_count })}
+			{m.loading_notes_progress({ completed: fetched_result_count, total: verse_count })}
 		{/if}
 	</div>
-	<progress value={completed_verses} max={verse_count} class="progress progress-primary w-100"></progress>
-{:else if completed_verses > 0}
+	<progress value={fetched_result_count} max={verse_count} class="progress progress-primary w-100"></progress>
+{:else if fetched_result_count > 0}
 	<div class="flex items-center gap-1">
 		<Icon icon="mdi:check" class="h-6 w-6 text-success" />
-		{m.loaded_verses({ count: completed_verses })}
+		{m.loaded_verses({ count: fetched_result_count })}
+		{#if error_result_count > 0}
+			<span class="text-error">({error_result_count} failed)</span>
+		{/if}
 	</div>
 	<progress value={1} max={1} class="progress progress-primary w-100"></progress>
 {/if}
