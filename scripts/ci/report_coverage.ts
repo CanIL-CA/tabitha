@@ -37,6 +37,10 @@ async function read_manifests(): Promise<WorkspaceManifest[]> {
 }
 
 async function run_coverage_report() {
+	// The apps' service-worker tests read the compiled sw.js, which `turbo run test:unit` builds first
+	// (turbo caches it); running Vitest directly here needs the same build.
+	await $`bun run build`
+
 	await rm(coverage_dir, { recursive: true, force: true })
 	await mkdir(coverage_dir, { recursive: true })
 
