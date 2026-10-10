@@ -8,7 +8,9 @@ test('search bar parses reference and redirects to verse page', async ({ page })
 	await searchInput.fill('Genesis 1:1')
 	await page.locator('form[role="search"] button[type="submit"]').click()
 
-	await expect(page).toHaveURL(/\/Bible\/Genesis\/1\/1$/)
+	// this is the first test to load a page on a cold dev server, where Vite's dependency optimizer
+	// can stall that first load for several seconds, longer than the default 5s assertion timeout
+	await expect(page).toHaveURL(/\/Bible\/Genesis\/1\/1$/, { timeout: 20_000 })
 })
 
 test('search bar runs a Phase 1 text search for non-reference input, without a full page load', async ({ page }) => {
