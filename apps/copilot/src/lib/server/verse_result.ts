@@ -1,5 +1,6 @@
 import { get_copilot_result } from '$lib/server/copilot_core'
 import { create_brief_for_verse } from '$lib/server/brief/brief'
+import { book_rigors } from '$lib/lookups'
 import type { AiClient } from '@tabitha/ai'
 import type { VerseReference, CopilotResult } from '@tabitha/types'
 import type { BriefInput, CopilotSettings, CopilotStep } from '$lib/types'
@@ -21,7 +22,7 @@ export async function get_verse_result({ reference, settings, ai, on_step }: Get
 		notes_result: result,
 		settings: {
 			...settings,
-			rigor: 'HIGH',
+			rigor: book_rigors.get(reference.book) ?? 'LOW',
 			output_format: 'usfm',
 			output_style: 'production',
 		},
