@@ -56,7 +56,7 @@ const secret_patterns: Array<{ name: string; regex: RegExp; message: string }> =
 ]
 
 const sensitive_env_keys = [
-	'AUTH_SECRET',
+	'BETTER_AUTH_SECRET',
 	'API_KEY_OPENAI',
 	'API_KEY_GEMINI',
 	'API_KEY_AQUIFER',

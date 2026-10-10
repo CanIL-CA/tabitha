@@ -17,6 +17,7 @@ export type D1DatabaseEntry = {
 	binding?: string
 	database_name: string
 	database_id: string
+	migrations_dir?: string
 }
 
 export type AppConfig = {
@@ -87,6 +88,20 @@ export async function resolve_workerd_hashes({ config, entries, d1_state_dir }: 
 	// This separates the actual return data before parsing.
 	const json_output = output.split('\n').find(line => line.startsWith('{'))!
 	return JSON.parse(json_output)
+}
+
+// Schema the snapshots don't carry (Better Auth's tables in DB_Auth) is owned by D1 migrations, so
+// they run on top of each freshly loaded snapshot, through wrangler, so that its d1_migrations
+// bookkeeping matches production's. stdin is closed so wrangler applies without asking.
+function apply_d1_migrations({ app_dir, entries }: {
+	app_dir: string
+	entries: D1DatabaseEntry[]
+}) {
+	for (const { binding, migrations_dir } of entries) {
+		if (!binding || !migrations_dir) continue
+		console.log(`🧱 Applying ${binding}'s D1 migrations (${migrations_dir})...`)
+		execFileSync('bun', ['x', 'wrangler', 'd1', 'migrations', 'apply', binding, '--local'], { cwd: app_dir, stdio: ['ignore', 'inherit', 'inherit'] })
+	}
 }
 
 function import_sqlite_snapshot({ snapshot_file, target_db }: {
@@ -225,6 +240,8 @@ export async function load_database(target_app: string = 'all') {
 				console.error(`   ❌ Failed to load "${db_name}":`, err instanceof Error ? err.message : err)
 			}
 		}
+
+		apply_d1_migrations({ app_dir: config.app_dir, entries: wrangler.d1_databases })
 	}
 
 	console.log(`🎉 Finished loading ${success_count}/${total_databases} database(s) into local Wrangler environment.\n`)

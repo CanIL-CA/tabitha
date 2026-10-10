@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { resolve_redirect_proxy_url } from './redirect_proxy'
 
-const PROXY = 'https://ontology.tabitha.bible/auth'
+const PROXY = 'https://ontology.tabitha.bible'
 
 describe('resolve_redirect_proxy_url', () => {
 	it('uses the runtime var when the build-time value is blank, as in a CI-built Preview', () => {

@@ -6,7 +6,7 @@ type RedirectProxySources = {
 }
 
 /**
- * Picks Auth.js's `redirectProxyUrl`, or `undefined` for no proxy. The runtime var wins because a
+ * Picks the OAuth proxy's production URL, or `undefined` for no proxy. The runtime var wins because a
  * Preview is built in CI, where setup:env's `.env.local` blanks the build-time value; the `previews`
  * block in wrangler.jsonc sets the runtime var instead. Production falls back to `.env`'s value, and
  * local dev has neither.

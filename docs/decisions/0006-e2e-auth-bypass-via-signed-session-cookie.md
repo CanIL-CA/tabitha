@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0021](./0021-better-auth-sessions-in-d1.md). Ontology moved to Better Auth with sessions in D1, and e2e signs in with Better Auth's `testUtils` plugin instead of a hand-signed cookie.
 
 ## Context
 

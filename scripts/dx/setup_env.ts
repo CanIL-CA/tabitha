@@ -51,7 +51,7 @@ export function forced_local_value(key: string): string | undefined {
 	// Point known service hosts at their local ports
 	if (key in local_hosts) return local_hosts[key]
 
-	// Auth.js's redirect-proxy target only makes sense for a genuine Cloudflare deployment (prod
+	// Better Auth's OAuth proxy target only makes sense for a genuine Cloudflare deployment (prod
 	// or preview); set locally, Google would be sent a redirect_uri it has no client registered for
 	if (key === 'OAUTH_REDIRECT_PROXY_URL') return ''
 
@@ -114,10 +114,10 @@ function generate_local_env_content({ template_content, existing_content }: {
 			continue
 		}
 
-		// Priority 4: If AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
-		if (key === 'AUTH_SECRET') {
+		// Priority 4: If BETTER_AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
+		if (key === 'BETTER_AUTH_SECRET') {
 			const dev_secret = randomBytes(32).toString('hex')
-			output_lines.push(`AUTH_SECRET=${dev_secret}`)
+			output_lines.push(`BETTER_AUTH_SECRET=${dev_secret}`)
 			continue
 		}
 

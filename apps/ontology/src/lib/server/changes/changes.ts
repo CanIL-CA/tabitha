@@ -1,4 +1,4 @@
-import type { User } from '@auth/sveltekit'
+import type { User } from 'better-auth'
 import type { D1Database } from '@cloudflare/workers-types'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
 import { get_version } from '#lib/server/ontology.js'
@@ -83,7 +83,7 @@ export async function suggest_change({ db, action, data, user }: ChangeSubmissio
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	await db.prepare(sql)
-		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.email!, new Date().toISOString())
+		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.email, new Date().toISOString())
 		.run()
 	return false
 }
@@ -108,7 +108,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 
 	const approved_date = new Date().toISOString()
 	const result = await db.prepare(sql)
-		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.email!, approved_date)
+		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), action, user.email, approved_date)
 		.run()
 
 	const change: OntologyChange = {
@@ -117,7 +117,7 @@ export async function apply_change_directly({ db, action, data, user }: ChangeSu
 		data: change_data,
 		action,
 		suggested_by: null,
-		approved_by: { email: user.email!, date: new Date(approved_date) },
+		approved_by: { email: user.email, date: new Date(approved_date) },
 		applied_date: null,
 		version: null,
 	}
@@ -157,7 +157,7 @@ export async function approve_change({ db, id, user }: ApproveChangeOptions): Pr
 		SET approved_by_email = ?, approved_date = ?
 		WHERE id = ? AND approved_date IS NULL
 	`
-	await db.prepare(sql).bind(user.email!, new Date().toISOString(), id).run()
+	await db.prepare(sql).bind(user.email, new Date().toISOString(), id).run()
 
 	return (await get_change({ db, id }))!
 }

@@ -39,7 +39,7 @@
 
 ### 1. Configure Local Auth
 
-`apps/ontology/.env.local` is created by the monorepo's onboarding step (`bun run setup`, from the root), including a generated dev `AUTH_SECRET`. It also seeds `GOOGLE_OAUTH_CLIENT_ID` with the team's *dev* Web client from the verified Google project ([Google Auth Platform → Clients](https://console.cloud.google.com/auth/clients)), never production's client from `.env`. Fill in that client's `GOOGLE_OAUTH_CLIENT_SECRET` there. The client has `http://localhost:3056/auth/callback` as an authorized redirect URI. `bun run doctor` (and `bun run dev`, at startup) warns if the ID is blank or production's.
+`apps/ontology/.env.local` is created by the monorepo's onboarding step (`bun run setup`, from the root), including a generated dev `BETTER_AUTH_SECRET`. It also seeds `GOOGLE_OAUTH_CLIENT_ID` with the team's *dev* Web client from the verified Google project ([Google Auth Platform → Clients](https://console.cloud.google.com/auth/clients)), never production's client from `.env`. Fill in that client's `GOOGLE_OAUTH_CLIENT_SECRET` there. The client has `http://localhost:3056/auth/callback/google` as an authorized redirect URI. `bun run doctor` (and `bun run dev`, at startup) warns if the ID is blank or production's.
 
 Keeping the dev client working:
 
@@ -48,6 +48,8 @@ Keeping the dev client working:
 - Google deletes OAuth clients unused for 6 months (restorable for 30 days). If the client is ever recreated, update `dev_defaults`; `setup:env` keeps an existing non-production value, so each developer must also replace the old ID in their `.env.local`.
 
 (If `.env.local` doesn't exist yet, or is missing a var after pulling a `.env` template change, run `bun run setup:env` from the root to (re)generate it.)
+
+Sign-in is [Better Auth](https://www.better-auth.com/), with sessions stored in `DB_Auth` ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)). Its tables come from D1 migrations in `migrations/auth/`, which `bun run db:load:ontology` applies on top of the Auth snapshot. A new migration reaches production with `bunx wrangler d1 migrations apply DB_Auth --remote`, run from this folder before the code that needs it merges.
 
 ### 2. Running Locally
 

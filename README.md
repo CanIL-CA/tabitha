@@ -34,7 +34,7 @@ The web apps are built with **Svelte**, **SvelteKit**, **Tailwind CSS**, and **d
 
 | Application | Path | Local Dev URL | Dedicated Port | Production URL | Notes |
 | --- | --- | --- | --- | --- | --- |
-| **Ontology** | `apps/ontology` | `http://localhost:3056` | `3056` | [ontology.tabitha.bible](https://ontology.tabitha.bible) | `strictPort: true` for Google/GitHub OAuth callback configurations |
+| **Ontology** | `apps/ontology` | `http://localhost:3056` | `3056` | [ontology.tabitha.bible](https://ontology.tabitha.bible) | `strictPort: true` for the Google OAuth callback configuration |
 | **Targets** | `apps/targets` | `http://localhost:1382` | `1382` | [targets.tabitha.bible](https://targets.tabitha.bible) | Target language generation search and forms API |
 | **Sources** | `apps/sources` | `http://localhost:1947` | `1947` | [sources.tabitha.bible](https://sources.tabitha.bible) | Source text analysis and semantic encoding explorer |
 | **Editor** | `apps/editor` | `http://localhost:1337` | `1337` | [editor.tabitha.bible](https://editor.tabitha.bible) | Grammar & rule checker, backtranslator, AI assistant |
@@ -76,7 +76,7 @@ tabitha/
 ├── apps/
 │   ├── copilot/     # AI Copilot & translation notes generator
 │   ├── editor/      # Semantic editor, rule parser & backtranslator
-│   ├── ontology/    # Central ontology database & concept management (Auth.js)
+│   ├── ontology/    # Central ontology database & concept management (Better Auth)
 │   ├── scheduler/   # Cron-only Worker that triggers each app's scheduled work
 │   ├── sources/     # Source entities, lookups, and feature explorer
 │   ├── targets/     # Target grammar, project search, and lexicons

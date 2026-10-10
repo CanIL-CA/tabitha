@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { User } from '@auth/sveltekit'
+import type { User } from 'better-auth'
 import type { OntologyChange, ConceptCreateData } from '#lib/types.js'
 
 vi.mock('./concepts', () => ({

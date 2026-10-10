@@ -49,7 +49,10 @@
 		{
 			"binding": "DB_Auth",
 			"database_name": "Auth",
-			"database_id": "c547b234-05fd-4923-ab0e-689d993894ad"
+			"database_id": "c547b234-05fd-4923-ab0e-689d993894ad",
+			// Better Auth's tables. db:load applies these locally; production gets
+			// `wrangler d1 migrations apply DB_Auth --remote` before the code that needs them merges.
+			"migrations_dir": "migrations/auth"
 		}
 	],
 	"r2_buckets": [
@@ -86,16 +89,17 @@
 	// A Preview inherits nothing from the top level, so every var and binding it needs is redeclared.
 	"previews": {
 		// Production's client, not a preview one: Google rejects wildcard redirect URIs, so a Preview
-		// signs in through production's registered callback via Auth.js's redirect proxy
+		// signs in through production's registered callback via Better Auth's OAuth proxy
 		// (OAUTH_REDIRECT_PROXY_URL below -- a runtime var, because CI's setup:env blanks the .env value
-		// in the Preview build; see src/lib/server/redirect_proxy.ts). The proxy only accepts state
-		// sealed with its own AUTH_SECRET, so a Preview's AUTH_SECRET and GOOGLE_OAUTH_CLIENT_SECRET (set
-		// once with `wrangler preview base-config secret put`) must be production's too.
+		// in the Preview build; see src/lib/server/better_auth.ts). The proxy only accepts payloads
+		// encrypted with its own BETTER_AUTH_SECRET, so a Preview's BETTER_AUTH_SECRET and
+		// GOOGLE_OAUTH_CLIENT_SECRET (set once with `wrangler preview base-config secret put`) must be
+		// production's too.
 		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
 		// production, and recording is a no-op without the binding.
 		"vars": {
 			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // Ontology (prod)
-			"OAUTH_REDIRECT_PROXY_URL": "https://ontology.tabitha.bible/auth",
+			"OAUTH_REDIRECT_PROXY_URL": "https://ontology.tabitha.bible",
 			"CLOUDFLARE_ACCOUNT_ID": "8582954a9e4c6f0259c6236be794d7d3",
 			"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
 			"GEMINI_LOCATION": "global"
@@ -112,7 +116,8 @@
 		],
 		// DB_Ontology is a Previews-only copy loaded from the same dump as production's, because
 		// suggest/approve write to it; tools/databases creates and repoints it with each new Ontology
-		// database. DB_Auth is only read here, so it stays shared with production.
+		// database. DB_Auth stays shared with production: Previews read its permissions, and a
+		// Preview sign-in writes its Better Auth user and session rows there.
 		"d1_databases": [
 			{
 				"binding": "DB_Ontology",

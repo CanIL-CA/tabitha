@@ -1,47 +1,8 @@
-import { test, expect, type BrowserContext } from '@playwright/test'
-import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { encode } from '@auth/core/jwt'
+import { test, expect } from '@playwright/test'
+import { sign_in_as } from './support/sign_in'
 
-// Mirrors auth.setup.ts's approach (see e2e/README.md), but for a second, lower-privileged identity
-// scoped to just this spec -- the suite's shared storageState is always the fully-authorized fixture user.
-const SESSION_COOKIE_NAME = 'authjs.session-token'
-const app_dir = dirname(dirname(fileURLToPath(import.meta.url)))
-const root_dir = join(app_dir, '../..')
-
-function read_env_var(name: string) {
-	for (const file of ['.env.local', '.env']) {
-		const path = join(app_dir, file)
-		if (!existsSync(path)) continue
-		const match = readFileSync(path, 'utf-8').match(new RegExp(`^${name}=(.*)$`, 'm'))
-		if (match) return match[1].trim()
-	}
-	throw new Error(`Missing ${name} in apps/ontology/.env.local -- run \`bun run setup:env\` first.`)
-}
-
-async function sign_in_as({ context, email, permissions }: {
-	context: BrowserContext
-	email: string
-	permissions: string[]
-}) {
-	execFileSync('bun', [join(root_dir, 'scripts/dx/grant_permission.ts'), email, ...permissions], { stdio: 'inherit' })
-
-	const session_token = await encode({
-		secret: read_env_var('AUTH_SECRET'),
-		salt: SESSION_COOKIE_NAME,
-		token: { email, name: email },
-	})
-	await context.addCookies([{
-		name: SESSION_COOKIE_NAME,
-		value: session_token,
-		domain: 'localhost',
-		path: '/',
-		httpOnly: true,
-		sameSite: 'Lax',
-	}])
-}
+// Signs in a second, lower-privileged identity scoped to just this spec -- the suite's shared
+// storageState is always the fully-authorized fixture user (see e2e/README.md).
 
 test('a suggest-tier user\'s edit is held for approval, and an authorized reviewer can approve it', async ({ page, browser }) => {
 	const suggester_email = `e2e-suggester-${Date.now()}@tabitha.local`

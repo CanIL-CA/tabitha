@@ -10,7 +10,7 @@
 
 <div class="page-kicker">The project</div>
 <h1>Privacy Policy</h1>
-<p class="page-dek">Last updated: September 26, 2026</p>
+<p class="page-dek">Last updated: October 10, 2026</p>
 
 <div class="page-body">
 	<p>
@@ -35,8 +35,10 @@
 		address, and profile picture with us, as provided by your Google account. We use this only to
 		identify you, attribute the edits you make, and check whether your account is authorized for
 		those editing tools — never for marketing, and never shared with third parties beyond the
-		processors on this page. We keep this data for as long as your account remains active; contact
-		us below to have it deleted.
+		processors on this page. Signing in also records a session (the browser it came from, not your
+		IP address) and stores the sign-in tokens Google issues, encrypted; both are used only to keep
+		you signed in. We keep this data for as long as your account remains active; contact us below
+		to have it deleted.
 	</p>
 
 	<h2>Cookies and tracking</h2>

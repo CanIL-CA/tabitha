@@ -27,7 +27,7 @@ type WranglerConfig = {
 const DOC_LINK = 'README.md#verification--testing'
 
 const forbidden_var_keys = [
-	'AUTH_SECRET',
+	'BETTER_AUTH_SECRET',
 	'API_KEY_AQUIFER',
 	'GOOGLE_OAUTH_CLIENT_SECRET',
 	'AI_GATEWAY_TOKEN',
