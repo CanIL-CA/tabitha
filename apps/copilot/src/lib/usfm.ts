@@ -1,6 +1,15 @@
 import { BRIEF_HEADINGS_ENGLISH, get_no_notes_text, get_no_tnn_text } from './lookups'
 import type { CopilotBriefHeadingsResult, CopilotBriefResult, CopilotBriefSection, CopilotDiscernResult, CopilotResult } from '@tabitha/types'
 
+export function convert_to_usfm_document({ book_code, results, lwc, headings }: { book_code: string, results: CopilotResult[], lwc: string, headings?: CopilotBriefHeadingsResult }): string {
+	const verse_lines = results.flatMap((result, i) => {
+		const is_new_chapter = result.verse.chapter !== results[i - 1]?.verse.chapter
+		const verse_usfm = convert_to_usfm({ result, lwc, headings })
+		return is_new_chapter ? [`\\c ${result.verse.chapter}`, verse_usfm] : [verse_usfm]
+	})
+	return [`\\id ${book_code}`, ...verse_lines].join('\n')
+}
+
 export function convert_to_usfm({ result, lwc, headings }: { result: CopilotResult, lwc: string, headings?: CopilotBriefHeadingsResult }): string {
 	if (result.type === 'error') {
 		return `\\p \\v ${result.verse.verse} Unexpected issue getting notes for this verse: ${result.error}`
