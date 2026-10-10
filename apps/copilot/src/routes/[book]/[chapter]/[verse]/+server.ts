@@ -1,12 +1,12 @@
 import { error } from '@sveltejs/kit'
 import { get_request_caller, record_usage_event } from '@tabitha/usage'
-import { get_verse_result } from '$lib/server/verse_result'
-import { default_settings } from '$lib/lookups'
-import { translate_json } from '$lib/server/brief/brief'
-import { to_copilot_run_event } from '$lib/server/usage'
+import { get_verse_result } from '#lib/server/verse_result.js'
+import { default_settings } from '#lib/lookups.js'
+import { translate_json } from '#lib/server/brief/brief.js'
+import { to_copilot_run_event } from '#lib/server/usage.js'
 import type { RequestHandler } from './$types'
 import type { CopilotResult, VerseReference } from '@tabitha/types'
-import type { CopilotSettings, CopilotStep, CopilotStreamLine } from '$lib/types'
+import type { CopilotSettings, CopilotStep, CopilotStreamLine } from '#lib/types.js'
 
 export async function GET({ params: { book, chapter, verse }, url: { searchParams }, locals: { ai }, request, platform }: Parameters<RequestHandler>[0]) {
 	const chapter_int = parseInt(chapter)

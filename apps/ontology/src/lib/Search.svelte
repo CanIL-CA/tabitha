@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte'
 	import { navigating, page } from '$app/state'
 	import Icon from '@iconify/svelte'
-	import { parts_of_speech } from '$lib/lookups'
+	import { parts_of_speech } from '#lib/lookups.js'
 
 	type Props = {
 		autofocus?: boolean

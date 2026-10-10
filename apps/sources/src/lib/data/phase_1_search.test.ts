@@ -4,7 +4,11 @@ import { MAX_HITS, parse_phase_1_query, search_phase_1, to_match_segments } from
 
 type Row = { id_primary: string, id_secondary: string, id_tertiary: string, phase_1_encoding: string, status: string }
 
-const row = (reference: string, phase_1_encoding: string, status = 'Ready to Translate'): Row => {
+const row = ({ reference, phase_1_encoding, status = 'Ready to Translate' }: {
+	reference: string
+	phase_1_encoding: string
+	status?: string
+}): Row => {
 	const [, id_primary, id_secondary, id_tertiary] = /(.*) (\d+):(\d+)/.exec(reference)!
 	return { id_primary, id_secondary, id_tertiary, phase_1_encoding, status }
 }
@@ -79,8 +83,8 @@ describe('search_phase_1', () => {
 
 	it('drops candidates that only contain a term inside a longer word', async () => {
 		const { db } = fake_db([
-			row('John 3:16', 'God loved the people of the world.'),
-			row('Mark 1:11', 'You are my beloved son.'),
+			row({ reference: 'John 3:16', phase_1_encoding: 'God loved the people of the world.' }),
+			row({ reference: 'Mark 1:11', phase_1_encoding: 'You are my beloved son.' }),
 		])
 
 		const { hits } = await search_phase_1({ db, q: 'loved' })
@@ -90,8 +94,8 @@ describe('search_phase_1', () => {
 
 	it('requires a quoted phrase to appear in order', async () => {
 		const { db } = fake_db([
-			row('Genesis 1:1', 'God made the heavens and the earth.'),
-			row('Genesis 1:2', 'The earth and the heavens were empty.'),
+			row({ reference: 'Genesis 1:1', phase_1_encoding: 'God made the heavens and the earth.' }),
+			row({ reference: 'Genesis 1:2', phase_1_encoding: 'The earth and the heavens were empty.' }),
 		])
 
 		const { hits } = await search_phase_1({ db, q: '"the heavens and the earth"' })
@@ -101,9 +105,9 @@ describe('search_phase_1', () => {
 
 	it('sorts hits in canonical order and defaults a blank status to Not Started', async () => {
 		const { db } = fake_db([
-			row('John 1:10', 'God x'),
-			row('Genesis 2:1', 'God x', ''),
-			row('John 1:9', 'God x'),
+			row({ reference: 'John 1:10', phase_1_encoding: 'God x' }),
+			row({ reference: 'Genesis 2:1', phase_1_encoding: 'God x', status: '' }),
+			row({ reference: 'John 1:9', phase_1_encoding: 'God x' }),
 		])
 
 		const { hits } = await search_phase_1({ db, q: 'God' })
@@ -114,7 +118,7 @@ describe('search_phase_1', () => {
 	})
 
 	it('caps the hits returned but reports the full count', async () => {
-		const rows = Array.from({ length: MAX_HITS + 5 }, (_, index) => row(`Psalms 1:${index + 1}`, 'God x'))
+		const rows = Array.from({ length: MAX_HITS + 5 }, (_, index) => row({ reference: `Psalms 1:${index + 1}`, phase_1_encoding: 'God x' }))
 		const { db } = fake_db(rows)
 
 		const { hits, total_count } = await search_phase_1({ db, q: 'God' })

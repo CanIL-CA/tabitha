@@ -1,14 +1,14 @@
 <script lang="ts">
-	import '$lib/app.css'
+	import '#lib/app.css'
 
 	import { onMount } from 'svelte'
 	import { page } from '$app/state'
-	import { Search } from '$lib'
+	import { Search } from '#lib/index.js'
 	import { Header, Footer, theme_state } from '@tabitha/ui'
 	import { signIn, signOut } from '@auth/sveltekit/client'
 	import Icon from '@iconify/svelte'
 	import { registerSW } from 'virtual:pwa-register'
-	import { sync_pending } from '$lib/offline/sync'
+	import { sync_pending } from '#lib/offline/sync.js'
 	import { report_active_theme } from '@tabitha/usage/client'
 
 	let { data, children } = $props()

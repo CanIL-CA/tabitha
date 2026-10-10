@@ -2,7 +2,7 @@
 	import type { OntologyResult, ConceptKey } from '@tabitha/types'
 	import type { Snippet } from 'svelte'
 	import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
-	import { fetch_ontology_data_for_all_senses } from '$lib/data/api_lookups'
+	import { fetch_ontology_data_for_all_senses } from '#lib/data/api_lookups.js'
 	import Icon from '@iconify/svelte'
 	import SidebarDetail from './SidebarDetail.svelte'
 

@@ -1,10 +1,10 @@
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { TOKEN_TYPE, stem_with_sense, create_case_frame, create_token, format_token_message, token_has_tag } from '$lib/token'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { TOKEN_TYPE, stem_with_sense, create_case_frame, create_token, format_token_message, token_has_tag } from '#lib/token.js'
 import { parse_transform_rule } from '../transform_rules'
 import { UNBRACKETED_CLAUSE_MESSAGE, WHERE_RELATIVIZER_HINT, has_where_relativizer_argument, is_missing_brackets_around_clause } from './cascade_sources'
 import type { CheckerMessageLabel } from '@tabitha/types'
-import type { MessageInfo, Token, LookupResult } from '$lib/types'
-import type { RuleTriggerContext } from '$lib/rules/types'
+import type { MessageInfo, Token, LookupResult } from '#lib/types.js'
+import type { RuleTriggerContext } from '#lib/rules/types.js'
 import type {
 	ArgumentRoleRule,
 	ArgumentRulesForSense,
@@ -16,7 +16,7 @@ import type {
 	RoleTag,
 	SenseRuleJson,
 	WordSense,
-} from '$lib/rules/case_frame/types'
+} from '#lib/rules/case_frame/types.js'
 
 function readable_role_tag(role_tag: RoleTag): string {
 	const readables = new Map<string, string>([
@@ -84,7 +84,7 @@ export function parse_case_frame_rule({ sense, role_tag, rule_json }: { sense: W
 
 	return [{
 		role_tag,
-		trigger_rule: { ...parse_transform_rule(rule_json, 0), id: `case_frame:${sense}:${role_tag}` },
+		trigger_rule: { ...parse_transform_rule({ rule_json, index: 0 }), id: `case_frame:${sense}:${role_tag}` },
 		relative_context_index: rule_json['argument_context_index'] ?? -1,
 		missing_message: missing_message.replaceAll('{role}', role_tag),
 		extra_message: extra_message.replaceAll('{role}', role_tag),

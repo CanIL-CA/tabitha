@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { to_check_event } from './usage'
 import type { CheckerToken, EditorCheckResult } from '@tabitha/types'
 
-const token_with = (labels: string[], extra: Partial<CheckerToken> = {}) => ({
+const token_with = ({ labels, extra = {} }: {
+	labels: string[]
+	extra?: Partial<CheckerToken>
+}) => ({
 	token: 'word',
 	messages: labels.map(label => ({ label, message: `${label} message` })),
 	sub_tokens: [],
@@ -15,8 +18,8 @@ describe('to_check_event', () => {
 			status: 'error',
 			back_translation: '',
 			tokens: [
-				token_with(['error', 'warning']),
-				token_with(['info'], { pairing: token_with(['warning']) }),
+				token_with({ labels: ['error', 'warning'] }),
+				token_with({ labels: ['info'], extra: { pairing: token_with({ labels: ['warning'] }) } }),
 			],
 		} as EditorCheckResult
 

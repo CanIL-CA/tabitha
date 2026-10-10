@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types'
-import type { DbRowText, ParsedSearchQuery } from '$lib/types'
+import type { DbRowText, ParsedSearchQuery } from '#lib/types.js'
 import type { TargetTextResult } from '@tabitha/types'
 
 export function parse_search_query(q: string): ParsedSearchQuery {

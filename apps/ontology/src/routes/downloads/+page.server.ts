@@ -1,7 +1,7 @@
 import type { R2Object, R2Objects } from '@cloudflare/workers-types'
 import type { PageServerLoad } from './$types'
-import { get_version } from '$lib/server/ontology'
-import { get_version_applied_date } from '$lib/server/changes/changes'
+import { get_version } from '#lib/server/ontology.js'
+import { get_version_applied_date } from '#lib/server/changes/changes.js'
 
 type Backup = {
 	size_mb: number,
@@ -22,7 +22,7 @@ export async function load({ locals: { db_ontology }, platform }: Parameters<Pag
 		return { backups: [], pending: true }
 	}
 
-	const backups = (await Promise.all(objects.map(transform))).toSorted(most_recent_first)
+	const backups = (await Promise.all(objects.map(transform))).toSorted((a, b) => b.created_at.getTime() - a.created_at.getTime())
 
 	const current_version = await get_version(db_ontology)
 	const most_recent_backup_version = backups[0]?.version
@@ -46,15 +46,11 @@ export async function load({ locals: { db_ontology }, platform }: Parameters<Pag
 	}
 
 	function extract_version(key: string) {
-		let match = key.match(VERSION_REGEX)
+		const match = key.match(VERSION_REGEX)
 		return match?.[1].replaceAll('-', '.') ?? ''
 	}
 
 	function bytes_to_mb(bytes: number) {
 		return Math.round(bytes / (1024 * 1024))
-	}
-
-	function most_recent_first(a: Backup, b: Backup) {
-		return b.created_at.getTime() - a.created_at.getTime()
 	}
 }

@@ -1,7 +1,7 @@
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { add_tag_to_token, set_message, split_stem_and_sense } from '$lib/token'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { add_tag_to_token, set_message, split_stem_and_sense } from '#lib/token.js'
 import { create_context_filter, create_token_filter } from '../rules_parser'
-import type { Token } from '$lib/types'
+import type { Token } from '#lib/types.js'
 import type {
 	ArgumentMatchFilter,
 	PriorityOverrideRule,
@@ -9,8 +9,8 @@ import type {
 	WordSense,
 	WordStem,
 	WordStemPriorityOverrides,
-} from '$lib/rules/case_frame/types'
-import type { RuleTriggerContext } from '$lib/rules/types'
+} from '#lib/rules/case_frame/types.js'
+import type { RuleTriggerContext } from '#lib/rules/types.js'
 
 /**
  * By default, senses with valid case frames are prioritized by letter (eg. -A is selected over -B).

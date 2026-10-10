@@ -1,12 +1,12 @@
-import { TOKEN_TYPE, create_clause_token, create_token, flatten_sentence } from '$lib/token'
+import { TOKEN_TYPE, create_clause_token, create_token, flatten_sentence } from '#lib/token.js'
 import { describe, expect, test } from 'vitest'
 import { apply_rules } from './rules_processor'
 import { LOOKUP_RULES } from './lookup_rules'
 import { parse_transform_rule } from './transform_rules'
 import { parse_checker_rule } from './checker_rules'
 import { parse_part_of_speech_rule } from './part_of_speech_rules'
-import { expect_error, create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '$lib/test_helps'
-import type { CheckerRuleJson } from '$lib/rules/types'
+import { expect_error, create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '#lib/test_helps.js'
+import type { CheckerRuleJson } from '#lib/rules/types.js'
 
 describe('transform rules', () => {
 	test('trigger does not match', () => {
@@ -16,7 +16,7 @@ describe('transform rules', () => {
 				'context': { },
 				'transform': { 'type': TOKEN_TYPE.FUNCTION_WORD },
 			},
-		].map(parse_transform_rule)
+		].map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -37,7 +37,7 @@ describe('transform rules', () => {
 				'context': { 'followedby': { 'token': 'other' } },
 				'transform': { 'type': TOKEN_TYPE.FUNCTION_WORD },
 			},
-		].map(parse_transform_rule)
+		].map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -58,7 +58,7 @@ describe('transform rules', () => {
 				'context': { 'precededby': { 'token': 'a' } },
 				'transform': { 'tag': { 'key': 'value' } },
 			},
-		].map(parse_transform_rule)
+		].map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -85,7 +85,7 @@ describe('transform rules', () => {
 				'context': { 'followedby': { 'token': 'context' } },
 				'transform': { 'tag': { 'key': 'value' } },
 			},
-		].map(parse_transform_rule)
+		].map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -108,7 +108,7 @@ describe('transform rules', () => {
 				'context': { 'followedby': { 'token': 'other', 'skip': 'all'  } },
 				'transform': { 'type': TOKEN_TYPE.FUNCTION_WORD },
 			},
-		].map(parse_transform_rule)
+		].map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -131,7 +131,7 @@ describe('transform rules', () => {
 				'context': { 'followedby': { 'token': 'context', 'skip': 'all' } },
 				'transform': { 'type': TOKEN_TYPE.FUNCTION_WORD },
 			},
-		].map(parse_transform_rule)
+		].map((rule_json, index) => parse_transform_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -159,7 +159,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -181,7 +181,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -203,7 +203,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -230,7 +230,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -265,7 +265,7 @@ describe('checker rules', () => {
 					'message': 'message2',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -291,7 +291,7 @@ describe('checker rules', () => {
 				'context': { 'followedby': { 'token': 'context' } },
 				'error': { 'message': 'message' },
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -317,7 +317,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -342,7 +342,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -368,7 +368,7 @@ describe('checker rules', () => {
 					'message': 'message',
 				},
 			},
-		] as CheckerRuleJson[]).map(parse_checker_rule)
+		] as CheckerRuleJson[]).map((rule_json, index) => parse_checker_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -443,7 +443,7 @@ describe('part-of-speech rules', () => {
 				'context': {},
 				'remove': 'Noun',
 			},
-		].map(parse_part_of_speech_rule)
+		].map((rule_json, index) => parse_part_of_speech_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -467,7 +467,7 @@ describe('part-of-speech rules', () => {
 				'context': {},
 				'remove': 'Noun',
 			},
-		].map(parse_part_of_speech_rule)
+		].map((rule_json, index) => parse_part_of_speech_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -492,7 +492,7 @@ describe('part-of-speech rules', () => {
 				'context': {},
 				'remove': 'Noun',
 			},
-		].map(parse_part_of_speech_rule)
+		].map((rule_json, index) => parse_part_of_speech_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([
@@ -521,7 +521,7 @@ describe('part-of-speech rules', () => {
 				'context': {},
 				'remove': 'Noun',
 			},
-		].map(parse_part_of_speech_rule)
+		].map((rule_json, index) => parse_part_of_speech_rule({ rule_json, index }))
 
 		const input_tokens = [
 			create_sentence_for_test([

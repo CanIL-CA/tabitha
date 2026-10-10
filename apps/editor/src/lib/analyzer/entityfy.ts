@@ -1,7 +1,7 @@
-import { token_has_tag, TOKEN_TYPE } from '$lib/token'
+import { token_has_tag, TOKEN_TYPE } from '#lib/token.js'
 import { get_features_for_token } from './features'
 import type { SourceEntityCategory, EditorAnalyzedEntity, ConceptKey } from '@tabitha/types'
-import type { Sentence, Token } from '$lib/types'
+import type { Sentence, Token } from '#lib/types.js'
 
 export function entityfy(sentences: Sentence[]): EditorAnalyzedEntity[] {
 	return entityfy_tokens(sentences.map(sentence => sentence.clause))

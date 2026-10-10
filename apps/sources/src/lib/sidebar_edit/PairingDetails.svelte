@@ -1,9 +1,9 @@
 <script lang="ts">
-	import ConceptDialog from '$lib/ConceptDialog.svelte'
-	import ConceptDetails from '$lib/sidebar/ConceptDetails.svelte'
+	import ConceptDialog from '#lib/ConceptDialog.svelte'
+	import ConceptDetails from '#lib/sidebar/ConceptDetails.svelte'
 	import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 	import type { OntologyResult, SourceEntity, PairingType } from '@tabitha/types'
-	import type { PageSourceConcept } from '$lib/types'
+	import type { PageSourceConcept } from '#lib/types.js'
 	import Icon from '@iconify/svelte'
 
 	let { data = $bindable() }: { data: SourceEntity } = $props()

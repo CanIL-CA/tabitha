@@ -1,7 +1,7 @@
 import { expect } from 'vitest'
 import { get_message_type, TOKEN_TYPE, create_token, create_lookup_result, create_clause_token } from './token'
 import type { CheckerMessageLabel, OntologyStatus, PairingType, PartOfSpeech } from '@tabitha/types'
-import type { Token, LookupResult, Sentence, Tag } from '$lib/types'
+import type { Token, LookupResult, Sentence, Tag } from '#lib/types.js'
 
 export function expect_error({ token, message }: { token: Token | null | undefined; message: string }) {
 	expect_message({ token, label: 'error', message })

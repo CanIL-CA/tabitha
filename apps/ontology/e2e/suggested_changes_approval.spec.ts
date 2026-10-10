@@ -1,5 +1,4 @@
-// @ts-check
-import { test, expect } from '@playwright/test'
+import { test, expect, type BrowserContext } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -12,7 +11,7 @@ const SESSION_COOKIE_NAME = 'authjs.session-token'
 const app_dir = dirname(dirname(fileURLToPath(import.meta.url)))
 const root_dir = join(app_dir, '../..')
 
-function read_env_var(name) {
+function read_env_var(name: string) {
 	for (const file of ['.env.local', '.env']) {
 		const path = join(app_dir, file)
 		if (!existsSync(path)) continue
@@ -22,7 +21,11 @@ function read_env_var(name) {
 	throw new Error(`Missing ${name} in apps/ontology/.env.local -- run \`bun run setup:env\` first.`)
 }
 
-async function sign_in_as(context, email, permissions) {
+async function sign_in_as({ context, email, permissions }: {
+	context: BrowserContext
+	email: string
+	permissions: string[]
+}) {
 	execFileSync('bun', [join(root_dir, 'scripts/dx/grant_permission.ts'), email, ...permissions], { stdio: 'inherit' })
 
 	const session_token = await encode({
@@ -47,7 +50,7 @@ test('a suggest-tier user\'s edit is held for approval, and an authorized review
 	// The suggester has PROTECTED_ACCESS but neither ADD_CONCEPT nor UPDATE_CONCEPT -- exactly the
 	// tier this feature adds: reachable, but not authorized to apply a change directly.
 	const suggester_context = await browser.newContext()
-	await sign_in_as(suggester_context, suggester_email, ['PROTECTED_ACCESS'])
+	await sign_in_as({ context: suggester_context, email: suggester_email, permissions: ['PROTECTED_ACCESS'] })
 	const suggester_page = await suggester_context.newPage()
 
 	await suggester_page.goto('/protected/concept/update?concept=love-A-Verb')

@@ -1,6 +1,6 @@
 import { BOOK_NAME_BY_USFM_CODE } from '@tabitha/types/patterns'
 import type { Reference, TargetProject } from '@tabitha/types'
-import type { PhraseMatch, PhraseSearchOutcome } from '$lib/types'
+import type { PhraseMatch, PhraseSearchOutcome } from '#lib/types.js'
 
 const API_BIBLE_BASE = 'https://api.scripture.api.bible/v1'
 

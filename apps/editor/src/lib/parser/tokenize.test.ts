@@ -5,30 +5,44 @@ import { FUNCTION_WORDS } from './function_words'
 import { MESSAGE_TYPE, TOKEN_TYPE, create_token } from '../token'
 import { tokenize_input as tokenize_with_ranges } from './tokenize'
 import type { PairingType } from '@tabitha/types'
-import type { Token } from '$lib/types'
+import type { Token } from '#lib/types.js'
 
 // Source ranges have their own test below; toEqual treats an undefined property as absent
 function tokenize_input(text: string): Token[] {
 	return tokenize_with_ranges(text).map(token => ({ ...token, source_range: undefined }))
 }
 
-function create_word_token(token: string, { lookup_term, sense = '' }: { lookup_term?: string, sense?: string } = {}): Token {
+function create_word_token({ token, lookup_term, sense = '' }: {
+	token: string
+	lookup_term?: string
+	sense?: string
+}): Token {
 	return create_token({ token, type: TOKEN_TYPE.LOOKUP_WORD, lookup_terms: [lookup_term || token], specified_sense: sense })
 }
 
-function create_pairing(left_token: Token, right_token: Token, pairing_type: PairingType): Token {
+function create_pairing({ left_token, right_token, pairing_type }: {
+	left_token: Token
+	right_token: Token
+	pairing_type: PairingType
+}): Token {
 	left_token.pairing = right_token
 	left_token.pairing_type = pairing_type
 	return left_token
 }
 
-function create_pronoun_token(pronoun: string, referent_token: Token): Token {
+function create_pronoun_token({ pronoun, referent_token }: {
+	pronoun: string
+	referent_token: Token
+}): Token {
 	const pronoun_token = create_token({ token: pronoun, type: TOKEN_TYPE.FUNCTION_WORD })
 	referent_token.pronoun = pronoun_token
 	return referent_token
 }
 
-function create_error_token(token: string, message: string): Token {
+function create_error_token({ token, message }: {
+	token: string
+	message: string
+}): Token {
 	return create_token({ token, type: TOKEN_TYPE.NOTE, messages: [{ ...MESSAGE_TYPE.ERROR, message, rule_id: 'token:syntax' }] })
 }
 
@@ -48,13 +62,13 @@ describe('tokenize_input', () => {
 		g`
 
 		const EXPECTED_OUTPUT = [
-			create_word_token('z'),
-			create_word_token('b'),
-			create_word_token('c'),
-			create_word_token('d'),
-			create_word_token('e'),
-			create_word_token('f'),
-			create_word_token('g'),
+			create_word_token({ token: 'z' }),
+			create_word_token({ token: 'b' }),
+			create_word_token({ token: 'c' }),
+			create_word_token({ token: 'd' }),
+			create_word_token({ token: 'e' }),
+			create_word_token({ token: 'f' }),
+			create_word_token({ token: 'g' }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -64,15 +78,15 @@ describe('tokenize_input', () => {
 		const INPUT = "token tokens token's token-A token's-A in-order-to Holy-Spirit's token123 123"
 
 		const EXPECTED_OUTPUT = [
-			create_word_token('token', { lookup_term: 'token' }),
-			create_word_token('tokens', { lookup_term: 'tokens' }),
-			create_word_token("token's", { lookup_term: 'token' }),
-			create_word_token('token-A', { lookup_term: 'token', sense: 'A' }),
-			create_word_token("token's-A", { lookup_term: 'token', sense: 'A' }),
-			create_word_token('in-order-to', { lookup_term: 'in-order-to' }),
-			create_word_token("Holy-Spirit's", { lookup_term: 'Holy-Spirit' }),
-			create_word_token('token123', { lookup_term: 'token123' }),
-			create_word_token('123', { lookup_term: '123' }),
+			create_word_token({ token: 'token', lookup_term: 'token' }),
+			create_word_token({ token: 'tokens', lookup_term: 'tokens' }),
+			create_word_token({ token: "token's", lookup_term: 'token' }),
+			create_word_token({ token: 'token-A', lookup_term: 'token', sense: 'A' }),
+			create_word_token({ token: "token's-A", lookup_term: 'token', sense: 'A' }),
+			create_word_token({ token: 'in-order-to', lookup_term: 'in-order-to' }),
+			create_word_token({ token: "Holy-Spirit's", lookup_term: 'Holy-Spirit' }),
+			create_word_token({ token: 'token123', lookup_term: 'token123' }),
+			create_word_token({ token: '123', lookup_term: '123' }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -82,13 +96,13 @@ describe('tokenize_input', () => {
 		const INPUT = '2.5 .5 .1. 3.88] 2.5'
 
 		const EXPECTED_OUTPUT = [
-			create_word_token('2.5', { lookup_term: '2.5' }),
-			create_word_token('.5', { lookup_term: '.5' }),
-			create_word_token('.1', { lookup_term: '.1' }),
+			create_word_token({ token: '2.5', lookup_term: '2.5' }),
+			create_word_token({ token: '.5', lookup_term: '.5' }),
+			create_word_token({ token: '.1', lookup_term: '.1' }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('3.88', { lookup_term: '3.88' }),
+			create_word_token({ token: '3.88', lookup_term: '3.88' }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('2.5', { lookup_term: '2.5' }),
+			create_word_token({ token: '2.5', lookup_term: '2.5' }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -98,9 +112,9 @@ describe('tokenize_input', () => {
 		const INPUT = '.token ,token token['
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('.token', ERRORS.INVALID_TOKEN_END('.')),
-			create_error_token(',token', ERRORS.INVALID_TOKEN_END(',')),
-			create_error_token('token[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
+			create_error_token({ token: '.token', message: ERRORS.INVALID_TOKEN_END('.') }),
+			create_error_token({ token: ',token', message: ERRORS.INVALID_TOKEN_END(',') }),
+			create_error_token({ token: 'token[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -110,16 +124,16 @@ describe('tokenize_input', () => {
 		const INPUT = "you(Paul) abc(test) your(Paul's) your(son-C) your(son's-C) your(sons'-C)] you(Paul) you(follower/disciple) you(follower|disciple)."
 
 		const EXPECTED_OUTPUT = [
-			create_pronoun_token('you', create_word_token('Paul')),
-			create_pronoun_token('abc', create_word_token('test')),
-			create_pronoun_token('your', create_word_token('Paul\'s', { lookup_term: 'Paul' })),
-			create_pronoun_token('your', create_word_token('son-C', { lookup_term: 'son', sense: 'C' })),
-			create_pronoun_token('your', create_word_token('son\'s-C', { lookup_term: 'son', sense: 'C' })),
-			create_pronoun_token('your', create_word_token('sons\'-C', { lookup_term: 'sons', sense: 'C' })),
+			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: 'Paul' }) }),
+			create_pronoun_token({ pronoun: 'abc', referent_token: create_word_token({ token: 'test' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'son-C', lookup_term: 'son', sense: 'C' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'son\'s-C', lookup_term: 'son', sense: 'C' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'sons\'-C', lookup_term: 'sons', sense: 'C' }) }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
-			create_pronoun_token('you', create_word_token('Paul')),
-			create_pronoun_token('you', create_pairing(create_word_token('follower'), create_word_token('disciple'), 'simple-complex')),
-			create_pronoun_token('you', create_pairing(create_word_token('follower'), create_word_token('disciple'), 'dynamic-literal')),
+			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: 'Paul' }) }),
+			create_pronoun_token({ pronoun: 'you', referent_token: create_pairing({ left_token: create_word_token({ token: 'follower' }), right_token: create_word_token({ token: 'disciple' }), pairing_type: 'simple-complex' }) }),
+			create_pronoun_token({ pronoun: 'you', referent_token: create_pairing({ left_token: create_word_token({ token: 'follower' }), right_token: create_word_token({ token: 'disciple' }), pairing_type: 'dynamic-literal' }) }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 		]
 
@@ -130,10 +144,10 @@ describe('tokenize_input', () => {
 		const INPUT = 'you(Paul youPaul) you(Paul)[ you(Paul)_.'
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('you(Paul', ERRORS.MISSING_CLOSING_PAREN),
-			create_error_token('youPaul)', ERRORS.MISSING_OPENING_PAREN),
-			create_error_token('you(Paul)[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
-			create_error_token('you(Paul)_', ERRORS.INVALID_TOKEN_END('you(Paul)')),
+			create_error_token({ token: 'you(Paul', message: ERRORS.MISSING_CLOSING_PAREN }),
+			create_error_token({ token: 'youPaul)', message: ERRORS.MISSING_OPENING_PAREN }),
+			create_error_token({ token: 'you(Paul)[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
+			create_error_token({ token: 'you(Paul)_', message: ERRORS.INVALID_TOKEN_END('you(Paul)') }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 		]
 
@@ -163,10 +177,10 @@ describe('tokenize_input', () => {
 		const INPUT = 'token_note token_ ._note ]_note'
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('token_note', ERRORS.NO_SPACE_BEFORE_UNDERSCORE),
-			create_error_token('token_', ERRORS.INVALID_TOKEN_END('token')),
-			create_error_token('._note', ERRORS.NO_SPACE_BEFORE_UNDERSCORE),
-			create_error_token(']_note', ERRORS.NO_SPACE_BEFORE_UNDERSCORE),
+			create_error_token({ token: 'token_note', message: ERRORS.NO_SPACE_BEFORE_UNDERSCORE }),
+			create_error_token({ token: 'token_', message: ERRORS.INVALID_TOKEN_END('token') }),
+			create_error_token({ token: '._note', message: ERRORS.NO_SPACE_BEFORE_UNDERSCORE }),
+			create_error_token({ token: ']_note', message: ERRORS.NO_SPACE_BEFORE_UNDERSCORE }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -203,16 +217,16 @@ describe('tokenize_input', () => {
 		const INPUT = "(imp imp) token(imp) (imp)token (implicit_situational) (imperative) (alt) (Paul's) (test )"
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('(imp', ERRORS.MISSING_CLOSING_PAREN),
-			create_error_token('imp)', ERRORS.MISSING_OPENING_PAREN),
-			create_pronoun_token('token', create_word_token('imp')),		// tokenizing at this time does not differentiate from a pronoun referent
-			create_error_token('(imp)token', ERRORS.INVALID_TOKEN_END('(imp)')),
-			create_error_token('(implicit_situational)', 'This clause notation is not recognized. Did you mean (implicit-situational)?'),
-			create_error_token('(imperative)', 'This clause notation is not recognized. Did you mean (imp)?'),
-			create_error_token('(alt)', 'This clause notation is not recognized. Did you mean (alternate-1), (alternate-2), (alternate-3), (alternate-4), or (alternate-5)?'),
-			create_error_token("(Paul's)", 'This clause notation is not recognized.'),
-			create_error_token('(test', ERRORS.MISSING_CLOSING_PAREN),
-			create_error_token(')', ERRORS.MISSING_OPENING_PAREN),
+			create_error_token({ token: '(imp', message: ERRORS.MISSING_CLOSING_PAREN }),
+			create_error_token({ token: 'imp)', message: ERRORS.MISSING_OPENING_PAREN }),
+			create_pronoun_token({ pronoun: 'token', referent_token: create_word_token({ token: 'imp' }) }),		// tokenizing at this time does not differentiate from a pronoun referent
+			create_error_token({ token: '(imp)token', message: ERRORS.INVALID_TOKEN_END('(imp)') }),
+			create_error_token({ token: '(implicit_situational)', message: 'This clause notation is not recognized. Did you mean (implicit-situational)?' }),
+			create_error_token({ token: '(imperative)', message: 'This clause notation is not recognized. Did you mean (imp)?' }),
+			create_error_token({ token: '(alt)', message: 'This clause notation is not recognized. Did you mean (alternate-1), (alternate-2), (alternate-3), (alternate-4), or (alternate-5)?' }),
+			create_error_token({ token: "(Paul's)", message: 'This clause notation is not recognized.' }),
+			create_error_token({ token: '(test', message: ERRORS.MISSING_CLOSING_PAREN }),
+			create_error_token({ token: ')', message: ERRORS.MISSING_OPENING_PAREN }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -250,7 +264,7 @@ describe('tokenize_input', () => {
 			create_token({ token: '"', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('token'),
+			create_word_token({ token: 'token' }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
@@ -259,7 +273,7 @@ describe('tokenize_input', () => {
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('token'),
+			create_word_token({ token: 'token' }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 		]
@@ -271,12 +285,12 @@ describe('tokenize_input', () => {
 		const INPUT = '.[ ,[ ?[ ][ token[ :['
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('.[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
-			create_error_token(',[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
-			create_error_token('?[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
-			create_error_token('][', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
-			create_error_token('token[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
-			create_error_token(':[', ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET),
+			create_error_token({ token: '.[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
+			create_error_token({ token: ',[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
+			create_error_token({ token: '?[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
+			create_error_token({ token: '][', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
+			create_error_token({ token: 'token[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
+			create_error_token({ token: ':[', message: ERRORS.NO_SPACE_BEFORE_OPENING_BRACKET }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -293,21 +307,21 @@ describe('tokenize_input', () => {
 			create_token({ token: '?', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '"', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('token'),
+			create_word_token({ token: 'token' }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '"', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '"', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ',', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('token'),
+			create_word_token({ token: 'token' }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('token'),
+			create_word_token({ token: 'token' }),
 			create_token({ token: ',', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('5'),
+			create_word_token({ token: '5' }),
 			create_token({ token: ':', type: TOKEN_TYPE.LOOKUP_WORD, lookup_terms: ['-ReferenceMarker'], tag: { 'syntax': 'verse_ref_colon' } }),
-			create_word_token('5'),
+			create_word_token({ token: '5' }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -317,12 +331,12 @@ describe('tokenize_input', () => {
 		const INPUT = "Paul's Paul’s Jesus’ Jesus' sons’-C you(Paul’s)"
 
 		const EXPECTED_OUTPUT = [
-			create_word_token('Paul\'s', { lookup_term: 'Paul' }),
-			create_word_token('Paul\'s', { lookup_term: 'Paul' }),
-			create_word_token('Jesus\'', { lookup_term: 'Jesus' }),
-			create_word_token("Jesus'", { lookup_term: 'Jesus' }),
-			create_word_token('sons\'-C', { lookup_term: 'sons', sense: 'C' }),
-			create_pronoun_token('you', create_word_token('Paul\'s', { lookup_term: 'Paul' })),
+			create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }),
+			create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }),
+			create_word_token({ token: 'Jesus\'', lookup_term: 'Jesus' }),
+			create_word_token({ token: "Jesus'", lookup_term: 'Jesus' }),
+			create_word_token({ token: 'sons\'-C', lookup_term: 'sons', sense: 'C' }),
+			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }) }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -334,7 +348,7 @@ describe('tokenize_input', () => {
 		const EXPECTED_OUTPUT = [
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '"', type: TOKEN_TYPE.PUNCTUATION }),
-			create_word_token('Yes'),
+			create_word_token({ token: 'Yes' }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '"', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
@@ -349,12 +363,12 @@ describe('tokenize_input', () => {
 		const INPUT = '( ) / * + ;'
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('(', ERRORS.MISSING_CLOSING_PAREN),
-			create_error_token(')', ERRORS.MISSING_OPENING_PAREN),
-			create_error_token('/', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
-			create_error_token('*', ERRORS.UNRECOGNIZED_CHAR),
-			create_error_token('+', ERRORS.UNRECOGNIZED_CHAR),
-			create_error_token(';', ERRORS.UNRECOGNIZED_CHAR),
+			create_error_token({ token: '(', message: ERRORS.MISSING_CLOSING_PAREN }),
+			create_error_token({ token: ')', message: ERRORS.MISSING_OPENING_PAREN }),
+			create_error_token({ token: '/', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
+			create_error_token({ token: '*', message: ERRORS.UNRECOGNIZED_CHAR }),
+			create_error_token({ token: '+', message: ERRORS.UNRECOGNIZED_CHAR }),
+			create_error_token({ token: ';', message: ERRORS.UNRECOGNIZED_CHAR }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -365,14 +379,14 @@ describe('tokenize_input', () => {
 
 		// these pairings are parsed as 'simple-complex', and determined to be 'metric-biblical' at a later stage
 		const EXPECTED_OUTPUT = [
-			create_pairing(create_word_token('5'), create_word_token('10'), 'simple-complex'),
-			create_pairing(create_word_token('.5'), create_word_token('2'), 'simple-complex'),
-			create_pairing(create_word_token('5'), create_word_token('2.5'), 'simple-complex'),
-			create_pairing(create_word_token('.5'), create_word_token('2.5'), 'simple-complex'),
-			create_pairing(create_word_token('2.5'), create_word_token('5'), 'simple-complex'),
+			create_pairing({ left_token: create_word_token({ token: '5' }), right_token: create_word_token({ token: '10' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: '.5' }), right_token: create_word_token({ token: '2' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: '5' }), right_token: create_word_token({ token: '2.5' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: '.5' }), right_token: create_word_token({ token: '2.5' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: '2.5' }), right_token: create_word_token({ token: '5' }), pairing_type: 'simple-complex' }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
-			create_pairing(create_word_token('2'), create_word_token('2.5'), 'simple-complex'),
+			create_pairing({ left_token: create_word_token({ token: '2' }), right_token: create_word_token({ token: '2.5' }), pairing_type: 'simple-complex' }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 		]
@@ -384,30 +398,14 @@ describe('tokenize_input', () => {
 		const INPUT = "simple/complex simple's/complex's simples'/complexs' simples'-A/complexs' simple-A/complex-B. [simple/complex]"
 
 		const EXPECTED_OUTPUT = [
-			create_pairing(create_word_token('simple'), create_word_token('complex'), 'simple-complex'),
-			create_pairing(
-				create_word_token("simple's", { lookup_term: 'simple' }),
-				create_word_token("complex's", { lookup_term: 'complex' }),
-				'simple-complex',
-			),
-			create_pairing(
-				create_word_token("simples'", { lookup_term: 'simples' }),
-				create_word_token("complexs'", { lookup_term: 'complexs' }),
-				'simple-complex',
-			),
-			create_pairing(
-				create_word_token("simples'-A", { lookup_term: 'simples', sense: 'A' }),
-				create_word_token("complexs'", { lookup_term: 'complexs' }),
-				'simple-complex',
-			),
-			create_pairing(
-				create_word_token('simple-A', { lookup_term: 'simple', sense: 'A' }),
-				create_word_token('complex-B', { lookup_term: 'complex', sense: 'B' }),
-				'simple-complex',
-			),
+			create_pairing({ left_token: create_word_token({ token: 'simple' }), right_token: create_word_token({ token: 'complex' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: "simple's", lookup_term: 'simple' }), right_token: create_word_token({ token: "complex's", lookup_term: 'complex' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: "simples'", lookup_term: 'simples' }), right_token: create_word_token({ token: "complexs'", lookup_term: 'complexs' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: "simples'-A", lookup_term: 'simples', sense: 'A' }), right_token: create_word_token({ token: "complexs'", lookup_term: 'complexs' }), pairing_type: 'simple-complex' }),
+			create_pairing({ left_token: create_word_token({ token: 'simple-A', lookup_term: 'simple', sense: 'A' }), right_token: create_word_token({ token: 'complex-B', lookup_term: 'complex', sense: 'B' }), pairing_type: 'simple-complex' }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
-			create_pairing(create_word_token('simple'), create_word_token('complex'), 'simple-complex'),
+			create_pairing({ left_token: create_word_token({ token: 'simple' }), right_token: create_word_token({ token: 'complex' }), pairing_type: 'simple-complex' }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 		]
 
@@ -418,15 +416,15 @@ describe('tokenize_input', () => {
 		const INPUT = '/complex simple/ / simple//complex simple/.complex simple./complex you(simple/)'
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('/complex', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
-			create_error_token('simple/', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
-			create_error_token('/', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
-			create_error_token('simple//complex', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
-			create_error_token('simple/', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
-			create_error_token('.complex', ERRORS.INVALID_TOKEN_END('.')),
-			create_word_token('simple'),
-			create_error_token('./complex', ERRORS.INVALID_TOKEN_END('.')),
-			create_error_token('you(simple/)', ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX),
+			create_error_token({ token: '/complex', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
+			create_error_token({ token: 'simple/', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
+			create_error_token({ token: '/', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
+			create_error_token({ token: 'simple//complex', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
+			create_error_token({ token: 'simple/', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
+			create_error_token({ token: '.complex', message: ERRORS.INVALID_TOKEN_END('.') }),
+			create_word_token({ token: 'simple' }),
+			create_error_token({ token: './complex', message: ERRORS.INVALID_TOKEN_END('.') }),
+			create_error_token({ token: 'you(simple/)', message: ERRORS.INVALID_COMPLEX_PAIRING_SYNTAX }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)
@@ -436,30 +434,14 @@ describe('tokenize_input', () => {
 		const INPUT = "dynamic|literal dynamic's|literal's dynamics'|literals' dynamics'-A|literals' dynamic-A|literal-B. [dynamic|literal]"
 
 		const EXPECTED_OUTPUT = [
-			create_pairing(create_word_token('dynamic'), create_word_token('literal'), 'dynamic-literal'),
-			create_pairing(
-				create_word_token("dynamic's", { lookup_term: 'dynamic' }),
-				create_word_token("literal's", { lookup_term: 'literal' }),
-				'dynamic-literal',
-			),
-			create_pairing(
-				create_word_token("dynamics'", { lookup_term: 'dynamics' }),
-				create_word_token("literals'", { lookup_term: 'literals' }),
-				'dynamic-literal',
-			),
-			create_pairing(
-				create_word_token("dynamics'-A", { lookup_term: 'dynamics', sense: 'A' }),
-				create_word_token("literals'", { lookup_term: 'literals' }),
-				'dynamic-literal',
-			),
-			create_pairing(
-				create_word_token('dynamic-A', { lookup_term: 'dynamic', sense: 'A' }),
-				create_word_token('literal-B', { lookup_term: 'literal', sense: 'B' }),
-				'dynamic-literal',
-			),
+			create_pairing({ left_token: create_word_token({ token: 'dynamic' }), right_token: create_word_token({ token: 'literal' }), pairing_type: 'dynamic-literal' }),
+			create_pairing({ left_token: create_word_token({ token: "dynamic's", lookup_term: 'dynamic' }), right_token: create_word_token({ token: "literal's", lookup_term: 'literal' }), pairing_type: 'dynamic-literal' }),
+			create_pairing({ left_token: create_word_token({ token: "dynamics'", lookup_term: 'dynamics' }), right_token: create_word_token({ token: "literals'", lookup_term: 'literals' }), pairing_type: 'dynamic-literal' }),
+			create_pairing({ left_token: create_word_token({ token: "dynamics'-A", lookup_term: 'dynamics', sense: 'A' }), right_token: create_word_token({ token: "literals'", lookup_term: 'literals' }), pairing_type: 'dynamic-literal' }),
+			create_pairing({ left_token: create_word_token({ token: 'dynamic-A', lookup_term: 'dynamic', sense: 'A' }), right_token: create_word_token({ token: 'literal-B', lookup_term: 'literal', sense: 'B' }), pairing_type: 'dynamic-literal' }),
 			create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION }),
 			create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }),
-			create_pairing(create_word_token('dynamic'), create_word_token('literal'), 'dynamic-literal'),
+			create_pairing({ left_token: create_word_token({ token: 'dynamic' }), right_token: create_word_token({ token: 'literal' }), pairing_type: 'dynamic-literal' }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 		]
 
@@ -470,14 +452,14 @@ describe('tokenize_input', () => {
 		const INPUT = '|literal dynamic| | dynamic||literal dynamic|.literal dynamic.|literal'
 
 		const EXPECTED_OUTPUT = [
-			create_error_token('|literal', ERRORS.INVALID_LITERAL_PAIRING_SYNTAX),
-			create_error_token('dynamic|', ERRORS.INVALID_LITERAL_PAIRING_SYNTAX),
-			create_error_token('|', ERRORS.INVALID_LITERAL_PAIRING_SYNTAX),
-			create_error_token('dynamic||literal', ERRORS.INVALID_LITERAL_PAIRING_SYNTAX),
-			create_error_token('dynamic|', ERRORS.INVALID_LITERAL_PAIRING_SYNTAX),
-			create_error_token('.literal', ERRORS.INVALID_TOKEN_END('.')),
-			create_word_token('dynamic'),
-			create_error_token('.|literal', ERRORS.INVALID_TOKEN_END('.')),
+			create_error_token({ token: '|literal', message: ERRORS.INVALID_LITERAL_PAIRING_SYNTAX }),
+			create_error_token({ token: 'dynamic|', message: ERRORS.INVALID_LITERAL_PAIRING_SYNTAX }),
+			create_error_token({ token: '|', message: ERRORS.INVALID_LITERAL_PAIRING_SYNTAX }),
+			create_error_token({ token: 'dynamic||literal', message: ERRORS.INVALID_LITERAL_PAIRING_SYNTAX }),
+			create_error_token({ token: 'dynamic|', message: ERRORS.INVALID_LITERAL_PAIRING_SYNTAX }),
+			create_error_token({ token: '.literal', message: ERRORS.INVALID_TOKEN_END('.') }),
+			create_word_token({ token: 'dynamic' }),
+			create_error_token({ token: '.|literal', message: ERRORS.INVALID_TOKEN_END('.') }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)

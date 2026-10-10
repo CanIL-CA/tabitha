@@ -9,26 +9,29 @@ export type CloudflareCredentials = {
 
 /** Idempotently reconciles the shared gateway to `desired_gateway_config`: creates it if it
  * doesn't exist yet, otherwise updates it to match. Safe to run repeatedly. */
-export async function reconcile_gateway(
-	credentials: CloudflareCredentials,
-	fetch_impl: typeof fetch = fetch,
-): Promise<'created' | 'updated'> {
-	const exists = await gateway_exists(credentials, fetch_impl)
+export async function reconcile_gateway({ credentials, fetch_impl = fetch }: {
+	credentials: CloudflareCredentials
+	fetch_impl?: typeof fetch
+}): Promise<'created' | 'updated'> {
+	const exists = await gateway_exists({ credentials, fetch_impl })
 
 	if (exists) {
-		await update_gateway(credentials, fetch_impl)
+		await update_gateway({ credentials, fetch_impl })
 		return 'updated'
 	}
 
-	await create_gateway(credentials, fetch_impl)
+	await create_gateway({ credentials, fetch_impl })
 	// The create endpoint doesn't accept every field in desired_gateway_config (see create_gateway
 	// below) -- follow up with an update so a freshly provisioned gateway ends up fully reconciled
 	// in one `bun run apply`, not two.
-	await update_gateway(credentials, fetch_impl)
+	await update_gateway({ credentials, fetch_impl })
 	return 'created'
 }
 
-async function gateway_exists({ account_id, api_token }: CloudflareCredentials, fetch_impl: typeof fetch): Promise<boolean> {
+async function gateway_exists({ credentials: { account_id, api_token }, fetch_impl }: {
+	credentials: CloudflareCredentials
+	fetch_impl: typeof fetch
+}): Promise<boolean> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${account_id}/ai-gateway/gateways/${gateway_id}`, {
 		headers: auth_headers(api_token),
 	})
@@ -39,7 +42,10 @@ async function gateway_exists({ account_id, api_token }: CloudflareCredentials, 
 	return true
 }
 
-async function create_gateway({ account_id, api_token }: CloudflareCredentials, fetch_impl: typeof fetch): Promise<void> {
+async function create_gateway({ credentials: { account_id, api_token }, fetch_impl }: {
+	credentials: CloudflareCredentials
+	fetch_impl: typeof fetch
+}): Promise<void> {
 	// `guardrails` isn't a valid create-body field -- cloudflare-go's AIGatewayNewParams omits it
 	// entirely, unlike AIGatewayUpdateParams. reconcile_gateway always follows this with
 	// update_gateway, which does support it.
@@ -55,7 +61,10 @@ async function create_gateway({ account_id, api_token }: CloudflareCredentials, 
 	if (!response.ok) throw new Error(`Failed to create gateway "${gateway_id}": ${response.status} ${await response.text()}`)
 }
 
-async function update_gateway({ account_id, api_token }: CloudflareCredentials, fetch_impl: typeof fetch): Promise<void> {
+async function update_gateway({ credentials: { account_id, api_token }, fetch_impl }: {
+	credentials: CloudflareCredentials
+	fetch_impl: typeof fetch
+}): Promise<void> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${account_id}/ai-gateway/gateways/${gateway_id}`, {
 		method: 'PUT',
 		headers: auth_headers(api_token),
@@ -76,7 +85,7 @@ if (import.meta.main) {
 	const account_id = require_env('CLOUDFLARE_ACCOUNT_ID')
 	const api_token = require_env('CLOUDFLARE_API_TOKEN')
 
-	const result = await reconcile_gateway({ account_id, api_token })
+	const result = await reconcile_gateway({ credentials: { account_id, api_token } })
 	console.log(`Gateway "${gateway_id}" ${result}.`)
 }
 

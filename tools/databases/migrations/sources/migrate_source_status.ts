@@ -54,13 +54,17 @@ const status_mapping: Record<InputStatus, SourceStatus> = {
 	'Previously Complete': 'Ready to Translate',
 }
 
-export async function migrate_source_status(runner: SqlRunner, csv_dir: string, date: string): Promise<void> {
-	const verse_statuses = await extract(csv_dir, date)
+export async function migrate_source_status({ runner, csv_dir, date }: {
+	runner: SqlRunner
+	csv_dir: string
+	date: string
+}): Promise<void> {
+	const verse_statuses = await extract({ csv_dir, date })
 
-	await update_verse_status(verse_statuses, runner)
+	await update_verse_status({ verse_statuses, runner })
 
 	create_chapter_status_table(runner)
-	await populate_chapter_status_table(runner, verse_statuses)
+	await populate_chapter_status_table({ runner, verse_statuses })
 }
 
 /**
@@ -95,11 +99,14 @@ function parse_verse_range(input: string): VerseRange {
 	}
 }
 
-async function extract(csv_dir: string, date: string): Promise<VerseStatusRecord[]> {
+async function extract({ csv_dir, date }: {
+	csv_dir: string
+	date: string
+}): Promise<VerseStatusRecord[]> {
 	log.step('Getting verse statuses from the CSV files...')
 
 	async function get_latest_csv(prefix: string): Promise<string> {
-		const path = await resolve_dated_file(csv_dir, prefix, date, 'csv')
+		const path = await resolve_dated_file({ dir: csv_dir, prefix, date, ext: 'csv' })
 		if (!path) {
 			throw new Error(`Critical Error: No fallback CSV found for ${prefix} in ${csv_dir}.`)
 		}
@@ -147,7 +154,10 @@ async function extract(csv_dir: string, date: string): Promise<VerseStatusRecord
 	}
 }
 
-async function update_verse_status(verse_statuses: VerseStatusRecord[], runner: SqlRunner): Promise<void> {
+async function update_verse_status({ verse_statuses, runner }: {
+	verse_statuses: VerseStatusRecord[]
+	runner: SqlRunner
+}): Promise<void> {
 	log.step('Loading verse statuses into Sources table...')
 
 	for (const [index, { range, status }] of verse_statuses.entries()) {
@@ -196,14 +206,17 @@ function create_chapter_status_table(runner: SqlRunner) {
 	`)
 }
 
-async function populate_chapter_status_table(runner: SqlRunner, verse_statuses: VerseStatusRecord[]) {
+async function populate_chapter_status_table({ runner, verse_statuses }: {
+	runner: SqlRunner
+	verse_statuses: VerseStatusRecord[]
+}) {
 	log.step('Loading chapter statuses into ChapterStatus table...')
 
 	const by_chapter = Map.groupBy(verse_statuses, ({ range: { type, id_primary, id_secondary } }) => JSON.stringify({ type, id_primary, id_secondary }))
 	const chapters = Array.from(by_chapter.entries())
 
 	for (const [index, [chapter_ref, statuses]] of chapters.entries()) {
-		const status_tally: StatusTally = statuses.reduce(tally_statuses, {
+		const status_tally: StatusTally = statuses.reduce((tally, { status }) => tally_status({ tally, status }), {
 			not_started_count: 0,
 			in_progress_count: 0,
 			initial_complete_count: 0,
@@ -224,7 +237,10 @@ async function populate_chapter_status_table(runner: SqlRunner, verse_statuses: 
 
 	log.finish_progress()
 
-	function tally_statuses(tally: StatusTally, { status }: VerseStatusRecord): StatusTally {
+	function tally_status({ tally, status }: {
+		tally: StatusTally
+		status: SourceStatus
+	}): StatusTally {
 		if (status === 'Not Started') {
 			tally.not_started_count += 1
 		} else if (status === 'Initial Analysis in Progress') {

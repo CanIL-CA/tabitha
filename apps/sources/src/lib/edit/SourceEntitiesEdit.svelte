@@ -6,11 +6,11 @@
 	import BoundaryStart from '../entity_displays/BoundaryStart.svelte'
 	import { Punctuation } from '@tabitha/ui'
 	import InsertEntityContextMenu from './InsertEntityContextMenu.svelte'
-	import { is_boundary_end, is_boundary_start } from '$lib/encoding/entity_filters'
-	import { structure_entities } from '$lib/encoding/structured'
-	import { view_settings, set_settings } from '$lib/settings/settings.svelte.js'
-	import type { PageSourceEntity } from '$lib/types'
-	import type { EntityContextMenuData } from '$lib/edit/types'
+	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
+	import { structure_entities } from '#lib/encoding/structured.js'
+	import { view_settings, set_settings } from '#lib/settings/settings.svelte.js'
+	import type { PageSourceEntity } from '#lib/types.js'
+	import type { EntityContextMenuData } from '#lib/edit/types.js'
 	import { entity_clipboard } from './clipboard.svelte'
 
 	type IndexRange = [number, number]

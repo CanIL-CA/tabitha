@@ -16,13 +16,15 @@ import { randomBytes } from 'node:crypto'
 // file is almost always already sitting in the state dir from a previous `vite dev` run.)
 //
 /**
- * @param {string} app_dir
- * @param {string} wrangler_path
- * @param {Array<{ binding?: string, database_name: string, database_id: string }>} entries
- * @param {string} d1_state_dir
+ * @param {{
+ * 	app_dir: string
+ * 	wrangler_path: string
+ * 	entries: Array<{ binding?: string, database_name: string, database_id: string }>
+ * 	d1_state_dir: string
+ * }} options
  * @returns {Promise<Record<string, string>>}
  */
-export async function resolve_workerd_hashes(app_dir, wrangler_path, entries, d1_state_dir) {
+export async function resolve_workerd_hashes({ app_dir, wrangler_path, entries, d1_state_dir }) {
 	const require_from_app = createRequire(join(app_dir, 'package.json'))
 	const wrangler_entry = require_from_app.resolve('wrangler')
 	const { getPlatformProxy } = await import(pathToFileURL(wrangler_entry).href)
@@ -78,6 +80,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
 		process.stdin.on('data', chunk => { data += chunk })
 		process.stdin.on('end', () => resolve(data))
 	}))
-	const resolved = await resolve_workerd_hashes(input.app_dir, input.wrangler_path, input.entries, input.d1_state_dir)
+	const resolved = await resolve_workerd_hashes({ app_dir: input.app_dir, wrangler_path: input.wrangler_path, entries: input.entries, d1_state_dir: input.d1_state_dir })
 	process.stdout.write(JSON.stringify(resolved))
 }

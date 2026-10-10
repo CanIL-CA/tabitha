@@ -1,19 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SourceEntity } from '@tabitha/types'
 
-function clause_reducer(clauses: SourceEntity[][], entity: SourceEntity) {
-	if (entity.value === '{') {
-		clauses.push([])
-	}
-
-	const last_clause = clauses[clauses.length - 1]
-	if (last_clause) {
-		last_clause.push(entity)
-	}
-
-	return clauses
-}
-
 function createMockEntity(overrides: Partial<SourceEntity>): SourceEntity {
 	return {
 		value: '',
@@ -142,7 +129,18 @@ const mockRealWorldEntities: SourceEntity[] = [
 
 describe('SourceEntities clause reducer', () => {
 	it('groups real-world flat entities into separate clause arrays on opening brace', () => {
-		const clauses = mockRealWorldEntities.reduce(clause_reducer, [] as SourceEntity[][])
+		const clauses = mockRealWorldEntities.reduce((grouped, entity) => {
+			if (entity.value === '{') {
+				grouped.push([])
+			}
+
+			const last_clause = grouped[grouped.length - 1]
+			if (last_clause) {
+				last_clause.push(entity)
+			}
+
+			return grouped
+		}, [] as SourceEntity[][])
 		expect(clauses).toHaveLength(2)
 		expect(clauses[0]).toHaveLength(8)
 		expect(clauses[1]).toHaveLength(6)

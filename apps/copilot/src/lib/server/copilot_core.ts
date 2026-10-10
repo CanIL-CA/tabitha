@@ -1,13 +1,13 @@
-import { get_semantic_notes } from '$lib/server/semantic_notes'
-import { default_target_audience } from '$lib/lookups'
-import { fetch_encoding, fetch_target_text } from '$lib/fetches'
+import { get_semantic_notes } from '#lib/server/semantic_notes.js'
+import { default_target_audience } from '#lib/lookups.js'
+import { fetch_encoding, fetch_target_text } from '#lib/fetches.js'
 import { extract_flags } from './flag_extraction/flag_extraction'
 import { assign_flag_weights } from './flag_weighting/flag_weighting'
 import { collect_triggers, triggers_match } from './triggers'
 import type { AiClient } from '@tabitha/ai'
 import type { VerseReference, SourceSimpleJsonResult, SourceSimpleJsonEntity } from '@tabitha/types'
 import type { CopilotDiscernResult, CopilotErrorResult, CopilotTriggerData } from '@tabitha/types/copilot'
-import type { CopilotSettings, CopilotEncodingEntity, CopilotLlmInput, IndexStack } from '$lib/types'
+import type { CopilotSettings, CopilotEncodingEntity, CopilotLlmInput, IndexStack } from '#lib/types.js'
 
 export async function get_copilot_result({ reference, settings, ai }: { reference: VerseReference, settings: CopilotSettings, ai: AiClient }): Promise<CopilotDiscernResult | CopilotErrorResult> {
 	const ref_display = `${reference.book} ${reference.chapter}:${reference.verse}`
@@ -81,10 +81,7 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 }
 
 export class CopilotError extends Error {
-	constructor(message: string, options?: ErrorOptions) {
-		super(message, options)
-		this.name = 'CopilotError'
-	}
+	override name = 'CopilotError'
 }
 
 function preprocess_encoding(encoding: SourceSimpleJsonResult): string {
@@ -106,14 +103,17 @@ function preprocess_encoding(encoding: SourceSimpleJsonResult): string {
 
 function add_node_ids(encoding: SourceSimpleJsonEntity[]): CopilotEncodingEntity[] {
 	const stack: IndexStack = []
-	function add_trace(node: SourceSimpleJsonEntity, index: number): CopilotEncodingEntity {
+	function add_trace({ node, index }: {
+		node: SourceSimpleJsonEntity
+		index: number
+	}): CopilotEncodingEntity {
 		stack.push(index)
 		const node_id = stack.join('.')
 		if (node.children) {
-			node.children = node.children.map(add_trace)
+			node.children = node.children.map((child, child_index) => add_trace({ node: child, index: child_index }))
 		}
 		stack.pop()
 		return { ...node, node_id }
 	}
-	return encoding.map(add_trace)
+	return encoding.map((node, index) => add_trace({ node, index }))
 }

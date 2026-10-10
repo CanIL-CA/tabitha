@@ -3,7 +3,7 @@ import { check_ai_prompts_in_md_files } from './ai_prompts_in_md'
 import { findings } from './types'
 
 function check(content: string) {
-	check_ai_prompts_in_md_files('/apps/test/prompts.ts', content)
+	check_ai_prompts_in_md_files({ file_path: '/apps/test/prompts.ts', content })
 	return findings
 }
 

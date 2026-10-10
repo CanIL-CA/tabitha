@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { filter_to_encoded_matches } from './phrase_mode'
-import type { PhraseMatch } from '$lib/types'
+import type { PhraseMatch } from '#lib/types.js'
 import type { SourceEncodedResult } from '@tabitha/types'
 
 function match(id_tertiary: string): PhraseMatch {

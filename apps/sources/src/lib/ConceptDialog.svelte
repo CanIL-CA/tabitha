@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { OntologyResult } from '@tabitha/types'
-	import type { PageSourceConcept } from '$lib/types'
-	import { fetch_all_concepts_for_part_of_speech } from '$lib/data/api_lookups'
+	import type { PageSourceConcept } from '#lib/types.js'
+	import { fetch_all_concepts_for_part_of_speech } from '#lib/data/api_lookups.js'
 	import Icon from '@iconify/svelte'
 	import { onMount } from 'svelte'
 

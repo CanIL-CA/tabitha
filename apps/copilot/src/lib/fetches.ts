@@ -4,7 +4,7 @@ import { BRIEF_HEADINGS_ENGLISH } from './lookups'
 import { read_ndjson_stream } from './ndjson'
 import type { Reference, SourceSimpleJsonResult, TargetTextData, VerseReference } from '@tabitha/types'
 import type { CopilotBriefHeadingsResult, CopilotResult } from '@tabitha/types/copilot'
-import type { CopilotSettings, CopilotStep, CopilotStreamLine, ChapterReference } from '$lib/types'
+import type { CopilotSettings, CopilotStep, CopilotStreamLine, ChapterReference } from '#lib/types.js'
 
 const sources_client = create_sources_client({ base_url: PUBLIC_SOURCES_API_HOST, cache: true })
 const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST, cache: true })

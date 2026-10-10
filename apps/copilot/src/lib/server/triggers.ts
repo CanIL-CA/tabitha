@@ -1,4 +1,4 @@
-import type { TriggerDataForLlm, TriggerIdData, LanguageProfile } from '$lib/types'
+import type { TriggerDataForLlm, TriggerIdData, LanguageProfile } from '#lib/types.js'
 import type { CopilotEncodingFlag } from '@tabitha/types/copilot'
 
 type TriggerTemplate = {

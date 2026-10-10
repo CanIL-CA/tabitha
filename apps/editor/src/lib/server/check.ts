@@ -1,8 +1,8 @@
-import { backtranslate } from '$lib/backtranslator'
-import { parse } from '$lib/parser'
-import { RULES } from '$lib/rules'
-import { apply_rules } from '$lib/rules/rules_processor'
-import { apply_text_insertions } from '$lib/text_insertions'
+import { backtranslate } from '#lib/backtranslator/index.js'
+import { parse } from '#lib/parser/index.js'
+import { RULES } from '#lib/rules/index.js'
+import { apply_rules } from '#lib/rules/rules_processor.js'
+import { apply_text_insertions } from '#lib/text_insertions.js'
 
 import type {
 	EditorCheckResult,
@@ -12,8 +12,8 @@ import type {
 	CheckerLookupResult,
 	CheckerToken,
 } from '@tabitha/types'
-import type { CaseFrame, RoleMatchResult, RoleTag } from '$lib/rules/case_frame/types'
-import type { LookupResult, Sentence, Token } from '$lib/types'
+import type { CaseFrame, RoleMatchResult, RoleTag } from '#lib/rules/case_frame/types.js'
+import type { LookupResult, Sentence, Token } from '#lib/types.js'
 
 export async function run_check(text: string): Promise<EditorCheckResult> {
 	const sentences = await parse(text)
@@ -116,14 +116,17 @@ function simplify_tokens(sentences: Sentence[]): CheckerToken[] {
 	function simplify_case_frame({ usage: { possible_roles, required_roles }, result: { status, valid_arguments, extra_arguments, missing_arguments } }: CaseFrame): CheckerCaseFrameInfo {
 		return {
 			status,
-			valid_arguments: valid_arguments.reduce(simplify_argument_result, {}),
-			extra_arguments: extra_arguments.reduce(simplify_argument_result, {}),
+			valid_arguments: valid_arguments.reduce<Record<RoleTag, string>>((result, match) => simplify_argument_result({ result, match }), {}),
+			extra_arguments: extra_arguments.reduce<Record<RoleTag, string>>((result, match) => simplify_argument_result({ result, match }), {}),
 			missing_arguments,
 			possible_roles,
 			required_roles,
 		}
 
-		function simplify_argument_result(result: Record<RoleTag, string>, match: RoleMatchResult) {
+		function simplify_argument_result({ result, match }: {
+			result: Record<RoleTag, string>
+			match: RoleMatchResult
+		}) {
 			const { trigger_token } = match.trigger_context
 			return {
 				...result,

@@ -1,8 +1,8 @@
-import { phrasify } from '$lib/parser/phrasify'
+import { phrasify } from '#lib/parser/phrasify.js'
 import { entityfy } from './entityfy'
 import { populate_noun_list, replace_punctuation } from './other_rules'
 import type { EditorAnalyzeResult, EditorAnalyzedEntity } from '@tabitha/types'
-import type { Sentence } from '$lib/types'
+import type { Sentence } from '#lib/types.js'
 
 export function analyze(sentences: Sentence[]): EditorAnalyzeResult {
 	const punctuated = replace_punctuation(sentences)

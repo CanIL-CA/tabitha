@@ -1,4 +1,4 @@
-import { get_concept_for_update } from '$lib/server/changes/concepts'
+import { get_concept_for_update } from '#lib/server/changes/concepts.js'
 import { error } from '@sveltejs/kit'
 import { parse_concept_key } from '@tabitha/types/patterns'
 import type { ConceptKey } from '@tabitha/types'

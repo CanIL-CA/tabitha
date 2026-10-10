@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { OntologyResult } from '@tabitha/types'
-	import type { PageSourceConcept } from '$lib/types'
-	import AllSenseDetails from '$lib/sidebar/AllSenseDetails.svelte'
+	import type { PageSourceConcept } from '#lib/types.js'
+	import AllSenseDetails from '#lib/sidebar/AllSenseDetails.svelte'
 
 	const { data = $bindable(), title }: { data: PageSourceConcept, title: string } = $props()
 

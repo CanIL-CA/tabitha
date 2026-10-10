@@ -87,7 +87,10 @@ async function push(dirs: Dir[]) {
 const DATED_FILENAME = /^(.+)_(\d{4}-\d{2}-\d{2})\.(.+)$/
 
 /** Deletes stale dated versions from R2, keeping the latest `keep` per {prefix, extension} family. Undated files (e.g. Auth.tabitha.sqlite) are never pruned. */
-async function prune(dirs: Dir[], keep: number) {
+async function prune({ dirs, keep }: {
+	dirs: Dir[]
+	keep: number
+}) {
 	const manifest = read_manifest()
 
 	for (const dir of dirs) {
@@ -129,6 +132,6 @@ if (import.meta.main) {
 
 	if (command === 'pull') await pull(parse_dirs(arg))
 	else if (command === 'push') await push(parse_dirs(arg))
-	else if (command === 'prune') await prune(parse_dirs(arg), Number(Bun.argv[4]) || 2)
+	else if (command === 'prune') await prune({ dirs: parse_dirs(arg), keep: Number(Bun.argv[4]) || 2 })
 	else throw new Error(USAGE)
 }

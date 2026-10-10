@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CheckerAutoFix, CheckerToken } from '@tabitha/types'
 	import PopupMenu from './PopupMenu.svelte'
-	import { Badge } from '$lib'
+	import { Badge } from '#lib/index.js'
 	import Icon from '@iconify/svelte'
 	import { get_remove_auto_fix } from './auto_fix_context'
 

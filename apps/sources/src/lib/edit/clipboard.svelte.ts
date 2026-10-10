@@ -1,4 +1,4 @@
-import type { PageSourceEntity } from '$lib/types'
+import type { PageSourceEntity } from '#lib/types.js'
 class EntityClipboard {
 	copied_entities: PageSourceEntity[] | null = $state.raw(null)
 

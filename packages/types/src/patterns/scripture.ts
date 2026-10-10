@@ -164,13 +164,14 @@ export const BOOK_NAME_BY_USFM_CODE: Record<string, string> = Object.fromEntries
 )
 
 /**
- * Sorts by Bible book order rather than the natural alphabetical order.
+ * A reference's position in Bible book order, or -1 for a book that isn't one of the 66, so
+ * `(a, b) => book_order_index(a) - book_order_index(b)` sorts by book order rather than the
+ * natural alphabetical order.
  */
-export function by_book_order(
-	a: { reference: { id_primary: string } },
-	b: { reference: { id_primary: string } },
-): number {
-	return (BOOK_ORDER.get(a.reference.id_primary) ?? -1) - (BOOK_ORDER.get(b.reference.id_primary) ?? -1)
+export function book_order_index({ reference }: {
+	reference: { id_primary: string }
+}): number {
+	return BOOK_ORDER.get(reference.id_primary) ?? -1
 }
 
 const OLD_TESTAMENT_BOOK_COUNT = 39

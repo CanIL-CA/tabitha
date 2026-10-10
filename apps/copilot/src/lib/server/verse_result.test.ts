@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { AiClient } from '@tabitha/ai'
 import type { CopilotBriefResult, CopilotDiscernResult } from '@tabitha/types'
-import type { CopilotSettings, CopilotStep } from '$lib/types'
+import type { CopilotSettings, CopilotStep } from '#lib/types.js'
 
-vi.mock('$lib/server/copilot_core', () => ({ get_copilot_result: vi.fn() }))
-vi.mock('$lib/server/brief/brief', () => ({ create_brief_for_verse: vi.fn(), translate_json: vi.fn() }))
+vi.mock('#lib/server/copilot_core.js', () => ({ get_copilot_result: vi.fn() }))
+vi.mock('#lib/server/brief/brief.js', () => ({ create_brief_for_verse: vi.fn(), translate_json: vi.fn() }))
 
-const { get_copilot_result } = await import('$lib/server/copilot_core')
-const { create_brief_for_verse } = await import('$lib/server/brief/brief')
+const { get_copilot_result } = await import('#lib/server/copilot_core.js')
+const { create_brief_for_verse } = await import('#lib/server/brief/brief.js')
 const { get_verse_result } = await import('./verse_result')
 
 const reference = { book: 'John', chapter: 3, verse: 16 }

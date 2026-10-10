@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
 	import Icon from '@iconify/svelte'
-	import type { OntologyChange } from '$lib/types'
+	import type { OntologyChange } from '#lib/types.js'
 
 	type Props = {
 		change: OntologyChange

@@ -68,14 +68,18 @@ export function extract_labels_from_content(content: string): Set<string> {
 	return labels
 }
 
-// Resolves a `$lib/...` or relative import specifier to a local `.svelte` file, or null if it
+// Resolves a `#lib/...` or relative import specifier to a local `.svelte` file, or null if it
 // isn't one (a `.ts` module, or a bare/package specifier like `@tabitha/ui`). Only local component
 // files can hold labels this check needs to see -- shared-package components are out of scope, see
 // the backlog memory.
-function resolve_local_svelte_import(importer_path: string, specifier: string, app_src_dir: string): string | null {
+function resolve_local_svelte_import({ importer_path, specifier, app_src_dir }: {
+	importer_path: string
+	specifier: string
+	app_src_dir: string
+}): string | null {
 	let resolved: string
-	if (specifier.startsWith('$lib/')) {
-		resolved = join(app_src_dir, 'lib', specifier.slice('$lib/'.length))
+	if (specifier.startsWith('#lib/')) {
+		resolved = join(app_src_dir, 'lib', specifier.slice('#lib/'.length))
 	} else if (specifier.startsWith('./') || specifier.startsWith('../')) {
 		resolved = resolve(dirname(importer_path), specifier)
 	} else {
@@ -86,7 +90,11 @@ function resolve_local_svelte_import(importer_path: string, specifier: string, a
 	return existsSync(resolved) ? resolved : null
 }
 
-function extract_local_svelte_imports(content: string, file_path: string, app_src_dir: string): string[] {
+function extract_local_svelte_imports({ content, file_path, app_src_dir }: {
+	content: string
+	file_path: string
+	app_src_dir: string
+}): string[] {
 	const script_match = content.match(/<script[^>]*>([\s\S]*?)<\/script[^>]*>/i)
 	if (!script_match) return []
 
@@ -94,7 +102,7 @@ function extract_local_svelte_imports(content: string, file_path: string, app_sr
 	const import_regex = /from\s+['"]([^'"]+)['"]/g
 	let match: RegExpExecArray | null
 	while ((match = import_regex.exec(script_match[1])) !== null) {
-		const resolved = resolve_local_svelte_import(file_path, match[1], app_src_dir)
+		const resolved = resolve_local_svelte_import({ importer_path: file_path, specifier: match[1], app_src_dir })
 		if (resolved) imports.push(resolved)
 	}
 	return imports
@@ -102,7 +110,11 @@ function extract_local_svelte_imports(content: string, file_path: string, app_sr
 
 // Collects the label set for one `.svelte` file plus every local component it imports,
 // recursively. `visited` prevents re-reading a shared component (or looping on a cycle).
-async function collect_labels(file_path: string, app_src_dir: string, visited: Set<string>): Promise<Set<string>> {
+async function collect_labels({ file_path, app_src_dir, visited }: {
+	file_path: string
+	app_src_dir: string
+	visited: Set<string>
+}): Promise<Set<string>> {
 	if (visited.has(file_path)) return new Set()
 	visited.add(file_path)
 
@@ -116,22 +128,25 @@ async function collect_labels(file_path: string, app_src_dir: string, visited: S
 
 	for (const label of extract_labels_from_content(content)) labels.add(label)
 
-	for (const imported_path of extract_local_svelte_imports(content, file_path, app_src_dir)) {
-		const nested = await collect_labels(imported_path, app_src_dir, visited)
+	for (const imported_path of extract_local_svelte_imports({ content, file_path, app_src_dir })) {
+		const nested = await collect_labels({ file_path: imported_path, app_src_dir, visited })
 		for (const label of nested) labels.add(label)
 	}
 
 	return labels
 }
 
-async function find_files(dir: string, file_name: string): Promise<string[]> {
+async function find_files({ dir, file_name }: {
+	dir: string
+	file_name: string
+}): Promise<string[]> {
 	if (!existsSync(dir)) return []
 	const found: string[] = []
 	const entries = await readdir(dir, { withFileTypes: true })
 	for (const entry of entries) {
 		const full_path = join(dir, entry.name)
 		if (entry.isDirectory()) {
-			found.push(...await find_files(full_path, file_name))
+			found.push(...await find_files({ dir: full_path, file_name }))
 		} else if (entry.name === file_name) {
 			found.push(full_path)
 		}
@@ -142,7 +157,10 @@ async function find_files(dir: string, file_name: string): Promise<string[]> {
 // SvelteKit composes every `+layout.svelte` from the routes root down to (and including) a page's
 // own directory -- that whole chain is the "always-rendered chrome" a page's own labels must not
 // collide with.
-export function layout_chain_for_page(_routes_dir: string, page_path: string, all_layouts: string[]): string[] {
+export function layout_chain_for_page({ page_path, all_layouts }: {
+	page_path: string
+	all_layouts: string[]
+}): string[] {
 	const page_dir = dirname(page_path)
 	return all_layouts.filter(layout_path => {
 		const layout_dir = dirname(layout_path)
@@ -169,23 +187,23 @@ export async function scan_accessible_name_collisions(): Promise<NameCollisionFi
 
 	for (const app of apps) {
 		const [pages, layouts] = await Promise.all([
-			find_files(app.routes_dir, '+page.svelte'),
-			find_files(app.routes_dir, '+layout.svelte'),
+			find_files({ dir: app.routes_dir, file_name: '+page.svelte' }),
+			find_files({ dir: app.routes_dir, file_name: '+layout.svelte' }),
 		])
 
 		for (const page_path of pages) {
-			const chrome_files = layout_chain_for_page(app.routes_dir, page_path, layouts)
+			const chrome_files = layout_chain_for_page({ page_path, all_layouts: layouts })
 			if (chrome_files.length === 0) continue
 
 			const chrome_labels = new Map<string, string>()
 			for (const chrome_file of chrome_files) {
-				const labels = await collect_labels(chrome_file, app.src_dir, new Set())
+				const labels = await collect_labels({ file_path: chrome_file, app_src_dir: app.src_dir, visited: new Set() })
 				for (const label of labels) {
 					if (!chrome_labels.has(label)) chrome_labels.set(label, chrome_file)
 				}
 			}
 
-			const page_labels = await collect_labels(page_path, app.src_dir, new Set())
+			const page_labels = await collect_labels({ file_path: page_path, app_src_dir: app.src_dir, visited: new Set() })
 			for (const label of page_labels) {
 				const chrome_file = chrome_labels.get(label)
 				if (chrome_file) {

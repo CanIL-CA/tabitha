@@ -77,17 +77,18 @@ export type AppPlan = {
  * when connecting), the Previews settings, or any environment variable this tool doesn't itself
  * declare in `managed_environment_variables` -- anything else already set, by hand or by
  * something else, is left alone. */
-export async function reconcile_workers(
-	credentials: CloudflareCredentials,
-	{ apply, apps = desired_apps }: { apply: boolean; apps?: DesiredApp[] },
-	fetch_impl: typeof fetch = fetch,
-): Promise<AppPlan[]> {
-	const worker_tags = await get_worker_tags(credentials, fetch_impl)
+export async function reconcile_workers({ credentials, apply, apps = desired_apps, fetch_impl = fetch }: {
+	credentials: CloudflareCredentials
+	apply: boolean
+	apps?: DesiredApp[]
+	fetch_impl?: typeof fetch
+}): Promise<AppPlan[]> {
+	const worker_tags = await get_worker_tags({ credentials, fetch_impl })
 
 	const current_configs = new Map<string, WorkerBuildConfig | null>()
 	for (const app of apps) {
 		const tag = worker_tags.get(app.worker_name)
-		if (tag) current_configs.set(app.worker_name, await get_build_config(credentials, tag, fetch_impl))
+		if (tag) current_configs.set(app.worker_name, await get_build_config({ credentials, worker_tag: tag, fetch_impl }))
 	}
 	const template = [...current_configs.values()].find(config => config !== null)
 
@@ -115,12 +116,12 @@ export async function reconcile_workers(
 		const current = current_configs.get(app.worker_name)
 		if (!current) {
 			if (!template) throw new Error(`Can't connect "${app.worker_name}": no other Worker is connected to the repo to copy its git repository and build token from.`)
-			if (apply) await create_build_config(credentials, tag, app, desired, template, fetch_impl)
+			if (apply) await create_build_config({ credentials, worker_tag: tag, app, desired, template, fetch_impl })
 			plans.push({ worker_name: app.worker_name, create: true, field_changes: [], env_var_changes: [], problems: [] })
 			continue
 		}
 
-		const changes = await reconcile_production_settings(credentials, tag, current, desired, apply, fetch_impl)
+		const changes = await reconcile_production_settings({ credentials, worker_tag: tag, current, desired, apply, fetch_impl })
 		plans.push({
 			worker_name: app.worker_name,
 			create: false,
@@ -134,14 +135,14 @@ export async function reconcile_workers(
 	return plans
 }
 
-async function reconcile_production_settings(
-	credentials: CloudflareCredentials,
-	worker_tag: string,
-	current: WorkerBuildConfig,
-	desired: DesiredSettings,
-	apply: boolean,
-	fetch_impl: typeof fetch,
-): Promise<{ field_changes: FieldChange[]; env_var_changes: FieldChange[] }> {
+async function reconcile_production_settings({ credentials, worker_tag, current, desired, apply, fetch_impl }: {
+	credentials: CloudflareCredentials
+	worker_tag: string
+	current: WorkerBuildConfig
+	desired: DesiredSettings
+	apply: boolean
+	fetch_impl: typeof fetch
+}): Promise<{ field_changes: FieldChange[]; env_var_changes: FieldChange[] }> {
 	const settings = current.production_settings
 	const field_changes: FieldChange[] = []
 	const patch: Record<string, unknown> = {}
@@ -153,7 +154,7 @@ async function reconcile_production_settings(
 	if (settings.build_caching_enabled !== desired.build_caching_enabled) {
 		field_changes.push({ field: 'build_caching_enabled', from: settings.build_caching_enabled, to: desired.build_caching_enabled })
 	}
-	if (!same_string_set(settings.path_includes, desired.path_includes)) {
+	if (!same_string_set({ a: settings.path_includes, b: desired.path_includes })) {
 		field_changes.push({ field: 'path_includes', from: settings.path_includes, to: desired.path_includes })
 	}
 	for (const change of field_changes) patch[change.field] = change.to
@@ -171,20 +172,20 @@ async function reconcile_production_settings(
 	if (env_var_changes.length > 0) patch.environment_variables = env_vars_to_set
 
 	if (apply && Object.keys(patch).length > 0) {
-		await cloudflare_request(credentials, 'PATCH', `/builds/workers/${worker_tag}`, { production_settings: patch }, fetch_impl)
+		await cloudflare_request({ credentials, method: 'PATCH', path: `/builds/workers/${worker_tag}`, body: { production_settings: patch }, fetch_impl })
 	}
 
 	return { field_changes, env_var_changes }
 }
 
-async function create_build_config(
-	credentials: CloudflareCredentials,
-	worker_tag: string,
-	app: DesiredApp,
-	desired: DesiredSettings,
-	template: WorkerBuildConfig,
-	fetch_impl: typeof fetch,
-): Promise<void> {
+async function create_build_config({ credentials, worker_tag, app, desired, template, fetch_impl }: {
+	credentials: CloudflareCredentials
+	worker_tag: string
+	app: DesiredApp
+	desired: DesiredSettings
+	template: WorkerBuildConfig
+	fetch_impl: typeof fetch
+}): Promise<void> {
 	const { provider_type, provider_account_id, provider_account_name, repo_id, repo_name, branch } = template.git_repository
 	const settings = {
 		...desired,
@@ -193,11 +194,11 @@ async function create_build_config(
 		environment_variables: Object.fromEntries(Object.entries(managed_environment_variables).map(([key, value]) => [key, { value, is_secret: false }])),
 	}
 
-	await cloudflare_request(
+	await cloudflare_request({
 		credentials,
-		'POST',
-		'/builds/workers',
-		{
+		method: 'POST',
+		path: '/builds/workers',
+		body: {
 			script_tag: worker_tag,
 			git_repository: { provider_type, provider_account_id, provider_account_name, repo_id, repo_name, branch },
 			production_settings: settings,
@@ -205,7 +206,7 @@ async function create_build_config(
 			previews_enabled: false,
 		},
 		fetch_impl,
-	)
+	})
 }
 
 /** Derives the production watch paths from the app's own `package.json`, rather than
@@ -226,7 +227,10 @@ async function derive_watch_paths(app_dir: string): Promise<string[]> {
 	return [`apps/${app_dir}/*`, ...workspace_packages.map(pkg_dir => `packages/${pkg_dir}/*`), 'package.json', 'bun.lock']
 }
 
-function same_string_set(a: string[], b: string[]): boolean {
+function same_string_set({ a, b }: {
+	a: string[]
+	b: string[]
+}): boolean {
 	if (a.length !== b.length) return false
 	const sorted_a = [...a].sort()
 	const sorted_b = [...b].sort()
@@ -235,13 +239,20 @@ function same_string_set(a: string[], b: string[]): boolean {
 
 /** Maps each Worker's name to its tag, Cloudflare's stable per-Worker identifier that the
  * Workers Builds API is keyed by. */
-async function get_worker_tags(credentials: CloudflareCredentials, fetch_impl: typeof fetch): Promise<Map<string, string>> {
-	const scripts = (await cloudflare_request(credentials, 'GET', '/workers/scripts', undefined, fetch_impl)) as { id: string; tag: string }[]
+async function get_worker_tags({ credentials, fetch_impl }: {
+	credentials: CloudflareCredentials
+	fetch_impl: typeof fetch
+}): Promise<Map<string, string>> {
+	const scripts = (await cloudflare_request({ credentials, method: 'GET', path: '/workers/scripts', fetch_impl })) as { id: string; tag: string }[]
 	return new Map(scripts.map(script => [script.id, script.tag]))
 }
 
 /** Returns `null` for a Worker that isn't connected to the repo yet. */
-async function get_build_config(credentials: CloudflareCredentials, worker_tag: string, fetch_impl: typeof fetch): Promise<WorkerBuildConfig | null> {
+async function get_build_config({ credentials, worker_tag, fetch_impl }: {
+	credentials: CloudflareCredentials
+	worker_tag: string
+	fetch_impl: typeof fetch
+}): Promise<WorkerBuildConfig | null> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}/builds/workers/${worker_tag}`, {
 		headers: auth_headers(credentials.api_token),
 	})
@@ -251,13 +262,13 @@ async function get_build_config(credentials: CloudflareCredentials, worker_tag: 
 	return body.result
 }
 
-async function cloudflare_request(
-	credentials: CloudflareCredentials,
-	method: 'GET' | 'PATCH' | 'POST',
-	path: string,
-	body: unknown,
-	fetch_impl: typeof fetch,
-): Promise<unknown> {
+async function cloudflare_request({ credentials, method, path, body, fetch_impl }: {
+	credentials: CloudflareCredentials
+	method: 'GET' | 'PATCH' | 'POST'
+	path: string
+	body?: unknown
+	fetch_impl: typeof fetch
+}): Promise<unknown> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}${path}`, {
 		method,
 		headers: auth_headers(credentials.api_token),
@@ -279,7 +290,7 @@ if (import.meta.main) {
 	const api_token = require_env('CLOUDFLARE_API_TOKEN')
 	const apply = process.argv.includes('--run')
 
-	const plans = await reconcile_workers({ account_id, api_token }, { apply })
+	const plans = await reconcile_workers({ credentials: { account_id, api_token }, apply })
 
 	let any_changes = false
 	for (const plan of plans) {

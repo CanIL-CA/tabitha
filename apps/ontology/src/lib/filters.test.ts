@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CONCEPT_FILTERS } from './filters'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 
 function make_concept(overrides: Partial<Concept> = {}): Concept {
 	return {

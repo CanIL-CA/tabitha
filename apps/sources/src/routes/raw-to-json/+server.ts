@@ -1,6 +1,5 @@
-import { transform_semantic_encoding, transform_target_encoding } from '$lib/encoding/semantic_encoding'
-import { simplify_encoding } from '$lib/encoding/simplify'
-import { json } from '@sveltejs/kit'
+import { transform_semantic_encoding, transform_target_encoding } from '#lib/encoding/semantic_encoding.js'
+import { simplify_encoding } from '#lib/encoding/simplify.js'
 import type { RequestHandler } from './$types'
 import type { EncodingEntity } from '@tabitha/types'
 
@@ -15,6 +14,6 @@ export async function GET({ locals: { db }, url: { searchParams } }: Parameters<
 		: await transform_semantic_encoding({ db, semantic_encoding: raw_encoding })
 
 	return simple
-		? json({ parsed_encoding: simplify_encoding(parsed_encoding) })
-		: json({ parsed_encoding })
+		? Response.json({ parsed_encoding: simplify_encoding(parsed_encoding) })
+		: Response.json({ parsed_encoding })
 }

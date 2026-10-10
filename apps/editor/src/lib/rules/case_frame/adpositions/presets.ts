@@ -1,5 +1,5 @@
-import type { CaseFrameRuleJson } from '$lib/rules/case_frame/types'
-import type { TokenContextFilterJson } from '$lib/rules/types'
+import type { CaseFrameRuleJson } from '#lib/rules/case_frame/types.js'
+import type { TokenContextFilterJson } from '#lib/rules/types.js'
 export function opening_subordinate_clause() {
 	return {
 		...by_relative_context({

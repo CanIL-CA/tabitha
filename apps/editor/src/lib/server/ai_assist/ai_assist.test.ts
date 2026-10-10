@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { AiResponseError, type AiClient } from '@tabitha/ai'
 import type { CheckerLookupResult, EditorCheckResult, HowToEntry } from '@tabitha/types'
 
-vi.mock('$lib/server/check', async importOriginal => {
-	const actual = await importOriginal<typeof import('$lib/server/check')>()
+vi.mock('#lib/server/check.js', async importOriginal => {
+	const actual = await importOriginal<typeof import('#lib/server/check.js')>()
 	return { ...actual, run_check: vi.fn() }
 })
 
-const { run_check } = await import('$lib/server/check')
+const { run_check } = await import('#lib/server/check.js')
 const { generate_phase_1 } = await import('./index')
 
 const run_check_mock = vi.mocked(run_check)

@@ -1,5 +1,5 @@
-import { m } from '$lib/paraglide/messages'
-import type { CopilotMode, MttLevel } from '$lib/types'
+import { m } from '#lib/paraglide/messages.js'
+import type { CopilotMode, MttLevel } from '#lib/types.js'
 
 export const MODE_LABELS: Record<CopilotMode, () => string> = {
 	brief: m.mode_brief,

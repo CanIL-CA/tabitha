@@ -1,4 +1,4 @@
-import type { ConceptCreateData } from '$lib/types'
+import type { ConceptCreateData } from '#lib/types.js'
 
 // Reaching this page only requires PROTECTED_ACCESS (enforced in hooks.server.ts for all /protected
 // routes) -- ADD_CONCEPT is no longer required here, since a user without it can still submit a new

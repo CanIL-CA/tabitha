@@ -1,7 +1,7 @@
-import { TOKEN_TYPE, create_token } from '$lib/token'
-import { create_token_filter } from '$lib/rules/rules_parser'
-import type { Phrase, Sentence, Token, Tag } from '$lib/types'
-import type { TokenFilter, TokenFilterJson } from '$lib/rules/types'
+import { TOKEN_TYPE, create_token } from '#lib/token.js'
+import { create_token_filter } from '#lib/rules/rules_parser.js'
+import type { Phrase, Sentence, Token, Tag } from '#lib/types.js'
+import type { TokenFilter, TokenFilterJson } from '#lib/rules/types.js'
 
 export function phrasify(sentences: Sentence[]): Sentence[] {
 	return phrasify_tokens(sentences.map(sentence => sentence.clause)).map(clause => ({ clause }))

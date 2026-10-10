@@ -45,7 +45,12 @@ export type ValidationConfig = {
  * Runs the configured checks against a freshly-migrated Tabitha database and throws if any of
  * them fail, so a bad migration output is caught before it ever reaches a D1 deploy.
  */
-export async function validate_migration_output(key: string, db_path: string, date: string, config: ValidationConfig): Promise<void> {
+export async function validate_migration_output({ key, db_path, date, config }: {
+	key: string
+	db_path: string
+	date: string
+	config: ValidationConfig
+}): Promise<void> {
 	log.step(`Validating ${key} migration output...`)
 
 	const db = new Database(db_path, { readonly: true })
@@ -53,18 +58,18 @@ export async function validate_migration_output(key: string, db_path: string, da
 
 	try {
 		if (config.book_check) {
-			failures.push(...check_canonical_books(db, config.book_check))
+			failures.push(...check_canonical_books({ db, ...config.book_check }))
 		}
 
 		if (config.duplicate_check) {
-			failures.push(...check_duplicate_rows(db, config.duplicate_check))
+			failures.push(...check_duplicate_rows({ db, ...config.duplicate_check }))
 		}
 
 		for (const not_null_check of config.not_null_checks ?? []) {
-			failures.push(...check_not_null_columns(db, not_null_check))
+			failures.push(...check_not_null_columns({ db, ...not_null_check }))
 		}
 
-		const row_count_failure = await check_row_count_sanity(db, config.row_count_table, key, date)
+		const row_count_failure = await check_row_count_sanity({ db, table: config.row_count_table, key, date })
 		if (row_count_failure) failures.push(row_count_failure)
 	} finally {
 		db.close()
@@ -78,7 +83,7 @@ export async function validate_migration_output(key: string, db_path: string, da
 	log.success(`${key} migration output passed validation.`)
 }
 
-function check_canonical_books(db: Database, { table, book_column, where, require_complete }: BookCheckConfig): string[] {
+function check_canonical_books({ db, table, book_column, where, require_complete }: BookCheckConfig & { db: Database }): string[] {
 	const clause = where ? `WHERE ${where}` : ''
 	const rows = db.query<{ book: string }, []>(`SELECT DISTINCT ${book_column} AS book FROM ${table} ${clause}`).all()
 	const found = new Set(rows.map(row => row.book))
@@ -101,7 +106,7 @@ function check_canonical_books(db: Database, { table, book_column, where, requir
 	return failures
 }
 
-function check_duplicate_rows(db: Database, { table, columns }: DuplicateCheckConfig): string[] {
+function check_duplicate_rows({ db, table, columns }: DuplicateCheckConfig & { db: Database }): string[] {
 	const column_list = columns.join(', ')
 	const rows = db.query<Record<string, string | number>, []>(`
 		SELECT ${column_list}, COUNT(*) AS dupe_count
@@ -116,7 +121,7 @@ function check_duplicate_rows(db: Database, { table, columns }: DuplicateCheckCo
 	return [`${table} has ${rows.length} duplicate row(s) on (${column_list}), e.g. ${examples}`]
 }
 
-export function check_not_null_columns(db: Database, { table, columns }: NotNullCheckConfig): string[] {
+export function check_not_null_columns({ db, table, columns }: NotNullCheckConfig & { db: Database }): string[] {
 	const null_counts = columns.map(column => ({
 		column,
 		count: db.query<{ count: number }, []>(`SELECT COUNT(*) AS count FROM ${table} WHERE ${column} IS NULL`).get()?.count ?? 0,
@@ -127,10 +132,15 @@ export function check_not_null_columns(db: Database, { table, columns }: NotNull
 		.map(({ column, count }) => `${table}.${column} has ${count} NULL row(s)`)
 }
 
-async function check_row_count_sanity(db: Database, table: string, key: string, date: string): Promise<string | null> {
+async function check_row_count_sanity({ db, table, key, date }: {
+	db: Database
+	table: string
+	key: string
+	date: string
+}): Promise<string | null> {
 	const current_count = db.query<{ count: number }, []>(`SELECT COUNT(*) AS count FROM ${table}`).get()?.count ?? 0
 
-	const prior_count = await load_prior_snapshot_row_count(key, date, table)
+	const prior_count = await load_prior_snapshot_row_count({ key, date, table })
 	if (prior_count === null) {
 		log.info(`No prior snapshot found for ${key}; skipping row-count sanity check.`)
 		return null
@@ -148,7 +158,11 @@ async function check_row_count_sanity(db: Database, table: string, key: string, 
 	return null
 }
 
-async function load_prior_snapshot_row_count(key: string, date: string, table: string): Promise<number | null> {
+async function load_prior_snapshot_row_count({ key, date, table }: {
+	key: string
+	date: string
+	table: string
+}): Promise<number | null> {
 	const pattern = key === 'Ontology' ? 'Ontology_*_*.tabitha.sqlite.sql' : `${key}_*.tabitha.sqlite.sql`
 	const files = Array.from(new Glob(pattern).scanSync('snapshots'))
 		.filter(file => !file.includes(date)) // exclude the snapshot this run just wrote

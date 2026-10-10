@@ -37,22 +37,28 @@ const SOURCES_INPUTS = ['Bible', 'CommunityDevelopmentTexts', 'GrammarIntroducti
  * date), so planning only needs to read that back, not recompute it.
  */
 export async function plan_migration(date: string): Promise<MigrationPlan> {
-	const sources_task = await plan_rebuild_task('Sources', 'Sources', SOURCES_INPUTS, date, { hard_required: [] })
-	const ontology_task = await plan_ontology_task(date, sources_task)
+	const sources_task = await plan_rebuild_task({ id: 'Sources', family: 'Sources', input_names: SOURCES_INPUTS, date, hard_required: [] })
+	const ontology_task = await plan_ontology_task({ date, sources_task })
 	// Each target-language project is its own independent task: unlike the old single shared
 	// Targets database, one project's migration no longer requires any other project (including
 	// English) to be present or unchanged -- that's the isolation the per-project split is for.
 	// None are hard-required at plan time; a project with no raw file staged yet (e.g. mid-onboarding)
 	// simply has nothing to build, rather than failing every other project's migration too.
 	const targets_tasks = await Promise.all(
-		TARGET_PROJECTS.map(project => plan_rebuild_task(`Targets_${project}`, 'Targets', [project], date, { hard_required: [] })),
+		TARGET_PROJECTS.map(project => plan_rebuild_task({ id: `Targets_${project}`, family: 'Targets', input_names: [project], date, hard_required: [] })),
 	)
 
 	return { date, tasks: [sources_task, ontology_task, ...targets_tasks] }
 }
 
-async function plan_rebuild_task(id: TaskId, family: TaskFamily, input_names: string[], date: string, { hard_required }: { hard_required: string[] }): Promise<PlannedTask> {
-	const resolved = await Promise.all(input_names.map(async name => ({ name, path: await resolve_dated_file('raw', name, date, 'tbta.sqlite') })))
+async function plan_rebuild_task({ id, family, input_names, date, hard_required }: {
+	id: TaskId
+	family: TaskFamily
+	input_names: string[]
+	date: string
+	hard_required: string[]
+}): Promise<PlannedTask> {
+	const resolved = await Promise.all(input_names.map(async name => ({ name, path: await resolve_dated_file({ dir: 'raw', prefix: name, date, ext: 'tbta.sqlite' }) })))
 
 	for (const name of hard_required) {
 		if (!resolved.find(r => r.name === name)?.path) {
@@ -64,7 +70,7 @@ async function plan_rebuild_task(id: TaskId, family: TaskFamily, input_names: st
 	const all_inputs = present.map(r => r.path)
 	const changed_inputs = present.filter(r => extract_date(r.path) === date).map(r => r.path)
 
-	const previous_output_file = await latest_previous_output_file(id, date)
+	const previous_output_file = await latest_previous_output_file({ id, date })
 	// present.length === 0 means no raw input has ever been staged for this task -- distinct from
 	// "no prior output exists", which without this check would otherwise read as "do a full build"
 	// with nothing to build from (relevant once a project can be registered before its first raw
@@ -91,7 +97,10 @@ async function plan_rebuild_task(id: TaskId, family: TaskFamily, input_names: st
 	}
 }
 
-async function plan_ontology_task(date: string, sources_task: PlannedTask): Promise<PlannedTask> {
+async function plan_ontology_task({ date, sources_task }: {
+	date: string
+	sources_task: PlannedTask
+}): Promise<PlannedTask> {
 	// See latest_previous_output_file's comment: scan from 'raw' rather than baking it into the
 	// pattern, so the match stays a bare filename regardless of OS-native separator handling.
 	const matched_file = Array.from(new Glob(`Ontology_*_${date}.tabitha.sqlite`).scanSync('raw'))[0]
@@ -117,7 +126,7 @@ async function plan_ontology_task(date: string, sources_task: PlannedTask): Prom
 	// Sources_Complex is generated during staging (via tbta_utils) and may itself have been left
 	// unchanged there -- resolve whichever one actually exists, which may be an older date than
 	// today's Ontology/Sources files.
-	const sources_complex_file = await resolve_dated_file('raw', 'Sources_Complex', date, 'tabitha.sqlite')
+	const sources_complex_file = await resolve_dated_file({ dir: 'raw', prefix: 'Sources_Complex', date, ext: 'tabitha.sqlite' })
 	if (!sources_complex_file) {
 		throw new Error(`No Sources_Complex database found for ${date} (or any prior date). This is normally generated automatically via "tbta_utils export-generated-cci" during staging.`)
 	}
@@ -150,7 +159,10 @@ function extract_date(path: string): string | undefined {
 // The prior run's output to copy forward from -- explicitly excludes today's date, since a
 // resumed run may already have a partially-written today's file on disk that must not be
 // mistaken for "the previous run's" output.
-async function latest_previous_output_file(id: string, date: string): Promise<string | undefined> {
+async function latest_previous_output_file({ id, date }: {
+	id: string
+	date: string
+}): Promise<string | undefined> {
 	// Scanning from 'raw' (rather than baking it into the pattern and scanning from '.') keeps the
 	// match a bare filename -- Bun's Glob otherwise returns the traversed directory portion using the
 	// OS-native separator, which broke this on Windows (backslash) despite the forward-slash pattern.

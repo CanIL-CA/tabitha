@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import { page } from '$app/state'
-	import { DisplayPreference, SummaryCard, Table } from '$lib'
-	import { merge_pending_changes } from '$lib/offline/pending'
-	import type { Concept } from '$lib/types'
+	import { DisplayPreference, SummaryCard, Table } from '#lib/index.js'
+	import { merge_pending_changes } from '#lib/offline/pending.js'
+	import type { Concept } from '#lib/types.js'
 	import type { PageProps } from './$types'
 
 	let { data }: PageProps = $props()

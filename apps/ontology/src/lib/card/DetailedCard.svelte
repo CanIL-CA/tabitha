@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import Icon from '@iconify/svelte'
-	import { Details, Examples, Meaning } from '$lib'
+	import { Details, Examples, Meaning } from '#lib/index.js'
 	import Header from './Header.svelte'
 	import SimplificationHints from './SimplificationHints.svelte'
-	import PendingChange from '$lib/PendingChange.svelte'
+	import PendingChange from '#lib/PendingChange.svelte'
 	import { Category } from './categorization'
-	import { CONCEPT_FILTERS } from '$lib/filters'
-	import SimplifiedEntities from '$lib/examples/curated_examples/SimplifiedEntities.svelte'
-	import type { Concept } from '$lib/types'
+	import { CONCEPT_FILTERS } from '#lib/filters.js'
+	import SimplifiedEntities from '#lib/examples/curated_examples/SimplifiedEntities.svelte'
+	import type { Concept } from '#lib/types.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
 	type Props = {

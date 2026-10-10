@@ -73,7 +73,10 @@ async function get_scannable_source_files(dir: string): Promise<string[]> {
 	return files
 }
 
-export function analyze_file_storage_rules(file_path: string, content: string): StorageFinding[] {
+export function analyze_file_storage_rules({ file_path, content }: {
+	file_path: string
+	content: string
+}): StorageFinding[] {
 	const findings: StorageFinding[] = []
 	const lines = content.split('\n')
 
@@ -152,7 +155,7 @@ export async function scan_storage_hygiene(): Promise<{ scanned: number; errors:
 	for (const file_path of all_files) {
 		try {
 			const content = await readFile(file_path, 'utf-8')
-			const file_findings = analyze_file_storage_rules(file_path, content)
+			const file_findings = analyze_file_storage_rules({ file_path, content })
 			all_findings.push(...file_findings)
 		} catch {
 			// Skip unreadable files

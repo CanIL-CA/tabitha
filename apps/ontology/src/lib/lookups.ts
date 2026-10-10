@@ -30,13 +30,16 @@ const required: Record<string, string> = {
 	I: 'Agent proposition',
 }
 
-const optional: Record<string, string> = Object.entries(required).reduce(lowercase_and_parens, {})
+const optional: Record<string, string> = Object.entries(required).reduce<Record<string, string>>((opt, entry) => lowercase_and_parens({ opt, entry }), {})
 
 /**
  * Creates an object holding lowercase keys and parenthesized values:
  * e.g., `{ a: '(Agent-like)', b: '(Patient-like)', ... }`
  */
-function lowercase_and_parens(opt: Record<string, string>, [key, value]: [string, string]): Record<string, string> {
+function lowercase_and_parens({ opt, entry: [key, value] }: {
+	opt: Record<string, string>
+	entry: [string, string]
+}): Record<string, string> {
 	opt[key.toLowerCase()] = `(${value})`
 	return opt
 }

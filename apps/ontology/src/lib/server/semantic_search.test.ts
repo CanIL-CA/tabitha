@@ -4,7 +4,7 @@ import { find_related_concepts } from './semantic_search'
 import { get_concepts_by_keys } from './ontology'
 import type { ConceptIndex } from './concept_embeddings'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 
 vi.mock('./ontology', () => ({ get_concepts_by_keys: vi.fn() }))
 

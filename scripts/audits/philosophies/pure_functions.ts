@@ -20,7 +20,10 @@ function split_top_level_params(params_raw: string): string[] {
 	return params
 }
 
-function extract_matching_brace_body(content: string, start_index: number): string | null {
+function extract_matching_brace_body({ content, start_index }: {
+	content: string
+	start_index: number
+}): string | null {
 	let idx = start_index
 	while (idx < content.length && /\s/.test(content[idx])) idx++
 	if (content[idx] !== '{') return null
@@ -39,7 +42,10 @@ function extract_matching_brace_body(content: string, start_index: number): stri
 
 const BOOLEAN_PARAM_PATTERN = /^([a-zA-Z_][a-zA-Z0-9_]*)\??\s*:\s*boolean\b/
 
-function references_param_in_conditional(body: string, param_name: string): boolean {
+function references_param_in_conditional({ body, param_name }: {
+	body: string
+	param_name: string
+}): boolean {
 	const escaped = param_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const conditional_patterns = [
 		new RegExp(`\\b(if|while)\\s*\\([^)]*\\b${escaped}\\b`),
@@ -98,9 +104,14 @@ export function find_native_callback_names(all_content: string[]): Set<string> {
 	return names
 }
 
-export function check_pure_functions(file_path: string, content: string, native_callback_names: Set<string>) {
-	// Philosophy 11: Pure functions -- receive one argument (destructure an options object
-	// for multiple inputs) and avoid boolean "flag" parameters that branch a function's behavior.
+export function check_pure_functions({ file_path, content, native_callback_names }: {
+	file_path: string
+	content: string
+	native_callback_names: Set<string>
+}) {
+	// Philosophy 11: Pure functions -- avoid boolean "flag" parameters that branch a function's
+	// behavior. The one-argument half is enforced by ESLint (`no-restricted-syntax` in
+	// @tabitha/eslint-config), which reads the AST rather than guessing from a regex.
 	if (!file_path.endsWith('.ts') && !file_path.endsWith('.svelte')) return
 
 	const regex = new RegExp(FUNCTION_SIGNATURE_PATTERN)
@@ -115,27 +126,16 @@ export function check_pure_functions(file_path: string, content: string, native_
 		const line_number = content.substring(0, match.index).split('\n').length
 		const snippet = `${name}(${params_raw.replace(/\s+/g, ' ')})`.slice(0, 100)
 
-		if (params.length > 1) {
-			findings.push({
-				rule_id: 11,
-				rule_title: 'Pure functions',
-				file_path,
-				line_number,
-				snippet,
-				message: `Function "${name}" takes ${params.length} arguments. Prefer a single argument, destructuring an options object when multiple inputs are needed.`,
-			})
-		}
-
 		const search_start = match.index + match[0].length
 		const body =
-			extract_matching_brace_body(content, search_start) ?? content.slice(search_start, search_start + 400)
+			extract_matching_brace_body({ content, start_index: search_start }) ?? content.slice(search_start, search_start + 400)
 
 		for (const param of params) {
 			const bool_match = param.match(BOOLEAN_PARAM_PATTERN)
 			if (!bool_match) continue
 
 			const param_name = bool_match[1]
-			if (references_param_in_conditional(body, param_name)) {
+			if (references_param_in_conditional({ body, param_name })) {
 				findings.push({
 					rule_id: 11,
 					rule_title: 'Pure functions',

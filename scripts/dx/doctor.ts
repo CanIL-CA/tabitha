@@ -28,7 +28,10 @@ type DiagnosticResult = {
 // (docs/decisions/0012-per-project-targets-databases.md), resolved from wrangler.jsonc itself
 // rather than a separate hardcoded project list, so a new project needs no change here.
 // Returns true if `version` is >= `minimum`, comparing dotted numeric segments (e.g. "1.4.3" vs "1.4.0").
-function version_at_least(version: string, minimum: string): boolean {
+function version_at_least({ version, minimum }: {
+	version: string
+	minimum: string
+}): boolean {
 	const v = version.split('.').map(Number)
 	const m = minimum.split('.').map(Number)
 	for (let i = 0; i < Math.max(v.length, m.length); i++) {
@@ -93,7 +96,7 @@ async function check_runtimes(): Promise<DiagnosticResult[]> {
 		const bun_version = bun_proc.text().trim()
 		const min_version = readFileSync(join(process.cwd(), '.bun-version'), 'utf-8').trim()
 
-		if (version_at_least(bun_version, min_version)) {
+		if (version_at_least({ version: bun_version, minimum: min_version })) {
 			results.push({
 				category: 'Runtimes',
 				name: 'Bun Runtime',
@@ -177,7 +180,10 @@ function get_required_secret_keys(env_template_content: string): string[] {
 // it lacks the key entirely, or holds a value the script would now force (e.g. a blank
 // OAUTH_REDIRECT_PROXY_URL), which surfaces as a confusing failure like Google's
 // redirect_uri_mismatch. Keys under "# SECRETS" are the secrets check's job, not this one's.
-function get_stale_local_keys(env_template_content: string, env_local_content: string): string[] {
+function get_stale_local_keys({ env_template_content, env_local_content }: {
+	env_template_content: string
+	env_local_content: string
+}): string[] {
 	const local_vars = parse_env_file(env_local_content)
 	const secret_keys = new Set(get_required_secret_keys(env_template_content))
 
@@ -282,7 +288,7 @@ export async function check_env_files(app_names?: string[]): Promise<DiagnosticR
 		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
 		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue
 
-		const stale_keys = get_stale_local_keys(readFileSync(env_template_path, 'utf-8'), readFileSync(env_local_path, 'utf-8'))
+		const stale_keys = get_stale_local_keys({ env_template_content: readFileSync(env_template_path, 'utf-8'), env_local_content: readFileSync(env_local_path, 'utf-8') })
 		if (stale_keys.length > 0) stale.push(`${app.name} (${stale_keys.join(', ')})`)
 	}
 

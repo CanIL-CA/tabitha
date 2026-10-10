@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NounListEntry } from '@tabitha/types'
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	import Icon from '@iconify/svelte'
 	import SidebarDetail from './SidebarDetail.svelte'
 	import ConceptDetails from './ConceptDetails.svelte'

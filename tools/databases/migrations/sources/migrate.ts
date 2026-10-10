@@ -32,17 +32,17 @@ const tabitha_sources_db = new Database(tabitha_db_name)
 // drastic perf improvement: https://www.sqlite.org/pragma.html#pragma_journal_mode
 tabitha_sources_db.run('PRAGMA journal_mode = WAL')
 
-migrate_source_texts(tabitha_sources_db, tbta_sources_from_input)
+migrate_source_texts({ tabitha_sources_db, tbta_sources_from_input })
 
 const sample_db_path = await resolve_sample_db_path(date)
 if (sample_db_path.includes(date)) {
 	const tbta_sample_db = new Database(sample_db_path, { readwrite: true, create: false })
-	migrate_source_features(tbta_sample_db, tabitha_sources_db)
+	migrate_source_features({ tbta_db: tbta_sample_db, sources_db: tabitha_sources_db })
 } else {
 	log.step(`Skipping Features migration -- Sample unchanged since ${basename(sample_db_path)}.`)
 }
 
-await migrate_source_status(bun_sqlite_runner(tabitha_sources_db), join(import.meta.dir, '../../data/status'), date)
+await migrate_source_status({ runner: bun_sqlite_runner(tabitha_sources_db), csv_dir: join(import.meta.dir, '../../data/status'), date })
 
 create_indexes(tabitha_sources_db)
 
@@ -60,7 +60,7 @@ function create_indexes(tabitha_sources_db: Database) {
 }
 
 async function resolve_sample_db_path(date: string): Promise<string> {
-	const path = await resolve_dated_file('raw', 'Sample', date, 'tbta.sqlite')
+	const path = await resolve_dated_file({ dir: 'raw', prefix: 'Sample', date, ext: 'tbta.sqlite' })
 	if (!path) {
 		throw new Error(`No Sample database found for ${date}, and no fallback Sample_*.tbta.sqlite file exists in raw/.`)
 	}

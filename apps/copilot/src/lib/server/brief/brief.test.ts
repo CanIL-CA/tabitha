@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { AiClient } from '@tabitha/ai'
-import type { BriefInput, BriefSettings, BriefTnnBasedOutput } from '$lib/types'
+import type { BriefInput, BriefSettings, BriefTnnBasedOutput } from '#lib/types.js'
 
 vi.mock('$env/dynamic/private', () => ({ env: { API_KEY_AQUIFER: 'test-key' } }))
 

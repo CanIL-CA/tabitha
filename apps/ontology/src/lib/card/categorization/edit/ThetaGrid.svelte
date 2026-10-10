@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { theta_grid_arguments } from '$lib/lookups'
+	import { theta_grid_arguments } from '#lib/lookups.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
 	type Props = {

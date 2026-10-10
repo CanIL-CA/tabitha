@@ -1,8 +1,8 @@
-import { is_authorized } from '$lib/server/auth'
-import { apply_change_directly, suggest_change } from '$lib/server/changes/changes'
-import { error, json } from '@sveltejs/kit'
+import { is_authorized } from '#lib/server/auth.js'
+import { apply_change_directly, suggest_change } from '#lib/server/changes/changes.js'
+import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import type { ConceptUpdateData } from '$lib/types'
+import type { ConceptUpdateData } from '#lib/types.js'
 
 export async function POST({ request, locals }: Parameters<RequestHandler>[0]) {
 	const data: ConceptUpdateData = await request.json()
@@ -18,5 +18,5 @@ export async function POST({ request, locals }: Parameters<RequestHandler>[0]) {
 		throw error(500, `Failed to record update: ${message}`)
 	}
 
-	return json({ applied })
+	return Response.json({ applied })
 }

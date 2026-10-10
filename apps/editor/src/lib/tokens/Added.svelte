@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { CheckerToken } from '@tabitha/types'
-	import { token_has_message } from '$lib/token'
+	import { token_has_message } from '#lib/token.js'
 	import Message from './Message.svelte'
 	import TokenDisplay from './TokenDisplay.svelte'
 

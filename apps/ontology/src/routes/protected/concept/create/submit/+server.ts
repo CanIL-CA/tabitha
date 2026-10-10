@@ -1,9 +1,9 @@
-import { is_authorized } from '$lib/server/auth'
-import { apply_change_directly, suggest_change } from '$lib/server/changes/changes'
-import { get_concept_for_update } from '$lib/server/changes/concepts'
-import { error, json } from '@sveltejs/kit'
+import { is_authorized } from '#lib/server/auth.js'
+import { apply_change_directly, suggest_change } from '#lib/server/changes/changes.js'
+import { get_concept_for_update } from '#lib/server/changes/concepts.js'
+import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import type { ConceptCreateData } from '$lib/types'
+import type { ConceptCreateData } from '#lib/types.js'
 
 export async function POST({ request, locals }: Parameters<RequestHandler>[0]) {
 	const data: ConceptCreateData = await request.json()
@@ -24,5 +24,5 @@ export async function POST({ request, locals }: Parameters<RequestHandler>[0]) {
 		throw error(500, `Failed to create concept: ${message}`)
 	}
 
-	return json({ applied })
+	return Response.json({ applied })
 }

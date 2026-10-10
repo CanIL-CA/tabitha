@@ -2,7 +2,10 @@ import { describe, expect, it } from 'bun:test'
 import Database from 'bun:sqlite'
 import { migrate_text_table } from './migrate_text_table'
 
-function make_tbta_db(audiences: string[], tables: Record<string, { reference: string, verse: string | null }[]>): Database {
+function make_tbta_db({ audiences, tables }: {
+	audiences: string[]
+	tables: Record<string, { reference: string, verse: string | null }[]>
+}): Database {
 	const db = new Database(':memory:')
 
 	db.run('CREATE TABLE Properties (Audiences TEXT)')
@@ -27,13 +30,13 @@ function read_text_rows(targets_db: Database) {
 
 describe('migrate_text_table', () => {
 	it('parses "Book Chapter:Verse" references and splits per-audience lines correctly', () => {
-		const tbta_db = make_tbta_db(
-			['Literal', 'Unchurched Adults'],
-			{ Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning God created.\nLong ago, God made everything.' }] },
-		)
+		const tbta_db = make_tbta_db({
+			audiences: ['Literal', 'Unchurched Adults'],
+			tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning God created.\nLong ago, God made everything.' }] },
+		})
 		const targets_db = new Database(':memory:')
 
-		migrate_text_table(tbta_db, 'English', targets_db)
+		migrate_text_table({ tbta_db, project: 'English', targets_db })
 
 		expect(read_text_rows(targets_db)).toEqual([
 			{ project: 'English', book: 'Genesis', chapter: 1, verse: 1, audience: 'Literal', text: 'In the beginning God created.' },
@@ -42,18 +45,18 @@ describe('migrate_text_table', () => {
 	})
 
 	it('skips the legacy-named duplicate book tables so their rows are not migrated twice', () => {
-		const tbta_db = make_tbta_db(
-			['Literal'],
-			{
+		const tbta_db = make_tbta_db({
+			audiences: ['Literal'],
+			tables: {
 				Target_EB_Revelation: [{ reference: 'Revelation 1:1', verse: 'The revelation of Jesus Christ.' }],
 				Target_EB_Revelations: [{ reference: 'Revelation 1:1', verse: 'The revelation of Jesus Christ.' }],
 				Target_EB_Psalms: [{ reference: 'Psalms 23:1', verse: 'The Lord is my shepherd.' }],
 				Target_EB_Psalm: [{ reference: 'Psalms 23:1', verse: 'The Lord is my shepherd.' }],
 			},
-		)
+		})
 		const targets_db = new Database(':memory:')
 
-		migrate_text_table(tbta_db, 'English', targets_db)
+		migrate_text_table({ tbta_db, project: 'English', targets_db })
 
 		const rows = read_text_rows(targets_db)
 		expect(rows).toHaveLength(2)
@@ -62,13 +65,13 @@ describe('migrate_text_table', () => {
 	})
 
 	it('skips blank audience lines and strips inline "~!~" annotation markers', () => {
-		const tbta_db = make_tbta_db(
-			['Literal', 'Annotated', 'Unchurched Adults'],
-			{ Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.\n\nGod made it.~!~note: creation account' }] },
-		)
+		const tbta_db = make_tbta_db({
+			audiences: ['Literal', 'Annotated', 'Unchurched Adults'],
+			tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.\n\nGod made it.~!~note: creation account' }] },
+		})
 		const targets_db = new Database(':memory:')
 
-		migrate_text_table(tbta_db, 'English', targets_db)
+		migrate_text_table({ tbta_db, project: 'English', targets_db })
 
 		const rows = read_text_rows(targets_db)
 		expect(rows).toEqual([
@@ -78,25 +81,25 @@ describe('migrate_text_table', () => {
 	})
 
 	it('skips rows with a null Verse', () => {
-		const tbta_db = make_tbta_db(
-			['Literal'],
-			{ Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: null }] },
-		)
+		const tbta_db = make_tbta_db({
+			audiences: ['Literal'],
+			tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: null }] },
+		})
 		const targets_db = new Database(':memory:')
 
-		migrate_text_table(tbta_db, 'English', targets_db)
+		migrate_text_table({ tbta_db, project: 'English', targets_db })
 
 		expect(read_text_rows(targets_db)).toEqual([])
 	})
 
 	it('tags every migrated row with the given project', () => {
-		const tbta_db = make_tbta_db(
-			['Literal'],
-			{ Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'Mwanzoni Mungu aliumba.' }] },
-		)
+		const tbta_db = make_tbta_db({
+			audiences: ['Literal'],
+			tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'Mwanzoni Mungu aliumba.' }] },
+		})
 		const targets_db = new Database(':memory:')
 
-		migrate_text_table(tbta_db, 'Swahili', targets_db)
+		migrate_text_table({ tbta_db, project: 'Swahili', targets_db })
 
 		expect(read_text_rows(targets_db)).toEqual([
 			{ project: 'Swahili', book: 'Genesis', chapter: 1, verse: 1, audience: 'Literal', text: 'Mwanzoni Mungu aliumba.' },
@@ -106,11 +109,11 @@ describe('migrate_text_table', () => {
 	it('replaces a project\'s own rows rather than duplicating them on a second run', () => {
 		const targets_db = new Database(':memory:')
 
-		const first_run = make_tbta_db(['Literal'], { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.' }] })
-		migrate_text_table(first_run, 'English', targets_db)
+		const first_run = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.' }] } })
+		migrate_text_table({ tbta_db: first_run, project: 'English', targets_db })
 
-		const second_run = make_tbta_db(['Literal'], { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning, revised.' }] })
-		migrate_text_table(second_run, 'English', targets_db)
+		const second_run = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning, revised.' }] } })
+		migrate_text_table({ tbta_db: second_run, project: 'English', targets_db })
 
 		expect(read_text_rows(targets_db)).toEqual([
 			{ project: 'English', book: 'Genesis', chapter: 1, verse: 1, audience: 'Literal', text: 'In the beginning, revised.' },
@@ -120,15 +123,15 @@ describe('migrate_text_table', () => {
 	it('preserves another project\'s rows when reprocessing just one project (incremental rebuild)', () => {
 		const targets_db = new Database(':memory:')
 
-		const english_db = make_tbta_db(['Literal'], { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.' }] })
-		migrate_text_table(english_db, 'English', targets_db)
+		const english_db = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.' }] } })
+		migrate_text_table({ tbta_db: english_db, project: 'English', targets_db })
 
-		const swahili_db = make_tbta_db(['Literal'], { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'Mwanzoni.' }] })
-		migrate_text_table(swahili_db, 'Swahili', targets_db)
+		const swahili_db = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'Mwanzoni.' }] } })
+		migrate_text_table({ tbta_db: swahili_db, project: 'Swahili', targets_db })
 
 		// Re-run only Swahili, as an incremental rebuild would when only Swahili's raw input changed.
-		const swahili_db_updated = make_tbta_db(['Literal'], { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'Mwanzoni, revised.' }] })
-		migrate_text_table(swahili_db_updated, 'Swahili', targets_db)
+		const swahili_db_updated = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'Mwanzoni, revised.' }] } })
+		migrate_text_table({ tbta_db: swahili_db_updated, project: 'Swahili', targets_db })
 
 		expect(read_text_rows(targets_db)).toEqual([
 			{ project: 'English', book: 'Genesis', chapter: 1, verse: 1, audience: 'Literal', text: 'In the beginning.' },

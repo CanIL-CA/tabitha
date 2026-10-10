@@ -1,8 +1,8 @@
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import { normalize_wildcards, parse_concept_sense, concepts_match } from '@tabitha/types/patterns'
-import { decode_categorization, transform_curated_examples } from '$lib/transformers'
+import { decode_categorization, transform_curated_examples } from '#lib/transformers.js'
 import { get_pending_changes } from './changes/changes'
-import type { Concept, DbRowConcept, DbRowExample } from '$lib/types'
+import type { Concept, DbRowConcept, DbRowExample } from '#lib/types.js'
 import type { ConceptKey, ConceptSearchFilter, ConceptExample, SimplificationHint } from '@tabitha/types'
 import type { ConceptLookupKey } from './concept_embeddings'
 

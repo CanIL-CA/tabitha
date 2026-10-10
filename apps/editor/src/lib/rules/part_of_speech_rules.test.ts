@@ -3,8 +3,8 @@ import { ERRORS } from '../parser/error_messages'
 import { apply_rules } from './rules_processor'
 import { describe, expect, test } from 'vitest'
 import { PART_OF_SPEECH_RULES } from './part_of_speech_rules'
-import { expect_error, create_sentence_for_test, create_pairing_token_for_test, create_lookup_token_for_test, lookup_result_for_test } from '$lib/test_helps'
-import type { Token } from '$lib/types'
+import { expect_error, create_sentence_for_test, create_pairing_token_for_test, create_lookup_token_for_test, lookup_result_for_test } from '#lib/test_helps.js'
+import type { Token } from '#lib/types.js'
 
 describe('pairing part_of_speech disambiguation', () => {
 	test('both words fully match part_of_speech', () => {

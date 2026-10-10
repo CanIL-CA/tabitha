@@ -32,7 +32,7 @@ describe('reconcile_dns', () => {
 			throw new Error(`Unexpected request: ${method} ${url}`)
 		})
 
-		const { dns_results, redirect_status } = await reconcile_dns(credentials, fetch_impl)
+		const { dns_results, redirect_status } = await reconcile_dns({ credentials, fetch_impl })
 
 		expect(dns_results).toEqual([{ record: dns_record, status: 'created' }])
 		expect(redirect_status).toBe('created')
@@ -50,7 +50,7 @@ describe('reconcile_dns', () => {
 			throw new Error(`Unexpected request: ${method} ${url}`)
 		})
 
-		const { dns_results, redirect_status } = await reconcile_dns(credentials, fetch_impl)
+		const { dns_results, redirect_status } = await reconcile_dns({ credentials, fetch_impl })
 
 		expect(dns_results).toEqual([{ record: dns_record, status: 'unchanged' }])
 		expect(redirect_status).toBe('unchanged')
@@ -70,7 +70,7 @@ describe('reconcile_dns', () => {
 			throw new Error(`Unexpected request: ${method} ${url}`)
 		})
 
-		const { dns_results } = await reconcile_dns(credentials, fetch_impl)
+		const { dns_results } = await reconcile_dns({ credentials, fetch_impl })
 
 		expect(dns_results).toEqual([{ record: dns_record, status: 'ambiguous' }])
 	})
@@ -94,7 +94,7 @@ describe('reconcile_dns', () => {
 			throw new Error(`Unexpected request: ${method} ${url}`)
 		})
 
-		const { redirect_status } = await reconcile_dns(credentials, fetch_impl)
+		const { redirect_status } = await reconcile_dns({ credentials, fetch_impl })
 
 		expect(redirect_status).toBe('updated')
 		expect(put_body?.rules).toHaveLength(1 + desired_redirect_rules.length)
@@ -111,7 +111,7 @@ describe('reconcile_dns', () => {
 			throw new Error(`Unexpected request: ${method} ${url}`)
 		})
 
-		await reconcile_dns(credentials, fetch_impl)
+		await reconcile_dns({ credentials, fetch_impl })
 
 		const calls = (fetch_impl as unknown as ReturnType<typeof mock>).mock.calls
 		for (const [, init] of calls) {
@@ -122,6 +122,6 @@ describe('reconcile_dns', () => {
 	it('throws with the response body when a lookup fails unexpectedly', async () => {
 		const fetch_impl = router_fetch(() => new Response('zone suspended', { status: 403 }))
 
-		await expect(reconcile_dns(credentials, fetch_impl)).rejects.toThrow(/403/)
+		await expect(reconcile_dns({ credentials, fetch_impl })).rejects.toThrow(/403/)
 	})
 })

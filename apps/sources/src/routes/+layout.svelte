@@ -1,8 +1,8 @@
 <script lang="ts">
-	import '$lib/app.css'
+	import '#lib/app.css'
 	import { onMount, type Snippet } from 'svelte'
 	import { onNavigate } from '$app/navigation'
-	import { Search } from '$lib'
+	import { Search } from '#lib/index.js'
 	import { Header, Footer, theme_state } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'
 	import { registerSW } from 'virtual:pwa-register'

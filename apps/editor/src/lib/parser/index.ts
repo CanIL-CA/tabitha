@@ -1,8 +1,8 @@
 import { tokenize_input } from './tokenize'
-import { perform_form_lookups, perform_ontology_lookups } from '$lib/lookups'
+import { perform_form_lookups, perform_ontology_lookups } from '#lib/lookups/index.js'
 import { clausify, flatten_sentences } from './clausify'
-import { RULES, rules_applier } from '$lib/rules'
-import type { Sentence, Token } from '$lib/types'
+import { RULES, rules_applier } from '#lib/rules/index.js'
+import type { Sentence, Token } from '#lib/types.js'
 
 export async function parse(text: string): Promise<Sentence[]> {
 	let sentences = clausify(tokenize_input(text))

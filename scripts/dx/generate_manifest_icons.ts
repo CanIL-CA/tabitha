@@ -13,7 +13,11 @@ const root_dir = resolve(script_dir, '../..')
 const ANY_SIZES = [192, 512]
 const MASKABLE_SIZE = 512
 
-async function write_png(svg: string, size: number, out_path: string) {
+async function write_png({ svg, size, out_path }: {
+	svg: string
+	size: number
+	out_path: string
+}) {
 	await sharp(Buffer.from(svg), { density: 384 })
 		.resize(size, size)
 		.png()
@@ -26,11 +30,11 @@ for (const [app, letter] of Object.entries(APP_LETTERS)) {
 
 	for (const size of ANY_SIZES) {
 		const out_path = join(static_dir, `icon-${size}.png`)
-		await write_png(build_cell_svg(letter, size), size, out_path)
+		await write_png({ svg: build_cell_svg({ letter, size }), size, out_path })
 	}
 
 	const maskable_path = join(static_dir, `icon-maskable-${MASKABLE_SIZE}.png`)
-	await write_png(build_maskable_svg(letter, MASKABLE_SIZE), MASKABLE_SIZE, maskable_path)
+	await write_png({ svg: build_maskable_svg({ letter, size: MASKABLE_SIZE }), size: MASKABLE_SIZE, out_path: maskable_path })
 
 	console.log(`generated apps/${app}/static/icon-{192,512,maskable-512}.png ("${letter}")`)
 }

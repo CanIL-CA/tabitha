@@ -1,9 +1,9 @@
-import { get_copilot_result } from '$lib/server/copilot_core'
-import { create_brief_for_verse } from '$lib/server/brief/brief'
-import { book_rigors } from '$lib/lookups'
+import { get_copilot_result } from '#lib/server/copilot_core.js'
+import { create_brief_for_verse } from '#lib/server/brief/brief.js'
+import { book_rigors } from '#lib/lookups.js'
 import type { AiClient } from '@tabitha/ai'
 import type { VerseReference, CopilotResult } from '@tabitha/types'
-import type { BriefInput, CopilotSettings, CopilotStep } from '$lib/types'
+import type { BriefInput, CopilotSettings, CopilotStep } from '#lib/types.js'
 
 type GetVerseResultOptions = {
 	reference: VerseReference

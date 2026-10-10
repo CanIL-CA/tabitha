@@ -1,4 +1,4 @@
-import type { FlagWeightingMap } from '$lib/types'
+import type { FlagWeightingMap } from '#lib/types.js'
 
 export const default_flag_weights_for_discern: FlagWeightingMap = {
 	'Verb Time': {

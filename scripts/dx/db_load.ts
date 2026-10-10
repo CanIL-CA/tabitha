@@ -71,13 +71,13 @@ export function write_workerd_hash_cache(cache: Record<string, string>) {
 // Bun's child_process.spawn can't pipe stdio to the workerd process getPlatformProxy() spawns
 // internally on Windows (unresolved upstream: oven-sh/bun#13543), so on win32 this runs the
 // implementation via the system `node` binary instead of in-process under Bun -- see ADR 0011.
-export async function resolve_workerd_hashes(
-	config: AppConfig,
-	entries: D1DatabaseEntry[],
-	d1_state_dir: string,
-): Promise<Record<string, string>> {
+export async function resolve_workerd_hashes({ config, entries, d1_state_dir }: {
+	config: AppConfig
+	entries: D1DatabaseEntry[]
+	d1_state_dir: string
+}): Promise<Record<string, string>> {
 	if (platform() !== 'win32') {
-		return resolve_workerd_hashes_impl(config.app_dir, config.wrangler_path, entries, d1_state_dir)
+		return resolve_workerd_hashes_impl({ app_dir: config.app_dir, wrangler_path: config.wrangler_path, entries, d1_state_dir })
 	}
 	const helper = join(script_dir, 'resolve_workerd_hashes.mjs')
 	const input = JSON.stringify({ app_dir: config.app_dir, wrangler_path: config.wrangler_path, entries, d1_state_dir })
@@ -89,7 +89,10 @@ export async function resolve_workerd_hashes(
 	return JSON.parse(json_output)
 }
 
-function import_sqlite_snapshot(snapshot_file: string, target_db: string) {
+function import_sqlite_snapshot({ snapshot_file, target_db }: {
+	snapshot_file: string
+	target_db: string
+}) {
 	// Clean previous database & journal files if present
 	for (const path of [target_db, `${target_db}-wal`, `${target_db}-shm`]) {
 		if (existsSync(path)) unlinkSync(path)
@@ -145,7 +148,7 @@ export async function load_database(target_app: string = 'all') {
 		})
 		if (needs_resolution.length > 0) {
 			console.log(`   🔍 Resolving Miniflare storage file(s) for: ${needs_resolution.map(d => d.binding || d.database_name).join(', ')}...`)
-			const resolved = await resolve_workerd_hashes(config, needs_resolution, d1_state_dir)
+			const resolved = await resolve_workerd_hashes({ config, entries: needs_resolution, d1_state_dir })
 			Object.assign(workerd_hash_cache, resolved)
 			write_workerd_hash_cache(workerd_hash_cache)
 		}
@@ -176,7 +179,7 @@ export async function load_database(target_app: string = 'all') {
 				const db_hash = createHash('sha256').update(db_id).digest('hex')
 				const target_db = join(d1_state_dir, `${db_hash}.sqlite`)
 
-				import_sqlite_snapshot(snapshot_file, target_db)
+				import_sqlite_snapshot({ snapshot_file, target_db })
 
 				// Mirror database file to all possible hash formats (id, name, binding, prefix)
 				const alternate_keys = [
@@ -185,7 +188,10 @@ export async function load_database(target_app: string = 'all') {
 					db_name.split('_')[0],
 				].filter((k): k is string => Boolean(k && k !== db_id))
 
-				function copy_database_safely(src: string, dest: string) {
+				function copy_database_safely({ src, dest }: {
+					src: string
+					dest: string
+				}) {
 					if (src === dest) return
 					for (const ext of ['', '-wal', '-shm']) {
 						const p = `${dest}${ext}`
@@ -197,13 +203,13 @@ export async function load_database(target_app: string = 'all') {
 				for (const key of alternate_keys) {
 					const alt_hash = createHash('sha256').update(key).digest('hex')
 					const alt_db_path = join(d1_state_dir, `${alt_hash}.sqlite`)
-					copy_database_safely(target_db, alt_db_path)
+					copy_database_safely({ src: target_db, dest: alt_db_path })
 				}
 
 				const workerd_hash = workerd_hash_cache[db_id]
 				if (workerd_hash) {
 					const workerd_db_path = join(d1_state_dir, `${workerd_hash}.sqlite`)
-					copy_database_safely(target_db, workerd_db_path)
+					copy_database_safely({ src: target_db, dest: workerd_db_path })
 				}
 
 				const table_count_str = execFileSync('sqlite3', [target_db, "SELECT count(*) FROM sqlite_master WHERE type='table';"], { encoding: 'utf-8' }).trim()

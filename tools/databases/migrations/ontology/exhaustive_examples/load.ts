@@ -5,9 +5,13 @@ import { create_logger, is_verbose } from '../../log'
 
 const log = create_logger('Ontology migration')
 
-export async function load_examples(db_ontology: Database, db_sources: Database, db_sources_complex: Database) {
+export async function load_examples({ db_ontology, db_sources, db_sources_complex }: {
+	db_ontology: Database
+	db_sources: Database
+	db_sources_complex: Database
+}) {
 	clear_examples_table(db_ontology)
-	await find_exhaustive_occurrences(db_ontology, db_sources, db_sources_complex)
+	await find_exhaustive_occurrences({ db_ontology, db_sources, db_sources_complex })
 	update_occurrences(db_ontology)
 
 	if (is_verbose()) show_examples(db_ontology)
@@ -27,7 +31,11 @@ function clear_examples_table(db_ontology: Database) {
  * @param db_sources The Tabitha sources database
  * @param db_sources_complex The Tabitha sources database after Complex Concept Insertion rules have been applied
  */
-async function find_exhaustive_occurrences(db_ontology: Database, db_sources: Database, db_sources_complex: Database) {
+async function find_exhaustive_occurrences({ db_ontology, db_sources, db_sources_complex }: {
+	db_ontology: Database
+	db_sources: Database
+	db_sources_complex: Database
+}) {
 	log.step('Fetching all source encoding...')
 	type Source = {
 		type: string
@@ -68,9 +76,9 @@ async function find_exhaustive_occurrences(db_ontology: Database, db_sources: Da
 		current_reference = { type, id_primary, id_secondary, id_tertiary }
 
 		// For each word encountered, add the current verse reference to that word's examples
-		const base_contexts = transform_semantic_encoding(semantic_encoding, complex_concept_set)
-			.flatMap((_, index, source_entities) => find_word_context(index, source_entities))
-		record_occurrences(db_ontology, current_reference, base_contexts)
+		const base_contexts = transform_semantic_encoding({ semantic_encoding, complex_concepts: complex_concept_set })
+			.flatMap((_, index, source_entities) => find_word_context({ entity_index: index, source_entities }))
+		record_occurrences({ db_ontology, reference: current_reference, contexts: base_contexts })
 
 		// Find the occurrences of complex concepts that were explicated. db_sources_complex contains the verses after
 		// the Complex Concept Insertion rules have been applied. Pairings have also been reduced to just the complex word.
@@ -93,17 +101,20 @@ async function find_exhaustive_occurrences(db_ontology: Database, db_sources: Da
 					])
 			}
 
-			const complex_contexts = transform_semantic_encoding(complex_verse.semantic_encoding, complex_concept_set)
-				.flatMap((entity, index, source_entities) => entity.concept?.is_complex ? find_word_context(index, source_entities) : [])
+			const complex_contexts = transform_semantic_encoding({ semantic_encoding: complex_verse.semantic_encoding, complex_concepts: complex_concept_set })
+				.flatMap((entity, index, source_entities) => entity.concept?.is_complex ? find_word_context({ entity_index: index, source_entities }) : [])
 			const normalized_complex_contexts = normalize_complex_contexts_for_comparison(complex_contexts)
 			const normalized_base_contexts = normalize_complex_contexts_for_comparison(base_contexts)
 
 			// This isn't a perfect solution because there may be multiple occurrences with the same context, and it (rarely) may also falsely identify an unmatched context.
-			function contexts_equal([c1, json1]: [Concept, string], [c2, json2]: [Concept, string]): boolean {
+			function contexts_equal({ complex_entry: [c1, json1], base_entry: [c2, json2] }: {
+				complex_entry: [Concept, string]
+				base_entry: [Concept, string]
+			}): boolean {
 				return c1.stem === c2.stem && c1.sense === c2.sense && c1.part_of_speech === c2.part_of_speech && json1 === json2
 			}
-			const unmatched_complex = normalized_complex_contexts.filter(complex_entry => !normalized_base_contexts.some(base_entry => contexts_equal(complex_entry, base_entry)))
-			const unmatched_base = normalized_base_contexts.filter(base_entry => !normalized_complex_contexts.some(complex_entry => contexts_equal(complex_entry, base_entry)))
+			const unmatched_complex = normalized_complex_contexts.filter(complex_entry => !normalized_base_contexts.some(base_entry => contexts_equal({ complex_entry, base_entry })))
+			const unmatched_base = normalized_base_contexts.filter(base_entry => !normalized_complex_contexts.some(complex_entry => contexts_equal({ complex_entry, base_entry })))
 
 			// Check for any redundant occurrences due to other explicated concepts.
 			// eg. 'God blessed the seventh day' -> 'God blessed the Sabbath'
@@ -133,7 +144,7 @@ async function find_exhaustive_occurrences(db_ontology: Database, db_sources: Da
 				.map(([concept, context]) => [concept, { ...JSON.parse(context), 'Complex Handling': 'Explication' }] as [Concept, ContextArguments])
 
 			if (explicated_contexts.length > 0) {
-				record_occurrences(db_ontology, current_reference, explicated_contexts)
+				record_occurrences({ db_ontology, reference: current_reference, contexts: explicated_contexts })
 			}
 		}
 
@@ -155,16 +166,25 @@ function concept_key(concept: Concept): string {
 	return `${concept.stem}|${concept.sense}|${concept.part_of_speech}`
 }
 
-function record_occurrences(db_ontology: Database, reference: SourceReference, contexts: [Concept, ContextArguments][]) {
+function record_occurrences({ db_ontology, reference, contexts }: {
+	db_ontology: Database
+	reference: SourceReference
+	contexts: [Concept, ContextArguments][]
+}) {
 	// doing the insertions in a transaction is much faster
 	db_ontology.transaction(() => {
 		for (const [concept, context] of contexts) {
-			record_occurrence(db_ontology, concept, reference, context)
+			record_occurrence({ db_ontology, concept, reference, context })
 		}
 	})()
 }
 
-function record_occurrence(db_ontology: Database, concept: Concept, reference: SourceReference, context: ContextArguments) {
+function record_occurrence({ db_ontology, concept, reference, context }: {
+	db_ontology: Database
+	concept: Concept
+	reference: SourceReference
+	context: ContextArguments
+}) {
 	const { stem, sense, part_of_speech } = concept
 	const { type, id_primary, id_secondary, id_tertiary } = reference
 	// using query() caches the statement, making this faster for bulk inserts
@@ -209,65 +229,68 @@ function show_examples(db_ontology: Database) {
 
 	log.verbose('======= Noun Examples =======')
 	// destination role; outer noun & adposition; destination role & adposition
-	show_examples({ stem: 'Moab', sense: 'A', part_of_speech: 'Noun' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 })
+	show_examples({ concept: { stem: 'Moab', sense: 'A', part_of_speech: 'Noun' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 } })
 	// outer adjective
-	show_examples({ stem: 'husband', sense: 'A', part_of_speech: 'Noun' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 8 })
+	show_examples({ concept: { stem: 'husband', sense: 'A', part_of_speech: 'Noun' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 8 } })
 
 	log.verbose('======= Verb Examples =======')
 	// coordinate agent & source & destination
-	show_examples({ stem: 'move', sense: 'A', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 })
+	show_examples({ concept: { stem: 'move', sense: 'A', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 } })
 	// negative polarity & predicate adjective
-	show_examples({ stem: 'be', sense: 'D', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 12 })
+	show_examples({ concept: { stem: 'be', sense: 'D', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 12 } })
 	// negative polarity & patient proposition
-	show_examples({ stem: 'tell', sense: 'B', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 16 })
+	show_examples({ concept: { stem: 'tell', sense: 'B', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 16 } })
 	// most patient-like
-	show_examples({ stem: 'bury', sense: 'A', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 17 })
+	show_examples({ concept: { stem: 'bury', sense: 'A', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 17 } })
 	// agent proposition & predicate adjective
-	show_examples({ stem: 'be', sense: 'V', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 1, ref_id_secondary: 2, ref_id_tertiary: 18 })
+	show_examples({ concept: { stem: 'be', sense: 'V', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 1, ref_id_secondary: 2, ref_id_tertiary: 18 } })
 	// complex pairing
-	show_examples({ stem: 'cry', sense: 'A', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 14 })
-	show_examples({ stem: 'weep', sense: 'A', part_of_speech: 'Verb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 14 })
+	show_examples({ concept: { stem: 'cry', sense: 'A', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 14 } })
+	show_examples({ concept: { stem: 'weep', sense: 'A', part_of_speech: 'Verb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 14 } })
 
 	log.verbose('======= Adjective Examples =======')
 	// modified noun
-	show_examples({ stem: 'much-many', sense: 'A', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 })
+	show_examples({ concept: { stem: 'much-many', sense: 'A', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 } })
 	// patient noun
-	show_examples({ stem: 'kind', sense: 'B', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 8 })
+	show_examples({ concept: { stem: 'kind', sense: 'B', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 8 } })
 	// patient clause
-	show_examples({ stem: 'able', sense: 'A', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 12 })
+	show_examples({ concept: { stem: 'able', sense: 'A', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 12 } })
 	// 'too' degree
-	show_examples({ stem: 'old', sense: 'A', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 12 })
+	show_examples({ concept: { stem: 'old', sense: 'A', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 12 } })
 	// comparative degree & patient noun
-	show_examples({ stem: 'good', sense: 'A', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 4, ref_id_tertiary: 15 })
+	show_examples({ concept: { stem: 'good', sense: 'A', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 4, ref_id_tertiary: 15 } })
 	// complex pairing
-	show_examples({ stem: 'sad', sense: 'A', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 13 })
-	show_examples({ stem: 'bitter', sense: 'B', part_of_speech: 'Adjective' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 13 })
+	show_examples({ concept: { stem: 'sad', sense: 'A', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 13 } })
+	show_examples({ concept: { stem: 'bitter', sense: 'B', part_of_speech: 'Adjective' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 13 } })
 
 	log.verbose('======= Adverb Examples =======')
 	// modified noun
-	show_examples({ stem: 'also', sense: 'C', part_of_speech: 'Adverb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 5 })
+	show_examples({ concept: { stem: 'also', sense: 'C', part_of_speech: 'Adverb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 5 } })
 	// intensified degree
-	show_examples({ stem: 'kindly', sense: 'A', part_of_speech: 'Adverb' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 2, ref_id_tertiary: 13 })
+	show_examples({ concept: { stem: 'kindly', sense: 'A', part_of_speech: 'Adverb' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 2, ref_id_tertiary: 13 } })
 	// comparative degree
-	show_examples({ stem: 'hard', sense: 'A', part_of_speech: 'Adverb' }, { type: 'Bible', ref_id_primary: 32, ref_id_secondary: 1, ref_id_tertiary: 11 })
+	show_examples({ concept: { stem: 'hard', sense: 'A', part_of_speech: 'Adverb' }, reference: { type: 'Bible', ref_id_primary: 32, ref_id_secondary: 1, ref_id_tertiary: 11 } })
 
 	log.verbose('======= Adposition Examples =======')
 	// no argument
-	show_examples({ stem: 'when', sense: 'C', part_of_speech: 'Adposition' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 })
+	show_examples({ concept: { stem: 'when', sense: 'C', part_of_speech: 'Adposition' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 } })
 	// noun & verb
-	show_examples({ stem: 'in', sense: 'B', part_of_speech: 'Adposition' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 })
+	show_examples({ concept: { stem: 'in', sense: 'B', part_of_speech: 'Adposition' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 } })
 	// noun & outer noun
-	show_examples({ stem: '-Name', sense: 'A', part_of_speech: 'Adposition' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 })
+	show_examples({ concept: { stem: '-Name', sense: 'A', part_of_speech: 'Adposition' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 1 } })
 	// adjective & outer noun
-	show_examples({ stem: '-Subgroup', sense: 'A', part_of_speech: 'Adposition' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 2, ref_id_tertiary: 11 })
+	show_examples({ concept: { stem: '-Subgroup', sense: 'A', part_of_speech: 'Adposition' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 2, ref_id_tertiary: 11 } })
 
 	log.verbose('======= Conjunction Examples =======')
 	// no argument (within NP)
-	show_examples({ stem: 'and', sense: 'B', part_of_speech: 'Conjunction' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 2 })
+	show_examples({ concept: { stem: 'and', sense: 'B', part_of_speech: 'Conjunction' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 2 } })
 	// no argument (within Clause)
-	show_examples({ stem: 'but', sense: 'A', part_of_speech: 'Conjunction' }, { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 2 })
+	show_examples({ concept: { stem: 'but', sense: 'A', part_of_speech: 'Conjunction' }, reference: { type: 'Bible', ref_id_primary: 8, ref_id_secondary: 1, ref_id_tertiary: 2 } })
 
-	function show_examples({ stem, sense, part_of_speech }: Concept, { ref_id_primary, ref_id_secondary, ref_id_tertiary }: ExampleReference) {
+	function show_examples({ concept: { stem, sense, part_of_speech }, reference: { ref_id_primary, ref_id_secondary, ref_id_tertiary } }: {
+		concept: Concept
+		reference: ExampleReference
+	}) {
 		type ExampleContext = {
 			context_json: string
 		}

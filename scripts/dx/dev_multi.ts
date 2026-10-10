@@ -128,7 +128,10 @@ Active Endpoints:`)
 			},
 		})
 
-		function create_subprocess_pipe(input_stream: typeof child.stdout, stdio_output: Bun.BunFile) {
+		function create_subprocess_pipe({ input_stream, stdio_output }: {
+			input_stream: typeof child.stdout
+			stdio_output: Bun.BunFile
+		}) {
 			input_stream.pipeThrough(new TextDecoderStream())
 				.pipeThrough(new TransformStream<string, string>({
 					transform(chunk, controller) {
@@ -148,8 +151,8 @@ Active Endpoints:`)
 				.catch(() => {})
 		}
 
-		create_subprocess_pipe(child.stdout, Bun.stdout)
-		create_subprocess_pipe(child.stderr, Bun.stderr)
+		create_subprocess_pipe({ input_stream: child.stdout, stdio_output: Bun.stdout })
+		create_subprocess_pipe({ input_stream: child.stderr, stdio_output: Bun.stderr })
 
 		app_processes.set(app.id, child)
 	}

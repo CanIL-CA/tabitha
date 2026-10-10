@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { phrasify } from './phrasify'
 import { flatten_sentences } from './clausify'
-import { TOKEN_TYPE, create_token, create_lookup_result } from '$lib/token'
+import { TOKEN_TYPE, create_token, create_lookup_result } from '#lib/token.js'
 
 describe('phrasify', () => {
 	test('handles empty sentence array', () => {

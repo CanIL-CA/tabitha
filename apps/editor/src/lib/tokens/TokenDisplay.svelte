@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Badge } from '$lib'
+	import { Badge } from '#lib/index.js'
 	import type { Snippet } from 'svelte'
 
 	type Props = {

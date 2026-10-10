@@ -41,17 +41,17 @@ export async function deploy_to_d1({ task, dump_file, date }: DeployOptions): Pr
 	const database_name = basename(task.output_file, '.tabitha.sqlite') // => Sources_2025-10-22 or Ontology_9493_2025-10-22
 	const binding = `DB_${task.id}`
 
-	const database = await create_and_load(database_name, dump_file)
+	const database = await create_and_load({ database_name, dump_file })
 
 	// A freshly-deployed Sources db doesn't carry status data (Sources migration only applies status
 	// to the local build if a status CSV happened to be available at that time) -- reapply the latest
 	// known status immediately so a new deploy never regresses to stale/no status.
 	if (task.family === 'Sources') {
-		await apply_status_to_d1(database_name, join(import.meta.dir, '../data/status'), date)
+		await apply_status_to_d1({ d1_database_name: database_name, csv_dir: join(import.meta.dir, '../data/status'), date })
 	}
 
 	const preview_database = PREVIEW_COPY_BINDINGS.has(binding)
-		? await create_and_load(preview_database_name(database_name), dump_file)
+		? await create_and_load({ database_name: preview_database_name(database_name), dump_file })
 		: undefined
 
 	const config_path = join(import.meta.dir, '../../../apps', APP_BY_FAMILY[task.family], 'wrangler.jsonc')
@@ -60,7 +60,10 @@ export async function deploy_to_d1({ task, dump_file, date }: DeployOptions): Pr
 	await Bun.write(config_path, repoint_d1_binding({ config_text, binding, database, preview_database }))
 }
 
-async function create_and_load(database_name: string, dump_file: string): Promise<D1Database> {
+async function create_and_load({ database_name, dump_file }: {
+	database_name: string
+	dump_file: string
+}): Promise<D1Database> {
 	if (await find_d1_database(database_name)) {
 		throw new Error(`D1 database "${database_name}" already exists but this run never finished loading it. Inspect it, then delete it (bun wrangler d1 delete ${database_name}) and re-run to deploy fresh.`)
 	}
@@ -108,7 +111,10 @@ type RepointOptions = {
  */
 export function repoint_d1_binding({ config_text, binding, database, preview_database = database }: RepointOptions): string {
 	const binding_entry = new RegExp(`("binding":\\s*"${binding}",\\s*"database_name":\\s*)"[^"]*"(,\\s*"database_id":\\s*)"[^"]*"`, 'g')
-	const repoint = (text: string, target: D1Database) =>
+	const repoint = ({ text, target }: {
+		text: string
+		target: D1Database
+	}) =>
 		text.replace(binding_entry, (_match, name_prefix: string, id_prefix: string) => `${name_prefix}"${target.name}"${id_prefix}"${target.uuid}"`)
 
 	if (!config_text.match(binding_entry)) {
@@ -116,16 +122,16 @@ export function repoint_d1_binding({ config_text, binding, database, preview_dat
 	}
 
 	const previews = find_previews_block(config_text)
-	if (!previews) return repoint(config_text, database)
+	if (!previews) return repoint({ text: config_text, target: database })
 
 	const block = config_text.slice(previews.start, previews.end)
 	if (preview_database !== database && !block.match(binding_entry)) {
 		throw new Error(`The previews block has no d1_databases entry with binding "${binding}" to point at "${preview_database.name}".`)
 	}
 
-	return repoint(config_text.slice(0, previews.start), database)
-		+ repoint(block, preview_database)
-		+ repoint(config_text.slice(previews.end), database)
+	return repoint({ text: config_text.slice(0, previews.start), target: database })
+		+ repoint({ text: block, target: preview_database })
+		+ repoint({ text: config_text.slice(previews.end), target: database })
 }
 
 /** Finds the `"previews": { ... }` object's span by brace matching, skipping strings and comments. */
@@ -138,7 +144,7 @@ function find_previews_block(config_text: string): { start: number; end: number 
 	for (let i = start + key[0].length - 1; i < config_text.length; i++) {
 		const char = config_text[i]
 		if (char === '"') {
-			i = skip_string(config_text, i)
+			i = skip_string({ text: config_text, open: i })
 		} else if (char === '/' && config_text[i + 1] === '/') {
 			const newline = config_text.indexOf('\n', i)
 			i = newline === -1 ? config_text.length : newline
@@ -152,7 +158,10 @@ function find_previews_block(config_text: string): { start: number; end: number 
 }
 
 /** Returns the index of the closing quote of the string starting at `open`. */
-function skip_string(text: string, open: number): number {
+function skip_string({ text, open }: {
+	text: string
+	open: number
+}): number {
 	for (let i = open + 1; i < text.length; i++) {
 		if (text[i] === '\\') i++
 		else if (text[i] === '"') return i

@@ -37,30 +37,37 @@ function matching_config(path_includes = www_watch_paths) {
 
 type Config = ReturnType<typeof matching_config>
 
-function json_response(result: unknown, status = 200, errors: unknown[] = []) {
+function json_response({ result, status = 200, errors = [] }: {
+	result: unknown
+	status?: number
+	errors?: unknown[]
+}) {
 	return new Response(JSON.stringify({ success: status < 400, errors, result }), { status })
 }
 
-const not_connected = () => json_response(null, 404, [{ code: 12040, message: 'No build configuration associated with that script tag was found for this account' }])
+const not_connected = () => json_response({ result: null, status: 404, errors: [{ code: 12040, message: 'No build configuration associated with that script tag was found for this account' }] })
 
 type Request = { method: string; url: string; body: unknown }
 
 /** Fakes the account: `workers` maps each existing Worker's name to its build config, or `null`
  * for a Worker that isn't connected to the repo yet. */
-function account_fetch(workers: Record<string, Config | null>, requests: Request[] = []): typeof fetch {
+function account_fetch({ workers, requests = [] }: {
+	workers: Record<string, Config | null>
+	requests?: Request[]
+}): typeof fetch {
 	return mock(async (url: string, init?: RequestInit) => {
 		const method = init?.method ?? 'GET'
 		requests.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
 
 		if (method === 'GET' && url.endsWith('/workers/scripts')) {
-			return json_response(Object.keys(workers).map(name => ({ id: name, tag: `tag-${name}` })))
+			return json_response({ result: Object.keys(workers).map(name => ({ id: name, tag: `tag-${name}` })) })
 		}
 		const tag_match = url.match(/\/builds\/workers\/tag-(\w+)$/)
 		if (method === 'GET' && tag_match) {
 			const config = workers[tag_match[1]]
-			return config ? json_response(config) : not_connected()
+			return config ? json_response({ result: config }) : not_connected()
 		}
-		if (method === 'PATCH' || method === 'POST') return json_response({})
+		if (method === 'PATCH' || method === 'POST') return json_response({ result: {} })
 		throw new Error(`Unexpected request: ${method} ${url}`)
 	}) as unknown as typeof fetch
 }
@@ -70,7 +77,7 @@ const writes = (requests: Request[]) => requests.filter(request => request.metho
 describe('reconcile_workers', () => {
 	it('reports nothing to change when everything already matches', async () => {
 		const requests: Request[] = []
-		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, account_fetch({ www: matching_config() }, requests))
+		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app], fetch_impl: account_fetch({ workers: { www: matching_config() }, requests }) })
 
 		expect(plan).toEqual({ worker_name: 'www', create: false, field_changes: [], env_var_changes: [], problems: [] })
 		expect(writes(requests)).toEqual([])
@@ -82,7 +89,7 @@ describe('reconcile_workers', () => {
 		config.production_settings.environment_variables = {}
 		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app] }, account_fetch({ www: config }, requests))
+		const [plan] = await reconcile_workers({ credentials, apply: false, apps: [test_app], fetch_impl: account_fetch({ workers: { www: config }, requests }) })
 
 		expect(plan.field_changes).toEqual([{ field: 'build_command', from: 'pnpm run build', to: build_command }])
 		expect(plan.env_var_changes).toEqual([{ field: 'SKIP_DEPENDENCY_INSTALL', from: '(unset)', to: 'true' }])
@@ -94,7 +101,7 @@ describe('reconcile_workers', () => {
 		config.production_settings.environment_variables = { OTHER: { value: 'kept', is_secret: false } }
 		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, account_fetch({ www: config }, requests))
+		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app], fetch_impl: account_fetch({ workers: { www: config }, requests }) })
 
 		expect(plan.field_changes).toEqual([{ field: 'path_includes', from: ['*'], to: www_watch_paths }])
 		expect(writes(requests)).toEqual([{
@@ -108,14 +115,14 @@ describe('reconcile_workers', () => {
 		const config = { ...matching_config(), previews_enabled: true }
 		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app] }, account_fetch({ www: config }, requests))
+		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app], fetch_impl: account_fetch({ workers: { www: config }, requests }) })
 
 		expect(plan.problems).toEqual([expect.stringMatching(/preview builds are on/)])
 		expect(writes(requests)).toEqual([])
 	})
 
 	it('reports a Worker that has never been deployed, and still reconciles the others', async () => {
-		const [missing, template] = await reconcile_workers(credentials, { apply: true, apps: [test_app, template_app] }, account_fetch({ sources: matching_config() }))
+		const [missing, template] = await reconcile_workers({ credentials, apply: true, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { sources: matching_config() } }) })
 
 		expect(missing.problems).toEqual([expect.stringMatching(/No Worker named "www" exists yet/)])
 		expect(template.problems).toEqual([])
@@ -124,7 +131,7 @@ describe('reconcile_workers', () => {
 	it('connects an unconnected Worker, copying the git repository and build token from a connected one', async () => {
 		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: true, apps: [test_app, template_app] }, account_fetch({ www: null, sources: matching_config() }, requests))
+		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { www: null, sources: matching_config() }, requests }) })
 
 		expect(plan).toEqual({ worker_name: 'www', create: true, field_changes: [], env_var_changes: [], problems: [] })
 		const settings = {
@@ -153,13 +160,13 @@ describe('reconcile_workers', () => {
 	it('plans the connection without writing when apply is false', async () => {
 		const requests: Request[] = []
 
-		const [plan] = await reconcile_workers(credentials, { apply: false, apps: [test_app, template_app] }, account_fetch({ www: null, sources: matching_config() }, requests))
+		const [plan] = await reconcile_workers({ credentials, apply: false, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { www: null, sources: matching_config() }, requests }) })
 
 		expect(plan.create).toBe(true)
 		expect(writes(requests)).toEqual([])
 	})
 
 	it('throws if no Worker is connected to copy the git repository and build token from', async () => {
-		await expect(reconcile_workers(credentials, { apply: false, apps: [test_app] }, account_fetch({ www: null }))).rejects.toThrow(/no other Worker is connected/)
+		await expect(reconcile_workers({ credentials, apply: false, apps: [test_app], fetch_impl: account_fetch({ workers: { www: null } }) })).rejects.toThrow(/no other Worker is connected/)
 	})
 })

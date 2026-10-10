@@ -1,5 +1,5 @@
-import { is_authorized } from '$lib/server/auth'
-import { get_version } from '$lib/server/ontology'
+import { is_authorized } from '#lib/server/auth.js'
+import { get_version } from '#lib/server/ontology.js'
 import type { LayoutServerLoadEvent } from './$types'
 import type { User } from '@auth/sveltekit'
 

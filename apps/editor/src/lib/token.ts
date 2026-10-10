@@ -1,9 +1,9 @@
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { REGEXES } from '$lib/regexes'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { REGEXES } from '#lib/regexes.js'
 import type { CheckerMessage, CheckerMessageLabel, CheckerMessageType, CheckerTextInsertion, CheckerTokenType } from '@tabitha/types'
-import type { CaseFrameResult } from '$lib/rules/case_frame/types'
-import type { RuleTriggerContext } from '$lib/rules/types'
-import type { LookupResult, MessageInfo, Sentence, Token, Tag } from '$lib/types'
+import type { CaseFrameResult } from '#lib/rules/case_frame/types.js'
+import type { RuleTriggerContext } from '#lib/rules/types.js'
+import type { LookupResult, MessageInfo, Sentence, Token, Tag } from '#lib/types.js'
 
 export const TOKEN_TYPE: Record<string, CheckerTokenType> = {
 	PUNCTUATION: 'Punctuation',
@@ -93,9 +93,13 @@ export function set_message_plain({ token, message }: { token: Token; message: C
  * The message will also be formatted based on the token context values within the rule context.
  */
 export function format_token_message({ trigger_context: { tokens, trigger_token, context_indexes }, message, token = trigger_token }: { trigger_context: RuleTriggerContext; message: string; token?: Token }): string {
-	return context_indexes.reduce(replace_context_markers, replace_markers({ text: message, token }))
+	return context_indexes.reduce((text, token_index, context_number) => replace_context_markers({ text, token_index, context_number }), replace_markers({ text: message, token }))
 
-	function replace_context_markers(text: string, token_index: number, context_number: number): string {
+	function replace_context_markers({ text, token_index, context_number }: {
+		text: string
+		token_index: number
+		context_number: number
+	}): string {
 		return replace_markers({ text, token: tokens[token_index], context_prefix: `${context_number}:` })
 	}
 

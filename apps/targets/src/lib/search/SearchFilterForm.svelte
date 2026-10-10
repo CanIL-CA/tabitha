@@ -2,7 +2,7 @@
 	import { fade } from 'svelte/transition'
 	import Icon from '@iconify/svelte'
 	import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
-	import type { FilterMap, ReturnTo } from '$lib/types'
+	import type { FilterMap, ReturnTo } from '#lib/types.js'
 
 	type Props = {
 		searched: boolean

@@ -1,6 +1,6 @@
 import { create_context_filter, from_built_in_rule, message_set_action } from './rules_parser'
 import { TOKEN_TYPE, add_tag_to_token } from '../token'
-import type { BuiltInRule } from '$lib/rules/types'
+import type { BuiltInRule } from '#lib/rules/types.js'
 
 const FIRST_PERSON = ['i', 'me', 'my', 'myself', 'we', 'us', 'our', 'ourselves']
 const SECOND_PERSON = ['you', 'your', 'yourself', 'yourselves']

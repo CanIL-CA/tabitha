@@ -2,9 +2,9 @@
 	import type { CheckerToken } from '@tabitha/types'
 	import PopupMenu from './PopupMenu.svelte'
 	import Table from './Table.svelte'
-	import { Badge } from '$lib'
+	import { Badge } from '#lib/index.js'
 	import Icon from '@iconify/svelte'
-	import { token_has_message, MESSAGE_TYPE } from '$lib/token'
+	import { token_has_message, MESSAGE_TYPE } from '#lib/token.js'
 	import type { Snippet } from 'svelte'
 
 	type Props = {

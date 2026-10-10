@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	import { Punctuation } from '@tabitha/ui'
 
 	let { source_entity }: { source_entity: PageSourceEntity } = $props()

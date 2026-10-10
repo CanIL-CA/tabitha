@@ -1,4 +1,4 @@
-import { expand_token } from '$lib/server/check'
+import { expand_token } from '#lib/server/check.js'
 import type { CheckEvent } from '@tabitha/usage'
 import type { EditorCheckResult } from '@tabitha/types'
 

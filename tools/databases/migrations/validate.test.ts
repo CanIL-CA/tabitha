@@ -8,7 +8,7 @@ describe('check_not_null_columns', () => {
 		db.run('CREATE TABLE Concepts (stem TEXT, brief_gloss TEXT, categorization TEXT)')
 		db.run('INSERT INTO Concepts VALUES (\'bring\', NULL, NULL), (\'aunt\', NULL, \'\'), (\'abandon\', \'leave\', \'AB\')')
 
-		const failures = check_not_null_columns(db, { table: 'Concepts', columns: ['stem', 'brief_gloss', 'categorization'] })
+		const failures = check_not_null_columns({ db, table: 'Concepts', columns: ['stem', 'brief_gloss', 'categorization'] })
 
 		expect(failures).toEqual([
 			'Concepts.brief_gloss has 2 NULL row(s)',

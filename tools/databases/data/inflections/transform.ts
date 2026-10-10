@@ -44,7 +44,7 @@ export async function transform_inflections(dir: string = '.') {
 
 		console.log(`transforming unix/${base_unix_name} => ${csv_filename}`)
 
-		const csv_content = process_to_csv(cleaned_content, part_of_speech)
+		const csv_content = process_to_csv({ content: cleaned_content, part_of_speech })
 		await Bun.write(full_csv_file, csv_content)
 	}
 }
@@ -52,7 +52,10 @@ export async function transform_inflections(dir: string = '.') {
 const MATCH_STEM_LINE = /^(\d+)\.\s+(.+)$/
 const ADDITIONAL_INFO = / {3}\(\w+\)/ // e.g.,   (suppletive)
 
-function process_to_csv(content: string, part_of_speech: string): string {
+function process_to_csv({ content, part_of_speech }: {
+	content: string
+	part_of_speech: string
+}): string {
 	// TBTA files are generated in a Windows environment resulting in '\r\n' line endings.
 	// If the invisible carriage return ('\r') is not stripped, it remains attached to the extracted
 	// word stem and breaks exact string matching downstream during the Lexicon DB migration.

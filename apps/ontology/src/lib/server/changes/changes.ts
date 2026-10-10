@@ -1,11 +1,11 @@
 import type { User } from '@auth/sveltekit'
 import type { D1Database } from '@cloudflare/workers-types'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
-import { get_version } from '$lib/server/ontology'
-import { default_categories } from '$lib/lookups'
-import { create_change_fields, diff_change_fields } from '$lib/changes'
-import type { OntologyChange, OntologyChangeAction, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult } from '$lib/types'
-import type { DbOntologyChange } from '$lib/server/types'
+import { get_version } from '#lib/server/ontology.js'
+import { default_categories } from '#lib/lookups.js'
+import { create_change_fields, diff_change_fields } from '#lib/changes.js'
+import type { OntologyChange, OntologyChangeAction, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult } from '#lib/types.js'
+import type { DbOntologyChange } from '#lib/server/types.js'
 import type { PartOfSpeech } from '@tabitha/types'
 
 export async function get_all_changes(db: D1Database): Promise<OntologyChange[]> {

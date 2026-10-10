@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { NounListEntry } from '@tabitha/types'
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	let { data, noun_list }: { data: PageSourceEntity, noun_list: NounListEntry[] } = $props()
 </script>
 

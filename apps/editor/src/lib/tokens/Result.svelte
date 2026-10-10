@@ -5,7 +5,7 @@
 	import PopupMenu from './PopupMenu.svelte'
 	import Table from './Table.svelte'
 	import Icon from '@iconify/svelte'
-	import { LOOKUP_FILTERS } from '$lib/lookup_filters'
+	import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
 
 	type Props = {
 		token: CheckerToken
