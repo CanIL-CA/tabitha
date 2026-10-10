@@ -2,7 +2,9 @@
 import { expect, test } from '@playwright/test'
 
 test('search bar parses reference and redirects to verse page', async ({ page }) => {
-	await page.goto('/')
+	// this is the first test to load a page on a cold dev server, where Vite's dependency optimizer
+	// can make that first load take several seconds; settle it before the 5s redirect assertion starts
+	await page.goto('/', { waitUntil: 'networkidle' })
 
 	const searchInput = page.locator('#search_query')
 	await searchInput.fill('Genesis 1:1')
