@@ -46,7 +46,7 @@ export async function load({ locals: { db_ontology }, platform }: Parameters<Pag
 	}
 
 	function extract_version(key: string) {
-		let match = key.match(VERSION_REGEX)
+		const match = key.match(VERSION_REGEX)
 		return match?.[1].replaceAll('-', '.') ?? ''
 	}
 
