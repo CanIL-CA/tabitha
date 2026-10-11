@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { wait_for_hydration } from '@tabitha/vite-config/playwright'
 import { sign_in_as } from './support/sign_in'
 
 // Signs in a second, lower-privileged identity scoped to just this spec -- the suite's shared
@@ -16,7 +17,7 @@ test('a suggest-tier user\'s edit is held for approval, and an authorized review
 
 	await suggester_page.goto('/protected/concept/update?concept=love-A-Verb')
 	// Clicking before hydration finishes silently no-ops -- the SSR'd button has no handler attached yet.
-	await suggester_page.waitForLoadState('networkidle')
+	await wait_for_hydration({ page: suggester_page })
 	await suggester_page.locator('textarea[name="gloss"]').fill(gloss)
 	await suggester_page.getByRole('button', { name: 'Save' }).click()
 	await expect(suggester_page.getByText(/pending in the changes queue/i)).toBeVisible()
@@ -25,7 +26,7 @@ test('a suggest-tier user\'s edit is held for approval, and an authorized review
 	// The default `page` fixture carries the suite's fully-authorized fixture user (see e2e/README.md).
 	await page.goto('/protected/changes?status=pending')
 	// Clicking before hydration finishes silently no-ops -- the SSR'd button has no handler attached yet.
-	await page.waitForLoadState('networkidle')
+	await wait_for_hydration({ page })
 	const row = page.locator('tr', { hasText: gloss })
 	await expect(row.getByText(suggester_email)).toBeVisible()
 
