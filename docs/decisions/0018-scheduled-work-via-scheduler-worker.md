@@ -16,7 +16,7 @@ The obvious alternative, a GitHub Actions scheduled workflow calling the app (as
 
 - **The work stays in the app.** Recurring work that belongs to an app lives in that app, behind a `POST` endpoint that accepts only a shared `SCHEDULER_TOKEN`. An unset token rejects everything. Ontology's is `POST /scheduled/sync`, which runs the complex-terms sync and then the embedding sync.
 - **One cron-only Worker triggers it.** `apps/scheduler` is a plain Cloudflare Worker, not SvelteKit, that holds every cron. Each cron maps to a job (`JOBS_BY_CRON`) that calls the owning app's endpoint through a service binding. It has no UI, no public URL (`workers_dev: false`), and no app logic. Jobs are awaited, so a failed sync marks that cron run as failed in Cloudflare's cron history instead of looking successful.
-- **GitHub Actions verifies code; it doesn't run app work on a schedule.** CI stays on GitHub Actions. The existing `db_backup` and `d1_cleanup` schedules are left as they are for now; moving them is a separate item.
+- **GitHub Actions verifies code; it doesn't run app work on a schedule.** CI stays on GitHub Actions. `db_backup` and `d1_cleanup` stay on GitHub Actions on purpose. They are repo-owned maintenance tools (Bun scripts in `tools/databases` that use the `wrangler` CLI and read the apps' `wrangler.jsonc` files), not work built into a running app, so the principle above doesn't apply to them. Moving the backup would mean rewriting it for a Worker (REST export plus a WASM SQLite) and still holding an API token, and GitHub already reports a failed run.
 
 ## Alternatives considered
 
@@ -34,4 +34,4 @@ The obvious alternative, a GitHub Actions scheduled workflow calling the app (as
 - **The binding between the Workers isn't a package dependency,** so CI won't re-check `scheduler` when only `ontology` changes. The contract is small, covered from both sides: ontology's tests cover the token check and sync order, and scheduler's tests cover the URL and header it sends. Changing the endpoint's path or auth means updating both.
 - **Service bindings return, in a narrow role.** ADR 0015 rejected service bindings for cross-app *preview* calls. This is production-only: `scheduler` has no preview environment, and its preview builds only upload versions, which never run crons.
 - **Local development can't exercise the binding.** Ontology runs under `vite dev`, which a `wrangler dev` service binding can't reach, so the scheduled sync is tested locally by calling the endpoint directly.
-- **Revisit** if the official adapter gains native `scheduled` support (then the work could move back into each app), or when `db_backup`/`d1_cleanup` move onto `scheduler`.
+- **Revisit** if the official adapter gains native `scheduled` support (then the work could move back into each app).
