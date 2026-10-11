@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('searches for concepts and renders summary cards', async ({ page }) => {
 	await page.goto('/?q=love&category=all&scope=stems')
@@ -15,7 +16,7 @@ test('searches for concepts and renders summary cards', async ({ page }) => {
 
 test('expands concept modal and verifies filter dropdowns default to valid options', async ({ page }) => {
 	await page.goto('/?q=take&category=all&scope=stems')
-	await page.waitForLoadState('networkidle')
+	await wait_for_hydration({ page })
 
 	// Locate the first EXPAND button and click it
 	const expand_btn = page.locator('article.card').first().getByRole('button', { name: 'EXPAND' })

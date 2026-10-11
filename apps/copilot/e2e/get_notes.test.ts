@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('generating notes for a verse fetches real encoding/text data, runs it through the flag/trigger pipeline, and renders AI-produced notes', async ({ page }) => {
-	// Genesis 1:1 is the app's default verse. Wait for the network to settle so Svelte has
-	// hydrated (wired up the button's click handler) before interacting with it.
-	await page.goto('/', { waitUntil: 'networkidle' })
+	// Genesis 1:1 is the app's default verse. Wait for hydration (the button's click handler
+	// being wired up) before interacting with it.
+	await page.goto('/')
+	await wait_for_hydration({ page })
 
 	await page.getByRole('button', { name: 'Get notes' }).click()
 
