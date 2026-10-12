@@ -4,7 +4,8 @@ import type { BriefInput, BriefSettings, BriefTnnBasedOutput } from '$lib/types'
 
 vi.mock('$env/dynamic/private', () => ({ env: { API_KEY_AQUIFER: 'test-key' } }))
 
-const { create_brief_for_verse } = await import('./brief')
+const { create_brief_for_verse, mark_for_translation, translate_json } = await import('./brief')
+const { AiResponseError } = await import('@tabitha/ai')
 
 const verse = { book: 'Acts', chapter: 1, verse: 1 }
 
@@ -147,5 +148,99 @@ describe('create_brief_for_verse', () => {
 		const result = await create_brief_for_verse({ input, ai: fake_ai() })
 
 		expect(result).toEqual({ type: 'error', verse, error: 'Could not reach Aquifer to fetch the TNN notes.' })
+	})
+})
+
+describe('translate_json', () => {
+	const to_indonesian = (text: string) => mark_for_translation({ text, target_language: 'Indonesian' })
+	const notes = ['Theophilus was a patron.', 'Luke wrote an earlier book.', 'The kingdom of God.']
+
+	type Request = { id: number, text: string }
+	const translate = ({ id, text }: Request) => ({ id, translation: `ID: ${text}` })
+
+	function fake_translator({ respond }: { respond: (requests: Request[]) => unknown }): AiClient {
+		const ai = fake_ai()
+		vi.mocked(ai.generate_json).mockImplementation(async ({ contents }) => respond(contents as Request[]))
+		return ai
+	}
+
+	beforeEach(() => {
+		vi.spyOn(console, 'error').mockImplementation(() => {})
+		vi.spyOn(console, 'warn').mockImplementation(() => {})
+	})
+
+	test('translates every marked string in place', async () => {
+		const ai = fake_translator({ respond: requests => requests.map(translate) })
+
+		const result = await translate_json({ obj: { notes: notes.map(to_indonesian), count: 3 }, ai })
+
+		expect(result).toEqual({ notes: notes.map(note => `ID: ${note}`), count: 3 })
+	})
+
+	test('puts each translation back by id, so a reordered response cannot shift translations onto the wrong notes', async () => {
+		const ai = fake_translator({ respond: requests => requests.map(translate).reverse() })
+
+		const result = await translate_json({ obj: notes.map(to_indonesian), ai })
+
+		expect(result).toEqual(notes.map(note => `ID: ${note}`))
+	})
+
+	test('asks again for the strings the model left out', async () => {
+		const ai = fake_translator({ respond: requests => requests.slice(0, 1).map(translate) })
+		vi.mocked(ai.generate_json).mockImplementationOnce(async ({ contents }) => (contents as Request[]).slice(0, 1).map(translate))
+		vi.mocked(ai.generate_json).mockImplementationOnce(async ({ contents }) => (contents as Request[]).map(translate))
+
+		const result = await translate_json({ obj: notes.map(to_indonesian), ai })
+
+		expect(result).toEqual(notes.map(note => `ID: ${note}`))
+		expect(vi.mocked(ai.generate_json).mock.calls[1][0].contents).toEqual([
+			expect.objectContaining({ id: 1, text: notes[1] }),
+			expect.objectContaining({ id: 2, text: notes[2] }),
+		])
+	})
+
+	test('never leaves a placeholder in the output when the model keeps returning fewer translations than it was sent', async () => {
+		const ai = fake_translator({ respond: requests => requests.slice(0, 1).map(translate) })
+
+		const result = await translate_json({ obj: notes.map(to_indonesian), ai })
+
+		expect(JSON.stringify(result)).not.toMatch(/\{\{\d+\}\}/)
+		expect(result).toEqual([`ID: ${notes[0]}`, `ID: ${notes[1]}`, notes[2]])
+	})
+
+	test('falls back to the source text, not a placeholder, when the translation call fails', async () => {
+		const ai = fake_ai()
+		vi.mocked(ai.generate_json).mockRejectedValue(new AiResponseError('AI Gateway request failed with status 504'))
+
+		const result = await translate_json({ obj: notes.map(to_indonesian), ai })
+
+		expect(result).toEqual(notes)
+	})
+
+	test('ignores ids the model invents', async () => {
+		const ai = fake_translator({ respond: requests => [...requests.map(translate), { id: 99, translation: 'extra' }, { id: 0, translation: 42 }] })
+
+		const result = await translate_json({ obj: notes.map(to_indonesian), ai })
+
+		expect(result).toEqual(notes.map(note => `ID: ${note}`))
+	})
+
+	test('sends the model plain text and keeps quotes and line breaks valid in the result', async () => {
+		const note = 'He said, "Follow me."\nThen he left.'
+		const ai = fake_translator({ respond: requests => requests.map(translate) })
+
+		const result = await translate_json({ obj: [to_indonesian(note)], ai })
+
+		expect(vi.mocked(ai.generate_json).mock.calls[0][0].contents).toEqual([expect.objectContaining({ text: note })])
+		expect(result).toEqual([`ID: ${note}`])
+	})
+
+	test('sends each repeated string only once', async () => {
+		const ai = fake_translator({ respond: requests => requests.map(translate) })
+
+		const result = await translate_json({ obj: [to_indonesian(notes[0]), to_indonesian(notes[0])], ai })
+
+		expect(result).toEqual([`ID: ${notes[0]}`, `ID: ${notes[0]}`])
+		expect(vi.mocked(ai.generate_json).mock.calls[0][0].contents).toHaveLength(1)
 	})
 })

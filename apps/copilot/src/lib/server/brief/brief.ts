@@ -115,15 +115,39 @@ const translation_closer = ']]'
 const placeholder_opener = '{{'
 const placeholder_closer = '}}'
 
-function mark_for_translation({ text, target_language, source_language = 'English' }: { text: string, target_language: string, source_language?: string }): string {
+export function mark_for_translation({ text, target_language, source_language = 'English' }: { text: string, target_language: string, source_language?: string }): string {
 	return source_language !== target_language ? `${translation_opener}${text}${translation_delimiter}${source_language}${translation_delimiter}${target_language}${translation_closer}` : text
 }
 
+type TranslationRequest = {
+	id: number
+	text: string
+	sourceLanguage: string
+	targetLanguage: string
+}
+
+type Translation = {
+	id: number
+	translation: string
+}
+
+const translation_schema = {
+	type: 'array',
+	items: {
+		type: 'object',
+		properties: {
+			id: { type: 'integer' },
+			translation: { type: 'string' },
+		},
+		required: ['id', 'translation'],
+	},
+}
+
 export async function translate_json<T>({ obj, ai }: { obj: T, ai: AiClient }): Promise<T> {
-	const placeholder_map = new Map<string, number>()
+	const requests: TranslationRequest[] = []
+	const ids_by_text = new Map<string, number>()
 
 	// TODO use Regex?
-	const prompt = []
 	let text = JSON.stringify(obj)
 	while (true) {
 		const opener_index = text.indexOf(translation_opener)
@@ -132,44 +156,68 @@ export async function translate_json<T>({ obj, ai }: { obj: T, ai: AiClient }): 
 		const closer_index = text.indexOf(translation_closer, opener_index + translation_opener.length)
 		const [translation_text, source_language, target_language] = text.substring(opener_index + translation_opener.length, closer_index).split(translation_delimiter)
 
-		let placeholder = placeholder_map.get(translation_text)
-		if (placeholder === undefined) {
-			placeholder = prompt.length
-			placeholder_map.set(translation_text, placeholder)
-			prompt.push({ text: translation_text, sourceLanguage: source_language, targetLanguage: target_language })
+		let id = ids_by_text.get(translation_text)
+		if (id === undefined) {
+			id = requests.length
+			ids_by_text.set(translation_text, id)
+			requests.push({ id, text: translation_text, sourceLanguage: source_language, targetLanguage: target_language })
 		}
-		text = `${text.slice(0, opener_index)}${placeholder_opener}${placeholder}${placeholder_closer}${text.slice(closer_index + translation_closer.length)}`
+		text = `${text.slice(0, opener_index)}${placeholder_opener}${id}${placeholder_closer}${text.slice(closer_index + translation_closer.length)}`
 	}
 
-	if (!prompt.length) {
+	if (!requests.length) {
 		return obj
 	}
-	
-	let substitutions: string[]
+
+	const translations = await translate_requests({ requests, ai })
+	const missing = requests.filter(request => !translations.has(request.id))
+	if (missing.length) {
+		const retried = await translate_requests({ requests: missing, ai })
+		retried.forEach((translation, id) => translations.set(id, translation))
+	}
+
+	const untranslated = requests.length - translations.size
+	if (untranslated) {
+		console.warn(`copilot: translate_json kept the source text for ${untranslated} of ${requests.length} strings the model did not translate`)
+	}
+
+	// The request text was cut from JSON, so it is still JSON-escaped; a translation is not yet.
+	const filled = text.replace(/\{\{(\d+)\}\}/g, (placeholder, id) => {
+		const request = requests[Number(id)]
+		if (!request) return placeholder
+		const translation = translations.get(request.id)
+		return translation === undefined ? request.text : JSON.stringify(translation).slice(1, -1)
+	})
+	return JSON.parse(filled)
+}
+
+// Matched by id, not position, so a dropped or reordered item can't shift the rest onto the
+// wrong notes. Anything missing is simply absent from the map.
+async function translate_requests({ requests, ai }: { requests: TranslationRequest[], ai: AiClient }): Promise<Map<number, string>> {
+	const ids_sent = new Set(requests.map(request => request.id))
+	const translations = new Map<number, string>()
+	for (const { id, translation } of await request_translations({ requests, ai })) {
+		if (ids_sent.has(id) && typeof translation === 'string') translations.set(id, translation)
+	}
+	return translations
+}
+
+async function request_translations({ requests, ai }: { requests: TranslationRequest[], ai: AiClient }): Promise<Translation[]> {
+	const contents = requests.map(request => ({ ...request, text: JSON.parse(`"${request.text}"`) as string }))
 	try {
-		substitutions = await ai.generate_json<string[]>({
-			contents: prompt,
+		const result = await ai.generate_json<Translation[]>({
+			contents,
 			system_instruction: translate_prompt,
-			schema: {
-				type: 'array',
-				items: {
-					type: 'string',
-				},
-			},
+			schema: translation_schema,
 			config: {
 				httpOptions: { headers: { 'cf-aig-cache-ttl': String(ONE_WEEK_IN_SECONDS) } },
 			},
 		})
+		return Array.isArray(result) ? result : []
 	} catch (error) {
 		if (!(error instanceof AiResponseError)) throw error
-		substitutions = []
+		return []
 	}
-
-	for (const [i, substitution] of substitutions.entries()) {
-		text = text.replaceAll(`${placeholder_opener}${i}${placeholder_closer}`, substitution.replaceAll('"', '\\"'))
-	}
-
-	return JSON.parse(text)
 }
 
 // main
