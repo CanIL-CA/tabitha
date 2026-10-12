@@ -7,7 +7,7 @@ import brief_main_prompt from './brief_main_prompt.md?raw'
 import { json_response_schema } from './json_response_schema'
 import type { VerseReference, CopilotBriefResult, CopilotErrorResult, CopilotBriefHeadingsResult } from '@tabitha/types'
 import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '$lib/types'
-import { CopilotError } from '../copilot_core'
+import { CopilotError, to_error_result } from '../copilot_core'
 
 // The AI Gateway's prompt-injection guardrail is off gateway-wide (see @tabitha/ai's input_guard
 // and ADR 0007), so this is a local, best-effort substitute scoped to the third-party content
@@ -32,6 +32,10 @@ const AQUIFER_STATUS_MESSAGES: Record<number, string> = {
 	429: 'Aquifer rate limit exceeded while fetching the TNN notes. Please try again shortly.',
 }
 
+// A bad key (401, 403, 406) fails every attempt. A 429 needs longer than a retry's wait but
+// does clear, and 5xx responses are transient, so those stay retryable.
+const AQUIFER_UNRETRYABLE_STATUSES = new Set([401, 403, 406])
+
 async function fetch_aquifer(path: string): Promise<Response> {
 	const url = `https://api.aquifer.bible${path}`
 	const response = await fetch(url, { headers: { 'api-key': env.API_KEY_AQUIFER } })
@@ -41,7 +45,7 @@ async function fetch_aquifer(path: string): Promise<Response> {
 	if (response.ok) return response
 
 	console.error(`HTTP error: received response of status ${response.status} (${response.statusText}) from ${url}`)
-	throw new CopilotError(AQUIFER_STATUS_MESSAGES[response.status] ?? `Error fetching the TNN notes from Aquifer (HTTP ${response.status}).`)
+	throw new CopilotError(AQUIFER_STATUS_MESSAGES[response.status] ?? `Error fetching the TNN notes from Aquifer (HTTP ${response.status}).`, { retryable: !AQUIFER_UNRETRYABLE_STATUSES.has(response.status) })
 }
 
 async function get_aquifer_content_ids(verse: VerseReference): Promise<number[]> {
@@ -82,7 +86,7 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 	})
 	if (safety_issue) {
 		console.warn(`copilot: brief rejected Aquifer TNN content for content ID ${contentId} (${tnn_text.length} characters): ${safety_issue}`)
-		throw new CopilotError(safety_issue)
+		throw new CopilotError(safety_issue, { retryable: false })
 	}
 
 	const prompt = {
@@ -259,11 +263,7 @@ export async function create_brief_for_verse({ input, ai, on_step }: BriefOption
 	} catch (error) {
 		const ref_display = `${input.verse.book} ${input.verse.chapter}:${input.verse.verse}`
 		console.error(`Error for ${ref_display}: ${error instanceof Error ? error.message : error}`)
-		return {
-			type: 'error',
-			verse: input.verse,
-			error: `${error instanceof Error ? error.message : 'Unexpected error generating brief.'}`,
-		}
+		return to_error_result({ verse: input.verse, error, fallback_message: 'Unexpected error generating brief.' })
 	}
 }
 

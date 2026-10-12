@@ -6,7 +6,7 @@
 	import CopilotResultDisplay from '$lib/CopilotResultDisplay.svelte'
 	import Icon from '@iconify/svelte'
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity'
-	import { AUTO_RETRY_LIMIT, auto_retry, type AutoRetryStatus } from '$lib/auto_retry'
+	import { AUTO_RETRY_LIMIT, auto_retry, needs_auto_retry, type AutoRetryStatus } from '$lib/auto_retry'
 	import { convert_to_usfm_document } from '$lib/usfm'
 	import { default_settings, lwc_info, mtt_level_info } from '$lib/lookups'
 	import { fetch_batch_cautions, fetch_book_cautions, fetch_brief_headings, fetch_chapters_for_book, fetch_notes, fetch_verses_for_chapter } from '$lib/fetches'
@@ -92,7 +92,7 @@
 			const first_index = fetched_results.length
 			fetched_results.push(...next_results)
 			next_results.forEach((result, offset) => {
-				if (result.type === 'error') start_auto_retry(first_index + offset)
+				if (needs_auto_retry(result)) start_auto_retry(first_index + offset)
 			})
 		}
 		try {
@@ -123,7 +123,7 @@
 				if (status) auto_retries.set(index, status)
 				else auto_retries.delete(index)
 			},
-			should_stop: () => run !== batch_run || retry_set.has(index) || fetched_results[index]?.type !== 'error',
+			should_stop: () => run !== batch_run || retry_set.has(index) || !needs_auto_retry(fetched_results[index]),
 		})
 	}
 

@@ -1,7 +1,14 @@
+import type { CopilotResult } from '@tabitha/types'
+
 export const AUTO_RETRY_LIMIT = 3
 // Long enough for a brief provider slowdown or rate limit to clear, short enough that a user
 // watching the batch isn't left waiting on a verse that would succeed right away.
 export const AUTO_RETRY_DELAY_SECONDS = 30
+
+// An error marked unretryable (missing text, a safety rejection) fails the same way every time.
+export function needs_auto_retry(result: CopilotResult | undefined): boolean {
+	return result?.type === 'error' && result.retryable !== false
+}
 
 export type AutoRetryStatus =
 	| { phase: 'waiting', retry: number, seconds_left: number }

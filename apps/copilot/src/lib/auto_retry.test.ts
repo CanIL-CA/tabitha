@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
-import { AUTO_RETRY_DELAY_SECONDS, AUTO_RETRY_LIMIT, auto_retry, type AutoRetryStatus } from './auto_retry'
+import { AUTO_RETRY_DELAY_SECONDS, AUTO_RETRY_LIMIT, auto_retry, needs_auto_retry, type AutoRetryStatus } from './auto_retry'
+import type { CopilotResult } from '@tabitha/types'
 
 type RunOptions = {
 	attempt?: () => Promise<boolean>
@@ -75,5 +76,25 @@ describe('auto_retry', () => {
 
 		expect(attempt).toHaveBeenCalledTimes(1)
 		expect(statuses.at(-1)).toBeNull()
+	})
+})
+
+describe('needs_auto_retry', () => {
+	const verse = { book: 'Luke', chapter: 11, verse: 1 }
+
+	test.each([
+		{ name: 'an error nobody classified', result: { type: 'error', verse, error: 'AI Gateway request failed with status 504' } },
+		{ name: 'an error marked as worth retrying', result: { type: 'error', verse, error: 'x', retryable: undefined } },
+	] satisfies { name: string, result: CopilotResult }[])('retries $name', ({ result }) => {
+		expect(needs_auto_retry(result)).toBe(true)
+	})
+
+	test('does not retry an error that would fail the same way again', () => {
+		expect(needs_auto_retry({ type: 'error', verse, error: 'There is no English text saved yet for this verse.', retryable: false })).toBe(false)
+	})
+
+	test('does not retry a verse that has a result, or no result at all', () => {
+		expect(needs_auto_retry({ type: 'discern', verse, english_text: 'x', notes: [] })).toBe(false)
+		expect(needs_auto_retry(undefined)).toBe(false)
 	})
 })

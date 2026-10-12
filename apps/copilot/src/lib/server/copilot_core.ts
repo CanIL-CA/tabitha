@@ -15,13 +15,13 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 	const encoding = await fetch_encoding(reference)
 	if (!encoding) {
 		console.error(`Error fetching encoding for ${ref_display}`)
-		return error_result(`Verse reference ${ref_display} does not exist.`)
+		return error_result({ error: `Verse reference ${ref_display} does not exist.`, retryable: false })
 	}
 
 	const english = await fetch_target_text({ reference, project: 'English', preferred_audience: default_target_audience['English'] })
 	if (!english) {
 		console.error(`Error fetching english text for ${ref_display}`)
-		return error_result('There is no English text saved yet for this verse.')
+		return error_result({ error: 'There is no English text saved yet for this verse.', retryable: false })
 	}
 	const english_text = english.ideal || english.text
 
@@ -31,7 +31,7 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 
 	if (!lwc_text_result) {
 		console.error(`Error fetching ${settings.lwc} text for ${ref_display}`)
-		return error_result(`There is no ${settings.lwc} text saved yet for this verse.`)
+		return error_result({ error: `There is no ${settings.lwc} text saved yet for this verse.`, retryable: false })
 	}
 	const lwc_text = lwc_text_result.ideal || lwc_text_result.text
 
@@ -72,19 +72,32 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 
 	} catch (error) {
 		console.error(`Error for ${ref_display}: ${error instanceof Error ? error.message : error}`)
-		return error_result(`${error instanceof Error ? error.message : 'Unexpected error fetching notes'}`)
+		return to_error_result({ verse: reference, error, fallback_message: 'Unexpected error fetching notes' })
 	}
-	
-	function error_result(error: string): CopilotErrorResult {
-		return { type: 'error', verse: reference, error }
+
+	function error_result({ error, retryable }: { error: string, retryable: false }): CopilotErrorResult {
+		return { type: 'error', verse: reference, error, retryable }
 	}
 }
 
+type CopilotErrorOptions = ErrorOptions & {
+	// Set to false for a failure that repeats on every attempt. Anything else is worth retrying.
+	retryable?: boolean
+}
+
 export class CopilotError extends Error {
-	constructor(message: string, options?: ErrorOptions) {
+	readonly retryable: boolean
+
+	constructor(message: string, { retryable = true, ...options }: CopilotErrorOptions = {}) {
 		super(message, options)
 		this.name = 'CopilotError'
+		this.retryable = retryable
 	}
+}
+
+export function to_error_result({ verse, error, fallback_message }: { verse: VerseReference, error: unknown, fallback_message: string }): CopilotErrorResult {
+	const result: CopilotErrorResult = { type: 'error', verse, error: error instanceof Error ? error.message : fallback_message }
+	return error instanceof CopilotError && !error.retryable ? { ...result, retryable: false } : result
 }
 
 function preprocess_encoding(encoding: SourceSimpleJsonResult): string {

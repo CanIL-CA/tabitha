@@ -30,6 +30,9 @@ export type CopilotErrorResult = {
 	type: 'error'
 	verse: VerseReference
 	error: string
+	// False when trying again would fail the same way (missing text, a safety rejection, bad
+	// credentials). Absent means worth retrying, which is also what a failure nobody classified is.
+	retryable?: false
 }
 
 export type CopilotDiscernResult = {

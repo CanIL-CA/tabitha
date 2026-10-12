@@ -95,16 +95,17 @@ describe('create_brief_for_verse', () => {
 	})
 
 	test.each([
-		{ status: 401, error: 'Authorization error fetching the TNN notes from Aquifer.' },
-		{ status: 406, error: 'Aquifer rejected the request for TNN notes (missing API key or rate limit exceeded).' },
+		{ status: 401, error: 'Authorization error fetching the TNN notes from Aquifer.', retryable: false },
+		{ status: 403, error: 'Authorization error fetching the TNN notes from Aquifer.', retryable: false },
+		{ status: 406, error: 'Aquifer rejected the request for TNN notes (missing API key or rate limit exceeded).', retryable: false },
 		{ status: 429, error: 'Aquifer rate limit exceeded while fetching the TNN notes. Please try again shortly.' },
 		{ status: 500, error: 'Error fetching the TNN notes from Aquifer (HTTP 500).' },
-	])('an Aquifer HTTP $status reports a specific error', async ({ status, error }) => {
+	])('an Aquifer HTTP $status reports a specific error', async ({ status, error, retryable }) => {
 		fetch_mock.mockResolvedValueOnce(new Response(null, { status }))
 
 		const result = await create_brief_for_verse({ input, ai: fake_ai() })
 
-		expect(result).toEqual({ type: 'error', verse, error })
+		expect(result).toEqual({ type: 'error', verse, error, ...retryable === false && { retryable } })
 	})
 
 	test('briefs a verse whose Aquifer notes are as long as a real book introduction', async () => {
@@ -129,7 +130,7 @@ describe('create_brief_for_verse', () => {
 
 		const result = await create_brief_for_verse({ input, ai: fake_ai() })
 
-		expect(result).toEqual({ type: 'error', verse, error: 'The Aquifer translator notes for this verse are too long to process.' })
+		expect(result).toEqual({ type: 'error', verse, error: 'The Aquifer translator notes for this verse are too long to process.', retryable: false })
 	})
 
 	test('reports Aquifer notes that look like injected instructions as a safety issue', async () => {
@@ -139,7 +140,7 @@ describe('create_brief_for_verse', () => {
 
 		const result = await create_brief_for_verse({ input, ai: fake_ai() })
 
-		expect(result).toEqual({ type: 'error', verse, error: 'Potential safety issue found in the TNN notes.' })
+		expect(result).toEqual({ type: 'error', verse, error: 'Potential safety issue found in the TNN notes.', retryable: false })
 	})
 
 	test('an unreachable Aquifer reports a connection error', async () => {
@@ -148,6 +149,18 @@ describe('create_brief_for_verse', () => {
 		const result = await create_brief_for_verse({ input, ai: fake_ai() })
 
 		expect(result).toEqual({ type: 'error', verse, error: 'Could not reach Aquifer to fetch the TNN notes.' })
+	})
+
+	test('an AI failure while incorporating the notes stays retryable', async () => {
+		fetch_mock
+			.mockResolvedValueOnce(Response.json({ items: [{ id: 1 }] }))
+			.mockResolvedValueOnce(new Response('Theophilus was the recipient of the book.'))
+		const ai = fake_ai()
+		vi.mocked(ai.generate_json).mockRejectedValueOnce(new AiResponseError('AI Gateway request failed with status 504'))
+
+		const result = await create_brief_for_verse({ input, ai })
+
+		expect(result).toEqual({ type: 'error', verse, error: 'Error incorporating TNN-based notes: AI Gateway request failed with status 504' })
 	})
 })
 
