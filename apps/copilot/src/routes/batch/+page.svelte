@@ -5,7 +5,8 @@
 	import Dialog from '$lib/Dialog.svelte'
 	import CopilotResultDisplay from '$lib/CopilotResultDisplay.svelte'
 	import Icon from '@iconify/svelte'
-	import { SvelteSet } from 'svelte/reactivity'
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+	import { AUTO_RETRY_LIMIT, auto_retry, type AutoRetryStatus } from '$lib/auto_retry'
 	import { convert_to_usfm_document } from '$lib/usfm'
 	import { default_settings, lwc_info, mtt_level_info } from '$lib/lookups'
 	import { fetch_batch_cautions, fetch_book_cautions, fetch_brief_headings, fetch_chapters_for_book, fetch_notes, fetch_verses_for_chapter } from '$lib/fetches'
@@ -47,6 +48,9 @@
 	let error_result_count = $derived(fetched_results.filter(r => r.type === 'error').length)
 
 	let retry_set = $state(new SvelteSet<number>())
+	const auto_retries = new SvelteMap<number, AutoRetryStatus>()
+	// Bumped per batch, so a pending auto-retry from an earlier batch never writes into this one.
+	let batch_run = 0
 
 	let generating_sfm = $state(false)
 
@@ -82,7 +86,15 @@
 		fetched_results = []
 		chapters_verse_count = 0
 		error_text = ''
-		const on_progress = (next_results: CopilotResult[]) => fetched_results.push(...next_results)
+		batch_run++
+		auto_retries.clear()
+		const on_progress = (next_results: CopilotResult[]) => {
+			const first_index = fetched_results.length
+			fetched_results.push(...next_results)
+			next_results.forEach((result, offset) => {
+				if (result.type === 'error') start_auto_retry(first_index + offset)
+			})
+		}
 		try {
 			await (range_mode === 'single_chapter'
 				? fetch_batch_cautions({ reference, start_verse, end_verse, settings, on_progress })
@@ -102,7 +114,26 @@
 		}
 	}
 
-	async function retry_single_result(index: number) {
+	function start_auto_retry(index: number) {
+		const run = batch_run
+		auto_retry({
+			attempt: () => retry_single_result(index),
+			on_status: status => {
+				if (run !== batch_run) return
+				if (status) auto_retries.set(index, status)
+				else auto_retries.delete(index)
+			},
+			should_stop: () => run !== batch_run || retry_set.has(index) || fetched_results[index]?.type !== 'error',
+		})
+	}
+
+	// A manual retry takes over from a pending auto-retry, which then stops.
+	function retry_manually(index: number) {
+		auto_retries.delete(index)
+		retry_single_result(index)
+	}
+
+	async function retry_single_result(index: number): Promise<boolean> {
 		retry_set.add(index)
 
 		const verse = fetched_results[index].verse
@@ -116,6 +147,7 @@
 		} finally {
 			retry_set.delete(index)
 		}
+		return fetched_results[index].type !== 'error'
 	}
 	
 	async function download_as_sfm() {
@@ -288,12 +320,28 @@
 					<td class="py-0">{result.verse.book} {result.verse.chapter}:{result.verse.verse}</td>
 					{#if result.type === 'error'}
 						{@const retrying = retry_set.has(i)}
-						<td class="py-0"><span class="badge badge-error">{m.status_error()}</span></td>
-						<td class="py-0">{result.error}</td>
+						{@const auto_retry_status = auto_retries.get(i)}
+						<td class="py-0">
+							{#if auto_retry_status && auto_retry_status.phase !== 'gave_up'}
+								<span class="badge badge-warning">{m.status_retrying()}</span>
+							{:else}
+								<span class="badge badge-error">{m.status_error()}</span>
+							{/if}
+						</td>
+						<td class="py-0">
+							{result.error}
+							{#if auto_retry_status?.phase === 'waiting'}
+								<div class="text-sm opacity-70">{m.auto_retry_waiting({ seconds: auto_retry_status.seconds_left, retry: auto_retry_status.retry, limit: AUTO_RETRY_LIMIT })}</div>
+							{:else if auto_retry_status?.phase === 'retrying'}
+								<div class="text-sm opacity-70">{m.auto_retry_running({ retry: auto_retry_status.retry, limit: AUTO_RETRY_LIMIT })}</div>
+							{:else if auto_retry_status?.phase === 'gave_up'}
+								<div class="text-sm text-error">{m.auto_retry_gave_up({ limit: AUTO_RETRY_LIMIT })}</div>
+							{/if}
+						</td>
 						<td class="py-0">
 							<button
 								type="button"
-								onclick={() => retry_single_result(i)}
+								onclick={() => retry_manually(i)}
 								disabled={doing_batch_operation || retrying}
 								class="btn btn-sm my-4"
 							>
