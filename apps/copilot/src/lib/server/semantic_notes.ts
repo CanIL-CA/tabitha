@@ -26,7 +26,7 @@ export async function get_semantic_notes({ llm_input, ai }: { llm_input: Copilot
 	const safety_issue = check_verse_text_safety(llm_input.english_text) ?? (llm_input.lwc_text ? check_verse_text_safety(llm_input.lwc_text) : undefined)
 	if (safety_issue) {
 		console.warn(`copilot: semantic-notes rejected verse text: ${safety_issue}`)
-		throw new CopilotError('Potential safety issue found in the English/LWC text.')
+		throw new CopilotError({ message: 'Potential safety issue found in the English/LWC text.', retryable: false })
 	}
 
 	const system_instruction = system_instruction_template.replace('{{TRANSLATE_OR_CITE_INSTRUCTION}}', () => translate_tbta_text
@@ -91,7 +91,7 @@ export async function get_semantic_notes({ llm_input, ai }: { llm_input: Copilot
 		})
 	} catch (error) {
 		const message = error instanceof Error ? error.message : `${error}`
-		throw new CopilotError(`Error generating semantic notes: ${message}`)
+		throw new CopilotError({ message: `Error generating semantic notes: ${message}` })
 	}
 
 	return {

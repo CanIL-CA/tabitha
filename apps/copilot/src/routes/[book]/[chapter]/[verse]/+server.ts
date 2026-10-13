@@ -4,6 +4,7 @@ import { get_verse_result } from '#lib/server/verse_result.js'
 import { default_settings } from '#lib/lookups.js'
 import { translate_json } from '#lib/server/brief/brief.js'
 import { to_copilot_run_event } from '#lib/server/usage.js'
+import { to_error_result } from '#lib/server/copilot_core.js'
 import type { RequestHandler } from './$types'
 import type { CopilotResult, VerseReference } from '@tabitha/types'
 import type { CopilotSettings, CopilotStep, CopilotStreamLine } from '#lib/types.js'
@@ -43,7 +44,7 @@ export async function GET({ params: { book, chapter, verse }, url: { searchParam
 				}
 			} catch (err) {
 				console.error(`Error generating notes for ${book} ${chapter}:${verse}:`, err)
-				result = { type: 'error', verse: reference, error: err instanceof Error ? err.message : 'Unexpected error occurred.' }
+				result = to_error_result({ verse: reference, error: err, fallback_message: 'Unexpected error occurred.' })
 				send(result)
 			} finally {
 				record_usage_event({

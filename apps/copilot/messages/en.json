@@ -53,6 +53,10 @@
 	"status_error": "Error",
 	"status_ready": "Ready",
 	"retry": "Retry",
+	"status_retrying": "Retrying",
+	"auto_retry_waiting": "Retrying in {seconds}s (retry {retry} of {limit})...",
+	"auto_retry_running": "Retrying (retry {retry} of {limit})...",
+	"auto_retry_gave_up": "Failed after {limit} retries",
 	"discern_summary": "{count} notes",
 	"brief_summary": "{semantic} semantic notes, {tnn} TNN notes, {other} other",
 
