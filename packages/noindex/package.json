@@ -16,7 +16,7 @@
     "test:unit": "vitest run src"
   },
   "devDependencies": {
-    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/kit": "^3.0.1",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
     "eslint": "^10.12.0",

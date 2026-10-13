@@ -31,7 +31,7 @@
     "clean:powerwash": "(bun run clean:svelte & bun run clean:deps) && bun install"
   },
   "dependencies": {
-    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/kit": "^3.0.1",
     "@tabitha/ai": "workspace:*",
     "@tabitha/api-client": "workspace:*",
     "@tabitha/cors": "workspace:*",
