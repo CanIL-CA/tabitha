@@ -17,7 +17,8 @@ function create_user_table(db: Database) {
 
 	db.run(`
 		CREATE TABLE IF NOT EXISTS Users (
-			email		TEXT PRIMARY KEY,
+			id			INTEGER PRIMARY KEY,
+			email		TEXT,
 			name		TEXT
 		)
 	`)
@@ -46,7 +47,6 @@ function create_permissions_table(db: Database) {
 		[2, 'ontology', 'ADD_CONCEPT'],
 		[3, 'ontology', 'UPDATE_CONCEPT'],
 		[4, 'ontology', 'DELETE_CONCEPT'],
-		[5, 'ontology', 'PUBLISH'],
 	])
 }
 
@@ -55,7 +55,7 @@ function create_user_permissions_table(db: Database) {
 	db.run('DROP TABLE IF EXISTS User_Permissions')
 	db.run(`
 		CREATE TABLE IF NOT EXISTS User_Permissions (
-			user_email	TEXT,
+			user_id			INTEGER,
 			permission_id	INTEGER
 		)
 	`)
