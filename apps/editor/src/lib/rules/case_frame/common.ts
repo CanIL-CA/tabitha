@@ -84,7 +84,7 @@ export function parse_case_frame_rule({ sense, role_tag, rule_json }: { sense: W
 
 	return [{
 		role_tag,
-		trigger_rule: { ...parse_transform_rule({ rule_json, index: 0 }), id: `case_frame:${sense}:${role_tag}` },
+		trigger_rule: { ...parse_transform_rule(rule_json, 0), id: `case_frame:${sense}:${role_tag}` },
 		relative_context_index: rule_json['argument_context_index'] ?? -1,
 		missing_message: missing_message.replaceAll('{role}', role_tag),
 		extra_message: extra_message.replaceAll('{role}', role_tag),

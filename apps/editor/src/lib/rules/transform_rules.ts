@@ -686,10 +686,7 @@ const transform_rules_json: TransformRuleJson[] = [
 	},
 ]
 
-export function parse_transform_rule({ rule_json, index }: {
-	rule_json: TransformRuleJson
-	index: number
-}): TokenRule {
+export function parse_transform_rule(rule_json: TransformRuleJson, index: number): TokenRule {
 	const trigger = create_token_filter(rule_json['trigger'])
 	const context = create_context_filter(rule_json['context'])
 	const transform = 'transform' in rule_json ? create_token_transform(rule_json['transform']) : null
@@ -785,5 +782,5 @@ function tag_nested_clauses({ clause_token, tag_to_set, rule_id }: { clause_toke
 	tag_clause_tokens(clause_token.sub_tokens)
 }
 
-export const TRANSFORM_RULES = transform_rules_json.map((rule_json, index) => parse_transform_rule({ rule_json, index }))
+export const TRANSFORM_RULES = transform_rules_json.map(parse_transform_rule)
 	.concat(builtin_transform_rules.map(from_built_in_rule('transform')))

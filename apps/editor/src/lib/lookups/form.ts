@@ -14,7 +14,7 @@ export async function check_forms(lookup_token: Token) {
 
 	const lookup_results = (await targets_client.lookup_forms({ word: term, project: 'English' }))
 		.filter(result => !result.stem.includes(' '))
-		.reduce<LookupResult[]>((transformed_results, form_result) => transform_results({ transformed_results, form_result }), [])
+		.reduce<LookupResult[]>(transform_results, [])
 
 	add_missing_forms({ results: lookup_results, term })
 
@@ -39,10 +39,7 @@ export async function check_forms(lookup_token: Token) {
 	 * with the same stem and part-of-speech (eg. Judah), simply take the id of the first one
 	 * and ignore the others. This is what the Analyzer does.
 	 */
-	function transform_results({ transformed_results, form_result }: {
-		transformed_results: LookupResult[]
-		form_result: TargetFormResult
-	}): LookupResult[] {
+	function transform_results(transformed_results: LookupResult[], form_result: TargetFormResult): LookupResult[] {
 		const existing_result = transformed_results.find(LOOKUP_FILTERS.MATCHES_LOOKUP(form_result))
 
 		if (!existing_result) {

@@ -8,6 +8,7 @@ import ts from 'typescript-eslint'
 import { includeIgnoreFile } from '@eslint/compat'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { one_parameter_rule } from './one_parameter_rule.js'
 
 const root_gitignore_path = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.gitignore')
 
@@ -27,6 +28,7 @@ export const baseConfig = [
 		plugins: {
 			'@stylistic': stylistic,
 			'import-x': import_x,
+			'tabitha': { rules: { 'one-parameter': one_parameter_rule } },
 		},
 
 		rules: {
@@ -67,17 +69,10 @@ export const baseConfig = [
 			// Every unused parameter, not only those after the last one used. A leading `_` marks one an API's
 			// callback shape makes us take but we don't need, like `Array.from`'s value before its index.
 			'@typescript-eslint/no-unused-vars': ['error', { args: 'all', argsIgnorePattern: '^_' }],
-			// A function takes one parameter, and several values go in as one destructured object, so calls
-			// name what they pass. Only named functions and class methods are held to it: an inline callback
-			// or object method has the shape its API gives it (a sort comparator, `reduce`, a Vite hook).
-			'no-restricted-syntax': [
-				'error',
-				...[
-					'FunctionDeclaration[params.length>1]',
-					'VariableDeclarator > :matches(ArrowFunctionExpression, FunctionExpression)[params.length>1]',
-					'MethodDefinition > FunctionExpression[params.length>1]',
-				].map(selector => ({ selector, message: 'Take one object parameter, destructured, rather than several.' })),
-			],
+			// A function takes one parameter, and several values go in as one destructured object. Inline
+			// callbacks, object methods, and named functions passed straight to a call as its callback are
+			// exempt: they have the shape their API gives them (see one_parameter_rule.js).
+			'tabitha/one-parameter': 'error',
 		},
 	},
 

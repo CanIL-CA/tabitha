@@ -850,10 +850,7 @@ const builtin_checker_rules: BuiltInRule[] = [
 	},
 ]
 
-export function parse_checker_rule({ rule_json, index }: {
-	rule_json: CheckerRuleJson
-	index: number
-}): TokenRule {
+export function parse_checker_rule(rule_json: CheckerRuleJson, index: number): TokenRule {
 	const trigger = create_token_filter(rule_json['trigger'])
 	const context = create_context_filter(rule_json['context'])
 
@@ -917,7 +914,7 @@ export function parse_checker_rule({ rule_json, index }: {
 	}
 }
 
-export const CHECKER_RULES = builtin_checker_rules.map(from_built_in_rule('checker')).concat(checker_rules_json.map((rule_json, index) => parse_checker_rule({ rule_json, index })))
+export const CHECKER_RULES = builtin_checker_rules.map(from_built_in_rule('checker')).concat(checker_rules_json.map(parse_checker_rule))
 
 function check_token_level(level_check: LookupFilter): TokenFilter {
 	return token => {

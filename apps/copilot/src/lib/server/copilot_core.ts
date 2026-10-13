@@ -120,17 +120,14 @@ function preprocess_encoding(encoding: SourceSimpleJsonResult): string {
 
 function add_node_ids(encoding: SourceSimpleJsonEntity[]): CopilotEncodingEntity[] {
 	const stack: IndexStack = []
-	function add_trace({ node, index }: {
-		node: SourceSimpleJsonEntity
-		index: number
-	}): CopilotEncodingEntity {
+	function add_trace(node: SourceSimpleJsonEntity, index: number): CopilotEncodingEntity {
 		stack.push(index)
 		const node_id = stack.join('.')
 		if (node.children) {
-			node.children = node.children.map((child, child_index) => add_trace({ node: child, index: child_index }))
+			node.children = node.children.map(add_trace)
 		}
 		stack.pop()
 		return { ...node, node_id }
 	}
-	return encoding.map((node, index) => add_trace({ node, index }))
+	return encoding.map(add_trace)
 }
