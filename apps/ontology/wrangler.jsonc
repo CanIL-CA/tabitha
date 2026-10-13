@@ -50,7 +50,7 @@
 			"binding": "DB_Auth",
 			"database_name": "Auth",
 			"database_id": "c547b234-05fd-4923-ab0e-689d993894ad",
-			// Better Auth's tables. db:load applies these locally; production gets
+			// Owns DB_Auth's whole schema; db:load builds the local database from these. Production gets
 			// `wrangler d1 migrations apply DB_Auth --remote` before the code that needs them merges.
 			"migrations_dir": "migrations/auth"
 		}

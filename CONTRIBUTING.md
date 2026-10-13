@@ -175,7 +175,7 @@ dev ports are not random.
 bun run db:grant your.email@example.com
 ```
 
-Grants every Ontology permission to that email in your local Auth D1 only — production is untouched. Re-run after any `bun run db:load`/`db:load:ontology`, since a fresh snapshot resets local grants too, and signs you out: local Better Auth users and sessions live in the same Auth D1.
+Grants every Ontology permission to that email in your local Auth D1 only — production is untouched. Re-run after any `bun run db:load`/`db:load:ontology`, since it rebuilds the local Auth D1, which resets local grants and signs you out: local Better Auth users and sessions live in the same Auth D1.
 
 ### 5. Local R2 Objects (e.g. Ontology's `/downloads` page)
 
@@ -198,6 +198,7 @@ All contributions should adhere to the **15 TaBiThA Development Philosophies** a
 - **The 15 Philosophies**: see [AGENTS.md](AGENTS.md) for definitions and examples of each.
 - **Indentation & Formatting**: Literal `tab` characters for all indentation; `'single'` quotes; **no trailing semicolons**.
 - **Naming**: `snake_case` for functions/methods/variables/files; `PascalCase` strictly for Svelte components and TS types.
+- **SQL**: keywords in `ALL CAPS` (`SELECT … FROM … WHERE`), in `.sql` migrations and in SQL inside `.ts`/`.js`/`.svelte` string literals alike; `bun run check:sql-case` flags lowercase ones. Generated files keep their generator's casing.
 - **Testing Standard**:
   - **Unit Tests (`*.test.ts`)**: 100% pure, fast in-memory Vitest tests without network or database dependencies.
   - **E2E Tests (`*.spec.ts`)**: Multi-service browser integration tests executed via Playwright.
@@ -410,38 +411,29 @@ The `PATCH` bumps are handled automatically through the changes tracking system.
 
 ### Making local changes to Database schemas
 
-Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). There are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
+Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). Apart from Auth (below), there are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
 
 The process for the Auth db is a bit different and described below.
 
 #### Auth
 
-Auth is a single, undated database shared by production and Previews, and `bun run migrate` never rebuilds it. Committing `create.ts` therefore doesn't change the deployed schema. The matching change has to be applied to the remote `Auth` database as its own step, timed with the deploy of the code that needs it. Teammates get the new local schema by running the below steps 2–3 themselves.
+`DB_Auth` is the one database owned by D1 migrations, in `apps/ontology/migrations/auth/` ([ADR 0021](docs/decisions/0021-better-auth-sessions-in-d1.md)), not by a snapshot. It is a single, undated database shared by production and Previews, so a schema change reaches it as its own step.
 
-The whole schema, including the seeded `Permissions` rows, lives in `tools/databases/migrations/auth/create.ts`. That script drops and recreates every table, so rebuilding from the script is the quickest path.
+To change its schema:
 
-These are the steps for making and using changes to the schema locally:
-
-1. Change the table definitions or seeded rows in `tools/databases/migrations/auth/create.ts`.
-2. Rebuild `raw/Auth.tabitha.sqlite` and dump it to its snapshot. The `grep` drops the `PRAGMA`/`BEGIN TRANSACTION`/`COMMIT` lines, as the migration orchestrator does, because `db:load` wraps the import in its own transaction. On Windows, run this in Git Bash or WSL.
-
-   ```bash
-   cd tools/databases
-   bun run migrate:auth
-   sqlite3 --escape off raw/Auth.tabitha.sqlite .dump | grep -vE '^(PRAGMA|BEGIN TRANSACTION|COMMIT)' > snapshots/Auth.tabitha.sqlite.sql
-   cd ../..
-   ```
-
-3. Load the new snapshot. It has no users, so grant your permissions again:
+1. Add the next numbered file in `apps/ontology/migrations/auth/`. Never edit a migration that has been applied, and never drop a table that holds real data: `User_Permissions` holds the real grants.
+2. Rebuild your local Auth D1 from the migrations and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
 
    ```bash
    bun run db:load:ontology
    bun run db:grant your.email@example.com
    ```
 
-The Auth db in the ontology app's .wrangler folder will not have the schema changes and you can run the server locally.
+3. Apply it to the remote database before the code that needs it merges, from `apps/ontology`:
 
-Auth is a single, undated database shared by production and Previews, and `bun run migrate` never rebuilds it. Committing `create.ts` therefore doesn't change the deployed schema. The matching change has to be applied to the remote `Auth` database as its own step, timed with the deploy of the code that needs it. Teammates get the new local schema by running steps 2–3 themselves.
+   ```bash
+   bunx wrangler d1 migrations apply DB_Auth --remote
+   ```
 
 #### Ontology/Sources/Targets
 

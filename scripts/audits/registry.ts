@@ -22,6 +22,7 @@ export const AUDITS: readonly Audit[] = [
 	{ script: 'check:package-boundaries', label: 'Relative Package Import Audit', blocking: false },
 	{ script: 'check:a11y-names', label: 'Accessible-Name Collision Audit', blocking: false },
 	{ script: 'check:noindex', label: 'Tool App noindex Audit', blocking: false },
+	{ script: 'check:sql-case', label: 'SQL Keyword Case Audit', blocking: false },
 	{ script: 'check:cross-platform', label: 'Cross-Platform DX Tooling Audit', blocking: false },
 	{ script: 'check:github-actions', label: 'GitHub Actions Token & Permissions Audit', blocking: false },
 ]

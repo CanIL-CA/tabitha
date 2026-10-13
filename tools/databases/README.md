@@ -114,14 +114,9 @@ bun run migrate:ontology \
   raw/Ontology_9494_YYYY-MM-DD.tabitha.sqlite
 ```
 
-#### Auth Initialization
+#### Auth
 
-Creates default Auth permissions and role structures. Better Auth's own tables (users, sessions, OAuth accounts) aren't created here: D1 migrations in `apps/ontology/migrations/auth/` own them ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)).
-
-```bash
-cd tools/databases
-bun run migrate:auth
-```
+The Auth database isn't part of this pipeline. Its whole schema (permission tables and Better Auth's tables) is owned by D1 migrations in `apps/ontology/migrations/auth/`, which `db:load` applies to an empty local database ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)).
 
 #### Status Update (Live D1)
 

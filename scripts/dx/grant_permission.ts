@@ -9,9 +9,9 @@ import {
 	write_workerd_hash_cache,
 } from './db_load'
 
-// Only apps/ontology has a Users/Permissions model today. The snapshot pipeline never seeds real
-// user grants (those only ever exist in production) -- so every fresh local `db:load:ontology` starts
-// with nobody able to pass an is_authorized() check. This grants your own account access locally, in
+// Only apps/ontology has a Users/Permissions model today. Its D1 migrations never seed real user
+// grants (those only ever exist in production) -- so every fresh local `db:load:ontology` starts
+// with nobody holding any permission. This grants your own account access locally, in
 // the same Auth D1 file `db:load`/`vite dev` actually reads from -- resolved the same reliable way
 // db_load.ts does, rather than guessing a file name.
 async function grant_permission({ email, permissions }: {

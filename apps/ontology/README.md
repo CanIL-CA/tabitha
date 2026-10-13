@@ -49,7 +49,7 @@ Keeping the dev client working:
 
 (If `.env.local` doesn't exist yet, or is missing a var after pulling a `.env` template change, run `bun run setup:env` from the root to (re)generate it.)
 
-Sign-in is [Better Auth](https://www.better-auth.com/), with sessions stored in `DB_Auth` ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)). Its tables come from D1 migrations in `migrations/auth/`, which `bun run db:load:ontology` applies on top of the Auth snapshot. A new migration reaches production with `bunx wrangler d1 migrations apply DB_Auth --remote`, run from this folder before the code that needs it merges.
+Sign-in is [Better Auth](https://www.better-auth.com/), with sessions stored in `DB_Auth` ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)). `DB_Auth`'s whole schema (permission tables and Better Auth's) comes from D1 migrations in `migrations/auth/`; `bun run db:load:ontology` builds the local database from them. A new migration reaches production with `bunx wrangler d1 migrations apply DB_Auth --remote`, run from this folder before the code that needs it merges.
 
 ### 2. Running Locally
 

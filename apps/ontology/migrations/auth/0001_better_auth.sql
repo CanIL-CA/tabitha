@@ -1,6 +1,6 @@
 -- Better Auth 1.7.7's core schema (user, session, account, verification), as its own schema
--- generator emits it for SQLite. Better Auth reads and writes these tables; is_authorized() still
--- reads Users/Permissions/User_Permissions, which tools/databases/migrations/auth creates.
+-- generator emits it for SQLite. Better Auth reads and writes these tables; get_user_info() still
+-- reads Users/Permissions/User_Permissions (0002).
 
 create table "user" ("id" text not null primary key, "name" text not null, "email" text not null unique, "emailVerified" integer not null, "image" text, "createdAt" date not null, "updatedAt" date not null);
 
