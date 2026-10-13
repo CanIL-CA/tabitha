@@ -1,7 +1,12 @@
 import { ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET } from '$env/static/private'
 import { create_http_client, type HttpClient } from '@tabitha/api-client'
-import type { ChapterReference, PassageReference, VerseReference } from '@tabitha/types'
+import type { PassageReference, VerseReference } from '@tabitha/types'
 import { extractRawText } from 'mammoth'
+
+export type ChapterReference = {
+	book: string
+	chapter: number
+}
 
 export type ZohoVerseData = {
 	verse: VerseReference
@@ -104,7 +109,7 @@ async function find_files_for_chapter(chapter_reference: ChapterReference): Prom
 				filename: file.name,
 				book,
 				chapter: chapter_folder ? chapter : undefined,
-			})
+			}),
 		}))
 		.filter(file => file.passage?.chapter === chapter)
 }
@@ -193,10 +198,20 @@ type ZohoFilesInfo = {
 	passage?: PassageReference
 }
 
+type ZohoListResponse = {
+	data: {
+		id: string
+		attributes: {
+			name: string
+			type: 'writer' | 'folder'
+		}
+	}[]
+}
+
 async function list_folder_contents(folder_id: string): Promise<ZohoFilesInfo[]> {
 	// refer to https://www.zoho.com/workdrive/developer/docs/api/v1/list-files-folders-inside-a-folder.html
 	const params = new URLSearchParams({ 'fields[files]': 'type,name', 'page[limit]': '100' })
-	const obj = await fetch_from_zoho<any>({
+	const obj = await fetch_from_zoho<ZohoListResponse>({
 		client: zoho_workdrive_client,
 		scope: 'WorkDrive.files.READ',
 		path: `files/${folder_id}/files?${params.toString()}`,
@@ -208,7 +223,7 @@ async function list_folder_contents(folder_id: string): Promise<ZohoFilesInfo[]>
 		return []
 	}
 
-	return obj.data.map((x: any) => ({ id: x.id, name: x.attributes.name, type: x.attributes.type })) as ZohoFilesInfo[]
+	return obj.data.map<ZohoFilesInfo>(x => ({ id: x.id, name: x.attributes.name, type: x.attributes.type }))
 }
 
 async function download_file(file_id: string): Promise<string | null> {
