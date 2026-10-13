@@ -3,8 +3,16 @@
 	import ConceptDetails from '#lib/sidebar/ConceptDetails.svelte'
 	import ConceptDialog from '#lib/ConceptDialog.svelte'
 	import Icon from '@iconify/svelte'
+	import { get_edit_history } from '#lib/edit/history.svelte.js'
 
 	let { data = $bindable() }: { data: PageSourceConcept } = $props()
+
+	const edit_history = get_edit_history()
+
+	function set_concept(concept: PageSourceConcept) {
+		edit_history().record()
+		data = concept
+	}
 
 	let dialog_open = $state(false)
 	function open_dialog() {
@@ -24,5 +32,5 @@
 </ConceptDetails>
 
 {#if dialog_open}
-	<ConceptDialog bind:concept={data} onclose={close_dialog} />
+	<ConceptDialog bind:concept={() => data, set_concept} onclose={close_dialog} />
 {/if}

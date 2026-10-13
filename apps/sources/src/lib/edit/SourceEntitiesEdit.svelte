@@ -9,9 +9,10 @@
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
 	import { structure_entities } from '#lib/encoding/structured.js'
 	import { view_settings, set_settings } from '#lib/settings/settings.svelte.js'
+	import { entity_clipboard } from './clipboard.svelte'
+	import { get_edit_history } from './history.svelte'
 	import type { PageSourceEntity } from '#lib/types.js'
 	import type { EntityContextMenuData } from '#lib/edit/types.js'
-	import { entity_clipboard } from './clipboard.svelte'
 
 	type IndexRange = [number, number]
 
@@ -21,6 +22,8 @@
 		on_entity_select: (entity: PageSourceEntity | null) => void
 	}
 	let { source_entities = $bindable(), selected_entity, on_entity_select }: Props = $props()
+
+	const edit_history = get_edit_history()
 
 	let hover_range = $state<IndexRange | null>(null)
 	let select_range = $derived<IndexRange | null>(
@@ -166,6 +169,7 @@
 
 		const range_length = get_action_range_length(dragged_entity)
 		const insert_pos = get_insert_position({ drop_index: i, drag_index: dragged_entity, range_length })
+		edit_history().record()
 		const entities = source_entities.splice(dragged_entity, range_length)
 		source_entities.splice(insert_pos, 0, ...entities)
 
@@ -192,6 +196,7 @@
 	}
 
 	function delete_entity(i: number) {
+		edit_history().record()
 		source_entities.splice(i, get_action_range_length(i))
 		structure_entities(source_entities)
 		select_entity(i - 1)
