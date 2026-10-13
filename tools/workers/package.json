@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Reconciles Cloudflare Workers Builds trigger config (build/deploy commands, watch paths, build cache, variables) for every TaBiThA app",
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun --check",
     "check:lint": "eslint .",
     "check:lint:fix": "eslint . --fix",
     "test": "bun run test:unit",

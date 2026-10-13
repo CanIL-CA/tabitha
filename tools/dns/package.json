@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Provisions and reconciles DNS records and redirect rules for tabitha.bible's Cloudflare zone",
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun --check",
     "check:lint": "eslint .",
     "check:lint:fix": "eslint . --fix",
     "test": "bun run test:unit",

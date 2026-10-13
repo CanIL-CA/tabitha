@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun --check",
     "check:lint": "eslint .",
     "check:lint:fix": "eslint . --fix",
     "test": "bun run test:unit",

@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Provisions and reconciles TaBiThA's Cloudflare R2 buckets and their public-access configuration",
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun --check",
     "check:lint": "eslint .",
     "check:lint:fix": "eslint . --fix",
     "apply": "bun apply.ts",

@@ -17,7 +17,7 @@
     "./patterns": "./src/patterns/index.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun --check",
     "check:lint": "eslint .",
     "check:lint:fix": "eslint . --fix",
     "test:unit": "vitest run src"

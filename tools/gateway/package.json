@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Provisions and reconciles the shared Cloudflare AI Gateway all TaBiThA apps route AI calls through",
   "scripts": {
-    "check": "tsc --noEmit",
+    "check": "bun --check",
     "check:lint": "eslint .",
     "check:lint:fix": "eslint . --fix",
     "test": "bun run test:unit",

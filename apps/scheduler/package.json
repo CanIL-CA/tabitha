@@ -5,7 +5,7 @@
 	"type": "module",
 	"description": "Cron-only Cloudflare Worker that triggers each app's scheduled work through a service binding (ADR 0018)",
 	"scripts": {
-		"check": "tsc --noEmit",
+		"check": "bun --check",
 		"check:lint": "eslint .",
 		"check:lint:fix": "eslint . --fix",
 		"build": "wrangler deploy --dry-run --outdir dist",
