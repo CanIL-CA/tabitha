@@ -3,9 +3,10 @@
 
 	import { onMount } from 'svelte'
 	import { page } from '$app/state'
+	import { goto } from '$app/navigation'
 	import { Search } from '#lib/index.js'
 	import { Header, Footer, theme_state } from '@tabitha/ui'
-	import { signIn, signOut } from '@auth/sveltekit/client'
+	import { auth_client } from '#lib/auth_client.js'
 	import Icon from '@iconify/svelte'
 	import { registerSW } from 'virtual:pwa-register'
 	import { sync_pending } from '#lib/offline/sync.js'
@@ -20,9 +21,13 @@
 	// No-op instead of the default forced reload: the page picks up a new version on its next navigation.
 	registerSW({ immediate: true, onNeedReload: () => {} })
 
+	async function sign_in() {
+		await auth_client.signIn.social({ provider: 'google', callbackURL: page.url.href })
+	}
+
 	async function sign_out() {
-		// https://next-auth.js.org/getting-started/client#signout
-		await signOut({ callbackUrl: '/' })
+		await auth_client.signOut()
+		await goto('/', { invalidateAll: true })
 	}
 
 	onMount(() => {
@@ -65,7 +70,7 @@
 			{user.email}
 		</span>
 	{:else}
-		<button onclick={() => signIn('google')} class="btn btn-sm btn-outline btn-success">
+		<button onclick={sign_in} class="btn btn-sm btn-outline btn-success">
 			Sign in to see additional features
 		</button>
 	{/if}

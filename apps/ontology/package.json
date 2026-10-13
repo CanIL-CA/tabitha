@@ -30,7 +30,6 @@
     "clean:powerwash": "(bun run clean:svelte & bun run clean:deps) && bun install"
   },
   "dependencies": {
-    "@auth/sveltekit": "^1.11.3",
     "@sveltejs/kit": "^2.70.3",
     "@tabitha/ai": "workspace:*",
     "@tabitha/api-client": "workspace:*",
@@ -42,12 +41,12 @@
     "@tabitha/ui": "workspace:*",
     "@tabitha/usage": "workspace:*",
     "@tailwindcss/typography": "^0.5.20",
+    "better-auth": "1.7.7",
     "daisyui": "^5.7.47",
     "svelte": "^5.57.2",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@auth/core": "^0.41.3",
     "@cloudflare/workers-types": "^5.20261010.1",
     "@eslint/compat": "^2.1.1",
     "@iconify/svelte": "^5.2.2",

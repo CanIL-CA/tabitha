@@ -116,7 +116,7 @@ bun run migrate:ontology \
 
 #### Auth Initialization
 
-Creates default Auth permissions and role structures:
+Creates default Auth permissions and role structures. Better Auth's own tables (users, sessions, OAuth accounts) aren't created here: D1 migrations in `apps/ontology/migrations/auth/` own them ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)).
 
 ```bash
 cd tools/databases

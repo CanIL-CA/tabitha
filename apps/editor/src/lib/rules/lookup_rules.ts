@@ -123,7 +123,10 @@ const lookup_rules_json: LookupRuleJson[] = [
 	},
 ]
 
-export function parse_lookup_rule(rule_json: LookupRuleJson, index: number): TokenRule {
+export function parse_lookup_rule({ rule_json, index }: {
+	rule_json: LookupRuleJson
+	index: number
+}): TokenRule {
 	const trigger = create_token_filter(rule_json['trigger'])
 	const context = create_context_filter(rule_json['context'])
 
@@ -164,4 +167,4 @@ export function parse_lookup_rule(rule_json: LookupRuleJson, index: number): Tok
 	}
 }
 
-export const LOOKUP_RULES = lookup_rules_json.map(parse_lookup_rule)
+export const LOOKUP_RULES = lookup_rules_json.map((rule_json, index) => parse_lookup_rule({ rule_json, index }))

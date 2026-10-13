@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Supersedes [0015](./0015-cross-app-preview-custom-domains.md).
+Accepted. Supersedes [0015](./0015-cross-app-preview-custom-domains.md). Ontology's Preview sign-in is amended by [0021](./0021-better-auth-sessions-in-d1.md): Better Auth's OAuth proxy replaces Auth.js's, and Previews now write sign-in rows to `DB_Auth`.
 
 ## Context
 
@@ -31,7 +31,7 @@ Cloudflare launched [Worker Previews](https://developers.cloudflare.com/workers/
 - The shared stack is retired: the six `<app>-preview` Workers, their custom domains and their secrets get deleted once per-PR Previews work. That leaves 7 Workers in total, one per app.
 - A new `preview_cleanup.yml` workflow deletes a PR's Previews when the PR closes. Cloudflare also evicts the oldest Preview past 500 per Worker.
 - Every Worker moves to Workers Builds' Worker Previews model with **preview builds turned off**. Workers Builds keeps deploying production from `main` and nothing else, and CI owns PR previews. The switch removes the old "Deploy non-production branches" trigger (`wrangler versions upload`) and can't be undone. `tools/workers` now reconciles the single production trigger and reports any Worker whose preview builds are on.
-- Ontology's Google sign-in goes through production. Google rejects wildcard redirect URIs, so a `pr-<N>` host can't be registered. Auth.js's redirect proxy (`OAUTH_REDIRECT_PROXY_URL=https://ontology.tabitha.bible/auth`, removed in PR #159) is back: a Preview sends production's callback URL to Google, and production forwards the user back. Previews get the URL as a runtime var in `previews.vars`, because CI builds them after `setup:env` has written a `.env.local` that blanks the build-time value for local dev. For that to work, ontology's Previews use the production Google client ID (in `previews.vars`) and production's `AUTH_SECRET` and `GOOGLE_OAUTH_CLIENT_SECRET` (in its Previews Base secrets).
+- Ontology's Google sign-in goes through production. Google rejects wildcard redirect URIs, so a `pr-<N>` host can't be registered. Auth.js's redirect proxy (`OAUTH_REDIRECT_PROXY_URL=https://ontology.tabitha.bible/auth`, removed in PR #159) is back: a Preview sends production's callback URL to Google, and production forwards the user back. Previews get the URL as a runtime var in `previews.vars`, because CI builds them after `setup:env` has written a `.env.local` that blanks the build-time value for local dev. For that to work, ontology's Previews use the production Google client ID (in `previews.vars`) and production's `AUTH_SECRET` and `GOOGLE_OAUTH_CLIENT_SECRET` (in its Previews Base secrets). ADR 0021 moved this to Better Auth's OAuth proxy, with `OAUTH_REDIRECT_PROXY_URL` holding production's origin and `BETTER_AUTH_SECRET` replacing `AUTH_SECRET`.
 
 ## Alternatives considered
 
@@ -49,7 +49,7 @@ Cloudflare launched [Worker Previews](https://developers.cloudflare.com/workers/
 
 - ✅ Concurrent PRs no longer overwrite each other's previews, and each Preview keeps the vars from its own branch.
 - ⚠️ A preview can't show a change that spans two apps' server-side contract. Those PRs need a local run, and nothing in CI flags them yet.
-- ⚠️ Ontology Previews hold production's `AUTH_SECRET` and Google client secret, so code in an open PR can sign sessions that production would accept.
+- ⚠️ Ontology Previews hold production's `BETTER_AUTH_SECRET` (`AUTH_SECRET` before ADR 0021) and Google client secret, so code in an open PR can sign sessions that production would accept.
 - ⚠️ Previews are public by default. The same was true of the shared stack; Cloudflare Access can protect them if that becomes a concern.
 - A Previews Base secret change doesn't reach existing Previews. After rotating one, re-set it on each open PR's Previews (`wrangler preview secret put --name pr-<N>`).
 - The `previews` block has to be kept in step with each app's top-level bindings by hand. `tools/databases`' repointer updates both: production entries get the new database, and the `previews` entry gets the new database or, for `DB_Ontology`, its preview copy.

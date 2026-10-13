@@ -51,6 +51,7 @@ Ensure `"placement": { "mode": "off" }` in `wrangler.jsonc` when utilizing sessi
   `apps/<app>/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/<sha256(database_id)>.sqlite`
 - Use `bun run db:load` (`scripts/dx/db_load.ts`) to stream SQL snapshot dumps directly into Miniflare state in ~1-2 seconds.
 - Inspect local database health, tables, and row counts via `bun run db:status`.
+- **`DB_Auth` is the one D1 with native migrations** (`migrations_dir` in `apps/ontology/wrangler.jsonc`, for Better Auth's tables; [ADR 0021](../../../docs/decisions/0021-better-auth-sessions-in-d1.md)). `db_load` applies them locally after loading the snapshot; a new migration reaches production with `bunx wrangler d1 migrations apply DB_Auth --remote` before the code that needs it merges. Every other D1 is a dated snapshot that `tools/databases` replaces whole, so don't add `migrations_dir` to those.
 
 ---
 
