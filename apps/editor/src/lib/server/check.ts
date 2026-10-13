@@ -116,17 +116,14 @@ function simplify_tokens(sentences: Sentence[]): CheckerToken[] {
 	function simplify_case_frame({ usage: { possible_roles, required_roles }, result: { status, valid_arguments, extra_arguments, missing_arguments } }: CaseFrame): CheckerCaseFrameInfo {
 		return {
 			status,
-			valid_arguments: valid_arguments.reduce<Record<RoleTag, string>>((result, match) => simplify_argument_result({ result, match }), {}),
-			extra_arguments: extra_arguments.reduce<Record<RoleTag, string>>((result, match) => simplify_argument_result({ result, match }), {}),
+			valid_arguments: valid_arguments.reduce<Record<RoleTag, string>>(simplify_argument_result, {}),
+			extra_arguments: extra_arguments.reduce<Record<RoleTag, string>>(simplify_argument_result, {}),
 			missing_arguments,
 			possible_roles,
 			required_roles,
 		}
 
-		function simplify_argument_result({ result, match }: {
-			result: Record<RoleTag, string>
-			match: RoleMatchResult
-		}) {
+		function simplify_argument_result(result: Record<RoleTag, string>, match: RoleMatchResult) {
 			const { trigger_token } = match.trigger_context
 			return {
 				...result,

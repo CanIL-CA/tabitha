@@ -1,7 +1,7 @@
 import { BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$env/static/private'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/static/public'
 import { building } from '$app/environment'
-import { is_authorized } from '#lib/server/auth.js'
+import { get_user_info } from '#lib/server/auth.js'
 import { create_auth, type Auth } from '#lib/server/better_auth.js'
 import { resolve_redirect_proxy_url } from '#lib/server/redirect_proxy.js'
 import { create_cors_handle } from '@tabitha/cors'
@@ -55,7 +55,13 @@ const authn_handle: Handle = async function authn_handle({ event, resolve }) {
 	const auth = get_auth(event)
 
 	const session = await auth.api.getSession({ headers: event.request.headers })
-	event.locals.user = session?.user
+	if (session?.user.email) {
+		event.locals.user = {
+			email: session.user.email,
+			name: session.user.name,
+			...await get_user_info({ locals: event.locals, email: session.user.email }),
+		}
+	}
 
 	return svelteKitHandler({ event, resolve, auth, building })
 }
@@ -63,7 +69,7 @@ const authn_handle: Handle = async function authn_handle({ event, resolve }) {
 const authz_handle: Handle = async function authz_handle({ event, resolve }) {
 	const AUTH_ERROR_MESSAGE = 'You must be signed in and have permission to access this page'
 
-	if (event.route.id?.startsWith('/protected') && !await is_authorized({ locals: event.locals, permission: 'PROTECTED_ACCESS' })) {
+	if (event.route.id?.startsWith('/protected') && !event.locals.user?.permissions.has_protected_access) {
 		throw error(401, AUTH_ERROR_MESSAGE)
 	}
 

@@ -7,7 +7,7 @@ import brief_main_prompt from './brief_main_prompt.md?raw'
 import { json_response_schema } from './json_response_schema'
 import type { VerseReference, CopilotBriefResult, CopilotErrorResult, CopilotBriefHeadingsResult } from '@tabitha/types'
 import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '#lib/types.js'
-import { CopilotError } from '../copilot_core'
+import { CopilotError, to_error_result } from '../copilot_core'
 
 // The AI Gateway's prompt-injection guardrail is off gateway-wide (see @tabitha/ai's input_guard
 // and ADR 0007), so this is a local, best-effort substitute scoped to the third-party content
@@ -32,16 +32,20 @@ const AQUIFER_STATUS_MESSAGES: Record<number, string> = {
 	429: 'Aquifer rate limit exceeded while fetching the TNN notes. Please try again shortly.',
 }
 
+// A bad key (401, 403, 406) fails every attempt. A 429 needs longer than a retry's wait but
+// does clear, and 5xx responses are transient, so those stay retryable.
+const AQUIFER_UNRETRYABLE_STATUSES = new Set([401, 403, 406])
+
 async function fetch_aquifer(path: string): Promise<Response> {
 	const url = `https://api.aquifer.bible${path}`
 	const response = await fetch(url, { headers: { 'api-key': env.API_KEY_AQUIFER } })
 		.catch((error: unknown) => {
-			throw new CopilotError('Could not reach Aquifer to fetch the TNN notes.', { cause: error })
+			throw new CopilotError({ message: 'Could not reach Aquifer to fetch the TNN notes.', cause: error })
 		})
 	if (response.ok) return response
 
 	console.error(`HTTP error: received response of status ${response.status} (${response.statusText}) from ${url}`)
-	throw new CopilotError(AQUIFER_STATUS_MESSAGES[response.status] ?? `Error fetching the TNN notes from Aquifer (HTTP ${response.status}).`)
+	throw new CopilotError({ message: AQUIFER_STATUS_MESSAGES[response.status] ?? `Error fetching the TNN notes from Aquifer (HTTP ${response.status}).`, retryable: !AQUIFER_UNRETRYABLE_STATUSES.has(response.status) })
 }
 
 async function get_aquifer_content_ids(verse: VerseReference): Promise<number[]> {
@@ -83,7 +87,7 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 	})
 	if (safety_issue) {
 		console.warn(`copilot: brief rejected Aquifer TNN content for content ID ${contentId} (${tnn_text.length} characters): ${safety_issue}`)
-		throw new CopilotError(safety_issue)
+		throw new CopilotError({ message: safety_issue, retryable: false })
 	}
 
 	const prompt = {
@@ -106,7 +110,7 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 		})
 	} catch (error) {
 		const message = error instanceof Error ? error.message : `${error}`
-		throw new CopilotError(`Error incorporating TNN-based notes: ${message}`)
+		throw new CopilotError({ message: `Error incorporating TNN-based notes: ${message}` })
 	}
 }
 
@@ -116,15 +120,39 @@ const translation_closer = ']]'
 const placeholder_opener = '{{'
 const placeholder_closer = '}}'
 
-function mark_for_translation({ text, target_language, source_language = 'English' }: { text: string, target_language: string, source_language?: string }): string {
+export function mark_for_translation({ text, target_language, source_language = 'English' }: { text: string, target_language: string, source_language?: string }): string {
 	return source_language !== target_language ? `${translation_opener}${text}${translation_delimiter}${source_language}${translation_delimiter}${target_language}${translation_closer}` : text
 }
 
+type TranslationRequest = {
+	id: number
+	text: string
+	sourceLanguage: string
+	targetLanguage: string
+}
+
+type Translation = {
+	id: number
+	translation: string
+}
+
+const translation_schema = {
+	type: 'array',
+	items: {
+		type: 'object',
+		properties: {
+			id: { type: 'integer' },
+			translation: { type: 'string' },
+		},
+		required: ['id', 'translation'],
+	},
+}
+
 export async function translate_json<T>({ obj, ai }: { obj: T, ai: AiClient }): Promise<T> {
-	const placeholder_map = new Map<string, number>()
+	const requests: TranslationRequest[] = []
+	const ids_by_text = new Map<string, number>()
 
 	// TODO use Regex?
-	const prompt = []
 	let text = JSON.stringify(obj)
 	while (true) {
 		const opener_index = text.indexOf(translation_opener)
@@ -133,44 +161,68 @@ export async function translate_json<T>({ obj, ai }: { obj: T, ai: AiClient }): 
 		const closer_index = text.indexOf(translation_closer, opener_index + translation_opener.length)
 		const [translation_text, source_language, target_language] = text.substring(opener_index + translation_opener.length, closer_index).split(translation_delimiter)
 
-		let placeholder = placeholder_map.get(translation_text)
-		if (placeholder === undefined) {
-			placeholder = prompt.length
-			placeholder_map.set(translation_text, placeholder)
-			prompt.push({ text: translation_text, sourceLanguage: source_language, targetLanguage: target_language })
+		let id = ids_by_text.get(translation_text)
+		if (id === undefined) {
+			id = requests.length
+			ids_by_text.set(translation_text, id)
+			requests.push({ id, text: translation_text, sourceLanguage: source_language, targetLanguage: target_language })
 		}
-		text = `${text.slice(0, opener_index)}${placeholder_opener}${placeholder}${placeholder_closer}${text.slice(closer_index + translation_closer.length)}`
+		text = `${text.slice(0, opener_index)}${placeholder_opener}${id}${placeholder_closer}${text.slice(closer_index + translation_closer.length)}`
 	}
 
-	if (!prompt.length) {
+	if (!requests.length) {
 		return obj
 	}
-	
-	let substitutions: string[]
+
+	const translations = await translate_requests({ requests, ai })
+	const missing = requests.filter(request => !translations.has(request.id))
+	if (missing.length) {
+		const retried = await translate_requests({ requests: missing, ai })
+		retried.forEach((translation, id) => translations.set(id, translation))
+	}
+
+	const untranslated = requests.length - translations.size
+	if (untranslated) {
+		console.warn(`copilot: translate_json kept the source text for ${untranslated} of ${requests.length} strings the model did not translate`)
+	}
+
+	// The request text was cut from JSON, so it is still JSON-escaped; a translation is not yet.
+	const filled = text.replace(/\{\{(\d+)\}\}/g, (placeholder, id) => {
+		const request = requests[Number(id)]
+		if (!request) return placeholder
+		const translation = translations.get(request.id)
+		return translation === undefined ? request.text : JSON.stringify(translation).slice(1, -1)
+	})
+	return JSON.parse(filled)
+}
+
+// Matched by id, not position, so a dropped or reordered item can't shift the rest onto the
+// wrong notes. Anything missing is simply absent from the map.
+async function translate_requests({ requests, ai }: { requests: TranslationRequest[], ai: AiClient }): Promise<Map<number, string>> {
+	const ids_sent = new Set(requests.map(request => request.id))
+	const translations = new Map<number, string>()
+	for (const { id, translation } of await request_translations({ requests, ai })) {
+		if (ids_sent.has(id) && typeof translation === 'string') translations.set(id, translation)
+	}
+	return translations
+}
+
+async function request_translations({ requests, ai }: { requests: TranslationRequest[], ai: AiClient }): Promise<Translation[]> {
+	const contents = requests.map(request => ({ ...request, text: JSON.parse(`"${request.text}"`) as string }))
 	try {
-		substitutions = await ai.generate_json<string[]>({
-			contents: prompt,
+		const result = await ai.generate_json<Translation[]>({
+			contents,
 			system_instruction: translate_prompt,
-			schema: {
-				type: 'array',
-				items: {
-					type: 'string',
-				},
-			},
+			schema: translation_schema,
 			config: {
 				httpOptions: { headers: { 'cf-aig-cache-ttl': String(ONE_WEEK_IN_SECONDS) } },
 			},
 		})
+		return Array.isArray(result) ? result : []
 	} catch (error) {
 		if (!(error instanceof AiResponseError)) throw error
-		substitutions = []
+		return []
 	}
-
-	for (const [i, substitution] of substitutions.entries()) {
-		text = text.replaceAll(`${placeholder_opener}${i}${placeholder_closer}`, substitution.replaceAll('"', '\\"'))
-	}
-
-	return JSON.parse(text)
 }
 
 // main
@@ -212,11 +264,7 @@ export async function create_brief_for_verse({ input, ai, on_step }: BriefOption
 	} catch (error) {
 		const ref_display = `${input.verse.book} ${input.verse.chapter}:${input.verse.verse}`
 		console.error(`Error for ${ref_display}: ${error instanceof Error ? error.message : error}`)
-		return {
-			type: 'error',
-			verse: input.verse,
-			error: `${error instanceof Error ? error.message : 'Unexpected error generating brief.'}`,
-		}
+		return to_error_result({ verse: input.verse, error, fallback_message: 'Unexpected error generating brief.' })
 	}
 }
 

@@ -69,23 +69,21 @@
 			{/if}
 		</div>
 
-		{#if data?.can_add}
-			<div class="card bg-base-200 shadow-sm border border-base-300 p-5">
-				<h2 class="text-lg font-semibold mb-2 flex items-center gap-2">
-					<Icon icon="material-symbols:add" class="w-5 h-5 text-accent" />
-					Concepts
-				</h2>
-				<p class="text-sm text-base-content/70 mb-4">
-					Create and manage ontology concepts.
-				</p>
-				<div>
-					<a href="/protected/concept/create" class="btn btn-accent">
-						<Icon icon="material-symbols:add" class="w-4 h-4" />
-						Add Concept
-					</a>
-				</div>
+		<div class="card bg-base-200 shadow-sm border border-base-300 p-5">
+			<h2 class="text-lg font-semibold mb-2 flex items-center gap-2">
+				<Icon icon="material-symbols:add" class="w-5 h-5 text-accent" />
+				Concepts
+			</h2>
+			<p class="text-sm text-base-content/70 mb-4">
+				Create and manage ontology concepts.
+			</p>
+			<div>
+				<a href="/protected/concept/create" class="btn btn-accent">
+					<Icon icon="material-symbols:add" class="w-4 h-4" />
+					Add Concept
+				</a>
 			</div>
-		{/if}
+		</div>
 
 		<div class="card bg-base-200 shadow-sm border border-base-300 p-5">
 			<h2 class="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -93,7 +91,7 @@
 				Changes
 			</h2>
 			<p class="text-sm text-base-content/70 mb-4">
-				{#if data?.can_add}
+				{#if data.user?.permissions.can_add}
 					View and approve pending changes to the Ontology. Approving changes will make them available in a new downloadable Ontology Version.
 				{:else}
 					View previous and pending changes to the Ontology.

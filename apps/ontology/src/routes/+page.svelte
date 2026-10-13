@@ -32,7 +32,7 @@
 	<DisplayPreference bind:preference={display_preference} />
 </header>
 
-{#if data.can_add}
+{#if data.user?.permissions.has_protected_access}
 	<section>
 		<a href="/protected/concept/create" class="btn">
 			<Icon icon="material-symbols:add" class="w-5 h-5" />
