@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { convert_to_usfm } from './usfm'
+import { convert_to_usfm, convert_to_usfm_document } from './usfm'
 import { BRIEF_HEADINGS_ENGLISH } from './lookups'
 import type { CopilotBriefResult, CopilotDiscernResult, CopilotErrorResult, CopilotResult, VerseReference } from '@tabitha/types'
 
@@ -134,5 +134,24 @@ describe('convert_to_usfm', () => {
 			'\\iex CONFLICT — decision one',
 			'\\iex UNRESOLVED — decision two',
 		].join('\n'))
+	})
+})
+
+describe('convert_to_usfm_document', () => {
+	test('starts with the book id and marks the first chapter', () => {
+		const usfm = convert_to_usfm_document({ book_code: 'GEN', results: [error_result()], lwc: 'en' })
+		expect(usfm.split('\n').slice(0, 2)).toEqual(['\\id GEN', '\\c 1'])
+	})
+
+	test('adds a chapter marker only when the chapter changes', () => {
+		const results = [
+			error_result({ verse: { book: 'Genesis', chapter: 1, verse: 30 } }),
+			error_result({ verse: { book: 'Genesis', chapter: 1, verse: 31 } }),
+			error_result({ verse: { book: 'Genesis', chapter: 2, verse: 1 } }),
+		]
+		const chapter_markers = convert_to_usfm_document({ book_code: 'GEN', results, lwc: 'en' })
+			.split('\n')
+			.filter(line => line.startsWith('\\c '))
+		expect(chapter_markers).toEqual(['\\c 1', '\\c 2'])
 	})
 })

@@ -18,13 +18,15 @@ const GATEWAY_NAME = 'tabitha'
 // The gateway retries failed requests (retry_* in tools/gateway/config.ts), but a slow provider
 // response never fails on its own, so without this each attempt waits indefinitely. Cuts an
 // attempt whose first byte takes longer, so the gateway retries it. Healthy calls' first byte
-// arrives within about 80s at p99, and most calls during a Vertex slowdown still answer
-// within 60s, so a retry usually lands. https://developers.cloudflare.com/ai-gateway/configuration/request-handling/
-const GATEWAY_ATTEMPT_TIMEOUT_MS = 60_000
-// The gateway's final retry attempt waits however long the provider takes, and fetch has no
-// timeout of its own, so this bounds the whole call: room for two timed-out attempts plus a
-// final one, after which the caller gets a retryable error instead of hanging indefinitely.
-const REQUEST_TIMEOUT_MS = 240_000
+// arrives within about 80s at p99, and during a Vertex slowdown many calls take 60-90s yet
+// still succeed, so a shorter cutoff throws away answers that were about to arrive and restarts
+// generation from scratch. https://developers.cloudflare.com/ai-gateway/configuration/request-handling/
+const GATEWAY_ATTEMPT_TIMEOUT_MS = 120_000
+// The gateway applies the attempt timeout to every attempt, final one included, and answers 504
+// once all of them time out (3 x 120s plus backoff, about 362s). fetch has no timeout of its
+// own, so this is a backstop just past that, for a stall the gateway doesn't catch, such as
+// one mid-body.
+const REQUEST_TIMEOUT_MS = 390_000
 // Vertex AI's REST API version the gateway forwards to -- matches what @google/genai's SDK sent
 // by default (its internal VERTEX_AI_API_DEFAULT_VERSION), kept in sync now that this package
 // builds the request by hand instead of going through that SDK.

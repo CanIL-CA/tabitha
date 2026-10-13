@@ -2,6 +2,22 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
+ * Waits until SvelteKit has hydrated the page, so a click or submit lands on an attached handler
+ * instead of silently doing nothing. Replaces `networkidle` waits, which Playwright discourages.
+ *
+ * SvelteKit's client runtime sets `history.scrollRestoration` to 'manual' in `_start_router()`,
+ * right after hydrating (@sveltejs/kit 2.70.3, src/runtime/client/client.js:2656), and resets it
+ * to 'auto' on `beforeunload`. That is an undocumented implementation detail, so keep it in this
+ * one place. It also flips early when a reload restores a saved scroll position (client.js:395).
+ *
+ * @param {Object} options
+ * @param {import('@playwright/test').Page} options.page
+ */
+export async function wait_for_hydration({ page }) {
+	await page.waitForFunction(() => history.scrollRestoration === 'manual')
+}
+
+/**
  * Creates standardized Playwright E2E configuration for Tabitha applications.
  *
  * @param {Object} options

@@ -8,6 +8,7 @@ import type {
 	Reference,
 	PrimaryIdReference,
 	SecondaryIdReference,
+	SecondaryId,
 	TertiaryId,
 	SourceStatusResult,
 	PrimaryIdSourceStatusResult,
@@ -50,6 +51,15 @@ export function create_sources_client(options: SourcesClientOptions) {
 		async get_simplified_json({ ref, include_glosses } : { ref: Reference, include_glosses?: boolean }): Promise<SourceSimpleJsonResult | null> {
 			const query = include_glosses ? '?glosses=true' : ''
 			return http.get<SourceSimpleJsonResult>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}/simple-json${query}`)
+		},
+
+		/**
+		 * Retrieve the number of chapters present in a book.
+		 */
+		async get_book_chapters_count(ref: PrimaryIdReference): Promise<number | null> {
+			const entries = await http.get<SecondaryId[]>(`/${ref.type}/${ref.id_primary}`)
+			if (!entries || entries.length === 0) return null
+			return Math.max(...entries.map(e => parseInt(e.id_secondary, 10)))
 		},
 
 		/**

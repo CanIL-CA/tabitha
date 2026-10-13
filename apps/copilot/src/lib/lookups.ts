@@ -1,31 +1,28 @@
 import type { CopilotBriefSection } from '@tabitha/types/copilot'
-import type { CopilotSettings, MttLevel, CopilotMode } from '$lib/types'
+import type { CopilotSettings, MttLevel, CopilotMode, BriefRigorMode } from '$lib/types'
 
-export const polished_books = [
-	'Genesis',
-	// 'Joshua',
-	'Ruth',
-	// '1 Samuel',
-	// '2 Samuel',
-	// 'Nehemiah',
-	// 'Esther',
-	'Daniel',
-	'Jonah',
-	// 'Nahum',
-	'Matthew',
-	'Mark',
-	'Luke',
-	'John',
-	'Acts',
-	'Titus',
-	// 'Philemon',
-	'1 Peter',
-	'2 Peter',
-	'1 John',
-	'2 John',
-	'3 John',
-	'Jude',
-]
+export const book_rigors = new Map<string, BriefRigorMode>([
+	['Genesis', 'LOW'],
+	['Ruth', 'LOW'],
+	['1 Samuel', 'LOW'],
+	['2 Samuel', 'LOW'],
+	['Daniel', 'LOW'],
+	['Jonah', 'LOW'],
+	['Matthew', 'HIGH'],
+	['Mark', 'HIGH'],
+	['Luke', 'HIGH'],
+	['John', 'LOW'],
+	['Acts', 'HIGH'],
+	['Titus', 'HIGH'],
+	['1 Peter', 'LOW'],
+	['2 Peter', 'LOW'],
+	['1 John', 'HIGH'],
+	['2 John', 'LOW'],
+	['3 John', 'LOW'],
+	['Jude', 'LOW'],
+])
+
+export const polished_books = book_rigors.keys().toArray()
 
 type LwcInfo = {
 	code: string
@@ -38,47 +35,17 @@ export const lwc_info: Record<string, LwcInfo> = {
 		no_notes_text: 'No notes for this verse based on the TBTA analysis.',
 		no_tnn_text: 'No Aquifer translator notes are available for this verse.',
 	},
-	// 'Afrikaans': {
-	// 	code: 'AFR',
-	// },
-	// 'Arabic': {
-	// 	code: 'ARB',
-	// 	// no_notes_text: 'بحسب تحليل TBTA، فإن هذه الفقرة لا تقدم أي نصيحة.',
-	// },
-	// 'Cebuano': {
-	// 	code: 'CEB',
-	// 	// no_notes_text: 'Walay mga sugyot para niini nga bersikulo base sa pagtuki sa TBTA.',
-	// },
 	// 'French': {
 	// 	code: 'FRE',
 	// 	no_notes_text: "Aucune suggestion pour ce verset d'après l'analyse TBTA.",
-	// },
-	// 'Hindi': {
-	// 	code: 'HIN',
-	// 	// no_notes_text: 'TBTA एनालिसिस के आधार पर इस श्लोक के लिए कोई सुझाव नहीं है',
 	// },
 	'Indonesian': {
 		code: 'IND',
 		no_notes_text: 'Tidak ada saran untuk ayat ini berdasarkan analisis TBTA.',
 	},
-	// 'Malayalam': {
-	// 	code: 'MAL',
-	// },
-	// 'Mandarin': {
-	// 	code: 'MAN',
-	// 	// no_notes_text: '根据TBTA分析，这节经文没有建议。',
-	// },
-	// 'Portugese (Br)': {
-	// 	code: 'POR',
-	// 	// no_notes_text: 'Nenhuma sugestão para este versículo com base na análise TBTA.',
-	// },
 	// 'Russian': {
 	// 	code: 'RUS',
 	// 	no_notes_text: 'Для этого стиха нет предложений на основе анализа TBTA.',
-	// },
-	// 'Spanish': {
-	// 	code: 'SPA',
-	// 	// no_notes_text: 'No hay sugerencias para este versículo según el análisis de TBTA.',
 	// },
 	'Swahili': {
 		code: 'SWA',
@@ -88,13 +55,6 @@ export const lwc_info: Record<string, LwcInfo> = {
 		code: 'TAG',
 		no_notes_text: 'Walang mungkahi para sa talatang ito batay sa pagsusuri ng TBTA.',
 	},
-	// 'Tamil': {
-	// 	code: 'TAM',
-	// },
-	// 'Tok Pisin': {
-	// 	code: 'TKP',
-	// 	no_notes_text: 'Nogat tingting long dispela ves bihainim TBTA analisis.',
-	// },
 }
 
 export const default_target_audience: Record<string, string> = {

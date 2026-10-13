@@ -17,6 +17,10 @@ export async function fetch_target_text({ reference, project, preferred_audience
 	return targets_client.get_target_text({ ref: verse_to_source_ref(reference), project, preferred_audience })
 }
 
+export async function fetch_chapters_for_book({ book }: Pick<ChapterReference, 'book'>): Promise<number | null> {
+	return sources_client.get_book_chapters_count({ type: 'Bible', id_primary: book })
+}
+
 export async function fetch_verses_for_chapter({ book, chapter }: ChapterReference): Promise<number | null> {
 	return sources_client.get_chapter_verses_count({ type: 'Bible', id_primary: book, id_secondary: chapter.toString() })
 }
@@ -37,6 +41,26 @@ export async function fetch_batch_cautions({ reference, start_verse, end_verse, 
 		throw new Error(message)
 	}
 
+	await read_ndjson_stream<CopilotResult>({ body: response.body, on_items: on_progress })
+}
+
+export async function fetch_book_cautions({ book, start_chapter, end_chapter, settings, on_verse_count, on_progress }: {
+	book: string
+	start_chapter: number
+	end_chapter: number
+	settings: CopilotSettings
+	on_verse_count: (verse_count: number) => void
+	on_progress: (next_results: CopilotResult[]) => void
+}): Promise<void> {
+	const params = JSON.stringify(settings)
+	const response = await fetch(`/${book}?c0=${start_chapter}&c1=${end_chapter}&settings=${encodeURIComponent(params)}`)
+
+	if (!response.ok || !response.body) {
+		const message = await response.text() || 'Unexpected error occurred'
+		throw new Error(message)
+	}
+
+	on_verse_count(Number(response.headers.get('X-Verse-Count')) || 0)
 	await read_ndjson_stream<CopilotResult>({ body: response.body, on_items: on_progress })
 }
 
