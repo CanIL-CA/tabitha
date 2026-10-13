@@ -48,7 +48,7 @@
   "devDependencies": {
     "@eslint/compat": "^2.1.1",
     "@playwright/test": "^1.64.0",
-    "@sveltejs/adapter-cloudflare": "^7.2.9",
+    "@sveltejs/adapter-cloudflare": "^8.0.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/vite-config": "workspace:*",
