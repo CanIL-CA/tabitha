@@ -18,7 +18,7 @@ globalThis.fetch = async (input, init) => {
 	const url = typeof input === 'string' ? input : input.url
 	const method = init?.method ?? 'GET'
 
-	if (url.startsWith('https://gateway.ai.cloudflare.com') && url.includes(':embedContent') && method === 'POST') {
+	if (new URL(url).hostname === 'gateway.ai.cloudflare.com' && url.includes(':embedContent') && method === 'POST') {
 		// Any fixed vector of the right size -- the Vectorize index it would be queried against has
 		// no local simulation, so its values never matter here.
 		return new Response(JSON.stringify({

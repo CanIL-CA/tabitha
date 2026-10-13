@@ -2,23 +2,27 @@ import { PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$env/static/pu
 import { create_sources_client, create_targets_client } from '@tabitha/api-client'
 import { BRIEF_HEADINGS_ENGLISH } from './lookups'
 import { read_ndjson_stream } from './ndjson'
-import type { VerseReference, ChapterReference, SourceSimpleJsonResult, TargetTextResult } from '@tabitha/types'
+import type { Reference, SourceSimpleJsonResult, TargetTextData, VerseReference } from '@tabitha/types'
 import type { CopilotBriefHeadingsResult, CopilotResult } from '@tabitha/types/copilot'
-import type { CopilotSettings, CopilotStep, CopilotStreamLine } from '$lib/types'
+import type { CopilotSettings, CopilotStep, CopilotStreamLine, ChapterReference } from '$lib/types'
 
 const sources_client = create_sources_client({ base_url: PUBLIC_SOURCES_API_HOST, cache: true })
 const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST, cache: true })
 
-export async function fetch_encoding(verse_ref: VerseReference): Promise<SourceSimpleJsonResult | null> {
-	return sources_client.get_simplified_json(verse_ref, 'Bible', true)
+export async function fetch_encoding(reference: VerseReference): Promise<SourceSimpleJsonResult | null> {
+	return sources_client.get_simplified_json({ ref: verse_to_source_ref(reference), include_glosses: true })
 }
 
-export async function fetch_target_text({ verse_ref, project, preferred_audience }: { verse_ref: VerseReference, project: string, preferred_audience: string }): Promise<TargetTextResult | null> {
-	return targets_client.get_target_text(verse_ref, project, preferred_audience)
+export async function fetch_target_text({ reference, project, preferred_audience }: { reference: VerseReference, project: string, preferred_audience: string }): Promise<TargetTextData | null> {
+	return targets_client.get_target_text({ ref: verse_to_source_ref(reference), project, preferred_audience })
 }
 
-export async function fetch_verses_for_chapter(chapter_ref: ChapterReference): Promise<number | null> {
-	return sources_client.get_chapter_verses_count(chapter_ref, 'Bible')
+export async function fetch_chapters_for_book({ book }: Pick<ChapterReference, 'book'>): Promise<number | null> {
+	return sources_client.get_book_chapters_count({ type: 'Bible', id_primary: book })
+}
+
+export async function fetch_verses_for_chapter({ book, chapter }: ChapterReference): Promise<number | null> {
+	return sources_client.get_chapter_verses_count({ type: 'Bible', id_primary: book, id_secondary: chapter.toString() })
 }
 
 export async function fetch_batch_cautions({ reference, start_verse, end_verse, settings, on_progress }: {
@@ -37,6 +41,26 @@ export async function fetch_batch_cautions({ reference, start_verse, end_verse, 
 		throw new Error(message)
 	}
 
+	await read_ndjson_stream<CopilotResult>({ body: response.body, on_items: on_progress })
+}
+
+export async function fetch_book_cautions({ book, start_chapter, end_chapter, settings, on_verse_count, on_progress }: {
+	book: string
+	start_chapter: number
+	end_chapter: number
+	settings: CopilotSettings
+	on_verse_count: (verse_count: number) => void
+	on_progress: (next_results: CopilotResult[]) => void
+}): Promise<void> {
+	const params = JSON.stringify(settings)
+	const response = await fetch(`/${book}?c0=${start_chapter}&c1=${end_chapter}&settings=${encodeURIComponent(params)}`)
+
+	if (!response.ok || !response.body) {
+		const message = await response.text() || 'Unexpected error occurred'
+		throw new Error(message)
+	}
+
+	on_verse_count(Number(response.headers.get('X-Verse-Count')) || 0)
 	await read_ndjson_stream<CopilotResult>({ body: response.body, on_items: on_progress })
 }
 
@@ -79,4 +103,8 @@ export async function fetch_brief_headings(lwc: string): Promise<CopilotBriefHea
 	}
 
 	return await response.json() as CopilotBriefHeadingsResult
+}
+
+function verse_to_source_ref({ book, chapter, verse }: VerseReference): Reference {
+	return { type: 'Bible', id_primary: book, id_secondary: chapter.toString(), id_tertiary: verse.toString() }
 }

@@ -19,17 +19,14 @@ export type TargetProject = typeof TARGET_PROJECTS[number]
 // base text API
 
 export type TargetTextResult = {
+	reference: Reference
+	texts: TargetTextData[]
+}
+
+export type TargetTextData = {
 	text: string
 	audience: string
 	ideal?: string
-}
-
-//===============
-// search API
-
-export type SearchTargetTextResult = {
-	reference: Reference
-	texts: TargetTextResult[]
 }
 
 //===============

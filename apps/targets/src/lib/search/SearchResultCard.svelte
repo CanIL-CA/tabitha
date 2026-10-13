@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition'
-	import { SourceData } from '$lib'
-	import type { SearchTargetTextResult } from '@tabitha/types'
+	import SourceData from './SourceData.svelte'
+	import type { TargetTextResult } from '@tabitha/types'
 
 	type Props = {
-		result: SearchTargetTextResult
+		result: TargetTextResult
 		selected_filters: Record<string, string>
 		search_regex: RegExp
 		highlight_terms: Set<string>

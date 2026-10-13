@@ -95,3 +95,14 @@ export type EditorAnalyzeResult = {
 	source_entities: EditorAnalyzedEntity[]
 	noun_list: NounList
 }
+
+//===============
+// ai-assist
+
+export type AiAssistResult = {
+	status: 'ok' | 'error'
+	phase_1: string
+	notes: string[]
+	check: EditorCheckResult
+	message?: string
+}

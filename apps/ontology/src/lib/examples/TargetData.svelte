@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { get_target_data } from '$lib/examples'
-	import type { Reference, TargetTextResult } from '@tabitha/types'
+	import type { Reference, TargetTextData } from '@tabitha/types'
 
 	type Props = {
 		reference: Reference
@@ -10,11 +10,11 @@
 	let { reference }: Props = $props()
 
 	let loading = $state(true)
-	let target_data = $state<TargetTextResult | null>(null)
+	let target_data = $state<TargetTextData | null>(null)
 
 	onMount(async () => {
 		try {
-			target_data = await get_target_data(reference)
+			target_data = await get_target_data(reference) ?? { text: '---', audience: 'none saved yet...' }
 		} finally {
 			loading = false
 		}

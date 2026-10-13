@@ -1,23 +1,15 @@
 import { $ } from 'bun'
 import { Database } from 'bun:sqlite'
+import { join } from 'node:path'
 import { create_logger } from '../log'
+import { select_backup_database, type ListedDatabase } from './select_database'
 
 const log = create_logger('DB Backup')
 
-type DbInfo = {
-	uuid: string
-	name: string
-	created_at: string
-	version: string
-	num_tables: string
-	file_size: string
-	[key: string]: string
-}
-
 const DB_NAME = 'Ontology'
 
-// get latest Ontology via wrangler
-const db_name = await get_latest_database_name(DB_NAME)
+// the database production binds (see select_database.ts for why not the newest one)
+const db_name = await get_production_database_name()
 
 // get dump (https://developers.cloudflare.com/workers/wrangler/commands/#d1-export)
 const dump_filename = `${db_name}.tabitha.sql`
@@ -32,33 +24,17 @@ log.step(`Uploading ${db_from_dump.filename} to R2...`)
 // content-disposition filename ends in ".new" so that a downloaded backup, dropped into the legacy
 // TBTA app's directory, triggers that app's upgrade cycle (see downloads/+page.svelte for the
 // download-side half of this: the link is cross-origin, so this header controls the saved filename)
-await $`wrangler r2 object put db-backups/${backup_name} --file ${db_from_dump.filename} --content-disposition 'attachment; filename="${DB_NAME}.new"' --remote`
+await $`wrangler r2 object put db-backups/${backup_name} --file ${db_from_dump.filename} --content-disposition 'attachment; filename="${DB_NAME}.sqlite"' --remote`
 
 db_from_dump.close()
 
 log.summary()
 
-async function get_latest_database_name(name: string): Promise<string> {
-	const output = await $`wrangler d1 list`.text()
+async function get_production_database_name(): Promise<string> {
+	const config_text = await Bun.file(join(import.meta.dir, '../../../../apps/ontology/wrangler.jsonc')).text()
+	const databases = await $`wrangler d1 list --json`.quiet().json() as ListedDatabase[]
 
-	const relevant_lines = output.split('\n').filter(line => line.startsWith('│'))
-	if (relevant_lines.length < 2) {
-		throw 'No database table data found in wrangler output.'
-	}
-
-	const headers = relevant_lines[0].split('│').map(h => h.trim()).filter(Boolean)
-	const data_lines = relevant_lines.slice(1)
-
-	const databases: DbInfo[] = data_lines.map(line => {
-		const values = line.split('│').map(v => v.trim()).filter(Boolean)
-		return Object.fromEntries(headers.map((header, index) => [header, values[index]])) as DbInfo
-	})
-
-	const filtered_databases = databases.filter(db => db.name.startsWith(name))
-	const sorted_descending = filtered_databases.toSorted((a, b) => b.created_at.localeCompare(a.created_at))
-	const latest = sorted_descending[0] // ⚠️ when testing, might want to do [1] to avoid the prod db.
-
-	return latest.name
+	return select_backup_database({ config_text, binding: `DB_${DB_NAME}`, databases })
 }
 
 // create db from dump (https://bun.com/docs/api/sqlite)

@@ -44,8 +44,7 @@
         "tsconfig.json",
         "vite.config.*",
         "svelte.config.*",
-        "wrangler.jsonc",
-        ".env.preview"
+        "wrangler.jsonc"
       ],
       "outputs": [".svelte-kit/**", "dist/**", "build/**"]
     },
@@ -78,15 +77,6 @@
     },
     "check:lint:fix": {
       "cache": false
-    },
-    "check:audits": {
-      "dependsOn": [
-        "check:secrets",
-        "check:cloudflare",
-        "check:storage",
-        "check:badges",
-        "check:md"
-      ]
     },
     "check:secrets": {
       "inputs": [

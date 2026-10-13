@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import type { DbRowText } from '$lib/types'
-import type { TargetTextResult } from '@tabitha/types'
+import type { TargetTextData, TargetTextResult } from '@tabitha/types'
 
 type QueryTextResult = Pick<DbRowText, 'text' | 'audience'>
 
@@ -31,12 +31,16 @@ export async function GET({ locals: { db }, params: { project, book, chapter, ve
 		// Ideal_Text table optional or unpopulated in local D1 schema
 	}
 
-	const results = merge_ideal_text_results({ text_results, ideal_results })
+	const result: TargetTextResult = {
+		// the params have been verified as valid already
+		reference: { type: 'Bible', id_primary: book!, id_secondary: chapter!, id_tertiary: verse! },
+		texts: merge_ideal_text_results({ text_results, ideal_results }),
+	}
 
-	return json(results)
+	return json(result)
 }
 
-function merge_ideal_text_results({ text_results, ideal_results }: { text_results: QueryTextResult[], ideal_results: QueryTextResult[] }): TargetTextResult[] {
+function merge_ideal_text_results({ text_results, ideal_results }: { text_results: QueryTextResult[], ideal_results: QueryTextResult[] }): TargetTextData[] {
 	return text_results.map(result => ({
 		...result,
 		ideal: ideal_results.find(ir => ir.audience === result.audience)?.text,

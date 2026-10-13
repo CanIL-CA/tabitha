@@ -49,7 +49,7 @@ async function fetch_statuses_by_book(examples: ConceptExample[]): Promise<Conce
 			}
 
 			try {
-				const status = await sources_client.get_book_status(book)
+				const status = await sources_client.get_book_status({ type: 'Bible', id_primary: book })
 				const resolved_status = status ?? ('Ready to Translate' as SourceStatus)
 				book_status_isolate_cache.set(book, { status: resolved_status, cached_at: now })
 				return [book, resolved_status]

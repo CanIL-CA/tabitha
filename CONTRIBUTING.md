@@ -95,6 +95,7 @@ graph TD
 | **`@tabitha/ui`** | Shared Svelte 5 components (buttons, badges, concept cards, headers, layouts) styled with daisyUI 5. |
 | **`@tabitha/api-client`** | Typed HTTP client for inter-service communication across applications. |
 | **`@tabitha/cors`** | Shared CORS middleware for Cloudflare Worker request handlers. |
+| **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
 | **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows, for both Ontology's scheduled sync and the Ontology migration. |
 | **`@tabitha/ai`** | Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI. |
 | **`@tabitha/vite-config`** | Standardized configuration helpers for Vite (`vite.config.js`), SvelteKit (`svelte.config.js`), Vitest, and Playwright (`playwright.config.js`). |
@@ -211,13 +212,13 @@ TaBiThA is set up to make AI coding agents effective contributors here, whicheve
 
 ### `AGENTS.md` — the shared source of truth
 
-[**`AGENTS.md`**](AGENTS.md) is the canonical constitution for this repo: the 14 development philosophies, architecture and package boundaries, and secrets-vs-config rules. It's written for humans first (README and this guide both link to it), but its filename is also a convention several AI coding agents auto-discover and load as project context — so pointing an agent at this repo tends to get you conventions-aware output without extra prompting.
+[**`AGENTS.md`**](AGENTS.md) is the canonical constitution for this repo: the 15 development philosophies, architecture and package boundaries, and secrets-vs-config rules. It's written for humans first (README and this guide both link to it), but its filename is also a convention several AI coding agents auto-discover and load as project context — so pointing an agent at this repo tends to get you conventions-aware output without extra prompting.
 
 ### `.claude/skills/` — narrower, task-scoped guidance
 
 Some conventions are too specific to belong in AGENTS.md but still worth writing down once — e.g. `.claude/skills/typography/SKILL.md` covers when `prose` belongs on an element vs. when to escape it with `not-prose`. These are loaded contextually by Claude Code when relevant. Add a new skill here when you notice an agent (or a human) repeatedly getting a narrow, specific convention wrong.
 
-Several skills document a specific library's usage patterns and pin the version they cover in their frontmatter (e.g. `svelte: 5.x`, `tailwindcss: 4.x`). If a PR bumps one of those libraries to a new **major** version, review the matching skill alongside it — a `bun run update`/`bun run update:safe` run only advances dependencies within their existing SemVer range, so it never triggers this on its own. The `daisyui` skill is the one exception: it pins a minor (`5.7.x`) rather than a major, since it's sourced from daisyUI's own `SKILL.md`, so `bun run update:safe` checks it against the installed package automatically on every run instead of relying on someone to notice.
+Several skills document a specific library's usage patterns and pin the version they cover in their frontmatter (e.g. `svelte: 5.x`, `tailwindcss: 4.x`). If a PR bumps one of those libraries to a new **major** version, review the matching skill alongside it — a `bun run update`/`bun run update:safe` run only advances dependencies within their existing SemVer range, so it never triggers this on its own. daisyUI guidance isn't vendored here: it comes from daisyUI's official Claude Code plugin, which the tracked `.claude/settings.json` enables for everyone working in the repo, and which tracks daisyUI's own releases. Enabling a plugin there doesn't download it, so `bun run setup` installs any missing project plugin when the `claude` CLI is on your PATH, and `bun run doctor` warns when one is missing.
 
 ### `docs/decisions/` — don't relitigate settled choices
 
@@ -225,7 +226,7 @@ Architecture Decision Records capture the "why" behind non-obvious technical cho
 
 ### The safety net: automated enforcement
 
-`scripts/audits/check_philosophies.ts`, run as part of `bun run check`/`bun run precommit`, mechanically enforces several of the 14 philosophies. This applies equally to human- and AI-authored code, which is what keeps "let an agent try it" low-risk here — drift gets caught by the same gate either way.
+`scripts/audits/check_philosophies.ts`, run as part of `bun run check:audits` (locally and in CI), mechanically enforces several of the 14 philosophies. This applies equally to human- and AI-authored code, which is what keeps "let an agent try it" low-risk here — drift gets caught by the same gate either way.
 
 ### Commit messages
 
@@ -319,11 +320,11 @@ Apps under `apps/*` are picked up automatically by Bun workspaces, Turborepo, CI
 1. **`package.json`** named `@tabitha/<app>`, with at least `check`, `check:lint`, `build`, `build:ci`, `test`, and `precommit`. Workers Builds runs `bun install && bun run build` before deploying, so a missing `build` fails the deploy, and CI only builds apps that define `build:ci`.
 2. **`wrangler.jsonc`** with `compatibility_date` and `nodejs_compat` (`bun run check:cloudflare` enforces both). Secrets go through `wrangler secret put`, never `vars`.
 3. **`.env`** following the two-tier convention in `AGENTS.md`; local values go in `.env.local`, never `.dev.vars` (gitignored as a safety net only).
-4. **Hardcoded lists**: `search_dirs` in `scripts/audits/check_philosophies.ts`, `PACKAGES_TO_COVER` in `scripts/ci/report_coverage.ts`, a `dev:<app>` script in the root `package.json`, and, after its first deploy, `desired_apps` in `tools/workers/config.ts` (it needs the Worker's `worker_tag`).
+4. **Hardcoded lists**: `search_dirs` in `scripts/audits/check_philosophies.ts`, `PACKAGES_TO_COVER` in `scripts/ci/report_coverage.ts`, a `dev:<app>` script in the root `package.json`, and `desired_apps` in `tools/workers/config.ts`.
 5. **Docs**: the apps list in `AGENTS.md`, the diagram, apps table, and dev commands here, and the app sections of the root `README.md`.
-6. **Workers Builds**: after the app is merged to `main`, create it in the Cloudflare dashboard (**Workers & Pages → Create application → Import a repository**, root directory `apps/<app>`), which creates the Worker and both build triggers in one step, then add it to `tools/workers` and run `bun run apply:run`. The Workers Builds API can create triggers too, but `tools/workers` doesn't do that yet.
+6. **Workers Builds**: after the app is merged to `main`, create an empty Worker with the app's name in the Cloudflare dashboard (**Workers & Pages → Create application → Start with Hello World**), run `bun run apply:run` in `tools/workers` to connect it to the repo, then push to `main` (an empty commit works) for its first real build. See [`tools/workers/README.md`](tools/workers/README.md#adding-a-new-apps-worker).
 
-**A SvelteKit app, additionally:** a port in `packages/vite-config/ports.js`, entries in `scripts/dx/dev_multi.ts`, `scripts/dx/dev_menu.ts`, `scripts/ci/run_e2e.ts` (if it has e2e tests), and `scripts/dx/doctor.ts`, a letter in `scripts/dx/lib/brand_mark.ts` (see "How to Generate an App's Icons" below), and `deploy:preview` if it should get a cross-app preview deploy ([ADR 0015](docs/decisions/0015-cross-app-preview-custom-domains.md)).
+**A SvelteKit app, additionally:** a port in `packages/vite-config/ports.js`, entries in `scripts/dx/dev_multi.ts`, `scripts/dx/dev_menu.ts`, `scripts/ci/run_e2e.ts` (if it has e2e tests), and `scripts/dx/doctor.ts`, a letter in `scripts/dx/lib/brand_mark.ts` (see "How to Generate an App's Icons" below), and `build:preview`/`deploy:preview` plus a `previews` block in `wrangler.jsonc` if it should get per-PR previews ([ADR 0020](docs/decisions/0020-per-pr-worker-previews.md)).
 
 **A plain Worker (like `apps/scheduler`), deliberately not:** don't define `prepare`, `dev:e2e`, `test:e2e`, or `deploy:preview`, and don't add it to the port registry, `dev_multi`, `dev_menu`, `run_e2e`, `doctor`, or `brand_mark` — each assumes a SvelteKit dev server, and `deploy:preview` would enroll it in CI's preview deploy. Extend `@tabitha/tsconfig/base.json` and use `tsc --noEmit` for `check`, and something like `wrangler deploy --dry-run --outdir dist` for `build`.
 
@@ -396,6 +397,16 @@ When you make a choice where the "why" isn't obvious from the code alone — pic
 
 1. Add `docs/decisions/NNNN-short-title.md`, numbered sequentially, following the format in [`docs/decisions/README.md`](docs/decisions/README.md) (Status, Context, Decision, Alternatives considered, Consequences).
 2. Link it from any related ADRs, and from PR/commit descriptions where relevant.
+
+### Semantic Versioning for the Ontology
+
+The Ontology uses a three-part semantic version number (`MAJOR.MINOR.PATCH`), and each part increments for a different kind of change:
+
+- `MAJOR` gets bumped when there is a breaking change to the schema that requires being packaged with a new TBTA executable to read the data properly. For example, if the rule tables are removed, or a column is renamed or removed.
+- `MINOR` gets bumped when there is a non-breaking change to the schema. For example, if we add a log table to record changes made to concepts, or we add another column to Properties.
+- `PATCH` gets bumped when any concept data changes, such as adding or removing concepts, or updating properties of existing concepts, such as glosses, usage, or other metadata. Changes to things like the Examples or How-to information should not bump the patch version. When TBTA sees a new Ontology and it detects that concepts were added or removed, it will automatically adjust the target-language mappings accordingly.
+
+The `PATCH` bumps are handled automatically through the changes tracking system. A `MAJOR` or `MINOR` bump will need to be decided and updated manually through the web app.
 
 ---
 

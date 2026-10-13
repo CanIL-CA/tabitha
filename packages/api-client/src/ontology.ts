@@ -1,4 +1,4 @@
-import type { ConceptSearchFilter, OntologyResult, ConceptKey } from '@tabitha/types'
+import type { ConceptSearchFilter, OntologyResult, ConceptKey, ConceptExample } from '@tabitha/types'
 import { create_http_client, type ClientOptions } from './http'
 
 export type OntologyClient = ReturnType<typeof create_ontology_client>
@@ -50,6 +50,13 @@ export function create_ontology_client(options: OntologyClientOptions) {
 		 */
 		async get_all_for_category(part_of_speech: string): Promise<OntologyResult[]> {
 			return this.search_concepts({ q: '*', category: part_of_speech })
+		},
+
+		/**
+		 * Retrieve the source-text examples where a concept is used.
+		 */
+		async get_examples({ concept: { stem, sense, part_of_speech }, source }: { concept: ConceptKey, source: string }): Promise<ConceptExample[] | null> {
+			return await http.get<ConceptExample[]>(`/examples?concept=${stem}-${sense}&part_of_speech=${part_of_speech}&source=${source}`)
 		},
 	}
 }

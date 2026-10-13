@@ -6,8 +6,9 @@ import { Database } from 'bun:sqlite'
 import { $ } from 'bun'
 import type { AiGatewayConfig } from '@tabitha/ai'
 import { parse_wrangler_jsonc } from './db_load'
-import { parse_env_file } from './setup_env'
+import { dev_defaults, forced_local_value, parse_env_file } from './setup_env'
 import { probe_gateway_token, type GatewayTokenStatus } from './lib/ai_gateway_token'
+import { is_claude_cli_available, list_installed_plugin_ids, read_project_plugins } from './lib/claude_plugins'
 import { check_cloudflare_configs } from '../audits/check_cloudflare'
 import { sync_readme_badges } from '../audits/check_readme_badges'
 import { scan_secrets } from '../audits/check_secrets'
@@ -172,9 +173,25 @@ function get_required_secret_keys(env_template_content: string): string[] {
 	return keys
 }
 
-async function check_env_files(): Promise<DiagnosticResult[]> {
+// An .env.local written before setup_env.ts learned a key keeps working until that key matters:
+// it lacks the key entirely, or holds a value the script would now force (e.g. a blank
+// OAUTH_REDIRECT_PROXY_URL), which surfaces as a confusing failure like Google's
+// redirect_uri_mismatch. Keys under "# SECRETS" are the secrets check's job, not this one's.
+function get_stale_local_keys(env_template_content: string, env_local_content: string): string[] {
+	const local_vars = parse_env_file(env_local_content)
+	const secret_keys = new Set(get_required_secret_keys(env_template_content))
+
+	return [...parse_env_file(env_template_content).keys()].filter(key => {
+		if (secret_keys.has(key)) return false
+		const forced_value = forced_local_value(key)
+		return forced_value === undefined ? !local_vars.has(key) : local_vars.get(key) !== forced_value
+	})
+}
+
+export async function check_env_files(app_names?: string[]): Promise<DiagnosticResult[]> {
+	const apps = app_names ? APPS.filter(app => app_names.includes(app.name)) : APPS
 	const results: DiagnosticResult[] = []
-	const missing_apps = APPS
+	const missing_apps = apps
 		.filter(app => !existsSync(join(process.cwd(), 'apps', app.name, '.env.local')))
 		.map(app => app.name)
 
@@ -183,7 +200,7 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 			category: 'Environment',
 			name: 'App .env.local Files',
 			status: 'PASS',
-			message: `All ${APPS.length} applications configured with local service endpoints`,
+			message: `All ${apps.length} applications configured with local service endpoints`,
 		})
 	} else {
 		results.push({
@@ -196,7 +213,7 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 	}
 
 	const unpopulated: string[] = []
-	for (const app of APPS) {
+	for (const app of apps) {
 		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
 		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
 		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue // already flagged above
@@ -223,6 +240,66 @@ async function check_env_files(): Promise<DiagnosticResult[]> {
 			status: 'WARN',
 			message: `Missing or blank: ${unpopulated.join('; ')}`,
 			fix: 'See the "# SECRETS" section in that app\'s .env for where to obtain each value, then set it in the app\'s .env.local',
+		})
+	}
+
+	const prod_values: string[] = []
+	for (const app of apps) {
+		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
+		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
+		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue
+
+		const template_vars = parse_env_file(readFileSync(env_template_path, 'utf-8'))
+		const local_vars = parse_env_file(readFileSync(env_local_path, 'utf-8'))
+		const not_own = Object.keys(dev_defaults).filter(key => {
+			if (!template_vars.has(key)) return false
+			const local_value = local_vars.get(key) ?? ''
+			return !local_value || local_value === template_vars.get(key)
+		})
+		if (not_own.length > 0) prod_values.push(`${app.name} (${not_own.join(', ')})`)
+	}
+
+	if (prod_values.length === 0) {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Dev Identifiers',
+			status: 'PASS',
+			message: 'No .env.local reuses a production identifier',
+		})
+	} else {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Dev Identifiers',
+			status: 'WARN',
+			message: `Blank or production's value: ${prod_values.join('; ')}`,
+			fix: 'Run `bun run setup:env` to seed the dev value, or set your own in the app\'s .env.local (never the production one from .env)',
+		})
+	}
+
+	const stale: string[] = []
+	for (const app of apps) {
+		const env_template_path = join(process.cwd(), 'apps', app.name, '.env')
+		const env_local_path = join(process.cwd(), 'apps', app.name, '.env.local')
+		if (!existsSync(env_template_path) || !existsSync(env_local_path)) continue
+
+		const stale_keys = get_stale_local_keys(readFileSync(env_template_path, 'utf-8'), readFileSync(env_local_path, 'utf-8'))
+		if (stale_keys.length > 0) stale.push(`${app.name} (${stale_keys.join(', ')})`)
+	}
+
+	if (stale.length === 0) {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Freshness',
+			status: 'PASS',
+			message: 'All .env.local files match the current .env templates',
+		})
+	} else {
+		results.push({
+			category: 'Environment',
+			name: 'App .env.local Freshness',
+			status: 'WARN',
+			message: `Out of date: ${stale.join('; ')}`,
+			fix: 'Run `bun run setup:env` to regenerate them (your own values are preserved)',
 		})
 	}
 
@@ -478,6 +555,31 @@ async function check_security_and_cloudflare(): Promise<DiagnosticResult[]> {
 	return results
 }
 
+// Only for developers who use Claude Code: without the CLI there is nothing to report.
+async function check_claude_plugins(): Promise<DiagnosticResult[]> {
+	const project_plugins = read_project_plugins({ root_dir: process.cwd() })
+	if (project_plugins.length === 0 || !is_claude_cli_available()) return []
+
+	const installed_ids = await list_installed_plugin_ids()
+	if (!installed_ids) {
+		return [{ category: 'Claude Code', name: 'Project plugins', status: 'WARN', message: 'Could not list installed Claude Code plugins' }]
+	}
+
+	return project_plugins.map((plugin): DiagnosticResult => {
+		if (installed_ids.has(plugin.plugin_id)) {
+			return { category: 'Claude Code', name: plugin.plugin_id, status: 'PASS', message: 'Installed' }
+		}
+
+		return {
+			category: 'Claude Code',
+			name: plugin.plugin_id,
+			status: 'WARN',
+			message: 'Enabled in .claude/settings.json but not installed on this machine',
+			fix: `Run \`bun run setup\`, or install it from Claude Code with \`/plugin install ${plugin.plugin_id}\``,
+		}
+	})
+}
+
 export async function run_doctor(): Promise<{ all_passed: boolean; fixes: string[] }> {
 	console.log(`
 ============================================================
@@ -491,6 +593,7 @@ export async function run_doctor(): Promise<{ all_passed: boolean; fixes: string
 		...await check_ai_gateway_tokens(),
 		...await check_local_databases(),
 		...await check_security_and_cloudflare(),
+		...await check_claude_plugins(),
 	]
 
 	// Group by category

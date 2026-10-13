@@ -1,4 +1,4 @@
-import type { TargetFormResult, TargetFeatureResult, TargetTextResult, VerseReference } from '@tabitha/types'
+import type { TargetFormResult, TargetFeatureResult, TargetTextResult, Reference, TargetTextData } from '@tabitha/types'
 import { create_http_client, type ClientOptions } from './http'
 
 export type TargetsClient = ReturnType<typeof create_targets_client>
@@ -16,8 +16,9 @@ export type TargetsClientOptions = ClientOptions
  *   cache: true, // Enables transparent Edge CDN caching on GET requests
  * })
  *
- * const text = await targets.get_target_text({ book: 'GEN', chapter: 1, verse: 1 }, 'English')
- * const forms = await targets.lookup_forms('loved')
+ * const ref = { type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' }
+ * const text = await targets.get_target_text({ ref, project: 'English', preferred_audience: 'Unchurched Adults' })
+ * const forms = await targets.lookup_forms({ word: 'loved', project: 'English' })
  * ```
  */
 export function create_targets_client(options: TargetsClientOptions) {
@@ -27,32 +28,27 @@ export function create_targets_client(options: TargetsClientOptions) {
 		/**
 		 * Retrieve generated target translation text for a verse reference and audience.
 		 */
-		async get_target_text(ref: VerseReference, project = 'English', preferred_audience = 'Unchurched Adults'): Promise<TargetTextResult | null> {
-			const results = await http.get<TargetTextResult[]>(`/${project}/${ref.book}/${ref.chapter}/${ref.verse}`)
-			if (!results) return null
-			return results.find(r => r.audience === preferred_audience) ?? results.at(0) ?? null
+		async get_target_text({ ref, project, preferred_audience }: { ref: Reference, project: string, preferred_audience?: string }): Promise<TargetTextData | null> {
+			const result = await http.get<TargetTextResult>(`/${project}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}`)
+			if (!result) return null
+			return result.texts.find(r => r.audience === preferred_audience)
+					?? result.texts.find(r => r.text)
+					?? null
 		},
 
 		/**
-		 * Retrieve target grammatical features, optionally filtered by category.
+		 * Retrieve full source and lexical features for a target project.
 		 */
-		async get_features(category?: string): Promise<TargetFeatureResult | null> {
-			const path = category ? `/features/${category}` : '/features'
-			return http.get<TargetFeatureResult>(path)
+		async lookup_features({ project, category }: { project: string, category?: string }): Promise<TargetFeatureResult | null> {
+			const params = category ? `?${new URLSearchParams({ category }).toString()}` : ''
+			return http.get<TargetFeatureResult>(`/${project}/lookup/features${params}`)
 		},
 
 		/**
 		 * Search lexical forms and inflections for a word token in a target language project.
 		 */
-		async lookup_forms(word: string, project = 'English'): Promise<TargetFormResult[]> {
+		async lookup_forms({ word, project }: { word: string, project: string }): Promise<TargetFormResult[]> {
 			return await http.get<TargetFormResult[]>(`/${project}/lookup/forms?word=${encodeURIComponent(word)}`) ?? []
-		},
-
-		/**
-		 * Retrieve full source and lexical feature maps for a target project.
-		 */
-		async lookup_features(project = 'English'): Promise<TargetFeatureResult | null> {
-			return http.get<TargetFeatureResult>(`/${project}/lookup/features`)
 		},
 	}
 }

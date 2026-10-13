@@ -29,6 +29,18 @@ export async function get_pending_changes(db: D1Database): Promise<OntologyChang
 	return results.map(transform)
 }
 
+export async function get_version_applied_date({ db, version }: { db: D1Database, version: string }): Promise<Date | null> {
+	const sql = `
+		SELECT applied_date
+		FROM Changes
+		WHERE version = ?
+		LIMIT 1
+	`
+	// If the version has been set, the applied_date is guaranteed to be non-null
+	const result = await db.prepare(sql).bind(version).first<{ applied_date: string }>()
+	return result ? new Date(result.applied_date) : null
+}
+
 type GetChangeOptions = {
 	readonly db: D1Database
 	readonly id: number
@@ -290,19 +302,10 @@ async function set_version({ db, version }: { db: D1Database, version: string })
 async function get_next_version(db: D1Database): Promise<string> {
 	const current_version = await get_version(db)
 
+	// Any data update only ever bumps the patch version number.
+	// See CONTRIBUTING.md for what would bump a major and minor version.
+
 	// e.g. "3.0.9495" -> [3, 0, 9495]
-	const parts = current_version.split('.').map(Number)
-
-	if (parts[2] < 9999) {
-		parts[2]++
-	} else if (parts[1] < 9999) {
-		parts[2] = 0
-		parts[1]++
-	} else {
-		parts[2] = 0
-		parts[1] = 0
-		parts[0]++
-	}
-
-	return parts.join('.')
+	const [major, minor, patch] = current_version.split('.').map(Number)
+	return [major, minor, patch + 1].join('.')
 }

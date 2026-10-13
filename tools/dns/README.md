@@ -13,6 +13,6 @@ This tool is deliberately narrow: it never lists the whole zone and reconciles e
 
 ## What's not covered here (yet)
 
-- **Workers Builds trigger config** (build/deploy commands, watch paths, build cache, variables) is scripted in `tools/workers`, not here. Creating a new Worker's triggers in the first place is still a one-time dashboard step (Workers & Pages -> Create application -> Import a repository) -- see `tools/workers/README.md`.
+- **Workers Builds settings** (build/deploy commands, watch paths, build cache, variables, and connecting a new Worker to the repo) are scripted in `tools/workers`, not here -- see `tools/workers/README.md`.
 - **Page Rules** (e.g. the copilot beta redirect) are a separate, legacy system from the Redirect Rules this tool manages, and aren't scripted here.
 - **Domain registration** at Porkbun is untouched by this tool.

@@ -5,17 +5,19 @@
 	import CopyButton from '$lib/CopyButton.svelte'
 	import { save_state } from '$lib/save'
 	import { Tokens } from '$lib/tokens'
-	import { fetch_phase_1_suggestion } from '$lib/ai_assist'
+	import { create_editor_client } from '@tabitha/api-client'
 	import Icon from '@iconify/svelte'
-	import type { AiAssistResult } from '$lib/types'
+	import type { AiAssistResult } from '@tabitha/types'
 
 	let entered_text = $state('')
 	let generating = $state(false)
 	let result = $state<AiAssistResult | null>(null)
 
+	const editor_client = create_editor_client({ base_url: '/' })
+
 	async function generate() {
 		generating = true
-		result = await fetch_phase_1_suggestion(sanitize_input(entered_text))
+		result = await editor_client.ai_assist_generate(sanitize_input(entered_text))
 		generating = false
 	}
 

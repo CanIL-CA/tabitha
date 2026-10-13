@@ -311,8 +311,8 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const result = await client.check_text('Paul write-01')
-			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul%20write-01`)
+			const result = await client.check_text({ text: 'Paul writes-A.' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul+writes-A.`)
 			expect(result).toEqual(mock_response)
 		})
 
@@ -327,14 +327,67 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const result = await client.check_text('invalid')
+			const result = await client.check_text({ text: 'invalid' })
 			expect(result).toBeNull()
+		})
+
+		test('check_text replaces line breaks with spaces and appends auto_fix when requested', async () => {
+			const mock_fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ status: 'ok', tokens: [], back_translation: '' }),
+			})
+
+			const client = create_editor_client({
+				base_url: EDITOR_URL,
+				fetch: mock_fetch as unknown as typeof fetch,
+			})
+
+			await client.check_text({ text: 'Paul writes-A.\nJohn reads-A.', auto_fix: true })
+			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul+writes-A.+John+reads-A.&auto_fix=on`)
+		})
+
+		test('analyze_text replaces line breaks with spaces and queries /analyze', async () => {
+			const mock_response = { source_entities: [], noun_list: [] }
+			const mock_fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => mock_response,
+			})
+
+			const client = create_editor_client({
+				base_url: EDITOR_URL,
+				fetch: mock_fetch as unknown as typeof fetch,
+			})
+
+			const result = await client.analyze_text('Paul writes-A.\nJohn reads-A.')
+			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/analyze?text=Paul%20writes-A.%20John%20reads-A.`)
+			expect(result).toEqual(mock_response)
+		})
+
+		test('ai_assist_generate posts line-break-free text to /ai-assist/generate', async () => {
+			const mock_response = { status: 'ok', phase_1: 'Paul writes-A.', notes: [], check: { status: 'ok', tokens: [], back_translation: '' } }
+			const mock_fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => mock_response,
+			})
+
+			const client = create_editor_client({
+				base_url: EDITOR_URL,
+				fetch: mock_fetch as unknown as typeof fetch,
+			})
+
+			const result = await client.ai_assist_generate('Paul wrote\na letter.')
+			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/ai-assist/generate`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ text: 'Paul wrote a letter.' }),
+			})
+			expect(result).toEqual(mock_response)
 		})
 	})
 
 	describe('create_ontology_client', () => {
 		test('search_concepts formats query parameters correctly', async () => {
-			const mock_results = [{ stem: 'write-01', sense: 'A', part_of_speech: 'Verb' }]
+			const mock_results = [{ stem: 'write', sense: 'A', part_of_speech: 'Verb' }]
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => mock_results,
@@ -351,7 +404,7 @@ describe('@tabitha/api-client', () => {
 		})
 
 		test('appends version parameter when cache is enabled', async () => {
-			const mock_results = [{ stem: 'write-01', sense: 'A', part_of_speech: 'Verb' }]
+			const mock_results = [{ stem: 'write', sense: 'A', part_of_speech: 'Verb' }]
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => mock_results,
@@ -369,8 +422,8 @@ describe('@tabitha/api-client', () => {
 
 		test('get_concept returns matching concept from search', async () => {
 			const mock_results = [
-				{ stem: 'write-01', sense: 'A', part_of_speech: 'Verb' },
-				{ stem: 'write-01', sense: 'B', part_of_speech: 'Verb' },
+				{ stem: 'write', sense: 'A', part_of_speech: 'Verb' },
+				{ stem: 'write', sense: 'B', part_of_speech: 'Verb' },
 			]
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
@@ -382,13 +435,30 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const concept = await client.get_concept({ stem: 'write-01', sense: 'B', part_of_speech: 'Verb' })
+			const concept = await client.get_concept({ stem: 'write', sense: 'B', part_of_speech: 'Verb' })
 			expect(concept?.sense).toBe('B')
+		})
+
+		test('get_examples queries examples endpoint with concept, part of speech, and source', async () => {
+			const mock_examples = [{ reference: { type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' } }]
+			const mock_fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => mock_examples,
+			})
+
+			const client = create_ontology_client({
+				base_url: ONTOLOGY_URL,
+				fetch: mock_fetch as unknown as typeof fetch,
+			})
+
+			const examples = await client.get_examples({ concept: { stem: 'write', sense: 'A', part_of_speech: 'Verb' }, source: 'Bible' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/examples?concept=write-A&part_of_speech=Verb&source=Bible`)
+			expect(examples).toEqual(mock_examples)
 		})
 	})
 
 	describe('create_sources_client', () => {
-		test('get_verse_source queries correct REST path', async () => {
+		test('get_source queries correct REST path', async () => {
 			const mock_data = { id: 'GEN.1.1' }
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
@@ -400,8 +470,8 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const data = await client.get_verse_source({ book: 'GEN', chapter: 1, verse: 1 })
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/GEN/1/1`)
+			const data = await client.get_source({ type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/Genesis/1/1`)
 			expect(data).toEqual(mock_data)
 		})
 
@@ -418,8 +488,8 @@ describe('@tabitha/api-client', () => {
 				cache: true,
 			})
 
-			await client.get_verse_source({ book: 'GEN', chapter: 1, verse: 1 })
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/GEN/1/1?v=1`)
+			await client.get_source({ type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/Genesis/1/1?v=1`)
 		})
 
 		test('get_book_status queries lookup status endpoint', async () => {
@@ -434,8 +504,8 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const status = await client.get_book_status('GEN')
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/lookup/status/Bible/GEN`)
+			const status = await client.get_book_status({ type: 'Bible', id_primary: 'Genesis' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/lookup/status/Bible/Genesis`)
 			expect(status).toBe('Ready to Translate')
 		})
 
@@ -454,18 +524,39 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const statuses = await client.get_all_book_statuses()
+			const statuses = await client.get_all_book_statuses('Bible')
 			expect(mock_fetch).toHaveBeenCalledWith('http://localhost:8789/lookup/status/Bible')
 			expect(statuses).toEqual(mock_data)
+		})
+
+		test('analyze_text replaces line breaks with spaces and queries /analyze', async () => {
+			const mock_response = { source_entities: [] }
+			const mock_fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => mock_response,
+			})
+
+			const client = create_sources_client({
+				base_url: SOURCES_URL,
+				fetch: mock_fetch as unknown as typeof fetch,
+			})
+
+			const result = await client.analyze_text('Paul writes-A.\nJohn reads-A.')
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/analyze?text=Paul+writes-A.+John+reads-A.`)
+			expect(result).toEqual(mock_response)
 		})
 	})
 
 	describe('create_targets_client', () => {
 		test('get_target_text queries project verse path and selects preferred audience', async () => {
-			const mock_results = [
-				{ audience: 'Children', text: 'In the beginning...' },
-				{ audience: 'Unchurched Adults', text: 'In the beginning God created...' },
-			]
+			const ref = { type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' }
+			const mock_results = {
+				reference: ref,
+				texts: [
+					{ audience: 'Children', text: 'In the beginning...' },
+					{ audience: 'Unchurched Adults', text: 'In the beginning God created...' },
+				],
+			}
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => mock_results,
@@ -476,8 +567,8 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const result = await client.get_target_text({ book: 'GEN', chapter: 1, verse: 1 })
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/GEN/1/1`)
+			const result = await client.get_target_text({ ref, project: 'English', preferred_audience: 'Unchurched Adults' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/Genesis/1/1`)
 			expect(result?.text).toBe('In the beginning God created...')
 		})
 
@@ -494,8 +585,8 @@ describe('@tabitha/api-client', () => {
 				cache: true,
 			})
 
-			await client.get_features('Noun')
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/features/Noun?v=1`)
+			await client.lookup_features({ project: 'English', category: 'Noun' })
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/lookup/features?category=Noun&v=1`)
 		})
 
 		test('lookup_forms queries forms endpoint', async () => {
@@ -510,7 +601,7 @@ describe('@tabitha/api-client', () => {
 				fetch: mock_fetch as unknown as typeof fetch,
 			})
 
-			const forms = await client.lookup_forms('loved')
+			const forms = await client.lookup_forms({ word: 'loved', project: 'English' })
 			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/lookup/forms?word=loved`)
 			expect(forms).toEqual(mock_forms)
 		})

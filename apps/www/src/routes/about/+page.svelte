@@ -26,7 +26,7 @@
 	<p>
 		The project is <a href="https://www.canil.ca">CanIL</a>'s research and innovation arm. It's
 		open source — the full history of decisions, the code, and the data are all public, at
-		<a href="https://github.com/presciencelabs/tabitha">github.com/presciencelabs/tabitha</a>.
+		<a href="https://github.com/CanIL-CA/tabitha">github.com/CanIL-CA/tabitha</a>.
 	</p>
 
 	<h2>Point of contact</h2>

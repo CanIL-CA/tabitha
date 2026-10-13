@@ -24,14 +24,13 @@
   },
   "dependencies": {
     "@tabitha/complex-terms": "workspace:*",
-    "adm-zip": "^0.5.18",
+    "adm-zip": "^0.6.1",
     "officeparser": "^7.8.0"
   },
   "devDependencies": {
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
     "@tabitha/types": "workspace:*",
-    "@types/adm-zip": "^0.5.8",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.2",
     "eslint": "^10.11.0",

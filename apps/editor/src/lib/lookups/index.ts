@@ -4,7 +4,7 @@ import { create_context_filter, create_token_filter, from_built_in_rule, simple_
 import { apply_rule_to_tokens } from '../rules/rules_processor'
 import { check_forms } from './form'
 import { check_ontology } from './ontology'
-import type { Sentence, Token } from '$lib/types'
+import type { LookupResult, Sentence, Token } from '$lib/types'
 import type { BuiltInRule } from '$lib/rules/types'
 
 // Keeps a large passage from opening dozens of simultaneous connections to the lookup services.
@@ -76,6 +76,17 @@ const result_filter_rules: BuiltInRule[] = [
 		},
 	},
 	{
+		name: 'Remove lookup results that are only in the English lexicon if the word has results from the Ontology',
+		comment: "eg. 'life' is an Adjective in the English lexicon only for 'life boat' (Acts 27:16), but only a Noun in the Ontology. Words with no Ontology results at all keep their lexicon results, so they are still flagged as not recognized with their part of speech.",
+		rule: {
+			trigger: token => token.type === TOKEN_TYPE.LOOKUP_WORD && token.lookup_results.some(is_from_ontology),
+			context: create_context_filter({}),
+			action: simple_rule_action(({ trigger_token }) => {
+				trigger_token.lookup_results = trigger_token.lookup_results.filter(is_from_ontology)
+			}),
+		},
+	},
+	{
 		name: 'Remove lookup results for certain functional Adpositions (up, down, etc)',
 		comment: 'While these have an entry in the Ontology, they are only used in the Analyzer with specific Verbs. They should not be recognized as words on their own.',
 		rule: {
@@ -87,6 +98,10 @@ const result_filter_rules: BuiltInRule[] = [
 		},
 	},
 ]
+
+function is_from_ontology(result: LookupResult): boolean {
+	return result.ontology_status !== 'unknown'
+}
 
 function starts_lowercase(text: string): boolean {
 	return REGEXES.STARTS_LOWERCASE.test(text)

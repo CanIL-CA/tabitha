@@ -11,8 +11,8 @@
     "check:lint:fix": "eslint . --fix",
     "build": "vite build",
     "build:ci": "bun run --bun vite build",
-    "build:preview": "bun run --bun vite build --mode preview",
-    "deploy:preview": "bun run build:preview && bunx wrangler deploy --env preview",
+    "build:preview": "bun run --bun vite build",
+    "deploy:preview": "bun run build:preview && bunx wrangler preview",
     "dev": "vite dev",
     "dev:e2e": "NODE_OPTIONS=\"$NODE_OPTIONS --import ./e2e/support/mock_ai_gateway.mjs\" vite dev",
     "preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
@@ -32,6 +32,7 @@
     "@tabitha/ai": "workspace:*",
     "@tabitha/api-client": "workspace:*",
     "@tabitha/cors": "workspace:*",
+    "@tabitha/noindex": "workspace:*",
     "@tabitha/rate-limit": "workspace:*",
     "@tabitha/types": "workspace:*",
     "@tabitha/ui": "workspace:*",
@@ -59,7 +60,7 @@
     "svelte-check": "^4.7.6",
     "typescript": "^6.0.3",
     "vite": "8.2.0",
-    "vitest": "^3.2.7",
+    "vitest": "^5.0.3",
     "wrangler": "^4.135.0"
   }
 }

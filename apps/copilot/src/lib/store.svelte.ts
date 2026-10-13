@@ -16,6 +16,8 @@ export function persisted<T extends object>({ key, defaultValue }: { key: string
 				} catch (e) {
 					console.error('Error parsing localStorage value for', key, e)
 				}
+			} else {
+				delete_old_keys_with_prefix(key.split('@')[0])
 			}
 		}
 
@@ -30,5 +32,18 @@ export function persisted<T extends object>({ key, defaultValue }: { key: string
 	return {
 		get value() { return state },
 		set value(newValue: T) { state = newValue },
+	}
+}
+
+function delete_old_keys_with_prefix(prefix: string) {
+	const old_keys: string[] = []
+	for (let i = 0; i < localStorage.length; i++) {
+		const key = localStorage.key(i)
+		if (key?.startsWith(prefix)) {
+			old_keys.push(key)
+		}
+	}
+	for (const old_key of old_keys) {
+		localStorage.removeItem(old_key)
 	}
 }

@@ -51,6 +51,11 @@ export function create_app_vite_config({
 		test: {
 			include: ['src/**/*.test.ts'],
 			environment: 'node',
+			// Vitest 4+ only reports files a test loaded unless `include` is set; this keeps
+			// untested source in the denominator, as Vitest 3's `coverage.all` did
+			coverage: {
+				include: ['src/**/*.{js,ts,svelte}'],
+			},
 		},
 		...rest,
 	})

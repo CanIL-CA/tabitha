@@ -1,10 +1,9 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '$lib/types'
 	import { PUBLIC_EDITOR_API_HOST } from '$env/static/public'
-	import { create_editor_client } from '@tabitha/api-client'
+	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken, NounListEntry } from '@tabitha/types'
 	import { Navigation } from '$lib'
-	import { fetch_analysis } from '$lib/data/analyze'
 	import type { PageProps } from './$types'
 	import Settings from '$lib/settings/Settings.svelte'
 	import Sidebar from '$lib/sidebar_edit/Sidebar.svelte'
@@ -13,6 +12,7 @@
 	import { structure_entities } from '$lib/encoding/structured'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
+	const sources_client = create_sources_client({ base_url: '/' })
 
 	let { data }: PageProps = $props()
 
@@ -45,7 +45,7 @@
 		checking = true
 
 		try {
-			const check_response = await editor_client.check_text(sanitize_input(phase1_text))
+			const check_response = await editor_client.check_text({ text: phase1_text })
 			if (!check_response) {
 				throw new Error('Checker API request failed')
 			}
@@ -90,7 +90,10 @@
 		analyzing = true
 
 		try {
-			const result = await fetch_analysis(sanitize_input(phase1_text))
+			const result = await sources_client.analyze_text(phase1_text)
+			if (!result) {
+				throw new Error('Analyze API failed')
+			}
 
 			source_entities = result.source_entities.map(entity => ({ ...entity, id: -1, parent_id: -1, boundary_category: '' }))
 			structure_entities(source_entities)
@@ -101,10 +104,6 @@
 		} finally {
 			analyzing = false
 		}
-	}
-
-	function sanitize_input(text: string) {
-		return text.replaceAll('\n', ' ')
 	}
 
 	let selected_entity: PageSourceEntity|null = $state(null)

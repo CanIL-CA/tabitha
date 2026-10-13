@@ -174,12 +174,39 @@ describe('plan_migration', () => {
 		expect(ontology.migrate_args).toEqual(['raw/Sources_2026-07-27.tabitha.sqlite', 'raw/Sources_Complex_2026-06-25.tabitha.sqlite'])
 	})
 
-	it('throws when no staged Ontology database exists for the run date', async () => {
+	it('throws when Sources changed but no Ontology database was staged for the run date', async () => {
 		const date = '2026-08-29'
 		touch(`Bible_${date}.tbta.sqlite`)
 		touch(`English_${date}.tbta.sqlite`)
 		touch(`Sources_Complex_${date}.tabitha.sqlite`)
 
 		await expect(plan_migration(date)).rejects.toThrow(/No staged Ontology database/)
+	})
+
+	it('skips the Ontology when none was delivered and Sources is unchanged, so a target-language-only delivery can run', async () => {
+		const prior_date = '2026-07-31'
+		touch(`Bible_${prior_date}.tbta.sqlite`)
+		touch(`Sources_${prior_date}.tabitha.sqlite`)
+		touch(`Sources_Complex_${prior_date}.tabitha.sqlite`)
+		touch(`Indonesian_${prior_date}.tbta.sqlite`)
+		touch(`Targets_Indonesian_${prior_date}.tabitha.sqlite`)
+		stage_ontology('2026-09-29')
+
+		const date = '2026-10-06'
+		touch(`Indonesian_${date}.tbta.sqlite`)
+
+		const plan = await plan_migration(date)
+
+		const ontology = plan.tasks.find(t => t.id === 'Ontology')!
+		expect(ontology.changed).toBe(false)
+		expect(ontology.output_file).toBe('raw/Ontology_9494_2026-09-29.tabitha.sqlite')
+
+		const sources = plan.tasks.find(t => t.id === 'Sources')!
+		expect(sources.changed).toBe(false)
+
+		const indonesian = plan.tasks.find(t => t.id === 'Targets_Indonesian')!
+		expect(indonesian.changed).toBe(true)
+		expect(indonesian.previous_output_file).toBe(`raw/Targets_Indonesian_${prior_date}.tabitha.sqlite`)
+		expect(indonesian.migrate_args).toEqual([`raw/Indonesian_${date}.tbta.sqlite`])
 	})
 })

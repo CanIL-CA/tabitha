@@ -1,6 +1,6 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import type { DbRowText, ParsedSearchQuery } from '$lib/types'
-import type { SearchTargetTextResult } from '@tabitha/types'
+import type { TargetTextResult } from '@tabitha/types'
 
 export function parse_search_query(q: string): ParsedSearchQuery {
 	const normalized_q = normalize_wildcards(q)
@@ -19,7 +19,7 @@ export async function search_text({ db, project, parsed_q }: {
 	db: D1Database
 	project: string
 	parsed_q: ParsedSearchQuery
-}): Promise<SearchTargetTextResult[]> {
+}): Promise<TargetTextResult[]> {
 	if (!parsed_q.or_terms.length || parsed_q.or_terms.every(term => !term.and_terms.length)) {
 		return []
 	}
@@ -42,7 +42,7 @@ export async function search_text({ db, project, parsed_q }: {
 
 	return transform(matches ?? [])
 
-	function transform(matches: DbRowText[]): SearchTargetTextResult[] {
+	function transform(matches: DbRowText[]): TargetTextResult[] {
 		return Map.groupBy(matches, m => `${m.book}:${m.chapter}:${m.verse}`).values()
 			.map(group => ({
 				reference: {

@@ -7,7 +7,7 @@ const script_dir = fileURLToPath(new URL('.', import.meta.url))
 const root_dir = resolve(script_dir, '../..')
 
 // Where this check's rationale is documented -- see the "Custom check" section.
-const DOC_LINK = 'https://github.com/presciencelabs/tabitha/issues/99'
+const DOC_LINK = 'https://github.com/CanIL-CA/tabitha/issues/99'
 
 export type NameCollisionFinding = {
 	readonly app: string
@@ -87,7 +87,7 @@ function resolve_local_svelte_import(importer_path: string, specifier: string, a
 }
 
 function extract_local_svelte_imports(content: string, file_path: string, app_src_dir: string): string[] {
-	const script_match = content.match(/<script[^>]*>([\s\S]*?)<\/script>/i)
+	const script_match = content.match(/<script[^>]*>([\s\S]*?)<\/script[^>]*>/i)
 	if (!script_match) return []
 
 	const imports: string[] = []

@@ -9,6 +9,7 @@
 		"GrammarIntroduction_2026-02-19.tbta.sqlite",
 		"Indonesian_2026-07-30.tbta.sqlite",
 		"Indonesian_2026-07-31.tbta.sqlite",
+		"Indonesian_2026-10-06.tbta.sqlite",
 		"MissionsDocuments_2026-02-19.tbta.sqlite",
 		"MissionsDocuments_2026-04-29.tbta.sqlite",
 		"Ontology_9494_2026-04-29.tabitha.sqlite",
@@ -28,6 +29,7 @@
 		"Targets_2026-07-31.tabitha.sqlite",
 		"Targets_English_2026-07-31.tabitha.sqlite",
 		"Targets_Indonesian_2026-07-31.tabitha.sqlite",
+		"Targets_Indonesian_2026-10-06.tabitha.sqlite",
 		"Targets_Swahili_2026-07-31.tabitha.sqlite",
 		"Targets_Tagalog_2026-07-31.tabitha.sqlite"
 	],
@@ -42,6 +44,7 @@
 		"Targets_2026-07-31.tabitha.sqlite.sql",
 		"Targets_English_2026-07-31.tabitha.sqlite.sql",
 		"Targets_Indonesian_2026-07-31.tabitha.sqlite.sql",
+		"Targets_Indonesian_2026-10-06.tabitha.sqlite.sql",
 		"Targets_Swahili_2026-07-31.tabitha.sqlite.sql",
 		"Targets_Tagalog_2026-07-31.tabitha.sqlite.sql"
 	]

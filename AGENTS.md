@@ -407,7 +407,10 @@ import system_instruction from './review_prompt.md?raw'
    - `@tabitha/ui` — Reusable Svelte 5 components styled with daisyUI 5.
    - `@tabitha/api-client` — Typed HTTP client for inter-service communication.
    - `@tabitha/cors` — Shared CORS middleware for Worker request handlers.
+   - `@tabitha/noindex` — `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps; `apps/www` stays indexable.
    - `@tabitha/complex-terms` — Reads the how-to Google Sheet into `Complex_Terms` rows (sheet parsing plus the table's SQL), shared by `apps/ontology`'s scheduled sync and `tools/databases`' Ontology migration. It has two consumers, not three, for the same reason API/DB contract types get a two-party bar: both write a table the app reads, so two copies would drift silently.
+   - `@tabitha/rate-limit` — Workers-native rate limiting for public read APIs, as a SvelteKit handle.
+   - `@tabitha/usage` — Anonymous feature-usage events written to Workers Analytics Engine.
    - `@tabitha/ai` — Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI.
    - `@tabitha/vite-config` — Shared Vite, SvelteKit, Vitest, and Playwright configurations.
    - `@tabitha/eslint-config` — ESLint flat configurations.
@@ -580,7 +583,7 @@ shipped from this:
   like it worked while still holding a Windows file lock, so deleting the file (or its containing
   directory) fails with `EBUSY`. Use **`.close(true)`**, which finalizes everything and releases
   immediately. This is what actually broke `migrate_source_texts.test.ts` on Windows in
-  [#105](https://github.com/presciencelabs/tabitha/issues/105) -- and it stayed broken after a
+  [#105](https://github.com/CanIL-CA/tabitha/issues/105) -- and it stayed broken after a
   first fix that added a bare `.close()`, because the deferred release looked correct on macOS.
 
 A further pattern to avoid on the same grounds: hardcoded POSIX-only absolute paths (`/tmp/...`,

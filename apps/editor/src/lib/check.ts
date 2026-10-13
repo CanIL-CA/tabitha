@@ -1,25 +1,16 @@
 import type { CheckerAutoFix, EditorCheckResult } from '@tabitha/types'
 import { apply_text_insertions } from '$lib/text_insertions'
+import { create_editor_client } from '@tabitha/api-client'
 
 type CheckedText = {
 	text: string
 	result: EditorCheckResult
 }
 
+const editor_client = create_editor_client({ base_url: '/' })
+
 async function fetch_check_result({ text, auto_fix }: { text: string; auto_fix: boolean }): Promise<EditorCheckResult> {
-	const auto_fix_param = auto_fix ? '&auto_fix=on' : ''
-	const response = await fetch(`/check?text=${encodeURIComponent(sanitize_input(text))}${auto_fix_param}`)
-
-	if (!response.ok) {
-		return { status: 'error', tokens: [], back_translation: '' }
-	}
-
-	return await response.json()
-}
-
-// Line breaks become spaces, which keeps every character offset the same as in the author's text
-function sanitize_input(text: string): string {
-	return text.replaceAll('\n', ' ')
+	return await editor_client.check_text({ text, auto_fix }) ?? { status: 'error', tokens: [], back_translation: '' }
 }
 
 export async function check_text(text: string): Promise<CheckedText> {

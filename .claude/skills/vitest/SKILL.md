@@ -1,8 +1,8 @@
 ---
 name: vitest
-description: Fast in-memory unit testing skill with Vitest 3. MANDATORY when writing, refactoring, fixing, or reviewing unit tests (*.test.ts) across apps and packages. Enforces pure in-memory testing without network or database dependencies.
+description: Fast in-memory unit testing skill with Vitest 5. MANDATORY when writing, refactoring, fixing, or reviewing unit tests (*.test.ts) across apps and packages. Enforces pure in-memory testing without network or database dependencies.
 metadata:
-  version: 3.x
+  version: 5.x
 ---
 
 # Vitest Unit Testing Best Practices
@@ -15,7 +15,7 @@ Guidelines for writing ultra-fast, deterministic, pure in-memory unit tests acro
 
 - **Zero Network Calls**: Never make live HTTP/fetch requests in unit tests. Mock external services with `vi.fn()` or in-memory fixtures.
 - **Zero Live Database Connections**: Never connect to live D1 or external SQLite files in unit tests. Test pure logic, parsers, and data transformations in memory. (Use Playwright E2E for full database integration tests).
-- **Execution Target**: The entire workspace test suite (420+ tests) must execute in `< 4 seconds` (`bun run test:unit`).
+- **Execution Target**: Keep the workspace unit suite (`bun run test:unit`) fast enough to run on every change; a test that needs the network or a database belongs in Playwright.
 
 ---
 
@@ -76,3 +76,12 @@ describe('fetch_concept_details', () => {
 When testing Svelte 5 rune modules (`.svelte.ts` / `.svelte.js`):
 - Run tests in a node or happy-dom environment.
 - Test state transitions directly on rune-managed classes and state containers.
+
+---
+
+## 5. Vitest 5 Behaviors to Rely On
+
+- **Mock history resets before every test** (`clearMocks` defaults to `true`). Don't assert on calls made in an earlier test, and don't add `vi.clearAllMocks()` to `beforeEach`. Implementations set with `mockReturnValue`/`mockResolvedValue` persist across tests; reset them per test when it matters.
+- **Hoisted calls stay at module top level.** `vi.mock`, `vi.unmock` and `vi.hoisted` throw if nested inside a function or `describe`.
+- **Always `await` async assertions.** An unawaited `expect(...).resolves`/`.rejects` now fails the test.
+- **`vi.mock` factories return named exports explicitly** (`{ default: ..., named: ... }`), not a bare default value.

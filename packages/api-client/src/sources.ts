@@ -1,5 +1,19 @@
-import type { ChapterReference, Reference, SourceResult, SourceStatus, SourceStatusResult, SourceEncodedResult, VerseReference, SourceSimpleJsonResult } from '@tabitha/types'
 import { create_http_client, type ClientOptions } from './http'
+import { sanitize_input_whitespace } from './text'
+import type {
+	SourceResult,
+	SourceStatus,
+	SourceEncodedResult,
+	SourceSimpleJsonResult,
+	Reference,
+	PrimaryIdReference,
+	SecondaryIdReference,
+	SecondaryId,
+	TertiaryId,
+	SourceStatusResult,
+	PrimaryIdSourceStatusResult,
+	AnalysisResult,
+} from '@tabitha/types'
 
 export type SourcesClient = ReturnType<typeof create_sources_client>
 export type SourcesClientOptions = ClientOptions
@@ -16,8 +30,8 @@ export type SourcesClientOptions = ClientOptions
  *   cache: true, // Enables transparent Edge CDN caching on GET requests
  * })
  *
- * const verse = await sources.get_verse_source({ book: 'GEN', chapter: 1, verse: 1 })
- * const status = await sources.get_book_status('GEN')
+ * const verse = await sources.get_source({ type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' })
+ * const status = await sources.get_book_status({ type: 'Bible', id_primary: 'Genesis' })
  * ```
  */
 export function create_sources_client(options: SourcesClientOptions) {
@@ -27,23 +41,32 @@ export function create_sources_client(options: SourcesClientOptions) {
 		/**
 		 * Retrieve raw source data for a specific Bible verse.
 		 */
-		async get_verse_source(ref: VerseReference, type = 'Bible'): Promise<SourceResult | null> {
-			return http.get<SourceResult>(`/${type}/${ref.book}/${ref.chapter}/${ref.verse}`)
+		async get_source(ref: Reference): Promise<SourceResult | null> {
+			return http.get<SourceResult>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}`)
 		},
 
 		/**
 		 * Retrieve simplified JSON encoding for a verse, optionally including glosses.
 		 */
-		async get_simplified_json(ref: VerseReference, type = 'Bible', include_glosses = false): Promise<SourceSimpleJsonResult | null> {
+		async get_simplified_json({ ref, include_glosses } : { ref: Reference, include_glosses?: boolean }): Promise<SourceSimpleJsonResult | null> {
 			const query = include_glosses ? '?glosses=true' : ''
-			return http.get<SourceSimpleJsonResult>(`/${type}/${ref.book}/${ref.chapter}/${ref.verse}/simple-json${query}`)
+			return http.get<SourceSimpleJsonResult>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}/simple-json${query}`)
+		},
+
+		/**
+		 * Retrieve the number of chapters present in a book.
+		 */
+		async get_book_chapters_count(ref: PrimaryIdReference): Promise<number | null> {
+			const entries = await http.get<SecondaryId[]>(`/${ref.type}/${ref.id_primary}`)
+			if (!entries || entries.length === 0) return null
+			return Math.max(...entries.map(e => parseInt(e.id_secondary, 10)))
 		},
 
 		/**
 		 * Retrieve the number of verses present in a chapter.
 		 */
-		async get_chapter_verses_count(ref: ChapterReference, type = 'Bible'): Promise<number | null> {
-			const entries = await http.get<{ id_tertiary: string }[]>(`/${type}/${ref.book}/${ref.chapter}`)
+		async get_chapter_verses_count(ref: SecondaryIdReference): Promise<number | null> {
+			const entries = await http.get<TertiaryId[]>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}`)
 			if (!entries || entries.length === 0) return null
 			return Math.max(...entries.map(e => parseInt(e.id_tertiary, 10)))
 		},
@@ -60,8 +83,7 @@ export function create_sources_client(options: SourcesClientOptions) {
 		 * Look up the translation status of multiple verse references at once.
 		 */
 		async get_verse_statuses(refs: Reference[]): Promise<SourceStatusResult[] | null> {
-			const data = await http.post<SourceStatusResult[]>('/lookup/status', refs)
-			return data
+			return await http.post<SourceStatusResult[]>('/lookup/status', refs)
 		},
 
 		/**
@@ -77,18 +99,25 @@ export function create_sources_client(options: SourcesClientOptions) {
 		},
 
 		/**
-		 * Look up the translation status of an entire book (e.g. 'GEN').
+		 * Look up the translation status of an entire book (e.g. 'Genesis').
 		 */
-		async get_book_status(book: string, type = 'Bible'): Promise<SourceStatus | null> {
-			const data = await http.get<SourceStatusResult>(`/lookup/status/${type}/${book}`)
+		async get_book_status(ref: PrimaryIdReference): Promise<SourceStatus | null> {
+			const data = await http.get<PrimaryIdSourceStatusResult>(`/lookup/status/${ref.type}/${ref.id_primary}`)
 			return data?.status ?? null
 		},
 
 		/**
 		 * Look up the translation status of every book of a given type.
 		 */
-		async get_all_book_statuses(type = 'Bible'): Promise<{ reference: { id_primary: string }, status: SourceStatus }[]> {
-			return await http.get<SourceStatusResult[]>(`/lookup/status/${type}`) ?? []
+		async get_all_book_statuses(type: string): Promise<PrimaryIdSourceStatusResult[]> {
+			return await http.get<PrimaryIdSourceStatusResult[]>(`/lookup/status/${type}`) ?? []
+		},
+
+		/**
+		 * Parse phase 1 text into source entities.
+		 */
+		async analyze_text(text: string): Promise<AnalysisResult | null> {
+			return await http.get<AnalysisResult>(`/analyze?${new URLSearchParams({ text: sanitize_input_whitespace(text) })}`)
 		},
 	}
 }

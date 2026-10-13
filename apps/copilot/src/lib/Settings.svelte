@@ -2,7 +2,7 @@
 	import { lwc_info, copilot_modes } from '$lib/lookups'
 	import { MODE_LABELS, MTT_LEVEL_LABELS } from '$lib/labels'
 	import { m } from '$lib/paraglide/messages'
-	import SettingsDialog from './SettingsDialog.svelte'
+	import Dialog from './Dialog.svelte'
 	import LanguageProfile from './LanguageProfile.svelte'
 	import Icon from '@iconify/svelte'
 	import type { CopilotSettings } from '$lib/types'
@@ -40,7 +40,7 @@
 </button>
 
 {#if show_settings_dialog}
-	<SettingsDialog heading={m.settings_heading()} onclose={close_settings} fit_content>
+	<Dialog heading={m.settings_heading()} onclose={close_settings} fit_content>
 		<div class="text-sm">
 			<div class="mb-2 grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-2">
 				<label for="settings-sensitivity">{m.sensitivity()}</label>
@@ -86,11 +86,11 @@
 				</label>
 			</div>
 		</div>
-	</SettingsDialog>
+	</Dialog>
 {/if}
 
 {#if show_profile_dialog}
-	<SettingsDialog heading={m.language_profile()} onclose={close_profile}>
+	<Dialog heading={m.language_profile()} onclose={close_profile}>
 		<LanguageProfile bind:profile={settings.language_profile} />
-	</SettingsDialog>
+	</Dialog>
 {/if}

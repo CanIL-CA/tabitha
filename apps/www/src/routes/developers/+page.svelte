@@ -17,7 +17,7 @@
 <div class="page-body">
 	<p>
 		The whole project lives at
-		<a href="https://github.com/presciencelabs/tabitha">github.com/presciencelabs/tabitha</a> — one
+		<a href="https://github.com/CanIL-CA/tabitha">github.com/CanIL-CA/tabitha</a> — one
 		repository, several deployed apps, each with its own README documenting its API in detail.
 		Sources, Ontology, Targets, and the AI copilot each expose a public, read-only HTTP API with no
 		API key or authentication required.

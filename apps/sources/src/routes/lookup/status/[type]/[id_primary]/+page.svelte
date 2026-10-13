@@ -3,18 +3,18 @@
 
 	let { data } = $props()
 
-	let book_status = $derived(data.book_status)
-	let chapter_statuses = $derived(data.chapter_statuses)
+	let primary_id_status = $derived(data.primary_id_status)
+	let secondary_id_statuses = $derived(data.secondary_id_statuses)
 
-	let statuses_present = $derived(new Set(chapter_statuses.map(s => s.status)))
+	let statuses_present = $derived(new Set(secondary_id_statuses.map(s => s.status)))
 
 	let selected_status = $state('All')
-	let filtered_chapters = $derived(selected_status === 'All' ? chapter_statuses : chapter_statuses.filter(s => s.status === selected_status))
+	let filtered_chapters = $derived(selected_status === 'All' ? secondary_id_statuses : secondary_id_statuses.filter(s => s.status === selected_status))
 </script>
 
 <div class="prose mb-5">
-	<h2>Encoding Status - {book_status.reference.id_primary}</h2>
-	<div><EncodingStatus status={book_status.status} /></div>
+	<h2>Encoding Status - {primary_id_status.reference.id_primary}</h2>
+	<div><EncodingStatus status={primary_id_status.status} /></div>
 </div>
 
 <div>

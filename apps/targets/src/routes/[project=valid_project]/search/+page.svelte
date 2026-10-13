@@ -3,7 +3,7 @@
 	import { by_book_order } from '@tabitha/types/patterns'
 	import { page } from '$app/state'
 	import type { ReturnTo } from '$lib/types'
-	import type { SearchTargetTextResult } from '@tabitha/types'
+	import type { TargetTextResult } from '@tabitha/types'
 	import type { PageData } from './$types'
 
 	let { data }: { data: PageData } = $props()
@@ -11,7 +11,7 @@
 	let return_to: ReturnTo | undefined = $derived(data.return_to)
 	let phrase_results = $derived(data.phrase_results)
 
-	let matches: SearchTargetTextResult[] = $derived(data.results ?? [])
+	let matches: TargetTextResult[] = $derived(data.results ?? [])
 	let found = $derived(matches.length > 0)
 	let search_terms: string[] = $derived(data.search_terms || [])
 	let searched = $derived(search_terms.length > 0)

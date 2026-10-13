@@ -1,12 +1,13 @@
 // @ts-check
 import { test, expect } from '@playwright/test'
+import { wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('a queued create shows up as unsynced on the changes page', async ({ page }) => {
 	const stem = `offlinecreate${Date.now()}`
 
 	await page.goto('/protected/concept/create')
 	// interacting before hydration finishes can throw off the debounced sense-lookup effect below
-	await page.waitForLoadState('networkidle')
+	await wait_for_hydration({ page })
 
 	await page.locator('input[name="stem"]').fill(stem)
 	await page.locator('select[name="part_of_speech"]').selectOption('Verb')

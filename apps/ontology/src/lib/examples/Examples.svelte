@@ -5,13 +5,15 @@
 	import { ExampleSummary, Filters, get_examples, SourceData, TargetData } from '$lib/examples'
 	import { by_book_order } from '@tabitha/types/patterns'
 	import type { Concept } from '$lib/types'
-	import type { ConceptExample, PartOfSpeech } from '@tabitha/types'
+	import type { ConceptKey, ConceptExample, PartOfSpeech } from '@tabitha/types'
 
 	type Props = {
 		concept: Concept
 	}
 
 	let { concept }: Props = $props()
+
+	let concept_key = $derived<ConceptKey>({ ...concept, part_of_speech: concept.part_of_speech as PartOfSpeech })
 
 	const MAX_EXAMPLES_DISPLAYED = 50
 
@@ -22,17 +24,17 @@
 		filtered_examples.toSorted(by_book_order).slice(0, MAX_EXAMPLES_DISPLAYED),
 	)
 
-	async function load_examples(concept: Concept) {
+	async function load_examples() {
 		loading = true
 		try {
-			all_examples = await get_examples(concept)
+			all_examples = await get_examples(concept_key) ?? []
 		} finally {
 			loading = false
 		}
 	}
 
 	onMount(() => {
-		load_examples(concept)
+		load_examples()
 	})
 
 	const FADE_CHARACTERISTICS = {
@@ -73,8 +75,6 @@
 
 				<section class="collapse-content">
 					{#if retrieval_queue.includes(i)}
-						{@const { stem, sense, part_of_speech } = concept}
-						{@const concept_key = { stem, sense, part_of_speech: part_of_speech as PartOfSpeech }}
 						<TargetData {reference} />
 
 						<SourceData {reference} selected_concept={concept_key} />

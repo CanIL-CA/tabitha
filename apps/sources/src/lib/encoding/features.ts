@@ -33,7 +33,7 @@ export async function load_target_feature_map(project: string): Promise<FeatureM
 	if (!project.length) {
 		return undefined
 	}
-	const results = await targets_client.lookup_features(project)
+	const results = await targets_client.lookup_features({ project })
 	if (!results) {
 		console.error(`Failed to load target features for project ${project}`)
 		return undefined

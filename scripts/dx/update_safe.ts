@@ -66,38 +66,6 @@ async function audit_workspace_skills() {
 	console.log(`   ✓ Active skills (${skill_names.length}): ${skill_names.join(', ')}\n`)
 }
 
-async function audit_daisyui_skill_version() {
-	console.log("🎨 Checking the daisyUI skill's declared version against the installed package...")
-	const skill_path = resolve(root_dir, '.claude/skills/daisyui/SKILL.md')
-	const installed_pkg_path = resolve(root_dir, 'packages/ui/node_modules/daisyui/package.json')
-	if (!existsSync(skill_path) || !existsSync(installed_pkg_path)) {
-		console.warn('   ⚠️  Could not locate the daisyUI skill or installed package to compare.\n')
-		return
-	}
-
-	const skill_content = await readFile(skill_path, 'utf-8')
-	const declared_match = skill_content.match(/version:\s*(\d+)\.(\d+)\.x/)
-	const installed_pkg = JSON.parse(await readFile(installed_pkg_path, 'utf-8')) as { version: string }
-	const installed_match = installed_pkg.version.match(/^(\d+)\.(\d+)\./)
-
-	if (!declared_match || !installed_match) {
-		console.warn('   ⚠️  Could not parse the daisyUI skill/package versions to compare.\n')
-		return
-	}
-
-	const declared_minor = `${declared_match[1]}.${declared_match[2]}`
-	const installed_minor = `${installed_match[1]}.${installed_match[2]}`
-
-	if (declared_minor === installed_minor) {
-		console.log(`   ✓ daisyUI skill (${declared_minor}.x) matches the installed package (${installed_pkg.version}).\n`)
-	} else {
-		console.warn(
-			`   ⚠️  daisyUI skill declares ${declared_minor}.x but the installed package is ${installed_pkg.version}. ` +
-				'Review .claude/skills/daisyui/SKILL.md against https://daisyui.com/SKILL.md and update its metadata.version.\n',
-		)
-	}
-}
-
 async function sync_ci_node_version() {
 	console.log('🤖 Synchronizing CI Node.js version with local runtime...')
 	try {
@@ -201,17 +169,10 @@ async function run_safe_update() {
 		console.warn('   ⚠️  Found cross-workspace version drift -- run "bun run deps:fix" to align it.\n')
 	}
 
-	// 7. daisyUI Skill Version Drift Check
-	// The daisyUI skill pins a minor version (e.g. 5.7.x), unlike the major-only pins on the
-	// other library skills, because it's sourced from daisyUI's own SKILL.md. The semver update
-	// above can advance the installed package within that same major with nothing else to catch
-	// it, so this checks the two against each other on every safe-update run.
-	await audit_daisyui_skill_version()
-
-	// 8. Regenerate Worker & Framework Types
+	// 7. Regenerate Worker & Framework Types
 	await regenerate_worker_and_framework_types()
 
-	// 9. Synchronize README.md Badges with package.json
+	// 8. Synchronize README.md Badges with package.json
 	console.log('🏷️  Synchronizing README.md badges with package.json versions...')
 	try {
 		const badge_res = await sync_readme_badges({ base_dir: root_dir, should_write: true })
@@ -224,7 +185,7 @@ async function run_safe_update() {
 		console.warn('   ⚠️  Could not synchronize README badges:', err instanceof Error ? err.message : err)
 	}
 
-	// 10. Full-Repo Undeclared CLI Dependency Sweep
+	// 9. Full-Repo Undeclared CLI Dependency Sweep
 	// CI's `check:deps` step only scans packages touched by a given diff, so it never nags a
 	// dev about an unrelated package -- but that also means an existing gap (like a package
 	// that already shells out to a CLI it never declared) can sit undetected until someone
@@ -242,7 +203,7 @@ async function run_safe_update() {
 		console.warn('   ⚠️  Could not complete the undeclared CLI dependency sweep:', err instanceof Error ? err.message : err)
 	}
 
-	// 11. Automated Post-Update Health Verification Gate
+	// 10. Automated Post-Update Health Verification Gate
 	console.log('🧪 Running post-update verification gate...')
 
 	console.log('   1/4 Running workspace static analysis & typecheck (bun run check)...')

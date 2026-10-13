@@ -14,7 +14,7 @@ const STATUS_ORDER: SourceStatus[] = [
 
 export async function load({ fetch }) {
 	const sources = create_sources_client({ base_url: PUBLIC_SOURCES_API_HOST, fetch })
-	const book_statuses = await sources.get_all_book_statuses().catch(() => [])
+	const book_statuses = await sources.get_all_book_statuses('Bible').catch(() => [])
 
 	const counts = new Map<SourceStatus, number>(STATUS_ORDER.map(status => [status, 0]))
 	for (const { status } of book_statuses) {

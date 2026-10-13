@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition'
-	import { SourceData } from '$lib'
+	import SourceData from './SourceData.svelte'
 	import type { PhraseSearchHit } from '$lib/types'
 
 	type Props = {

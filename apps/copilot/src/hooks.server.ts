@@ -2,6 +2,7 @@ import type { ServerInit, Handle } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
 import { create_ai_client, type AiClient } from '@tabitha/ai'
 import { create_cors_handle } from '@tabitha/cors'
+import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/static/public'
 import { env } from '$env/dynamic/private'
@@ -40,4 +41,4 @@ const i18n_handle: Handle = function i18n_handle({ event, resolve }) {
 	})
 }
 
-export const handle = sequence(cors_handle, rate_limit_handle, ai_locals_handle, i18n_handle)
+export const handle = sequence(noindex_handle, cors_handle, rate_limit_handle, ai_locals_handle, i18n_handle)

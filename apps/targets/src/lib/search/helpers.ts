@@ -1,8 +1,20 @@
 import { by_book_order } from '@tabitha/types/patterns'
-import type { SearchTargetTextResult } from '@tabitha/types'
+import { create_sources_client } from '@tabitha/api-client'
+import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import type { Reference, TargetTextResult, SourceResult } from '@tabitha/types'
 import type { FilterMap } from '../types'
 
-export function build_filter_options(matches: SearchTargetTextResult[]): FilterMap {
+const sources_client = create_sources_client({ base_url: PUBLIC_SOURCES_API_HOST, cache: true })
+
+export function get_sources_url({ type, id_primary, id_secondary, id_tertiary }: Reference): string {
+	return `${PUBLIC_SOURCES_API_HOST}/${type}/${id_primary}/${id_secondary}/${id_tertiary}`
+}
+
+export async function fetch_source_data(reference: Reference): Promise<SourceResult | null> {
+	return await sources_client.get_source(reference)
+}
+
+export function build_filter_options(matches: TargetTextResult[]): FilterMap {
 	const filter_map: FilterMap = new Map()
 
 	const book_names_found_in_examples = [...new Set(matches.toSorted(by_book_order).map(result => result.reference.id_primary))]
@@ -15,9 +27,9 @@ export function build_filter_options(matches: SearchTargetTextResult[]): FilterM
 }
 
 export function filter_search_results({ matches, selected_filters }: {
-	matches: SearchTargetTextResult[]
+	matches: TargetTextResult[]
 	selected_filters: Record<string, string>
-}): SearchTargetTextResult[] {
+}): TargetTextResult[] {
 	return matches.filter(result => {
 		const selected_book = selected_filters['Book']
 		if (selected_book && selected_book !== 'Any' && result.reference.id_primary !== selected_book) {

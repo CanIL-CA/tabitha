@@ -34,6 +34,37 @@ export function parse_env_file(content: string): Map<string, string> {
 	return result
 }
 
+/**
+ * Dev-environment identifiers for keys whose committed `.env` value belongs to production. They
+ * aren't secrets (see `.env`), so they're seeded into `.env.local`; a developer's own value is kept,
+ * but production's is replaced.
+ */
+export const dev_defaults: Record<string, string> = {
+	GOOGLE_OAUTH_CLIENT_ID: '839335496347-8skv8tif4auhth084h7bl5sas0vilnl4.apps.googleusercontent.com',
+}
+
+/**
+ * The value a key always has in a local `.env.local`, or `undefined` when the developer's own
+ * value is kept. Shared with `doctor`, which flags an `.env.local` that has drifted from these.
+ */
+export function forced_local_value(key: string): string | undefined {
+	// Point known service hosts at their local ports
+	if (key in local_hosts) return local_hosts[key]
+
+	// Auth.js's redirect-proxy target only makes sense for a genuine Cloudflare deployment (prod
+	// or preview); set locally, Google would be sent a redirect_uri it has no client registered for
+	if (key === 'OAUTH_REDIRECT_PROXY_URL') return ''
+
+	// Trust cross-app localhost origins for CORS in local dev only
+	if (key === 'PUBLIC_CORS_ALLOW_LOCALHOST') return 'true'
+
+	// Local dev and CI e2e runs fire fast, unpaced request bursts that a real-world-abuse
+	// threshold isn't meant to survive -- disable rate limiting locally only
+	if (key === 'PUBLIC_RATE_LIMIT_DISABLED') return 'true'
+
+	return undefined
+}
+
 function generate_local_env_content(template_content: string, existing_content?: string): string {
 	const existing_vars = existing_content ? parse_env_file(existing_content) : new Map<string, string>()
 	const lines = template_content.split('\n')
@@ -56,27 +87,25 @@ function generate_local_env_content(template_content: string, existing_content?:
 
 		const key = trimmed.slice(0, eq_idx).trim()
 
-		// Priority 1: If it's a known service host, point it to local port
-		if (key in local_hosts) {
-			output_lines.push(`${key}=${local_hosts[key]}`)
+		// Priority 1: Keys whose local-dev value is fixed, overriding any stale value a developer
+		// might already have from a prior run
+		const forced_value = forced_local_value(key)
+		if (forced_value !== undefined) {
+			output_lines.push(`${key}=${forced_value}`)
 			continue
 		}
 
-		// Priority 2: Trust cross-app localhost origins for CORS in local dev only
-		if (key === 'PUBLIC_CORS_ALLOW_LOCALHOST') {
-			output_lines.push('PUBLIC_CORS_ALLOW_LOCALHOST=true')
-			continue
-		}
-
-		// Priority 2b: Local dev and CI e2e runs fire fast, unpaced request bursts that a
-		// real-world-abuse threshold isn't meant to survive -- disable rate limiting locally only
-		if (key === 'PUBLIC_RATE_LIMIT_DISABLED') {
-			output_lines.push('PUBLIC_RATE_LIMIT_DISABLED=true')
+		// Priority 2: Production's identifier is never wanted locally; seed the dev one unless the
+		// developer already set their own
+		const template_value = trimmed.slice(eq_idx + 1).trim()
+		const existing_value = existing_vars.get(key)
+		if (key in dev_defaults) {
+			const own_value = existing_value && existing_value !== template_value ? existing_value : undefined
+			output_lines.push(`${key}=${own_value ?? dev_defaults[key]}`)
 			continue
 		}
 
 		// Priority 3: If the developer already supplied a custom value in existing .env.local, preserve it
-		const existing_value = existing_vars.get(key)
 		if (existing_value) {
 			output_lines.push(`${key}=${existing_value}`)
 			continue

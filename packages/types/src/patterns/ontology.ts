@@ -9,14 +9,8 @@ import type { ConceptKey, PartOfSpeech } from '../core'
  */
 export const CONCEPT_SENSE_REGEX = /^(.*)-([A-Z])$/
 
-/**
- * Matches composite concept keys formatted as `<stem>-<SENSE_LETTER>-<part_of_speech>`.
- *
- * @example
- * Positive: "love-A-Verb", "grace-B-Noun", "holy_spirit-A-Noun"
- * Negative: "love-A", "love"
- */
-export const CONCEPT_KEY_REGEX = /^(.+?)-([A-Z])-(.+)$/
+const SENSE_LETTER_REGEX = /^[A-Z]$/
+const LINE_TERMINATOR_REGEX = /[\n\r\u2028\u2029]/
 
 export const IS_CARDINAL_NUMBER = /^[.\d]+$/
 
@@ -72,7 +66,10 @@ export function parse_concept_sense(key: string): { stem: string; sense: string 
 }
 
 /**
- * Parses a composite concept key into its constituent stem, sense, and part of speech.
+ * Parses a composite concept key formatted as `<stem>-<SENSE_LETTER>-<part_of_speech>` into its
+ * constituent stem, sense, and part of speech. The stem ends at the first `-<SENSE_LETTER>-` after
+ * at least one character, so hyphenated stems like "father-in-law" survive. Scans by hand rather
+ * than with `/^(.+?)-([A-Z])-(.+)$/`, which backtracks quadratically on keys from URL params.
  *
  * @param key Potential composite concept identifier (e.g. "love-A-Verb")
  * @returns Parsed ConceptKey object, or null if key does not match
@@ -82,13 +79,19 @@ export function parse_concept_sense(key: string): { stem: string; sense: string 
  * parse_concept_key("invalid") -> null
  */
 export function parse_concept_key(key: string): ConceptKey | null {
-	const match = key.trim().match(CONCEPT_KEY_REGEX)
-	if (!match) return null
-	return {
-		stem: match[1],
-		sense: match[2],
-		part_of_speech: match[3] as PartOfSpeech,
+	const trimmed = key.trim()
+	if (LINE_TERMINATOR_REGEX.test(trimmed)) return null
+
+	for (let i = 1; i + 3 < trimmed.length; i++) {
+		if (trimmed[i] === '-' && trimmed[i + 2] === '-' && SENSE_LETTER_REGEX.test(trimmed[i + 1])) {
+			return {
+				stem: trimmed.slice(0, i),
+				sense: trimmed[i + 1],
+				part_of_speech: trimmed.slice(i + 3) as PartOfSpeech,
+			}
+		}
 	}
+	return null
 }
 
 type ConceptCompare = Omit<ConceptKey, 'part_of_speech'> & {

@@ -22,7 +22,7 @@ const r2_seed_config: R2SeedEntry[] = [
 		app: 'ontology',
 		d1_binding: 'DB_Ontology',
 		r2_binding: 'R2_db_backups',
-		content_disposition: 'attachment; filename="Ontology.new"',
+		content_disposition: 'attachment; filename="Ontology.sqlite"',
 	},
 ]
 

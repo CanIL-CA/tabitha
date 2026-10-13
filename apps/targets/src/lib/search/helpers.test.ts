@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { build_filter_options, build_search_regex, filter_search_results } from './helpers'
+import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { build_filter_options, build_search_regex, filter_search_results, get_sources_url } from './helpers'
 import { by_book_order } from '@tabitha/types/patterns'
-import type { SearchTargetTextResult } from '@tabitha/types'
+import type { TargetTextResult } from '@tabitha/types'
 
-const mockRealWorldResults: SearchTargetTextResult[] = [
+const mockRealWorldResults: TargetTextResult[] = [
 	{
 		reference: { type: 'verse', id_primary: '1 Samuel', id_secondary: '21', id_tertiary: '1' },
 		texts: [
@@ -45,5 +46,10 @@ describe('search helpers', () => {
 	it('builds search term regex for text highlighting', () => {
 		const regex = build_search_regex(['david', 'ahimelech'])
 		expect('David went to meet Ahimelech'.split(regex)).toEqual(['', 'David', ' went to meet ', 'Ahimelech', ''])
+	})
+
+	it('builds the canonical sources URL for a reference', () => {
+		const url = get_sources_url({ type: 'Bible', id_primary: '1 Samuel', id_secondary: '21', id_tertiary: '1' })
+		expect(url).toBe(`${PUBLIC_SOURCES_API_HOST}/Bible/1 Samuel/21/1`)
 	})
 })

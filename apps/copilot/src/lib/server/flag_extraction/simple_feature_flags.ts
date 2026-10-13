@@ -103,6 +103,36 @@ export const simple_feature_flags: FlagExtractionRule[] = [
 		}],
 	},
 	{
+		flag: 'Noun Proximity',
+		rules: [{
+			value: '$proximity',
+			pattern: {
+				name: '$anchor',
+				category: 'Noun',
+				concept: '$concept',
+				features: {
+					'Proximity': '$proximity',
+					'Noun List Index': '$noun_index',
+				},
+			},
+		}],
+	},
+	{
+		flag: 'Noun Participant Status',
+		rules: [{
+			value: '$status',
+			pattern: {
+				name: '$anchor',
+				category: 'Noun',
+				concept: '$concept',
+				features: {
+					'Participant Status': '$status',
+					'Noun List Index': '$noun_index',
+				},
+			},
+		}],
+	},
+	{
 		flag: 'Modifier Degree',
 		rules: [{
 			value: '$degree',
@@ -178,6 +208,52 @@ export const simple_feature_flags: FlagExtractionRule[] = [
 				features: {
 					'Rhetorical Question': '$question_type',
 				},
+			},
+		}],
+	},
+	{
+		flag: 'Vocabulary Alternate',
+		rules: [{
+			value: '$alternate_type',
+			pattern: {
+				name: '$anchor',
+				category: 'Clause',
+				features: {
+					'Vocabulary Alternate': '$alternate_type',
+				},
+			},
+		}],
+	},
+	{
+		flag: 'Emphasized Agent of Imperative',
+		rules: [{
+			value: '$agent',
+			pattern: {
+				name: '$clause',
+				category: 'Clause',
+				features: {
+					'Illocutionary Force': 'Imperative with emphasized Agent',
+				},
+				children: [
+					{
+						name: '$anchor',
+						category: 'Noun Phrase',
+						features: {
+							'Semantic Role': 'Most Agent-like',
+						},
+						children: [{
+							category: 'Noun',
+							concept: '$agent',
+						}],
+					},
+					{
+						category: 'Verb Phrase',
+						children: [{
+							category: 'Verb',
+							concept: '$verb',
+						}],
+					},
+				],
 			},
 		}],
 	},

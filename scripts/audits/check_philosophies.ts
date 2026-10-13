@@ -180,7 +180,7 @@ async function audit_codebase() {
 		if (findings.length === 0) {
 			markdown += `✨ **100% Compliance!** All ${all_files.length} inspected source files adhere to the Development Philosophies.\n\n`
 		} else {
-			const repo = process.env.GITHUB_REPOSITORY || 'presciencelabs/tabitha'
+			const repo = process.env.GITHUB_REPOSITORY || 'CanIL-CA/tabitha'
 			const sha = process.env.GITHUB_SHA || 'main'
 			const doc_link = (rule_id: number) => {
 				const anchor = RULE_DOC_ANCHORS[rule_id]

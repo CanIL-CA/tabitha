@@ -96,7 +96,22 @@ async function plan_ontology_task(date: string, sources_task: PlannedTask): Prom
 	// pattern, so the match stays a bare filename regardless of OS-native separator handling.
 	const matched_file = Array.from(new Glob(`Ontology_*_${date}.tabitha.sqlite`).scanSync('raw'))[0]
 	if (!matched_file) {
-		throw new Error(`No staged Ontology database found for ${date}. An Ontology.sqlite (or .new) file must be present for every migration run.`)
+		// The Ontology's Exhaustive_Examples are built from Sources, so a Sources change still needs a
+		// fresh Ontology delivered alongside it. Without one, a delivery holding only target-language
+		// databases leaves the deployed Ontology as it is.
+		const previous_file = latest_previous_ontology_file(date)
+		if (sources_task.changed || !previous_file) {
+			throw new Error(`No staged Ontology database found for ${date}. An Ontology.sqlite (or .new) file must be delivered whenever Sources changes.`)
+		}
+
+		return {
+			id: 'Ontology',
+			family: 'Ontology',
+			changed: false,
+			reason: 'no Ontology delivered and Sources unchanged',
+			migrate_args: [],
+			output_file: `raw/${previous_file}`,
+		}
 	}
 
 	// Sources_Complex is generated during staging (via tbta_utils) and may itself have been left
@@ -115,6 +130,14 @@ async function plan_ontology_task(date: string, sources_task: PlannedTask): Prom
 		migrate_args: [sources_task.output_file, sources_complex_file],
 		output_file: `raw/${matched_file}`,
 	}
+}
+
+// Sorted by the date suffix rather than the whole name, since the Ontology version sits in front of it.
+function latest_previous_ontology_file(date: string): string | undefined {
+	return Array.from(new Glob('Ontology_*_????-??-??.tabitha.sqlite').scanSync('raw'))
+		.filter(file => extract_date(file) !== date)
+		.toSorted((a, b) => extract_date(a)!.localeCompare(extract_date(b)!))
+		.at(-1)
 }
 
 // A raw input's resolved path carries the date it was actually staged under (see staging's

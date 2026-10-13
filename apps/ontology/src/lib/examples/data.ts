@@ -1,30 +1,23 @@
 import { PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$env/static/public'
-import type { Concept } from '$lib/types'
-import type { ConceptExample, Reference, SourceResult, TargetTextResult } from '@tabitha/types'
+import { create_ontology_client, create_sources_client, create_targets_client } from '@tabitha/api-client'
+import type { ConceptExample, ConceptKey, Reference, SourceResult, TargetTextData } from '@tabitha/types'
 
-export async function get_examples({ stem, sense, part_of_speech }: Concept): Promise<ConceptExample[]> {
-	const response = await fetch(`/examples?concept=${stem}-${sense}&part_of_speech=${part_of_speech}&source=Bible`)
-	return await response.json()
-}
+const sources_client = create_sources_client({ base_url: PUBLIC_SOURCES_API_HOST, cache: true })
+const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST, cache: true })
+const ontology_client = create_ontology_client({ base_url: '/', cache: true })
 
 export function get_sources_url({ type, id_primary, id_secondary, id_tertiary }: Reference): string {
 	return `${PUBLIC_SOURCES_API_HOST}/${type}/${id_primary}/${id_secondary}/${id_tertiary}`
 }
 
-export async function get_source_data(reference: Reference): Promise<SourceResult> {
-	const response = await fetch(get_sources_url(reference))
-	return await response.json()
+export async function get_source_data(reference: Reference): Promise<SourceResult | null> {
+	return await sources_client.get_source(reference)
 }
 
-export async function get_target_data({ id_primary, id_secondary, id_tertiary }: Reference): Promise<TargetTextResult> {
-	const response = await fetch(`${PUBLIC_TARGETS_API_HOST}/English/${id_primary}/${id_secondary}/${id_tertiary}`)
+export async function get_examples(concept: ConceptKey): Promise<ConceptExample[] | null> {
+	return await ontology_client.get_examples({ concept, source: 'Bible' })
+}
 
-	// Show the Unchurched Adults if available, because it's usually the most up-to-date.
-	// Otherwise, default to the first audience with text
-	const texts: TargetTextResult[] = await response.json()
-	return (
-		texts.find(text => text.audience === 'Unchurched Adults')
-		|| texts.find(text => text.text)
-		|| { text: '--', audience: 'none saved yet...' }
-	)
+export async function get_target_data(reference: Reference): Promise<TargetTextData | null> {
+	return await targets_client.get_target_text({ ref: reference, project: 'English', preferred_audience: 'Unchurched Adults' })
 }

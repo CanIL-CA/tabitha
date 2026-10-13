@@ -5,23 +5,16 @@ export type Reference = {
 	id_tertiary: string
 }
 
-export type ChapterReference = {
-	book: string
-	chapter: number
-}
+export type SecondaryIdReference = Pick<Reference, 'type' | 'id_primary' | 'id_secondary'>
 
+export type PrimaryIdReference = Pick<Reference, 'type' | 'id_primary'>
+
+// For some things that are Bible-specific (eg. the Copilot), it's nicer to use book/chapter/verse
+// rather than the more general id_primary/id_secondary/id_tertiary required by sources and targets
 export type VerseReference = {
 	book: string
 	chapter: number
 	verse: number
-}
-
-export type ParsedReference = {
-	type: string
-	book: string
-	chapter: number
-	verse: number
-	raw?: string
 }
 
 export type Book = Record<number, string>

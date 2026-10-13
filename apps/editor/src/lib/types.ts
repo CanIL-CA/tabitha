@@ -1,5 +1,5 @@
 import type { ConceptKey, PairingType } from '@tabitha/types'
-import type { CheckerTokenType, CheckerMessage, CheckerMessageLabel, EditorCheckResult, CheckerLookupResult, CheckerTextInsertion, CheckerAutoFix } from '@tabitha/types/editor'
+import type { CheckerTokenType, CheckerMessage, CheckerMessageLabel, CheckerLookupResult, CheckerTextInsertion, CheckerAutoFix } from '@tabitha/types/editor'
 import type { CaseFrame } from '$lib/rules/case_frame/types'
 
 export type LookupTerm = string
@@ -48,12 +48,4 @@ export type MessageInfo = {
 	plain?: boolean
 } & {
 	[key in CheckerMessageLabel]?: string
-}
-
-export type AiAssistResult = {
-	status: 'ok' | 'error'
-	phase_1: string
-	notes: string[]
-	check: EditorCheckResult
-	message?: string
 }

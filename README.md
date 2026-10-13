@@ -1,7 +1,7 @@
 # TaBiThA Monorepo
 
 <p align="left">
-  <a href="https://github.com/presciencelabs/tabitha/actions/workflows/ci.yml"><img src="https://github.com/presciencelabs/tabitha/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
+  <a href="https://github.com/CanIL-CA/tabitha/actions/workflows/ci.yml"><img src="https://github.com/CanIL-CA/tabitha/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" /></a>
   <a href="https://svelte.dev"><img src="https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white" alt="Svelte 5" /></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
@@ -65,7 +65,7 @@ This repo is set up to support work with AI coding agents, not just humans.
 
 - **Canonical instructions:** [`AGENTS.md`](AGENTS.md) — the 15 Development Philosophies enforced across the codebase (see the table further down). Many agent tools auto-detect this filename; if yours doesn't, read it before making changes.
 - **Narrower, task-scoped conventions:** [`.claude/skills/`](.claude/skills/) — per-library/domain guidance (Svelte, Tailwind CSS, Cloudflare Workers, SQLite, etc.) loaded contextually rather than kept in `AGENTS.md`. See [CONTRIBUTING.md](CONTRIBUTING.md) for when to add a new one.
-- **Before calling a task done**, run the relevant commands from [Verification & Testing](#verification--testing) below — at minimum `bun run check` (typecheck + lint), `bun run check:philosophies` (Development Philosophies audit), and `bun run check:secrets`.
+- **Before calling a task done**, run the relevant commands from [Verification & Testing](#verification--testing) below — at minimum `bun run check` (typecheck + lint) and `bun run check:audits` (every repo audit, including the Development Philosophies and secrets scans; the same list CI runs).
 
 ---
 
@@ -87,6 +87,7 @@ tabitha/
 │   ├── complex-terms/  # How-to sheet -> Complex_Terms rows, for sync and migration (@tabitha/complex-terms)
 │   ├── cors/           # Shared CORS allowed-origin handling for app APIs (@tabitha/cors)
 │   ├── eslint-config/  # Shared ESLint 9 configuration (@tabitha/eslint-config)
+│   ├── noindex/        # X-Robots-Tag noindex handle for the tool and API apps (@tabitha/noindex)
 │   ├── tsconfig/       # Base TypeScript configurations (@tabitha/tsconfig)
 │   ├── types/          # Shared cross-app domain types (@tabitha/types)
 │   ├── ui/             # Shared Svelte 5 / daisyUI components (@tabitha/ui)
@@ -188,6 +189,9 @@ bun run check:lint:fix
 # Run full workspace environment and health diagnostics
 bun run check:doctor
 
+# Run every repo audit in scripts/audits/registry.ts (what CI runs), with a summary at the end
+bun run check:audits
+
 # Audit codebase compliance against Development Philosophies
 bun run check:philosophies
 
@@ -202,6 +206,9 @@ bun run check:storage
 
 # Audit for accessible-name collisions between persistent nav/chrome and page content
 bun run check:a11y-names
+
+# Audit GitHub Actions workflows for PATs used as GitHub tokens and missing permissions blocks
+bun run check:github-actions
 
 # Run Markdown linting across all documentation
 bun run check:md

@@ -13,7 +13,7 @@
 - `GET /[project]` — Returns list of books for a project (e.g. `/English`).
 - `GET /[project]/[book]` — Returns list of chapters for a book (e.g. `/English/John`).
 - `GET /[project]/[book]/[chapter]` — Returns list of verses for a chapter (e.g. `/English/John/1`).
-- `GET /[project]/[book]/[chapter]/[verse]` — Returns target translation text and audience for a verse (e.g. `/English/John/1/1`).
+- `GET /[project]/[book]/[chapter]/[verse]` — Returns `{ reference, texts: [{ text, audience, ideal? }] }` for a verse (e.g. `/English/John/1/1`).
 
 ### 2. Search API
 

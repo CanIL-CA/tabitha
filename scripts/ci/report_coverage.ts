@@ -78,7 +78,11 @@ async function run_coverage_report() {
 		}
 
 		try {
-			const vitest_args = p.hasCoverage ? ['--coverage', '--coverage.reporter=text-summary'] : []
+			// `coverage.include` counts untested files too (Vitest 3's `coverage.all`); packages
+			// without a Vite config wouldn't get it from @tabitha/vite-config
+			const vitest_args = p.hasCoverage
+				? ['--coverage', '--coverage.reporter=text-summary', '--coverage.include=src/**/*.{js,ts,svelte}']
+				: []
 			const cov_proc = await $`cd ${p.dir} && bunx vitest run src --passWithNoTests ${vitest_args}`.quiet()
 			const output = cov_proc.text()
 

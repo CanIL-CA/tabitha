@@ -1,6 +1,6 @@
 import { LOOKUP_FILTERS } from '$lib/lookup_filters'
 import { ERRORS } from '$lib/parser/error_messages'
-import { MESSAGE_TYPE, TOKEN_TYPE, create_added_token, format_token_message, is_one_part_of_speech, set_message_plain } from '$lib/token'
+import { MESSAGE_TYPE, TOKEN_TYPE, create_added_token, format_token_message, is_one_part_of_speech, set_message_plain, token_has_tag } from '$lib/token'
 import { REGEXES } from '$lib/regexes'
 import { spaced_insertion_text } from '$lib/text_insertions'
 import { validate_case_frame } from './case_frame'
@@ -832,6 +832,20 @@ const builtin_checker_rules: BuiltInRule[] = [
 					return { warning: 'If this verb is passive, it must have an explicit agent. Use _implicitActiveAgent if necessary.' }
 				}
 			}),
+		},
+	},
+	{
+		name: 'Check for an Adjective used as a Noun after a determiner',
+		comment: 'eg. Romans 10:9 "God raised Jesus from the dead." John 11:25 "The one who believes will live." Should be "dead people" and "the person who". "the same" is allowed (Exodus 26:24 "Both corners should be the same.").',
+		rule: {
+			trigger: token => token_has_tag({ token, tag_to_check: { 'adj_usage': 'predicative' } })
+				&& token.lookup_results.length > 0
+				&& token.lookup_results.every(result => result.part_of_speech === 'Adjective' && result.stem !== 'same'),
+			context: create_context_filter({
+				'precededby': { 'tag': { 'determiner': 'definite_article|near_demonstrative|remote_demonstrative' }, 'skip': 'adjp_modifiers_attributive' },
+				'notfollowedby': { 'category': 'Noun', 'skip': 'adjp_attributive' },
+			}),
+			action: message_set_action(() => ({ error: "An Adjective cannot be used as a Noun. Add a Noun after '{token}' (eg. 'people'), or use a Noun instead." })),
 		},
 	},
 ]
