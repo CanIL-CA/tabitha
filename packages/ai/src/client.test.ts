@@ -96,7 +96,7 @@ describe('@tabitha/ai', () => {
 			await ai.generate_text({ contents: 'hi' })
 
 			const [, init] = fetch_mock.mock.calls[0]
-			expect(init.headers).toEqual(expect.objectContaining({ 'cf-aig-request-timeout': '60000' }))
+			expect(init.headers).toEqual(expect.objectContaining({ 'cf-aig-request-timeout': '120000' }))
 		})
 
 		test('throws AiResponseError naming the timeout when the gateway request times out', async () => {

@@ -110,7 +110,7 @@ export function check_pure_functions({ file_path, content, native_callback_names
 	native_callback_names: Set<string>
 }) {
 	// Philosophy 11: Pure functions -- avoid boolean "flag" parameters that branch a function's
-	// behavior. The one-argument half is enforced by ESLint (`no-restricted-syntax` in
+	// behavior. The one-argument half is enforced by ESLint (`tabitha/one-parameter` in
 	// @tabitha/eslint-config), which reads the AST rather than guessing from a regex.
 	if (!file_path.endsWith('.ts') && !file_path.endsWith('.svelte')) return
 

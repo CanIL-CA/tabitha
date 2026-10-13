@@ -11,7 +11,7 @@ import {
 
 // Only apps/ontology has a Users/Permissions model today. Its D1 migrations never seed real user
 // grants (those only ever exist in production) -- so every fresh local `db:load:ontology` starts
-// with nobody able to pass an is_authorized() check. This grants your own account access locally, in
+// with nobody holding any permission. This grants your own account access locally, in
 // the same Auth D1 file `db:load`/`vite dev` actually reads from -- resolved the same reliable way
 // db_load.ts does, rather than guessing a file name.
 async function grant_permission({ email, permissions }: {
@@ -62,13 +62,15 @@ async function grant_permission({ email, permissions }: {
 		console.warn(`⚠️  Unknown permission "${permission}" for app "ontology", skipping. Known: ${app_permissions.map(p => p.permission).join(', ')}`)
 	}
 
-	db.prepare('INSERT OR REPLACE INTO Users (email, name) VALUES (?, ?)').run(email, email)
+	// 'email' is no longer a primary key, and so a REPLACE doesn't trigger anymore
+	const user_id = db.prepare<{ id: number }, [string]>('SELECT id FROM Users WHERE email = ?').get(email)?.id
+		?? db.prepare('INSERT INTO Users (email, name) VALUES (?, ?)').run(email, email).lastInsertRowid
 
 	let granted = 0
 	for (const { id } of to_grant) {
-		const existing = db.prepare('SELECT 1 FROM User_Permissions WHERE user_email = ? AND permission_id = ?').get(email, id)
+		const existing = db.prepare('SELECT 1 FROM User_Permissions WHERE user_id = ? AND permission_id = ?').get(user_id, id)
 		if (!existing) {
-			db.prepare('INSERT INTO User_Permissions (user_email, permission_id) VALUES (?, ?)').run(email, id)
+			db.prepare('INSERT INTO User_Permissions (user_id, permission_id) VALUES (?, ?)').run(user_id, id)
 			granted++
 		}
 	}

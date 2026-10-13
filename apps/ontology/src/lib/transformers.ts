@@ -248,17 +248,14 @@ function encode_usage_categorization(part_of_speech: string): (categories: strin
 			return '_'.repeat(usages.length)
 		}
 
-		return categories.map((sentence, position) => encode_usage({ sentence, position })).join('')
+		return categories.map(encode_usage).join('')
 
 		/**
 		 * @param sentence the full usage sentence starting with 'always', 'sometimes', or 'never'
 		 * @param position the position within the categorization string
 		 * @returns the categorization character [ABC|abc|_]
 		 */
-		function encode_usage({ sentence, position }: {
-			sentence: string
-			position: number
-		}): string {
+		function encode_usage(sentence: string, position: number): string {
 			return encode_frequency({ sentence, character: get_usage_character(position) })
 		}
 

@@ -1,8 +1,7 @@
 /// <reference types="svelte" />
 /// <reference types="vite-plugin-pwa/client" />
-import type { User } from 'better-auth'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { SaveResult } from '#lib/types.js'
+import type { OntologyUser, SaveResult } from '#lib/types.js'
 
 declare global {
 	namespace App {
@@ -10,7 +9,7 @@ declare global {
 		interface Locals {
 			db_ontology: D1Database
 			db_auth: D1Database
-			user: User | undefined
+			user: OntologyUser | undefined
 		}
 		interface PageState {
 			save_result?: SaveResult

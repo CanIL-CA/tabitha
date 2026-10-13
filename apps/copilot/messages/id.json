@@ -53,6 +53,10 @@
 	"status_error": "Galat",
 	"status_ready": "Siap",
 	"retry": "Coba lagi",
+	"status_retrying": "Mencoba lagi",
+	"auto_retry_waiting": "Mencoba lagi dalam {seconds} detik (percobaan ulang {retry} dari {limit})...",
+	"auto_retry_running": "Mencoba lagi (percobaan ulang {retry} dari {limit})...",
+	"auto_retry_gave_up": "Gagal setelah {limit} kali percobaan ulang",
 	"discern_summary": "{count} catatan",
 	"brief_summary": "{semantic} catatan semantik, {tnn} catatan TNN, {other} lainnya",
 

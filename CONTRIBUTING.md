@@ -408,6 +408,39 @@ The Ontology uses a three-part semantic version number (`MAJOR.MINOR.PATCH`), an
 
 The `PATCH` bumps are handled automatically through the changes tracking system. A `MAJOR` or `MINOR` bump will need to be decided and updated manually through the web app.
 
+### Making local changes to Database schemas
+
+Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). Apart from Auth (below), there are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
+
+The process for the Auth db is a bit different and described below.
+
+#### Auth
+
+`DB_Auth` is the one database owned by D1 migrations, in `apps/ontology/migrations/auth/` ([ADR 0021](docs/decisions/0021-better-auth-sessions-in-d1.md)), not by a snapshot. It is a single, undated database shared by production and Previews, so a schema change reaches it as its own step.
+
+To change its schema:
+
+1. Add the next numbered file in `apps/ontology/migrations/auth/`. Never edit a migration that has been applied, and never drop a table that holds real data: `User_Permissions` holds the real grants.
+2. Rebuild your local Auth D1 from the migrations and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
+
+   ```bash
+   bun run db:load:ontology
+   bun run db:grant your.email@example.com
+   ```
+
+3. Apply it to the remote database before the code that needs it merges, from `apps/ontology`:
+
+   ```bash
+   bunx wrangler d1 migrations apply DB_Auth --remote
+   ```
+
+#### Ontology/Sources/Targets
+
+At this point, there are two options for locally testing a schema change to these databases:
+
+1. Alter the tables in the existing db in .wrangler using 'DB Browser for Sqlite' or another similar program.
+2. Locally re-run the whole migration after making the sql changes in the migration scripts. See [`tools/databases/README.md`](tools/databases/README.md) for more details.
+
 ---
 
 ## 🧪 Pre-Commit / Pre-PR Verification Gate
