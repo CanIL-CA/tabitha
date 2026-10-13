@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { merge_how_to_results } from './ontology'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 import type { SimplificationHint } from '@tabitha/types'
 
 function make_concept(overrides: Partial<Concept> = {}): Concept {

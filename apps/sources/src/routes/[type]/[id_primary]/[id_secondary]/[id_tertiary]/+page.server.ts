@@ -1,10 +1,10 @@
-import { get_next_reference, get_previous_reference } from '$lib/data/navigation'
-import { get_source_data } from '$lib/data/read'
-import { get_noun_list, structure_semantic_encoding, transform_semantic_encoding } from '$lib/encoding/semantic_encoding'
+import { get_next_reference, get_previous_reference } from '#lib/data/navigation.js'
+import { get_source_data } from '#lib/data/read.js'
+import { get_noun_list, structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import type { Reference } from '@tabitha/types'
-import type { PageData } from '$lib/types'
+import type { PageData } from '#lib/types.js'
 
 export async function load({ locals: { db }, params: { type, id_primary, id_secondary, id_tertiary } }: Parameters<PageServerLoad>[0]) {
 	const reference: Reference = { type, id_primary, id_secondary, id_tertiary }

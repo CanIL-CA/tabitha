@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { AiClient } from '@tabitha/ai'
-import type { CopilotSettings } from '$lib/types'
+import type { CopilotSettings } from '#lib/types.js'
 
-vi.mock('$lib/fetches', () => ({ fetch_encoding: vi.fn(), fetch_target_text: vi.fn() }))
+vi.mock('#lib/fetches.js', () => ({ fetch_encoding: vi.fn(), fetch_target_text: vi.fn() }))
 
-const { fetch_encoding, fetch_target_text } = await import('$lib/fetches')
+const { fetch_encoding, fetch_target_text } = await import('#lib/fetches.js')
 const { CopilotError, get_copilot_result, to_error_result } = await import('./copilot_core')
 
 const verse = { book: 'Luke', chapter: 11, verse: 1 }
@@ -15,11 +15,11 @@ describe('to_error_result', () => {
 	})
 
 	test('keeps a CopilotError retryable unless it says otherwise', () => {
-		expect(to_error_result({ verse, error: new CopilotError('Aquifer is slow.'), fallback_message: 'Unexpected' })).toEqual({ type: 'error', verse, error: 'Aquifer is slow.' })
+		expect(to_error_result({ verse, error: new CopilotError({ message: 'Aquifer is slow.' }), fallback_message: 'Unexpected' })).toEqual({ type: 'error', verse, error: 'Aquifer is slow.' })
 	})
 
 	test('carries over a CopilotError that must not be retried', () => {
-		const error = new CopilotError('Potential safety issue found in the TNN notes.', { retryable: false })
+		const error = new CopilotError({ message: 'Potential safety issue found in the TNN notes.', retryable: false })
 
 		expect(to_error_result({ verse, error, fallback_message: 'Unexpected' })).toEqual({ type: 'error', verse, error: 'Potential safety issue found in the TNN notes.', retryable: false })
 	})

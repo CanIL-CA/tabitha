@@ -3,12 +3,16 @@ import { create_logger } from '../log'
 
 const log = create_logger('Targets migration')
 
-export function migrate_text_table(tbta_db: Database, project: string, targets_db: Database) {
+export function migrate_text_table({ tbta_db, project, targets_db }: {
+	tbta_db: Database
+	project: string
+	targets_db: Database
+}) {
 	const transformed_data = transform_tbta_data(tbta_db)
 
-	create_tabitha_table(targets_db, project)
+	create_tabitha_table({ targets_db, project })
 
-	load_data(targets_db, project, transformed_data)
+	load_data({ targets_db, project, transformed_data })
 }
 
 type TransformedData = {
@@ -21,7 +25,7 @@ type TransformedData = {
 function transform_tbta_data(tbta_db: Database): TransformedData[] {
 	const table_names = extract_table_names()
 	const audience_names = extract_audience_names()
-	const transformed_data = transform_data(table_names, audience_names)
+	const transformed_data = transform_data({ table_names, audience_names })
 
 	return transformed_data
 
@@ -62,7 +66,10 @@ function transform_tbta_data(tbta_db: Database): TransformedData[] {
 		return audience_names
 	}
 
-	function transform_data(table_names: string[], audience_names: string[]) {
+	function transform_data({ table_names, audience_names }: {
+		table_names: string[]
+		audience_names: string[]
+	}) {
 		log.step(`Transforming data from ${tbta_db.filename}...`)
 
 		type DbRow = { Reference: string, Verse: string }
@@ -86,25 +93,26 @@ function transform_tbta_data(tbta_db: Database): TransformedData[] {
 			// A line may be blank if there is no saved text for that audience
 			return Verse
 				.split(/\r?\n/) // guarding against os-specific line endings
-				.flatMap(extract_audience_text) // used flatMap to combine line cleaning, audience mapping, and skipping blank lines in a single pass
+				.flatMap((line, index): TransformedData[] => { // used flatMap to combine line cleaning, audience mapping, and skipping blank lines in a single pass
+					const text = line.split('~!~')[0].trim()
+					if (!text) return []
 
-			function extract_audience_text(line: string, index: number): TransformedData[] {
-				const text = line.split('~!~')[0].trim()
-				if (!text) return []
-
-				return [{
-					book,
-					chapter: Number(chapter),
-					verse: Number(verse),
-					audience: audience_names[index],
-					text,
-				}]
-			}
+					return [{
+						book,
+						chapter: Number(chapter),
+						verse: Number(verse),
+						audience: audience_names[index],
+						text,
+					}]
+				})
 		}
 	}
 }
 
-function create_tabitha_table(targets_db: Database, project: string) {
+function create_tabitha_table({ targets_db, project }: {
+	targets_db: Database
+	project: string
+}) {
 	log.step(`Creating the "Text" table in ${targets_db.filename} if it does not already exist...`)
 
 	targets_db.run(`
@@ -126,7 +134,11 @@ function create_tabitha_table(targets_db: Database, project: string) {
 	return targets_db
 }
 
-function load_data(targets_db: Database, project: string, transformed_data: TransformedData[]) {
+function load_data({ targets_db, project, transformed_data }: {
+	targets_db: Database
+	project: string
+	transformed_data: TransformedData[]
+}) {
 	log.step(`Loading ${project} data into the "Text" table...`)
 
 	transformed_data.forEach(({ book, chapter, verse, audience, text }, index) => {

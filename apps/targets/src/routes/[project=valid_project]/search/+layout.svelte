@@ -1,6 +1,6 @@
 <script>
-	import '$lib/app.css'
-	import { Search } from '$lib'
+	import '#lib/app.css'
+	import { Search } from '#lib/index.js'
 	import { onMount } from 'svelte'
 	import { Header, Footer, theme_state } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'

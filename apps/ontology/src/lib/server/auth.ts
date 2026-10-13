@@ -1,4 +1,4 @@
-import type { UserEmail, UserInfo } from '$lib/types'
+import type { UserEmail, UserInfo } from '#lib/types.js'
 
 export async function get_user_info({ locals, email }: { locals: App.Locals, email: UserEmail }): Promise<UserInfo> {
 	const sql = `

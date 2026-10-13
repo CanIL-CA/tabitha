@@ -1,12 +1,12 @@
-import { TOKEN_TYPE, create_clause_token, create_token, flatten_sentence } from '$lib/token'
+import { TOKEN_TYPE, create_clause_token, create_token, flatten_sentence } from '#lib/token.js'
 import { describe, expect, test } from 'vitest'
 import { apply_rules } from './rules_processor'
 import { LOOKUP_RULES } from './lookup_rules'
 import { parse_transform_rule } from './transform_rules'
 import { parse_checker_rule } from './checker_rules'
 import { parse_part_of_speech_rule } from './part_of_speech_rules'
-import { expect_error, create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '$lib/test_helps'
-import type { CheckerRuleJson } from '$lib/rules/types'
+import { expect_error, create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '#lib/test_helps.js'
+import type { CheckerRuleJson } from '#lib/rules/types.js'
 
 describe('transform rules', () => {
 	test('trigger does not match', () => {

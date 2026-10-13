@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte'
 	import Icon from '@iconify/svelte'
-	import { m } from '$lib/paraglide/messages'
+	import { m } from '#lib/paraglide/messages.js'
 
 	type Props = {
 		children: Snippet

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	import Features from './Features.svelte'
 	import HoverPopup from './HoverPopup.svelte'
 	import OntologyResult from './OntologyResult.svelte'

@@ -3,7 +3,10 @@ import { findings } from './types'
 const LAYOUT_UTILITY_PATTERN = /^(flex|grid|inline-flex|inline-grid|items-|justify-|content-|place-|gap-\d)/
 const DAISYUI_STRUCTURAL_PATTERN = /^(card-title|card-actions|btn|navbar|modal-action|menu|tabs|steps|alert)/
 
-export function check_prose_scoping(file_path: string, content: string) {
+export function check_prose_scoping({ file_path, content }: {
+	file_path: string
+	content: string
+}) {
 	// Philosophy 13: Scope "prose" to content; escape with "not-prose"
 	if (!file_path.endsWith('.svelte')) return
 

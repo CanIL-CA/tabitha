@@ -1,14 +1,14 @@
-import { add_tag_to_token, TOKEN_TYPE } from '$lib/token'
+import { add_tag_to_token, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_token_filter, create_token_transform, create_token_transforms, from_built_in_rule, simple_rule_action } from './rules_parser'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
-import type { Token, Tag } from '$lib/types'
+import type { Token, Tag } from '#lib/types.js'
 import type {
 	BuiltInRule,
 	RuleTriggerContext,
 	TokenRule,
 	TokenTransform,
 	TransformRuleJson,
-} from '$lib/rules/types'
+} from '#lib/rules/types.js'
 
 /**
  * These are words that may change their underlying data based on the context around them.

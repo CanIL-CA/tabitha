@@ -3,7 +3,7 @@ import { get_matches } from './tree_pattern_match'
 import { simple_feature_flags } from './simple_feature_flags'
 import { implicit_feature_flags } from './implicit_flags'
 import { higher_level_flags } from './higher_level_flags'
-import type { EntityMatchResult, FlagExtractionRule, CopilotEncodingEntity } from '$lib/types'
+import type { EntityMatchResult, FlagExtractionRule, CopilotEncodingEntity } from '#lib/types.js'
 import type { CopilotEncodingFlag } from '@tabitha/types'
 
 const all_flag_extractions: FlagExtractionRule[] = [

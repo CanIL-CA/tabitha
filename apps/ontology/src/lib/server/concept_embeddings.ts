@@ -1,6 +1,6 @@
 import { AiResponseError, create_embedding_client, EMBEDDING_MODEL, format_embedding_input, type EmbeddingClient } from '@tabitha/ai'
 import type { VectorizeMatches, VectorizeQueryOptions, VectorizeVector, VectorizeVectorMetadata } from '@cloudflare/workers-types'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 
 // Vectorize documents a 1000-vector cap per upsert through a Worker binding; embedding (one
 // gateway call per concept) is the slow part, so progress is written in smaller chunks -- a

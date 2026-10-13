@@ -1,5 +1,6 @@
 {
   "$schema": "https://v2-10-11.turborepo.dev/schema.json",
+  "agentGuidance": false,
   "tasks": {
     "prepare": {
       "inputs": [
@@ -64,6 +65,8 @@
       ],
       "inputs": [
         "src/**",
+        "e2e/**",
+        "playwright.config.js",
         "svelte.config.js",
         "tsconfig.json"
       ]

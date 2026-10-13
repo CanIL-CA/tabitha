@@ -9,7 +9,10 @@ const PARENT_RELATIVE_IMPORT_PATTERN = /from\s+['"](\.\.\/[^'"]+)['"]/g
 // mistaken for) a numbered philosophy.
 const RULE_ID = 20
 
-export function check_lib_routes_boundary(file_path: string, content: string) {
+export function check_lib_routes_boundary({ file_path, content }: {
+	file_path: string
+	content: string
+}) {
 	// Only a file under src/lib can violate this -- src/routes depending on src/lib is the
 	// intended direction. Only imports that climb at least one directory (`../`) can possibly
 	// resolve outside the lib subtree, so a same-directory `./sibling` import never needs checking.
@@ -32,7 +35,7 @@ export function check_lib_routes_boundary(file_path: string, content: string) {
 			file_path,
 			line_number,
 			snippet: match[0].trim(),
-			message: `Imports from "${specifier}", which resolves into src/routes. $lib must not depend on route-specific code -- move the shared type or helper into $lib instead.`,
+			message: `Imports from "${specifier}", which resolves into src/routes. src/lib must not depend on route-specific code -- move the shared type or helper into src/lib instead.`,
 		})
 	}
 }

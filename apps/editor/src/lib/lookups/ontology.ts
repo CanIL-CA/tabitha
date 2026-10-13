@@ -1,8 +1,8 @@
 import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
 import { create_ontology_client } from '@tabitha/api-client'
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { create_lookup_result } from '$lib/token'
-import type { Token, LookupResult } from '$lib/types'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { create_lookup_result } from '#lib/token.js'
+import type { Token, LookupResult } from '#lib/types.js'
 import type { OntologyResult } from '@tabitha/types'
 
 const ontology_client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST, cache: true })
@@ -10,7 +10,7 @@ const ontology_client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_H
 export async function check_ontology(lookup_token: Token) {
 	const results = (await Promise.all(lookup_token.lookup_terms.map(term => ontology_client.search_concepts({ q: term })))).flat()
 
-	const found_results = results.reduce(transform_results, [])
+	const found_results = results.reduce<LookupResult[]>(transform_results, [])
 	const not_found_results = lookup_token.lookup_results.filter(lookup => !results.some(LOOKUP_FILTERS.MATCHES_LOOKUP(lookup)))
 	lookup_token.lookup_results = found_results.concat(not_found_results)
 

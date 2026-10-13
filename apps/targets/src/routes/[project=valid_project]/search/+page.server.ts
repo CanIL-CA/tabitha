@@ -1,12 +1,12 @@
 import { env } from '$env/dynamic/private'
 import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
-import { extract_exact_phrase } from '$lib/api_bible/search.server'
-import { parse_search_query, search_text } from '$lib/server/search'
-import { run_phrase_mode } from '$lib/server/phrase_mode'
-import { MODE } from '$lib/search/modes'
+import { extract_exact_phrase } from '#lib/api_bible/search.server.js'
+import { parse_search_query, search_text } from '#lib/server/search.js'
+import { run_phrase_mode } from '#lib/server/phrase_mode.js'
+import { MODE } from '#lib/search/modes.js'
 import { record_usage_event, type SearchEvent } from '@tabitha/usage'
 import type { PageServerLoad } from './$types'
-import type { ReturnTo } from '$lib/types'
+import type { ReturnTo } from '#lib/types.js'
 import type { TargetProject } from '@tabitha/types'
 
 export async function load({ url: { searchParams }, params: { project }, locals: { db }, platform }: Parameters<PageServerLoad>[0]) {

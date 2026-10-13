@@ -6,8 +6,8 @@ import {
 	theta_grid,
 	theta_grid_arguments,
 	usage_info,
-} from '$lib/lookups'
-import type { Concept, CuratedExample, SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '$lib/types'
+} from '#lib/lookups.js'
+import type { Concept, CuratedExample, SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '#lib/types.js'
 import type { PartOfSpeech, Reference } from '@tabitha/types'
 
 /**
@@ -252,11 +252,11 @@ function encode_usage_categorization(part_of_speech: string): (categories: strin
 
 		/**
 		 * @param sentence the full usage sentence starting with 'always', 'sometimes', or 'never'
-		 * @param i the position within the categorization string
+		 * @param position the position within the categorization string
 		 * @returns the categorization character [ABC|abc|_]
 		 */
-		function encode_usage(sentence: string, i: number): string {
-			return encode_frequency({ sentence, character: get_usage_character(i) })
+		function encode_usage(sentence: string, position: number): string {
+			return encode_frequency({ sentence, character: get_usage_character(position) })
 		}
 
 		/**

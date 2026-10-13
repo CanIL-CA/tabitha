@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { PageProps } from './$types'
 	import Icon from '@iconify/svelte'
-	import ChangeDiffData from '$lib/ChangeDiffData.svelte'
-	import { check_for_pending_creates } from '$lib/offline/pending'
-	import { format_datetime } from '$lib/format'
+	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
+	import { check_for_pending_creates } from '#lib/offline/pending.js'
+	import { format_datetime } from '#lib/format.js'
 	import { concepts_match } from '@tabitha/types/patterns'
-	import { change_made_between_versions } from '$lib/changes'
-	import type { OntologyChangeAction, OntologyChange } from '$lib/types'
+	import { change_made_between_versions } from '#lib/changes.js'
+	import type { OntologyChangeAction, OntologyChange } from '#lib/types.js'
 	import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 
 	let { data }: PageProps = $props()

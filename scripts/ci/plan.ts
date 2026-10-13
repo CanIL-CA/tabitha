@@ -75,7 +75,11 @@ export function build_turbo_filter_args(changed_package_names: string[]): string
 	return changed_package_names.map(name => `--filter=...${name}`)
 }
 
-function skip_everything_plan(base_ref: string | undefined, changed_files: string[], reason: string): CiPlan {
+function skip_everything_plan({ base_ref, changed_files, reason }: {
+	base_ref: string | undefined
+	changed_files: string[]
+	reason: string
+}): CiPlan {
 	return {
 		base_ref,
 		changed_files,
@@ -90,7 +94,11 @@ function skip_everything_plan(base_ref: string | undefined, changed_files: strin
 	}
 }
 
-function run_everything_plan(base_ref: string | undefined, changed_files: string[], reason: string): CiPlan {
+function run_everything_plan({ base_ref, changed_files, reason }: {
+	base_ref: string | undefined
+	changed_files: string[]
+	reason: string
+}): CiPlan {
 	return {
 		base_ref,
 		changed_files,
@@ -114,7 +122,7 @@ async function get_package_npm_name(pkg: WorkspacePackage): Promise<string> {
 export async function build_ci_plan(): Promise<CiPlan> {
 	const base_ref = await resolve_diff_base()
 	if (!base_ref) {
-		return run_everything_plan(base_ref, [], 'no git history available to diff against -- running everything to be safe')
+		return run_everything_plan({ base_ref, changed_files: [], reason: 'no git history available to diff against -- running everything to be safe' })
 	}
 
 	const diff_output = (await $`git diff --name-only ${base_ref}...HEAD`.text()).trim()
@@ -123,18 +131,18 @@ export async function build_ci_plan(): Promise<CiPlan> {
 	const classification = classify_files(changed_files)
 
 	if (classification.kind === 'no_changes') {
-		return skip_everything_plan(base_ref, changed_files, 'no changes detected against base')
+		return skip_everything_plan({ base_ref, changed_files, reason: 'no changes detected against base' })
 	}
 	if (classification.kind === 'force_full') {
-		return run_everything_plan(base_ref, changed_files, `touches monorepo-wide infrastructure (${classification.matched_file})`)
+		return run_everything_plan({ base_ref, changed_files, reason: `touches monorepo-wide infrastructure (${classification.matched_file})` })
 	}
 	if (classification.kind === 'docs_only') {
-		return skip_everything_plan(base_ref, changed_files, `docs-only change (${changed_files.length} markdown file(s))`)
+		return skip_everything_plan({ base_ref, changed_files, reason: `docs-only change (${changed_files.length} markdown file(s))` })
 	}
 
 	const changed_packages = await get_changed_workspace_packages(base_ref)
 	if (changed_packages.length === 0) {
-		return run_everything_plan(base_ref, changed_files, 'change does not map to a known workspace package -- running everything to be safe')
+		return run_everything_plan({ base_ref, changed_files, reason: 'change does not map to a known workspace package -- running everything to be safe' })
 	}
 
 	const changed_package_names = await Promise.all(changed_packages.map(get_package_npm_name))
@@ -166,12 +174,15 @@ function print_plan(plan: CiPlan) {
 	console.log(`Changed:   ${plan.changed_files.length} file(s)`)
 	console.log(`Decision:  ${plan.reason}\n`)
 
-	const row = (label: string, run: boolean) => console.log(`  ${run ? '✅ run  ' : '⏭️  skip '} ${label}`)
-	row('production_build (build)', plan.run_build)
-	row('code_quality (typecheck & eslint)', plan.run_quality)
-	row('unit_tests (coverage)', plan.run_unit)
-	row('e2e_tests (Playwright)', plan.run_e2e)
-	row('windows_dx_smoke (db:load & unit tests on windows-latest)', plan.run_windows_smoke)
+	const row = ({ label, run }: {
+		label: string
+		run: boolean
+	}) => console.log(`  ${run ? '✅ run  ' : '⏭️  skip '} ${label}`)
+	row({ label: 'production_build (build)', run: plan.run_build })
+	row({ label: 'code_quality (typecheck & eslint)', run: plan.run_quality })
+	row({ label: 'unit_tests (coverage)', run: plan.run_unit })
+	row({ label: 'e2e_tests (Playwright)', run: plan.run_e2e })
+	row({ label: 'windows_dx_smoke (db:load & unit tests on windows-latest)', run: plan.run_windows_smoke })
 
 	if (plan.turbo_filter_args.length > 0) {
 		console.log(`\n  turbo filter: ${plan.turbo_filter_args.join(' ')}`)

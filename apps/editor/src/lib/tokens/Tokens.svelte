@@ -6,7 +6,7 @@
 	import AutoFixed from './AutoFixed.svelte'
 	import SingleToken from './SingleToken.svelte'
 	import Clause from './Clause.svelte'
-	import { TOKEN_TYPE } from '$lib/token'
+	import { TOKEN_TYPE } from '#lib/token.js'
 
 	let { tokens }: { tokens: CheckerToken[] } = $props()
 

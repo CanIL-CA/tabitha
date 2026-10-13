@@ -3,15 +3,18 @@ import { TOKEN_TYPE, create_clause_token, create_added_token, create_token, MESS
 import { ERRORS } from './error_messages'
 import { clausify, flatten_sentences } from './clausify'
 import type { CheckerTokenType } from '@tabitha/types'
-import type { Token } from '$lib/types'
-import { create_sentence_for_test } from '$lib/test_helps'
+import type { Token } from '#lib/types.js'
+import { create_sentence_for_test } from '#lib/test_helps.js'
 
 function create_tokens(tokens: string[]): Token[] {
 	const type = (token: string): CheckerTokenType => token.length > 1 ? TOKEN_TYPE.LOOKUP_WORD : TOKEN_TYPE.PUNCTUATION
 	return tokens.map(token => create_token({ token, type: type(token) }))
 }
 
-function create_error_token(token: string, message: string): Token {
+function create_error_token({ token, message }: {
+	token: string
+	message: string
+}): Token {
 	return create_added_token({ token, message: { ...MESSAGE_TYPE.ERROR, message, rule_id: 'clause:syntax' } })
 }
 
@@ -122,7 +125,7 @@ describe('clausify: brackets', () => {
 				create_sentence_for_test([
 					create_clause_token({ sub_tokens: [
 						...test_tokens.slice(0, 3),
-						create_error_token(']', ERRORS.MISSING_CLOSING_BRACKET),
+						create_error_token({ token: ']', message: ERRORS.MISSING_CLOSING_BRACKET }),
 					] }),
 				]),
 			]
@@ -139,7 +142,7 @@ describe('clausify: brackets', () => {
 						...test_tokens.slice(0, 2),
 						create_clause_token({ sub_tokens: test_tokens.slice(2, 5) }),
 						test_tokens[5],
-						create_error_token(']', ERRORS.MISSING_CLOSING_BRACKET),
+						create_error_token({ token: ']', message: ERRORS.MISSING_CLOSING_BRACKET }),
 					] }),
 				]),
 			]
@@ -152,7 +155,7 @@ describe('clausify: brackets', () => {
 
 			const expected = [
 				create_sentence_for_test([
-					create_error_token('[', ERRORS.MISSING_OPENING_BRACKET),
+					create_error_token({ token: '[', message: ERRORS.MISSING_OPENING_BRACKET }),
 					...test_tokens,
 				]),
 			]
@@ -165,7 +168,7 @@ describe('clausify: brackets', () => {
 
 			const expected = [
 				create_sentence_for_test([
-					create_error_token('[', ERRORS.MISSING_OPENING_BRACKET),
+					create_error_token({ token: '[', message: ERRORS.MISSING_OPENING_BRACKET }),
 					create_clause_token({ sub_tokens: test_tokens.slice(0, 3) }),
 					...test_tokens.slice(3, 6),
 				]),
@@ -185,9 +188,9 @@ describe('clausify: brackets', () => {
 							test_tokens[1],
 							create_clause_token({ sub_tokens: test_tokens.slice(2, 5) }),
 							test_tokens[5],
-							create_error_token(']', ERRORS.MISSING_CLOSING_BRACKET),
+							create_error_token({ token: ']', message: ERRORS.MISSING_CLOSING_BRACKET }),
 						] }),
-						create_error_token(']', ERRORS.MISSING_CLOSING_BRACKET),
+						create_error_token({ token: ']', message: ERRORS.MISSING_CLOSING_BRACKET }),
 					] }),
 				]),
 			]
@@ -200,8 +203,8 @@ describe('clausify: brackets', () => {
 
 			const expected = [
 				create_sentence_for_test([
-					create_error_token('[', ERRORS.MISSING_OPENING_BRACKET),
-					create_error_token('[', ERRORS.MISSING_OPENING_BRACKET),
+					create_error_token({ token: '[', message: ERRORS.MISSING_OPENING_BRACKET }),
+					create_error_token({ token: '[', message: ERRORS.MISSING_OPENING_BRACKET }),
 					create_clause_token({ sub_tokens: test_tokens.slice(0, 3) }),
 					...test_tokens.slice(3, 6),
 				]),
@@ -219,7 +222,7 @@ describe('clausify: brackets', () => {
 				create_sentence_for_test([
 					create_clause_token({ sub_tokens: [
 						...test_tokens.slice(0, 5),
-						create_error_token(']', ERRORS.MISSING_CLOSING_BRACKET),
+						create_error_token({ token: ']', message: ERRORS.MISSING_CLOSING_BRACKET }),
 					] }),
 				]),
 				create_sentence_for_test(test_tokens.slice(5, 7)),
@@ -233,7 +236,7 @@ describe('clausify: brackets', () => {
 			const expected = [
 				create_sentence_for_test(test_tokens.slice(0, 2)),
 				create_sentence_for_test([
-					create_error_token('[', ERRORS.MISSING_OPENING_BRACKET),
+					create_error_token({ token: '[', message: ERRORS.MISSING_OPENING_BRACKET }),
 					...test_tokens.slice(2, 5),
 				]),
 			]
@@ -247,11 +250,11 @@ describe('clausify: brackets', () => {
 				create_sentence_for_test([
 					create_clause_token({ sub_tokens: [
 						...test_tokens.slice(0, 3),
-						create_error_token(']', ERRORS.MISSING_CLOSING_BRACKET),
+						create_error_token({ token: ']', message: ERRORS.MISSING_CLOSING_BRACKET }),
 					] }),
 				]),
 				create_sentence_for_test([
-					create_error_token('[', ERRORS.MISSING_OPENING_BRACKET),
+					create_error_token({ token: '[', message: ERRORS.MISSING_OPENING_BRACKET }),
 					...test_tokens.slice(3, 6),
 				]),
 			]
@@ -327,7 +330,7 @@ describe('clausify: period check', () => {
 			const expected_tokens = [
 				create_sentence_for_test([
 					...test_tokens,
-					create_error_token('.', ERRORS.MISSING_PERIOD),
+					create_error_token({ token: '.', message: ERRORS.MISSING_PERIOD }),
 				]),
 			]
 
@@ -340,7 +343,7 @@ describe('clausify: period check', () => {
 				create_sentence_for_test(test_tokens.slice(0, 2)),
 				create_sentence_for_test([
 					test_tokens[2],
-					create_error_token('.', ERRORS.MISSING_PERIOD),
+					create_error_token({ token: '.', message: ERRORS.MISSING_PERIOD }),
 				]),
 			]
 
@@ -352,7 +355,7 @@ describe('clausify: period check', () => {
 			const expected_tokens = [
 				create_sentence_for_test([
 					create_clause_token({ sub_tokens: test_tokens.slice(0, 3) }),
-					create_error_token('.', ERRORS.MISSING_PERIOD),
+					create_error_token({ token: '.', message: ERRORS.MISSING_PERIOD }),
 				]),
 			]
 
@@ -364,7 +367,7 @@ describe('clausify: period check', () => {
 			const expected_tokens = [
 				create_sentence_for_test([
 					...test_tokens,
-					create_error_token('.', ERRORS.MISSING_PERIOD),
+					create_error_token({ token: '.', message: ERRORS.MISSING_PERIOD }),
 				]),
 			]
 

@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { default_settings } from '$lib/lookups'
-	import { fetch_notes, fetch_target_text } from '$lib/fetches'
-	import { persisted } from '$lib/store.svelte'
+	import { default_settings } from '#lib/lookups.js'
+	import { fetch_notes, fetch_target_text } from '#lib/fetches.js'
+	import { persisted } from '#lib/store.svelte.js'
 	import Icon from '@iconify/svelte'
-	import BookSelect from '$lib/BookSelect.svelte'
-	import Settings from '$lib/Settings.svelte'
-	import CopilotResultDisplay from '$lib/CopilotResultDisplay.svelte'
+	import BookSelect from '#lib/BookSelect.svelte'
+	import Settings from '#lib/Settings.svelte'
+	import CopilotResultDisplay from '#lib/CopilotResultDisplay.svelte'
 	import type { TargetTextData, CopilotResult, VerseReference } from '@tabitha/types'
-	import type { CopilotSettings, CopilotStep } from '$lib/types'
-	import { m } from '$lib/paraglide/messages'
-	import { MODE_LABELS } from '$lib/labels'
+	import type { CopilotSettings, CopilotStep } from '#lib/types.js'
+	import { m } from '#lib/paraglide/messages.js'
+	import { MODE_LABELS } from '#lib/labels.js'
 
 	let reference = $state(persisted<VerseReference>({ key: 'saved_verse', defaultValue: {
 		book: 'Genesis',

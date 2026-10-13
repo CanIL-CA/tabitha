@@ -149,7 +149,10 @@ const WORD_ENTITY_TYPES = new Set(['N', 'V', 'A', 'a', 'P', 'C', 'r', 'p'])
  * ~\wd ~\tg ~\lu )             => { type: '', label: '', features: '', value: ')' }
  * ~\wd ~\tg .-~\lu .           => { type: '.', label: 'period', features: '', value: '.' }
  */
-export function transform_semantic_encoding(semantic_encoding: string, complex_concepts: Set<string>): SourceEntity[] {
+export function transform_semantic_encoding({ semantic_encoding, complex_concepts }: {
+	semantic_encoding: string
+	complex_concepts: Set<string>
+}): SourceEntity[] {
 	const EXTRACT_TYPE_FEATURES_VALUES = /~\\wd ~\\tg (?:([\w.])-([^~]*))?~\\lu ([^~]+)/g
 	const entities = [...semantic_encoding.matchAll(EXTRACT_TYPE_FEATURES_VALUES)]
 

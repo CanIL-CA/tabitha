@@ -8,8 +8,5 @@
  * `console.error` where it's thrown, for Cloudflare Observability to pick up.
  */
 export class AiResponseError extends Error {
-	constructor(message: string, options?: ErrorOptions) {
-		super(message, options)
-		this.name = 'AiResponseError'
-	}
+	override name = 'AiResponseError'
 }

@@ -1,7 +1,7 @@
-import { add_tag_to_token, create_gap_token, TOKEN_TYPE } from '$lib/token'
+import { add_tag_to_token, create_gap_token, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_skip_filter, create_token_filter, simple_rule_action } from '../rules_parser'
-import type { Token } from '$lib/types'
-import type { RuleTriggerContext, TokenFilter, TokenRuleCore } from '$lib/rules/types'
+import type { Token } from '#lib/types.js'
+import type { RuleTriggerContext, TokenFilter, TokenRuleCore } from '#lib/rules/types.js'
 
 export function fill_same_subject_gap({ tokens, rule_id }: { tokens: Token[]; rule_id: string }) {
 	// place the gap token right after any conjunction or adposition

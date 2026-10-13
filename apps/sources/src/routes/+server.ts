@@ -1,8 +1,7 @@
-import { get_types } from '$lib/data/read'
-import { json } from '@sveltejs/kit'
+import { get_types } from '#lib/data/read.js'
 import type { RequestHandler } from './$types'
 
 export async function GET({ locals: { db } }: Parameters<RequestHandler>[0]) {
 	const results = await get_types(db)
-	return json(results)
+	return Response.json(results)
 }

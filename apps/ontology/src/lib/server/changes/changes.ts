@@ -1,9 +1,9 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
-import { get_version } from '$lib/server/ontology'
-import { default_categories } from '$lib/lookups'
-import { create_change_fields, diff_change_fields } from '$lib/changes'
-import type { DbOntologyChange } from '$lib/server/types'
+import { get_version } from '#lib/server/ontology.js'
+import { default_categories } from '#lib/lookups.js'
+import { create_change_fields, diff_change_fields } from '#lib/changes.js'
+import type { DbOntologyChange } from '#lib/server/types.js'
 import type { PartOfSpeech } from '@tabitha/types'
 import type {
 	OntologyChange,
@@ -14,7 +14,7 @@ import type {
 	UserPermissions,
 	OntologyUser,
 	WorkflowInfo,
-} from '$lib/types'
+} from '#lib/types.js'
 import { get_user_names } from '../auth'
 
 export async function get_all_changes(db: D1Database): Promise<OntologyChange[]> {

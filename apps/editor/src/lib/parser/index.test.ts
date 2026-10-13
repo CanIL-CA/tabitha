@@ -2,7 +2,7 @@ import { parse_for_test } from '.'
 import { describe, expect, test } from 'vitest'
 import { TOKEN_TYPE } from '../token'
 import { ERRORS } from './error_messages'
-import { expect_error, expect_error_to_match, expect_no_message } from '$lib/test_helps'
+import { expect_error, expect_error_to_match, expect_no_message } from '#lib/test_helps.js'
 
 describe('parse', () => {
 	describe('no problems', () => {

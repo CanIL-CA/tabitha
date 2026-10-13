@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Concept } from '$lib/types'
+	import type { Concept } from '#lib/types.js'
 
 	type Props = {
 		concept: Concept

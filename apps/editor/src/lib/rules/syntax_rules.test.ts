@@ -1,8 +1,8 @@
 import { TOKEN_TYPE, flatten_sentence } from '../token'
 import { apply_rules } from './rules_processor'
 import { SYNTAX_RULES } from './syntax_rules'
-import { tokenize_input } from '$lib/parser/tokenize'
-import { clausify } from '$lib/parser/clausify'
+import { tokenize_input } from '#lib/parser/tokenize.js'
+import { clausify } from '#lib/parser/clausify.js'
 import { describe, expect, test } from 'vitest'
 
 describe('sentence syntax: tag setting', () => {

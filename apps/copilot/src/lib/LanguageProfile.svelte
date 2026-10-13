@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import ValueGroups from './ValueGroups.svelte'
-	import { m } from '$lib/paraglide/messages'
-	import type { LanguageProfile } from '$lib/types'
+	import { m } from '#lib/paraglide/messages.js'
+	import type { LanguageProfile } from '#lib/types.js'
 
 	type Props = {
 		profile: LanguageProfile

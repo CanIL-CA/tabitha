@@ -29,7 +29,10 @@ type LiveDb = {
 	created_at: string
 }
 
-function collect_bound_ids(obj: unknown, ids: Set<string>) {
+function collect_bound_ids({ obj, ids }: {
+	obj: unknown
+	ids: Set<string>
+}) {
 	if (!obj || typeof obj !== 'object') return
 	const record = obj as Record<string, unknown>
 	if (Array.isArray(record.d1_databases)) {
@@ -38,7 +41,7 @@ function collect_bound_ids(obj: unknown, ids: Set<string>) {
 			if (typeof id === 'string') ids.add(id)
 		}
 	}
-	for (const value of Object.values(record)) collect_bound_ids(value, ids)
+	for (const value of Object.values(record)) collect_bound_ids({ obj: value, ids })
 }
 
 function get_bound_database_ids(): Set<string> {
@@ -47,7 +50,7 @@ function get_bound_database_ids(): Set<string> {
 		const wrangler_path = join(root_dir, 'apps', app, 'wrangler.jsonc')
 		if (!existsSync(wrangler_path)) continue
 		const config = JSON.parse(strip_jsonc_comments(readFileSync(wrangler_path, 'utf-8')))
-		collect_bound_ids(config, ids)
+		collect_bound_ids({ obj: config, ids })
 	}
 	return ids
 }

@@ -1,4 +1,4 @@
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 
 function IS_IN_ONTOLOGY(concept: Concept): boolean {
 	return concept.status === 'in ontology'

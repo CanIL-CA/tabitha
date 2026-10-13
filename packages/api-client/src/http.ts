@@ -26,7 +26,10 @@ const FALLBACK_RETRY_DELAY_MS = 500
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-function get_retry_delay_ms(res: Response, attempt: number): number {
+function get_retry_delay_ms({ res, attempt }: {
+	res: Response
+	attempt: number
+}): number {
 	const retry_after = Number(res.headers?.get?.('retry-after'))
 	const requested_delay_ms = Number.isFinite(retry_after) && retry_after > 0
 		? retry_after * 1000
@@ -39,7 +42,7 @@ async function fetch_with_rate_limit_retry(do_fetch: () => Promise<Response>): P
 	let res = await do_fetch()
 
 	for (let attempt = 0; res.status === 429 && attempt < MAX_RATE_LIMIT_RETRIES; attempt++) {
-		await sleep(get_retry_delay_ms(res, attempt))
+		await sleep(get_retry_delay_ms({ res, attempt }))
 		res = await do_fetch()
 	}
 

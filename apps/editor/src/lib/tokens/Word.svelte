@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { CheckerToken } from '@tabitha/types'
-	import { LOOKUP_FILTERS } from '$lib/lookup_filters'
+	import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
 	import NotFound from './NotFound.svelte'
 	import Result from './Result.svelte'
 

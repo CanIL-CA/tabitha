@@ -1,5 +1,5 @@
 <script lang="ts">
-	import EncodingStatus from '$lib/EncodingStatus.svelte'
+	import EncodingStatus from '#lib/EncodingStatus.svelte'
 
 	let { data } = $props()
 

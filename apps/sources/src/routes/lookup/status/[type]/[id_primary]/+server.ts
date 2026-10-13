@@ -1,4 +1,4 @@
-import { get_book_status } from '$lib/data/status'
+import { get_book_status } from '#lib/data/status.js'
 import { cached_json } from '@tabitha/api-client'
 import type { RequestHandler } from './$types'
 

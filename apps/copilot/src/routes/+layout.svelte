@@ -1,11 +1,11 @@
 <script>
 	import { page } from '$app/state'
-	import '$lib/app.css'
+	import '#lib/app.css'
 
 	import { onMount } from 'svelte'
 	import { Header, Footer, theme_state, set_ui_messages } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'
-	import { m } from '$lib/paraglide/messages'
+	import { m } from '#lib/paraglide/messages.js'
 
 	let { children } = $props()
 

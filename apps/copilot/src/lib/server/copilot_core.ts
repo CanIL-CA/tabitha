@@ -1,13 +1,13 @@
-import { get_semantic_notes } from '$lib/server/semantic_notes'
-import { default_target_audience } from '$lib/lookups'
-import { fetch_encoding, fetch_target_text } from '$lib/fetches'
+import { get_semantic_notes } from '#lib/server/semantic_notes.js'
+import { default_target_audience } from '#lib/lookups.js'
+import { fetch_encoding, fetch_target_text } from '#lib/fetches.js'
 import { extract_flags } from './flag_extraction/flag_extraction'
 import { assign_flag_weights } from './flag_weighting/flag_weighting'
 import { collect_triggers, triggers_match } from './triggers'
 import type { AiClient } from '@tabitha/ai'
 import type { VerseReference, SourceSimpleJsonResult, SourceSimpleJsonEntity } from '@tabitha/types'
 import type { CopilotDiscernResult, CopilotErrorResult, CopilotTriggerData } from '@tabitha/types/copilot'
-import type { CopilotSettings, CopilotEncodingEntity, CopilotLlmInput, IndexStack } from '$lib/types'
+import type { CopilotSettings, CopilotEncodingEntity, CopilotLlmInput, IndexStack } from '#lib/types.js'
 
 export async function get_copilot_result({ reference, settings, ai }: { reference: VerseReference, settings: CopilotSettings, ai: AiClient }): Promise<CopilotDiscernResult | CopilotErrorResult> {
 	const ref_display = `${reference.book} ${reference.chapter}:${reference.verse}`
@@ -81,16 +81,17 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 }
 
 type CopilotErrorOptions = ErrorOptions & {
+	message: string
 	// Set to false for a failure that repeats on every attempt. Anything else is worth retrying.
 	retryable?: boolean
 }
 
 export class CopilotError extends Error {
+	override name = 'CopilotError'
 	readonly retryable: boolean
 
-	constructor(message: string, { retryable = true, ...options }: CopilotErrorOptions = {}) {
+	constructor({ message, retryable = true, ...options }: CopilotErrorOptions) {
 		super(message, options)
-		this.name = 'CopilotError'
 		this.retryable = retryable
 	}
 }

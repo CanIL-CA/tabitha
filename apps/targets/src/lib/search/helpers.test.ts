@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
 import { build_filter_options, build_search_regex, filter_search_results, get_sources_url } from './helpers'
-import { by_book_order } from '@tabitha/types/patterns'
+import { book_order_index } from '@tabitha/types/patterns'
 import type { TargetTextResult } from '@tabitha/types'
 
 const mockRealWorldResults: TargetTextResult[] = [
@@ -22,7 +22,7 @@ const mockRealWorldResults: TargetTextResult[] = [
 
 describe('search helpers', () => {
 	it('sorts results by canonical Bible book order', () => {
-		const sorted = mockRealWorldResults.slice().sort(by_book_order)
+		const sorted = mockRealWorldResults.slice().sort((a, b) => book_order_index(a) - book_order_index(b))
 		expect(sorted[0].reference.id_primary).toBe('Ruth')
 		expect(sorted[1].reference.id_primary).toBe('1 Samuel')
 	})

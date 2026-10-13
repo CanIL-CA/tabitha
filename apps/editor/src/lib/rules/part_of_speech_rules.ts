@@ -1,15 +1,15 @@
-import { ERRORS } from '$lib/parser/error_messages'
+import { ERRORS } from '#lib/parser/error_messages.js'
 import { create_context_filter, create_token_filter, from_built_in_rule, message_set_action, simple_rule_action } from './rules_parser'
-import { TOKEN_TYPE, create_lookup_result, is_one_part_of_speech } from '$lib/token'
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import type { Token } from '$lib/types'
+import { TOKEN_TYPE, create_lookup_result, is_one_part_of_speech } from '#lib/token.js'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import type { Token } from '#lib/types.js'
 import type {
 	BuiltInRule,
 	PartOfSpeechRuleJson,
 	RuleAction,
 	TokenFilter,
 	TokenRule,
-} from '$lib/rules/types'
+} from '#lib/rules/types.js'
 import type { PartOfSpeech } from '@tabitha/types'
 
 /**

@@ -1,5 +1,5 @@
 import type { CheckerTextInsertion } from '@tabitha/types'
-import type { SourceRange } from '$lib/types'
+import type { SourceRange } from '#lib/types.js'
 
 type ApplyTextInsertionsResult = {
 	text: string

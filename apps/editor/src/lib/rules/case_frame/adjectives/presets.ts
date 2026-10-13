@@ -1,6 +1,6 @@
-import { TOKEN_TYPE } from '$lib/token'
-import type { CaseFrameRuleJson } from '$lib/rules/case_frame/types'
-import type { TokenContextFilterJson } from '$lib/rules/types'
+import { TOKEN_TYPE } from '#lib/token.js'
+import type { CaseFrameRuleJson } from '#lib/rules/case_frame/types.js'
+import type { TokenContextFilterJson } from '#lib/rules/types.js'
 
 export function modified_noun_with_subgroup() {
 	return {

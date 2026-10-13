@@ -1,7 +1,7 @@
 import { error, redirect } from '@sveltejs/kit'
 import { record_usage_event, type SearchEvent } from '@tabitha/usage'
-import { search_phase_1 } from '$lib/data/phase_1_search'
-import { is_reference_query, parse_reference } from '$lib/data/ref_parser'
+import { search_phase_1 } from '#lib/data/phase_1_search.js'
+import { is_reference_query, parse_reference } from '#lib/data/ref_parser.js'
 import type { PageServerLoad } from './$types'
 
 export async function load({ locals: { db }, url: { searchParams }, platform }: Parameters<PageServerLoad>[0]) {

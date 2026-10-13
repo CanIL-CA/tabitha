@@ -59,7 +59,7 @@ try {
 		log.step('Skipping staging (already completed for this run).')
 	} else {
 		await stage_tbta_files(dir_w_tbta_dbs)
-		await mark_done(date, 'staging', completed_steps)
+		await mark_done({ date, step: 'staging', completed_steps })
 	}
 
 	// Keyed by family, not task id -- every per-project Targets_<project> task shares the same
@@ -116,7 +116,7 @@ try {
 				await cp(task.previous_output_file, task.output_file)
 			}
 			await $`bun migrations/${task.family.toLowerCase()}/migrate.ts ${task.migrate_args} ${task.output_file}`
-			await mark_done(date, migrated_step, completed_steps)
+			await mark_done({ date, step: migrated_step, completed_steps })
 		}
 
 		if (completed_steps.has(dumped_step)) {
@@ -131,18 +131,18 @@ try {
 				.filter(line => !/^(PRAGMA|BEGIN TRANSACTION|COMMIT)/.test(line))
 				.join('\n')
 			await Bun.write(dump_file, d1_importable_dump)
-			await mark_done(date, dumped_step, completed_steps)
+			await mark_done({ date, step: dumped_step, completed_steps })
 		}
 
 		// Always re-run validation, even on a resumed run -- this is the last gate before a D1 deploy,
 		// so it must reflect the actual state of output_file every time, not just the first pass.
-		await validate_migration_output(task.id, task.output_file, date, VALIDATIONS[task.family])
+		await validate_migration_output({ key: task.id, db_path: task.output_file, date, config: VALIDATIONS[task.family] })
 
 		if (completed_steps.has(deployed_step)) {
 			log.step(`Skipping ${task.id} D1 deploy (already completed for this run).`)
 		} else {
 			await deploy_to_d1({ task, dump_file, date })
-			await mark_done(date, deployed_step, completed_steps)
+			await mark_done({ date, step: deployed_step, completed_steps })
 		}
 	}
 
@@ -175,7 +175,7 @@ async function stage_tbta_files(working_dir: string) {
 	}
 
 	async function stage_one({ name, src, dest }: { name: string, src: string, dest: string }) {
-		if (!DEDUP_EXEMPT.has(name) && !await is_changed(name, src)) {
+		if (!DEDUP_EXEMPT.has(name) && !await is_changed({ name, src })) {
 			log.step(`Skipping stage of ${name}: unchanged since last run.`)
 			return
 		}
@@ -221,8 +221,11 @@ async function stage_tbta_files(working_dir: string) {
 // raw/{name}_*.tbta.sqlite. Treated as changed (the safe default) when there's nothing to compare
 // against yet -- which also covers a manifest-listed raw/ file that hasn't been pulled from R2 yet
 // (see r2_sync.ts; run "bun run r2:pull -- raw" in tools/databases before migrating).
-async function is_changed(name: string, src: string): Promise<boolean> {
-	const latest = await resolve_dated_file('raw', name, date, 'tbta.sqlite', { silent: true })
+async function is_changed({ name, src }: {
+	name: string
+	src: string
+}): Promise<boolean> {
+	const latest = await resolve_dated_file({ dir: 'raw', prefix: name, date, ext: 'tbta.sqlite', silent: true })
 	if (!latest) return true
 
 	return await content_hash(src) !== await content_hash(latest)
@@ -260,7 +263,7 @@ async function run_tbta_utils(working_dir: string) {
 	// Inflections depend only on English; Sources_Complex depends on English, Bible, and Sample.
 	// Skip regenerating either when none of its actual inputs changed, rather than re-running
 	// tbta_utils (export-generated-cci alone can take ~10 minutes) unconditionally every run.
-	const english_changed = await is_changed('English', `${working_dir}/English.sqlite`)
+	const english_changed = await is_changed({ name: 'English', src: `${working_dir}/English.sqlite` })
 	const bible_changed = await file_changed_if_present('Bible')
 	const sample_changed = await file_changed_if_present('Sample')
 
@@ -280,7 +283,7 @@ async function run_tbta_utils(working_dir: string) {
 
 	async function file_changed_if_present(name: string): Promise<boolean> {
 		const src = `${working_dir}/${name}.sqlite`
-		return await Bun.file(src).exists() && await is_changed(name, src)
+		return await Bun.file(src).exists() && await is_changed({ name, src })
 	}
 }
 

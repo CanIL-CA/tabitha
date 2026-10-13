@@ -4,7 +4,7 @@ import { load_source_feature_map, load_target_feature_map, decode_features } fro
 import { structure_entities } from './structured'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 import type { SourceEntityCategory, NounListEntry, SourceConceptData, SourceEntity, TargetEntity, PairingType, PartOfSpeech, EncodingEntityCategory } from '@tabitha/types'
-import type { PageSourceEntity } from '$lib/types'
+import type { PageSourceEntity } from '#lib/types.js'
 
 /**
  * The phase_2_encoding looks something like:

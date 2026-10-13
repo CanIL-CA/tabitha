@@ -1,7 +1,7 @@
 import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
 import { create_ontology_client } from '@tabitha/api-client'
 import type { OntologyResult, ConceptKey } from '@tabitha/types'
-import type { PageSourceConcept } from '$lib/types'
+import type { PageSourceConcept } from '#lib/types.js'
 
 const client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST, cache: true })
 

@@ -3,12 +3,16 @@ import { create_logger } from '../log'
 
 const log = create_logger('Targets migration')
 
-export function migrate_source_features_table(tbta_db: Database, project: string, targets_db: Database) {
+export function migrate_source_features_table({ tbta_db, project, targets_db }: {
+	tbta_db: Database
+	project: string
+	targets_db: Database
+}) {
 	const transformed_data = transform_tbta_data(tbta_db)
 
-	create_tabitha_table(targets_db, project)
+	create_tabitha_table({ tabitha_sources_db: targets_db, project })
 
-	load_data(targets_db, project, transformed_data)
+	load_data({ targets_db, project, transformed_data })
 }
 
 const CATEGORIES: Record<number, string> = {
@@ -138,7 +142,10 @@ function transform_tbta_data(tbta_db: Database): TransformedData[] {
 	}
 }
 
-function create_tabitha_table(tabitha_sources_db: Database, project: string) {
+function create_tabitha_table({ tabitha_sources_db, project }: {
+	tabitha_sources_db: Database
+	project: string
+}) {
 	log.step(`Prepping the "Source_Features" table for ${project} in ${tabitha_sources_db.filename}...`)
 
 	tabitha_sources_db.run(`
@@ -159,7 +166,11 @@ function create_tabitha_table(tabitha_sources_db: Database, project: string) {
 	return tabitha_sources_db
 }
 
-function load_data(targets_db: Database, project: string, transformed_data: TransformedData[]) {
+function load_data({ targets_db, project, transformed_data }: {
+	targets_db: Database
+	project: string
+	transformed_data: TransformedData[]
+}) {
 	log.step(`Loading ${project} data into the "Source_Features" table...`)
 
 	transformed_data.forEach(({ category, feature, position, code, value, example }, index) => {

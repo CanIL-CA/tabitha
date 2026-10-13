@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '$lib/types'
-	import { is_boundary_start } from '$lib/encoding/entity_filters'
+	import type { PageSourceEntity } from '#lib/types.js'
+	import { is_boundary_start } from '#lib/encoding/entity_filters.js'
 	import { Punctuation } from '@tabitha/ui'
 
 	let { entity }: { entity: PageSourceEntity } = $props()

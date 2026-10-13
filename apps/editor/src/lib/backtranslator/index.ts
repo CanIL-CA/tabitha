@@ -1,8 +1,8 @@
-import { TOKEN_TYPE } from '$lib/token'
-import { rules_applier } from '$lib/rules'
-import { phrasify } from '$lib/parser/phrasify'
+import { TOKEN_TYPE } from '#lib/token.js'
+import { rules_applier } from '#lib/rules/index.js'
+import { phrasify } from '#lib/parser/phrasify.js'
 import { BT_STRUCTURAL_RULES } from './structural_rules'
-import type { Sentence, Token } from '$lib/types'
+import type { Sentence, Token } from '#lib/types.js'
 
 export function backtranslate(sentences: Sentence[]): string {
 	const cleaned = remove_some_gap_tokens(sentences)

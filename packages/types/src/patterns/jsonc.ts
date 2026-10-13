@@ -44,7 +44,7 @@ export function strip_jsonc_comments(jsonc: string): string {
 		const next = jsonc[i + 1]
 
 		if (char === '"') {
-			const end = string_end(jsonc, i)
+			const end = string_end({ text: jsonc, open: i })
 			output += jsonc.slice(i, end)
 			i = end
 		} else if (char === '/' && next === '/') {
@@ -53,7 +53,7 @@ export function strip_jsonc_comments(jsonc: string): string {
 		} else if (char === '/' && next === '*') {
 			const close = jsonc.indexOf('*/', i + 2)
 			i = close === -1 ? jsonc.length : close + 2
-		} else if (char === ',' && closes_after_whitespace(jsonc, i + 1)) {
+		} else if (char === ',' && closes_after_whitespace({ text: jsonc, from: i + 1 })) {
 			i++
 		} else {
 			output += char
@@ -65,7 +65,10 @@ export function strip_jsonc_comments(jsonc: string): string {
 }
 
 /** Returns the index just past the closing quote of the string that opens at `open`. */
-function string_end(text: string, open: number): number {
+function string_end({ text, open }: {
+	text: string
+	open: number
+}): number {
 	for (let i = open + 1; i < text.length; i++) {
 		if (text[i] === '\\') i++
 		else if (text[i] === '"') return i + 1
@@ -74,7 +77,10 @@ function string_end(text: string, open: number): number {
 }
 
 /** Whether the next non-whitespace, non-comment character from `from` is `}` or `]`. */
-function closes_after_whitespace(text: string, from: number): boolean {
+function closes_after_whitespace({ text, from }: {
+	text: string
+	from: number
+}): boolean {
 	let i = from
 	while (i < text.length) {
 		if (/\s/.test(text[i])) {

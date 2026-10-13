@@ -396,7 +396,7 @@ All code in this repository adheres to the **TaBiThA Development Philosophies**.
 | **11** | **Pure functions** | Side-effect-free functions receiving one options object argument and returning one value. |
 | **12** | **YAGNI & Minimal Surface Area** | Solve today's concrete need; adhere to the Rule of Three before extracting code to `packages/*`. |
 | **13** | **Scope `prose` to content** | Apply Tailwind Typography's `prose` only to genuine text content, never a layout wrapper; escape nested components with `not-prose`. |
-| **14** | **SvelteKit data-loading boundaries** | Keep component scripts to presentation and event wiring; fetching, shaping, and authorization decisions live in `load` functions or `$lib` data-layer modules. |
+| **14** | **SvelteKit data-loading boundaries** | Keep component scripts to presentation and event wiring; fetching, shaping, and authorization decisions live in `load` functions or `src/lib` data-layer modules. |
 | **15** | **AI prompts live in separate Markdown files** | A `system_instruction` sent to the AI client is a `.md` file imported via `?raw`, not an inline template literal. |
 
 > 📖 **Full Philosophy Guide & Examples**: See [**`AGENTS.md`**](AGENTS.md) at the workspace root.

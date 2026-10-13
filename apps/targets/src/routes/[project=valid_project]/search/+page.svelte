@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { build_filter_options, build_search_regex, filter_search_results, PhraseResults, SearchFilterForm, SearchResultCard } from '$lib/search'
-	import { by_book_order } from '@tabitha/types/patterns'
+	import { build_filter_options, build_search_regex, filter_search_results, PhraseResults, SearchFilterForm, SearchResultCard } from '#lib/search/index.js'
+	import { book_order_index } from '@tabitha/types/patterns'
 	import { page } from '$app/state'
-	import type { ReturnTo } from '$lib/types'
+	import type { ReturnTo } from '#lib/types.js'
 	import type { TargetTextResult } from '@tabitha/types'
 	import type { PageData } from './$types'
 
@@ -31,7 +31,7 @@
 	})
 
 	let filtered_results = $derived(filter_search_results({ matches, selected_filters }))
-	let sorted_results = $derived(filtered_results.toSorted(by_book_order))
+	let sorted_results = $derived(filtered_results.toSorted((a, b) => book_order_index(a) - book_order_index(b)))
 
 	let collapse_states = $state<boolean[]>([])
 

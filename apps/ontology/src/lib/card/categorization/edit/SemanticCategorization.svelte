@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { semantic_category } from '$lib/lookups'
+	import { semantic_category } from '#lib/lookups.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
 	type Props = {

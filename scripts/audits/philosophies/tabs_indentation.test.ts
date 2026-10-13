@@ -3,7 +3,7 @@ import { check_tabs_indentation } from './tabs_indentation'
 import { findings } from './types'
 
 function check(content: string) {
-	check_tabs_indentation('/apps/test/test.ts', content.split('\n'))
+	check_tabs_indentation({ file_path: '/apps/test/test.ts', lines: content.split('\n') })
 	return findings
 }
 

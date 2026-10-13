@@ -9,7 +9,7 @@ import {
 	type ConceptIndex,
 } from './concept_embeddings'
 import type { VectorizeVector } from '@cloudflare/workers-types'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 import type { SimplificationHint } from '@tabitha/types'
 
 function make_concept(overrides: Partial<Concept> = {}): Concept {

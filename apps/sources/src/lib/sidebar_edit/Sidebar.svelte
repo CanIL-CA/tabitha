@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { NounListEntry } from '@tabitha/types'
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	import Icon from '@iconify/svelte'
-	import SidebarDetail from '$lib/sidebar/SidebarDetail.svelte'
-	import SidebarEntityDisplay from '$lib/sidebar/SidebarEntityDisplay.svelte'
-	import ConceptDetails from '$lib/sidebar_edit/ConceptDetails.svelte'
-	import AllSenseDetails from '$lib/sidebar_edit/AllSenseDetails.svelte'
-	import FeaturesDetails from '$lib/sidebar_edit/FeaturesDetails.svelte'
-	import NounListDetails from '$lib/sidebar_edit/NounListDetails.svelte'
+	import SidebarDetail from '#lib/sidebar/SidebarDetail.svelte'
+	import SidebarEntityDisplay from '#lib/sidebar/SidebarEntityDisplay.svelte'
+	import ConceptDetails from '#lib/sidebar_edit/ConceptDetails.svelte'
+	import AllSenseDetails from '#lib/sidebar_edit/AllSenseDetails.svelte'
+	import FeaturesDetails from '#lib/sidebar_edit/FeaturesDetails.svelte'
+	import NounListDetails from '#lib/sidebar_edit/NounListDetails.svelte'
 	import PairingDetails from './PairingDetails.svelte'
 
 	type Props = {

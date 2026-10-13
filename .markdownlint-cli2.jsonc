@@ -13,9 +13,11 @@
     "**/.turbo/**",
     "**/.wrangler/**",
     // Generated output, gitignored like the entries above: `wrangler deploy --dry-run --outdir dist`
-    // copies an app's README into dist/, and failed Playwright runs leave error-context.md files.
+    // copies an app's README into dist/, failed Playwright runs leave error-context.md files, and
+    // `bun run test:coverage` writes the PR comment's table to coverage/report.md.
     "**/dist/**",
     "**/test-results/**",
+    "coverage/**",
     "tmp/**",
     // inlang writes its own README (and .gitignore, which ignores everything but settings.json)
     // into each app's project.inlang/.

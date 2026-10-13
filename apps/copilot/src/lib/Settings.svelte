@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { lwc_info, copilot_modes } from '$lib/lookups'
-	import { MODE_LABELS, MTT_LEVEL_LABELS } from '$lib/labels'
-	import { m } from '$lib/paraglide/messages'
+	import { lwc_info, copilot_modes } from '#lib/lookups.js'
+	import { MODE_LABELS, MTT_LEVEL_LABELS } from '#lib/labels.js'
+	import { m } from '#lib/paraglide/messages.js'
 	import Dialog from './Dialog.svelte'
 	import LanguageProfile from './LanguageProfile.svelte'
 	import Icon from '@iconify/svelte'
-	import type { CopilotSettings } from '$lib/types'
+	import type { CopilotSettings } from '#lib/types.js'
 
 	type Props = {
 		settings: CopilotSettings

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { perform_form_lookups, perform_ontology_lookups } from './index'
-import { TOKEN_TYPE, create_token } from '$lib/token'
-import { create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '$lib/test_helps'
-import type { Sentence, Token } from '$lib/types'
+import { TOKEN_TYPE, create_token } from '#lib/token.js'
+import { create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '#lib/test_helps.js'
+import type { Sentence, Token } from '#lib/types.js'
 
 describe('lookups module', () => {
 	beforeEach(() => {

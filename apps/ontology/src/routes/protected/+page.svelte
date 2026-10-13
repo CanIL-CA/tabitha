@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
-	import { format_time } from '$lib/format'
-	import { sync_complex_terms } from '$lib/sync'
+	import { format_time } from '#lib/format.js'
+	import { sync_complex_terms } from '#lib/sync.js'
 
 	let { data } = $props()
 

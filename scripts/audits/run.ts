@@ -29,7 +29,10 @@ export function format_summary(results: readonly AuditResult[]): string {
 export const has_blocking_failure = (results: readonly AuditResult[]): boolean =>
 	results.some(r => r.blocking && r.outcome === 'failure')
 
-async function run_audit(audit: Audit, is_ci: boolean): Promise<AuditResult> {
+async function run_audit({ audit, is_ci }: {
+	audit: Audit
+	is_ci: boolean
+}): Promise<AuditResult> {
 	console.log(is_ci ? `::group::${audit.script}` : `\n▶️  ${audit.script}\n`)
 	const proc = Bun.spawn(['bun', 'run', audit.script], { cwd: root_dir, stdio: ['inherit', 'inherit', 'inherit'] })
 	const exit_code = await proc.exited
@@ -43,7 +46,7 @@ if (import.meta.main) {
 	// Sequential rather than parallel, so each audit's output stays readable as one block.
 	const results: AuditResult[] = []
 	for (const audit of AUDITS) {
-		results.push(await run_audit(audit, is_ci))
+		results.push(await run_audit({ audit, is_ci }))
 	}
 
 	console.log(`\n${format_summary(results)}\n`)

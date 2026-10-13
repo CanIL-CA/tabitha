@@ -1,4 +1,4 @@
-import { get_book_status, get_chapter_statuses_for_book } from '$lib/data/status'
+import { get_book_status, get_chapter_statuses_for_book } from '#lib/data/status.js'
 import type { PageServerLoad } from './$types'
 
 export async function load({ locals: { db }, params: { type, id_primary } }: Parameters<PageServerLoad>[0]) {

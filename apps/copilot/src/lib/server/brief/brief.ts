@@ -1,12 +1,12 @@
 import { env } from '$env/dynamic/private'
-import { BRIEF_HEADINGS_ENGLISH } from '$lib/lookups'
+import { BRIEF_HEADINGS_ENGLISH } from '#lib/lookups.js'
 import { USFM_BOOK_CODES } from '@tabitha/types/patterns'
 import { AiResponseError, check_input_safety, type AiClient } from '@tabitha/ai'
 import translate_prompt from './translate_prompt.md?raw'
 import brief_main_prompt from './brief_main_prompt.md?raw'
 import { json_response_schema } from './json_response_schema'
 import type { VerseReference, CopilotBriefResult, CopilotErrorResult, CopilotBriefHeadingsResult } from '@tabitha/types'
-import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '$lib/types'
+import type { BriefInput, BriefTnnBasedOutput, CopilotStep } from '#lib/types.js'
 import { CopilotError, to_error_result } from '../copilot_core'
 
 // The AI Gateway's prompt-injection guardrail is off gateway-wide (see @tabitha/ai's input_guard
@@ -40,12 +40,12 @@ async function fetch_aquifer(path: string): Promise<Response> {
 	const url = `https://api.aquifer.bible${path}`
 	const response = await fetch(url, { headers: { 'api-key': env.API_KEY_AQUIFER } })
 		.catch((error: unknown) => {
-			throw new CopilotError('Could not reach Aquifer to fetch the TNN notes.', { cause: error })
+			throw new CopilotError({ message: 'Could not reach Aquifer to fetch the TNN notes.', cause: error })
 		})
 	if (response.ok) return response
 
 	console.error(`HTTP error: received response of status ${response.status} (${response.statusText}) from ${url}`)
-	throw new CopilotError(AQUIFER_STATUS_MESSAGES[response.status] ?? `Error fetching the TNN notes from Aquifer (HTTP ${response.status}).`, { retryable: !AQUIFER_UNRETRYABLE_STATUSES.has(response.status) })
+	throw new CopilotError({ message: AQUIFER_STATUS_MESSAGES[response.status] ?? `Error fetching the TNN notes from Aquifer (HTTP ${response.status}).`, retryable: !AQUIFER_UNRETRYABLE_STATUSES.has(response.status) })
 }
 
 async function get_aquifer_content_ids(verse: VerseReference): Promise<number[]> {
@@ -78,7 +78,8 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 
 	const aquifer_response = await fetch_aquifer(`/resources/${contentId}`)
 	const tnn_text = await aquifer_response.text()
-	const safety_issue = check_input_safety(tnn_text, {
+	const safety_issue = check_input_safety({
+		text: tnn_text,
 		max_length: MAX_TNN_TEXT_LENGTH,
 		too_long_message: 'The Aquifer translator notes for this verse are too long to process.',
 		suspicious_message: 'Potential safety issue found in the TNN notes.',
@@ -86,7 +87,7 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 	})
 	if (safety_issue) {
 		console.warn(`copilot: brief rejected Aquifer TNN content for content ID ${contentId} (${tnn_text.length} characters): ${safety_issue}`)
-		throw new CopilotError(safety_issue, { retryable: false })
+		throw new CopilotError({ message: safety_issue, retryable: false })
 	}
 
 	const prompt = {
@@ -109,7 +110,7 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 		})
 	} catch (error) {
 		const message = error instanceof Error ? error.message : `${error}`
-		throw new CopilotError(`Error incorporating TNN-based notes: ${message}`)
+		throw new CopilotError({ message: `Error incorporating TNN-based notes: ${message}` })
 	}
 }
 

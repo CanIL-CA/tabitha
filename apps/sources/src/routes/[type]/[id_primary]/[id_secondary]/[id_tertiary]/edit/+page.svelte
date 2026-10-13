@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '$lib/types'
+	import type { PageSourceEntity } from '#lib/types.js'
 	import { PUBLIC_EDITOR_API_HOST } from '$env/static/public'
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken, NounListEntry } from '@tabitha/types'
-	import { Navigation } from '$lib'
+	import { Navigation } from '#lib/index.js'
 	import type { PageProps } from './$types'
-	import Settings from '$lib/settings/Settings.svelte'
-	import Sidebar from '$lib/sidebar_edit/Sidebar.svelte'
+	import Settings from '#lib/settings/Settings.svelte'
+	import Sidebar from '#lib/sidebar_edit/Sidebar.svelte'
 	import Icon from '@iconify/svelte'
-	import SourceEntitiesEdit from '$lib/edit/SourceEntitiesEdit.svelte'
-	import { structure_entities } from '$lib/encoding/structured'
+	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
+	import { structure_entities } from '#lib/encoding/structured.js'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })

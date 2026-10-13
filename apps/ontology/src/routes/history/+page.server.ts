@@ -1,4 +1,4 @@
-import { get_all_changes, transform_with_users } from '$lib/server/changes/changes'
+import { get_all_changes, transform_with_users } from '#lib/server/changes/changes.js'
 import type { PageServerLoad } from './$types'
 
 export async function load({ locals, url: { searchParams } }: Parameters<PageServerLoad>[0]) {

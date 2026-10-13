@@ -132,15 +132,15 @@ async function audit_codebase() {
 		const content = file_contents[i]
 		const lines = content.split('\n')
 
-		check_tabs_indentation(file_path, lines)
-		check_ai_prompts_in_md_files(file_path, content)
-		check_classes_at_end(file_path, content)
-		check_strict_domain_typing(file_path, lines)
-		check_snake_case_functions(file_path, lines)
-		check_pure_functions(file_path, content, native_callback_names)
-		check_prose_scoping(file_path, content)
-		check_sveltekit_data_boundaries(file_path, lines)
-		check_lib_routes_boundary(file_path, content)
+		check_tabs_indentation({ file_path, lines })
+		check_ai_prompts_in_md_files({ file_path, content })
+		check_classes_at_end({ file_path, content })
+		check_strict_domain_typing({ file_path, lines })
+		check_snake_case_functions({ file_path, lines })
+		check_pure_functions({ file_path, content, native_callback_names })
+		check_prose_scoping({ file_path, content })
+		check_sveltekit_data_boundaries({ file_path, lines })
+		check_lib_routes_boundary({ file_path, content })
 	})
 
 	if (findings.length === 0) {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import type { PageProps } from './$types'
-	import { format_datetime } from '$lib/format'
+	import { format_datetime } from '#lib/format.js'
 
 	let { data }: PageProps = $props()
 

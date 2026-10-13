@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { OntologyResult } from '@tabitha/types'
-	import type { PageSourceConcept } from '$lib/types'
+	import type { PageSourceConcept } from '#lib/types.js'
 	import type { Snippet } from 'svelte'
 	import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
-	import { fetch_concept_ontology_data } from '$lib/data/api_lookups'
+	import { fetch_concept_ontology_data } from '#lib/data/api_lookups.js'
 	import Icon from '@iconify/svelte'
 
 	type Props = {

@@ -5,7 +5,7 @@ import { desired_gateway_config, gateway_id } from './config'
 const credentials = { account_id: 'acct-1', api_token: 'token-1' }
 
 function fake_fetch(get_status: number): typeof fetch {
-	const fetch_mock = mock(async (url: string, init?: RequestInit) => {
+	const fetch_mock = mock(async (_url: string, init?: RequestInit) => {
 		const method = init?.method ?? 'GET'
 
 		if (method === 'GET') {
@@ -22,7 +22,7 @@ describe('reconcile_gateway', () => {
 	it('creates the gateway when it does not exist yet, then follows up with an update', async () => {
 		const fetch_impl = fake_fetch(404)
 
-		const result = await reconcile_gateway(credentials, fetch_impl)
+		const result = await reconcile_gateway({ credentials, fetch_impl })
 
 		expect(result).toBe('created')
 		const calls = (fetch_impl as unknown as ReturnType<typeof mock>).mock.calls
@@ -43,7 +43,7 @@ describe('reconcile_gateway', () => {
 	it('updates the gateway when it already exists', async () => {
 		const fetch_impl = fake_fetch(200)
 
-		const result = await reconcile_gateway(credentials, fetch_impl)
+		const result = await reconcile_gateway({ credentials, fetch_impl })
 
 		expect(result).toBe('updated')
 		const calls = (fetch_impl as unknown as ReturnType<typeof mock>).mock.calls
@@ -56,7 +56,7 @@ describe('reconcile_gateway', () => {
 	it('sends the Cloudflare bearer token on every request', async () => {
 		const fetch_impl = fake_fetch(404)
 
-		await reconcile_gateway(credentials, fetch_impl)
+		await reconcile_gateway({ credentials, fetch_impl })
 
 		const calls = (fetch_impl as unknown as ReturnType<typeof mock>).mock.calls
 		for (const [, init] of calls) {
@@ -67,7 +67,7 @@ describe('reconcile_gateway', () => {
 	it('throws with the response body when the existence check fails unexpectedly', async () => {
 		const fetch_impl = mock(async () => new Response('account suspended', { status: 403 })) as unknown as typeof fetch
 
-		await expect(reconcile_gateway(credentials, fetch_impl)).rejects.toThrow(/403/)
+		await expect(reconcile_gateway({ credentials, fetch_impl })).rejects.toThrow(/403/)
 	})
 
 	it('throws with the response body when create fails', async () => {
@@ -76,6 +76,6 @@ describe('reconcile_gateway', () => {
 			return new Response(method === 'GET' ? null : 'invalid rate_limiting_limit', { status: method === 'GET' ? 404 : 400 })
 		}) as unknown as typeof fetch
 
-		await expect(reconcile_gateway(credentials, fetch_impl)).rejects.toThrow(/invalid rate_limiting_limit/)
+		await expect(reconcile_gateway({ credentials, fetch_impl })).rejects.toThrow(/invalid rate_limiting_limit/)
 	})
 })

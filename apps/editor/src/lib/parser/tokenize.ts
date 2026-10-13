@@ -1,10 +1,10 @@
 import { CLAUSE_NOTATIONS, suggest_clause_notations } from './clause_notations'
 import { FUNCTION_WORDS } from './function_words'
-import { REGEXES } from '$lib/regexes'
+import { REGEXES } from '#lib/regexes.js'
 import { MESSAGE_TYPE, TOKEN_TYPE, create_token } from '../token'
 import { ERRORS } from './error_messages'
 import type { PairingType, CheckerTokenType } from '@tabitha/types'
-import type { Token } from '$lib/types'
+import type { Token } from '#lib/types.js'
 
 function normalize_input(text: string): string {
 	return text
@@ -74,15 +74,18 @@ export function tokenize_input(text: string = ''): Token[] {
 		const term_token = word_token(term(start))
 
 		if (match(REGEXES.FORWARD_SLASH)) {
-			return pairing(term_token, 'simple-complex')
+			return pairing({ left_token: term_token, pairing_type: 'simple-complex' })
 		} else if (match(REGEXES.PIPE)) {
-			return pairing(term_token, 'dynamic-literal')
+			return pairing({ left_token: term_token, pairing_type: 'dynamic-literal' })
 		} else {
 			return term_token
 		}
 	}
 
-	function pairing(left_token: Token, pairing_type: PairingType): Token {
+	function pairing({ left_token, pairing_type }: {
+		left_token: Token
+		pairing_type: PairingType
+	}): Token {
 		const right_start = i
 		if (!match_word_start()) {
 			// simple/ or dynamic|

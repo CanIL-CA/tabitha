@@ -1,8 +1,8 @@
-import { TOKEN_TYPE, create_token, token_has_tag } from '$lib/token'
-import { REGEXES } from '$lib/regexes'
-import { create_context_filter, create_token_filter, from_built_in_rule, simple_rule_action } from '$lib/rules/rules_parser'
-import type { Token } from '$lib/types'
-import type { BuiltInRule, TokenFilter } from '$lib/rules/types'
+import { TOKEN_TYPE, create_token, token_has_tag } from '#lib/token.js'
+import { REGEXES } from '#lib/regexes.js'
+import { create_context_filter, create_token_filter, from_built_in_rule, simple_rule_action } from '#lib/rules/rules_parser.js'
+import type { Token } from '#lib/types.js'
+import type { BuiltInRule, TokenFilter } from '#lib/rules/types.js'
 
 const structural_rules_json: BuiltInRule[] = [
 	{

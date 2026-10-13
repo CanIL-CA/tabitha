@@ -1,7 +1,7 @@
-import { TOKEN_TYPE } from '$lib/token'
-import { create_token_filter } from '$lib/rules/rules_parser'
-import type { LookupResult, Token } from '$lib/types'
-import type { RuleTriggerContext } from '$lib/rules/types'
+import { TOKEN_TYPE } from '#lib/token.js'
+import { create_token_filter } from '#lib/rules/rules_parser.js'
+import type { LookupResult, Token } from '#lib/types.js'
+import type { RuleTriggerContext } from '#lib/rules/types.js'
 
 /**
  * Some single mistakes elsewhere in a sentence make a Verb's case frame look invalid.

@@ -1,6 +1,6 @@
 import type { ConceptKey, PairingType } from '@tabitha/types'
 import type { CheckerTokenType, CheckerMessage, CheckerMessageLabel, CheckerLookupResult, CheckerTextInsertion, CheckerAutoFix } from '@tabitha/types/editor'
-import type { CaseFrame } from '$lib/rules/case_frame/types'
+import type { CaseFrame } from '#lib/rules/case_frame/types.js'
 
 export type LookupTerm = string
 

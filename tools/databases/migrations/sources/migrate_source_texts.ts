@@ -4,7 +4,10 @@ import { create_logger } from '../log'
 
 const log = create_logger('Sources migration')
 
-export function migrate_source_texts(tabitha_sources_db: Database, tbta_sources_from_input: string[]) {
+export function migrate_source_texts({ tabitha_sources_db, tbta_sources_from_input }: {
+	tabitha_sources_db: Database
+	tbta_sources_from_input: string[]
+}) {
 	log.step(`Prepping Sources table in ${tabitha_sources_db.filename}...`)
 	tabitha_sources_db.run(`
 		CREATE TABLE IF NOT EXISTS Sources (

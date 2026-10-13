@@ -1,9 +1,9 @@
-import { LOOKUP_FILTERS } from '$lib/lookup_filters'
-import { REGEXES } from '$lib/regexes'
+import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
+import { REGEXES } from '#lib/regexes.js'
 import type { CheckerMessage, CheckerMessageLabel, CheckerMessageType, CheckerTextInsertion, CheckerTokenType } from '@tabitha/types'
-import type { CaseFrameResult } from '$lib/rules/case_frame/types'
-import type { RuleTriggerContext } from '$lib/rules/types'
-import type { LookupResult, MessageInfo, Sentence, Token, Tag } from '$lib/types'
+import type { CaseFrameResult } from '#lib/rules/case_frame/types.js'
+import type { RuleTriggerContext } from '#lib/rules/types.js'
+import type { LookupResult, MessageInfo, Sentence, Token, Tag } from '#lib/types.js'
 
 export const TOKEN_TYPE: Record<string, CheckerTokenType> = {
 	PUNCTUATION: 'Punctuation',

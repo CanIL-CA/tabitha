@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { TOKEN_TYPE, create_token } from '../token'
 import { create_context_filter, create_token_filter, create_token_transform } from './rules_parser'
-import type { ContextFilterResult, TokenFilterJson } from '$lib/rules/types'
+import type { ContextFilterResult, TokenFilterJson } from '#lib/rules/types.js'
 
 function matched_context_indexes(result: ContextFilterResult): number[] {
 	if (!result.success) throw new Error('expected the context filter to match')

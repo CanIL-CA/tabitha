@@ -6,14 +6,21 @@ import { Glob } from 'bun'
 import OfficeParser, { type OfficeContentNode } from 'officeparser'
 import { join, basename, extname } from 'path'
 
-export async function migrate_ideal_text_table(project: string, targets_db: Database, dir: string) {
-	create_tabitha_table(targets_db, project)
+export async function migrate_ideal_text_table({ project, targets_db, dir }: {
+	project: string
+	targets_db: Database
+	dir: string
+}) {
+	create_tabitha_table({ targets_db, project })
 
-	const data = await get_ideal_texts(project, dir)
-	load_data(targets_db, project, data)
+	const data = await get_ideal_texts({ project, texts_dir: dir })
+	load_data({ targets_db, project, data })
 }
 
-function create_tabitha_table(targets_db: Database, project: string) {
+function create_tabitha_table({ targets_db, project }: {
+	targets_db: Database
+	project: string
+}) {
 	log.step(`Creating the "Ideal_Text" table in ${targets_db.filename} if it does not already exist...`)
 
 	targets_db.run(`
@@ -33,7 +40,11 @@ function create_tabitha_table(targets_db: Database, project: string) {
 	targets_db.run('DELETE FROM Ideal_Text WHERE project = ?', [project])
 }
 
-function load_data(targets_db: Database, project: string, data: IdealTextData[]) {
+function load_data({ targets_db, project, data }: {
+	targets_db: Database
+	project: string
+	data: IdealTextData[]
+}) {
 	log.step(`Loading ${data.length} verses for ${project} into the "Ideal_Text" table...`)
 
 	data.forEach(({ book, chapter, verse, audience, text }, index) => {
@@ -79,7 +90,10 @@ const title_tags: Record<string, string> = {
 	'Tagalog': 'Pamagat:',
 }
 
-async function get_ideal_texts(project: string, texts_dir: string): Promise<IdealTextData[]> {
+async function get_ideal_texts({ project, texts_dir }: {
+	project: string
+	texts_dir: string
+}): Promise<IdealTextData[]> {
 	const files = Array.from(new Glob(`${project}_*.{docx,sfm,SFM}`).scanSync(texts_dir))
 
 	const parser_map = new Map([

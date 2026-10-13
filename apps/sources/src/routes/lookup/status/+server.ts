@@ -1,5 +1,4 @@
-import { get_verse_statuses } from '$lib/data/status'
-import { json } from '@sveltejs/kit'
+import { get_verse_statuses } from '#lib/data/status.js'
 import type { RequestHandler } from './$types'
 import type { Reference } from '@tabitha/types'
 
@@ -8,5 +7,5 @@ export async function POST({ locals: { db }, request }: Parameters<RequestHandle
 
 	const results = await get_verse_statuses({ db, references })
 
-	return json(results)
+	return Response.json(results)
 }

@@ -1,6 +1,9 @@
 import { create_multiline_literal_tracker, findings } from './types'
 
-export function check_strict_domain_typing(file_path: string, lines: string[]) {
+export function check_strict_domain_typing({ file_path, lines }: {
+	file_path: string
+	lines: string[]
+}) {
 	// Philosophy 7: Strict domain typing (avoid : any or as any in TypeScript files)
 	if (!file_path.endsWith('.ts') && !file_path.endsWith('.svelte')) return
 

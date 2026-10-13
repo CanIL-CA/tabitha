@@ -1,14 +1,14 @@
-import { add_tag_to_token, is_one_part_of_speech, token_has_tag, TOKEN_TYPE } from '$lib/token'
-import { create_context_filter, create_token_filter, from_built_in_rule, simple_rule_action } from '$lib/rules/rules_parser'
+import { add_tag_to_token, is_one_part_of_speech, token_has_tag, TOKEN_TYPE } from '#lib/token.js'
+import { create_context_filter, create_token_filter, from_built_in_rule, simple_rule_action } from '#lib/rules/rules_parser.js'
 import { select_pairing_sense, select_sense } from './sense_selection'
 import { get_adjective_case_frame_rules } from './adjectives/case_frames'
 import { get_verb_case_frame_rules, get_passive_verb_case_frame_rules } from './verbs/case_frames'
 import { get_adposition_case_frame_rules } from './adpositions/case_frames'
 import { initialize_case_frame_rules, check_case_frames, check_pairing_case_frames } from './common'
 import { fill_interrogative_gap, fill_relative_clause_gap, fill_same_subject_gap, handle_be_interrogative, restore_ghost_tokens } from './gap_handling'
-import type { Token } from '$lib/types'
-import type { CaseFrameRuleInfo } from '$lib/rules/case_frame/types'
-import type { BuiltInRule } from '$lib/rules/types'
+import type { Token } from '#lib/types.js'
+import type { CaseFrameRuleInfo } from '#lib/rules/case_frame/types.js'
+import type { BuiltInRule } from '#lib/rules/types.js'
 
 
 const argument_and_sense_rules: BuiltInRule[] = [

@@ -1,6 +1,6 @@
-import { create_context_filter, create_token_filter } from '$lib/rules/rules_parser'
+import { create_context_filter, create_token_filter } from '#lib/rules/rules_parser.js'
 import { TOKEN_TYPE } from '../token'
-import type { LookupRuleJson, RuleTriggerContext, TokenRule } from '$lib/rules/types'
+import type { LookupRuleJson, RuleTriggerContext, TokenRule } from '#lib/rules/types.js'
 
 /**
  * These words/phrases (and some others) are accepted by the Analyzer as alternates for

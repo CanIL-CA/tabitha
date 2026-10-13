@@ -1,4 +1,4 @@
-import type { CopilotEncodingEntity, EntityMatch, EntityMatchCapture, EntityMatchResult, FlagExtractionRule, IndexStack, PatternEntity } from '$lib/types'
+import type { CopilotEncodingEntity, EntityMatch, EntityMatchCapture, EntityMatchResult, FlagExtractionRule, IndexStack, PatternEntity } from '#lib/types.js'
 
 /**
  * Check whether a value is a variable

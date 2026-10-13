@@ -3,7 +3,7 @@ import { check_input_safety, AiResponseError } from '@tabitha/ai'
 import { concept_key, create_concept_embedder, read_concept_key, type ConceptIndex, type ConceptLookupKey } from './concept_embeddings'
 import { get_concepts_by_keys } from './ontology'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 
 const ONE_WEEK_IN_SECONDS = 7 * 24 * 60 * 60
 
@@ -27,7 +27,8 @@ type FindRelatedConceptsOptions = {
  * sync_concept_embeddings (see ADR 0016).
  */
 export async function find_related_concepts({ db, index, search_term }: FindRelatedConceptsOptions): Promise<Concept[]> {
-	const safety_issue = check_input_safety(search_term, {
+	const safety_issue = check_input_safety({
+		text: search_term,
 		max_length: MAX_SEARCH_TERM_LENGTH,
 		too_long_message: `Search term is too long (${search_term.length} characters, max ${MAX_SEARCH_TERM_LENGTH}).`,
 		suspicious_message: 'Search term looks like it might contain instructions rather than a concept to search for.',

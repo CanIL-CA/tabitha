@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { status_list } from '$lib/data/lookups.js'
-	import EncodingStatus from '$lib/EncodingStatus.svelte'
+	import { status_list } from '#lib/data/lookups.js'
+	import EncodingStatus from '#lib/EncodingStatus.svelte'
 	import Icon from '@iconify/svelte'
 
 	let { data } = $props()

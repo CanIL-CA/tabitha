@@ -1,7 +1,7 @@
 import type { D1Database } from '@cloudflare/workers-types'
-import { by_book_order } from '@tabitha/types/patterns'
+import { book_order_index } from '@tabitha/types/patterns'
 import type { SourceStatus } from '@tabitha/types'
-import type { Phase1SearchHit, Phase1SearchResults, MatchSegment } from '$lib/types'
+import type { Phase1SearchResults, MatchSegment } from '#lib/types.js'
 
 /**
  * Common words can match most of the Bible; beyond this many hits a list stops being useful to
@@ -78,11 +78,6 @@ type DbPhase1Row = {
 	status: SourceStatus | ''
 }
 
-const by_reference_order = (a: Phase1SearchHit, b: Phase1SearchHit): number =>
-	by_book_order(a, b)
-	|| Number(a.reference.id_secondary) - Number(b.reference.id_secondary)
-	|| Number(a.reference.id_tertiary) - Number(b.reference.id_tertiary)
-
 /**
  * Finds every Bible verse whose Phase 1 encoding contains all of the query's terms as whole
  * words, in canonical order.
@@ -116,7 +111,10 @@ export async function search_phase_1({ db, q }: { db: D1Database, q: string }): 
 			status: row.status || 'Not Started',
 			segments: to_match_segments({ text: row.phase_1_encoding, terms }),
 		}))
-		.sort(by_reference_order)
+		.sort((a, b) =>
+			book_order_index(a) - book_order_index(b)
+			|| Number(a.reference.id_secondary) - Number(b.reference.id_secondary)
+			|| Number(a.reference.id_tertiary) - Number(b.reference.id_tertiary))
 
 	return {
 		terms,

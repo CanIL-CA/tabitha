@@ -25,6 +25,11 @@ export function create_app_svelte_config({
 			adapter: adapter(adapter_options),
 			// Users might leave a tab open indefinitely, so poll for new deployments (see UpdateNotice in @tabitha/ui).
 			version: { pollInterval: POLL_EVERY_30_MINS },
+			// SvelteKit's generated tsconfig only covers src/ and test(s)/, which left the Playwright
+			// specs and their config out of `bun run check`.
+			typescript: {
+				config: config => ({ ...config, include: [...config.include, '../e2e/**/*.ts', '../playwright.config.js'] }),
+			},
 			...kit,
 		},
 		preprocess,

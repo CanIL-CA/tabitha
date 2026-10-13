@@ -7,26 +7,30 @@ import { format_summary, has_blocking_failure, type AuditResult } from './run'
 
 const root_dir = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..')
 
-function result(script: string, blocking: boolean, outcome: AuditResult['outcome']): AuditResult {
+function result({ script, blocking, outcome }: {
+	script: string
+	blocking: boolean
+	outcome: AuditResult['outcome']
+}): AuditResult {
 	return { script, label: script, blocking, outcome }
 }
 
 describe('has_blocking_failure', () => {
 	it('ignores a failing advisory audit', () => {
-		expect(has_blocking_failure([result('check:md', false, 'failure'), result('check:secrets', true, 'success')])).toBe(false)
+		expect(has_blocking_failure([result({ script: 'check:md', blocking: false, outcome: 'failure' }), result({ script: 'check:secrets', blocking: true, outcome: 'success' })])).toBe(false)
 	})
 
 	it('fails on a failing blocking audit', () => {
-		expect(has_blocking_failure([result('check:md', false, 'success'), result('check:secrets', true, 'failure')])).toBe(true)
+		expect(has_blocking_failure([result({ script: 'check:md', blocking: false, outcome: 'success' }), result({ script: 'check:secrets', blocking: true, outcome: 'failure' })])).toBe(true)
 	})
 })
 
 describe('format_summary', () => {
 	it('marks advisory failures ⚠️ and blocking failures ❌', () => {
 		const summary = format_summary([
-			result('check:secrets', true, 'failure'),
-			result('check:md', false, 'failure'),
-			result('check:badges', false, 'success'),
+			result({ script: 'check:secrets', blocking: true, outcome: 'failure' }),
+			result({ script: 'check:md', blocking: false, outcome: 'failure' }),
+			result({ script: 'check:badges', blocking: false, outcome: 'success' }),
 		])
 		expect(summary).toContain('❌ check:secrets (blocking)')
 		expect(summary).toContain('⚠️ check:md')

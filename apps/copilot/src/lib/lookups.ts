@@ -1,5 +1,5 @@
 import type { CopilotBriefSection } from '@tabitha/types/copilot'
-import type { CopilotSettings, MttLevel, CopilotMode, BriefRigorMode } from '$lib/types'
+import type { CopilotSettings, MttLevel, CopilotMode, BriefRigorMode } from '#lib/types.js'
 
 export const book_rigors = new Map<string, BriefRigorMode>([
 	['Genesis', 'LOW'],

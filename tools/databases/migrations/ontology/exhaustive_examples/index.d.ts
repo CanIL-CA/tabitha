@@ -23,7 +23,10 @@ type ExampleReference = {
 
 type ContextArguments = Record<string, string>
 
-type ContextArgumentFinder = (entity_index: number, source_entities: SourceEntity[]) => ContextArguments
+type ContextArgumentFinder = (location: {
+	entity_index: number
+	source_entities: SourceEntity[]
+}) => ContextArguments
 type PartOfSpeech = 'Noun' | 'Verb' | 'Adjective' | 'Adverb' | 'Adposition'
 type FinderLookup = Record<PartOfSpeech, ContextArgumentFinder> & {
 	[key: string]: ContextArgumentFinder

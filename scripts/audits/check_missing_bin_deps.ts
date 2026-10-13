@@ -141,12 +141,12 @@ export function extract_shell_commands(content: string): ShellCommandUsage[] {
 	return usages
 }
 
-export function find_undeclared_bin_deps(
-	pkg: { name: string },
-	file_path: string,
-	content: string,
-	declared: ReadonlySet<string>,
-): MissingBinDepFinding[] {
+export function find_undeclared_bin_deps({ pkg, file_path, content, declared }: {
+	pkg: { name: string }
+	file_path: string
+	content: string
+	declared: ReadonlySet<string>
+}): MissingBinDepFinding[] {
 	const findings: MissingBinDepFinding[] = []
 	for (const usage of extract_shell_commands(content)) {
 		const expected_package = KNOWN_BIN_PACKAGES[usage.command]
@@ -171,7 +171,7 @@ export async function analyze_package_bin_deps(pkg: WorkspacePackage): Promise<M
 
 	const findings = (await Promise.all(files.map(async file_path => {
 		const content = await readFile(file_path, 'utf-8')
-		return find_undeclared_bin_deps(pkg, file_path, content, declared)
+		return find_undeclared_bin_deps({ pkg, file_path, content, declared })
 	}))).flat()
 
 	return findings

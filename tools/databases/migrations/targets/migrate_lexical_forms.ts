@@ -4,10 +4,14 @@ import { create_logger } from '../log'
 const log = create_logger('Targets migration')
 import { readdir } from 'node:fs/promises'
 
-export async function migrate_lexical_forms(project: string, targets_db: Database, csv_dir: string): Promise<void> {
+export async function migrate_lexical_forms({ project, targets_db, csv_dir }: {
+	project: string
+	targets_db: Database
+	csv_dir: string
+}): Promise<void> {
 	const word_forms = await get_word_forms(csv_dir)
 
-	await load_data(word_forms, targets_db, project)
+	await load_data({ word_forms, targets_db, project })
 }
 
 type WordFormRecord = {
@@ -32,7 +36,11 @@ async function get_word_forms(csv_dir: string): Promise<Record<PartOfSpeech, Wor
 	const groups_init: Record<PartOfSpeech, WordFormRecord[]> = { Adjective: [], Adverb: [], Noun: [], Verb: [] }
 
 
-	return normalized_data.reduce(grouper, groups_init)
+	return normalized_data.reduce((tracker: WordFormMap, item) => {
+		tracker[item.part_of_speech].push(item)
+
+		return tracker
+	}, groups_init)
 
 	function normalize(csv_text: string): WordFormRecord[] {
 		return csv_text.split('\n')
@@ -46,14 +54,6 @@ async function get_word_forms(csv_dir: string): Promise<Record<PartOfSpeech, Wor
 			return { sequence_number: Number(sequence_number), stem, part_of_speech, forms }
 		}
 	}
-
-	function grouper(tracker: WordFormMap, item: WordFormRecord) {
-		const { part_of_speech } = item
-
-		tracker[part_of_speech].push(item)
-
-		return tracker
-	}
 }
 
 /**
@@ -61,7 +61,11 @@ async function get_word_forms(csv_dir: string): Promise<Record<PartOfSpeech, Wor
  * When the words in the Lexicon are ordered by their ID, the sequence number from the CSV file represents the "index"
  * of the word in the Lexicon.  Additionally, this is in the context of a single part of speech.
  */
-async function load_data(word_forms: WordFormMap, targets_db: Database, project: string): Promise<void> {
+async function load_data({ word_forms, targets_db, project }: {
+	word_forms: WordFormMap
+	targets_db: Database
+	project: string
+}): Promise<void> {
 	log.step('Loading word forms into Lexicon table...')
 
 	type LexiconRecord = {

@@ -1,6 +1,9 @@
 import { findings, SVELTEKIT_FRAMEWORK_EXEMPTIONS } from './types'
 
-export function check_snake_case_functions(file_path: string, lines: string[]) {
+export function check_snake_case_functions({ file_path, lines }: {
+	file_path: string
+	lines: string[]
+}) {
 	// Philosophy 10: snake_case for functions and variables
 	lines.forEach((line, idx) => {
 		const trimmed = line.trim()

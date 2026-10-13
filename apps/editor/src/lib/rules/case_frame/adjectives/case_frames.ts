@@ -1,6 +1,6 @@
 import { parse_case_frame_rule, parse_sense_rules } from '../common'
 import { by_adposition, by_clause_tag, by_complementizer, by_same_participant_complementizer, modified_noun_of_adjective, modified_noun_with_subgroup, unit_with_measure } from './presets'
-import type { Token, LookupResult } from '$lib/types'
+import type { Token, LookupResult } from '#lib/types.js'
 import type {
 	AdjectiveRoleTag,
 	ArgumentRoleRule,
@@ -13,7 +13,7 @@ import type {
 	SenseRuleJson,
 	WordSense,
 	WordStem,
-} from '$lib/rules/case_frame/types'
+} from '#lib/rules/case_frame/types.js'
 
 const default_adjective_case_frame_json: RoleRuleJson<AdjectiveRoleTag> = {
 	'modified_noun': modified_noun_of_adjective(),

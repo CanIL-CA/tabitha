@@ -20,9 +20,8 @@ export async function wait_for_hydration({ page }) {
 /**
  * Creates standardized Playwright E2E configuration for Tabitha applications.
  *
- * @param {Object} options
- * @param {number} options.port Dedicated application dev port
- * @param {Record<string, any>} [options.overrides] Playwright configuration overrides
+ * @param {{ port: number } & import('@playwright/test').PlaywrightTestConfig} options The app's dedicated dev
+ * port, plus any Playwright configuration to override the defaults with
  * @returns {import('@playwright/test').PlaywrightTestConfig}
  */
 export function create_app_playwright_config({

@@ -11,7 +11,7 @@ import {
 	BIBLE_BOOKS,
 	USFM_BOOK_CODES,
 	BOOK_NAME_BY_USFM_CODE,
-	by_book_order,
+	book_order_index,
 	clean_trailing_slash,
 	testament,
 } from './index'
@@ -136,13 +136,13 @@ describe('@tabitha/types/patterns', () => {
 			expect(Object.keys(BIBLE_BOOKS)).toHaveLength(66)
 		})
 
-		test('by_book_order sorts references in canonical Bible order, not alphabetically', () => {
+		test('book_order_index sorts references in canonical Bible order, not alphabetically', () => {
 			const refs = [
 				{ reference: { id_primary: 'John' } },
 				{ reference: { id_primary: 'Genesis' } },
 				{ reference: { id_primary: 'Amos' } },
 			]
-			expect(refs.toSorted(by_book_order).map(r => r.reference.id_primary))
+			expect(refs.toSorted((a, b) => book_order_index(a) - book_order_index(b)).map(r => r.reference.id_primary))
 				.toEqual(['Genesis', 'Amos', 'John'])
 		})
 

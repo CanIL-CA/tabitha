@@ -1,6 +1,6 @@
-import { TOKEN_TYPE, set_message, token_has_tag } from '$lib/token'
+import { TOKEN_TYPE, set_message, token_has_tag } from '#lib/token.js'
 import type { CheckerTokenType } from '@tabitha/types'
-import type { MessageInfo, Token, Tag } from '$lib/types'
+import type { MessageInfo, Token, Tag } from '#lib/types.js'
 import type {
 	BuiltInRule,
 	ContextFilterResult,
@@ -20,7 +20,7 @@ import type {
 	TokenRule,
 	TokenTransform,
 	TokenTransformJson,
-} from '$lib/rules/types'
+} from '#lib/rules/types.js'
 
 export function create_token_filter(filter_json: TokenFilterJson | undefined): TokenFilter {
 	if (filter_json === undefined || filter_json === 'none') {

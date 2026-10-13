@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '$lib/types'
+	import type { SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '#lib/types.js'
 
 	type Props = {
 		entities: SimplifiedSemanticEncoding

@@ -239,6 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       coverage: ${{ steps.coverage.outcome }}
+      coverage_report: ${{ steps.coverage_report.outputs.markdown }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -246,10 +247,46 @@ jobs:
       - name: Setup Workspace
         uses: ./.github/actions/setup-workspace
 
+      # PRs compare against the newest coverage summary a push to main saved (caches saved on
+      # the default branch are readable from every PR). Absent on the first run, which just
+      # leaves the delta column out.
+      - name: Restore Main Coverage Baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: coverage-baseline
+          key: coverage-main-${{ github.sha }}
+          restore-keys: coverage-main-
+
       - name: In-Memory Unit Tests & Coverage Report
         id: coverage
         run: bun run test:coverage
         continue-on-error: true
+
+      - name: Expose Coverage Table to PR Summary
+        id: coverage_report
+        if: always()
+        run: |
+          [ -f coverage/report.md ] || exit 0
+          {
+            echo 'markdown<<COVERAGE_REPORT_EOF'
+            cat coverage/report.md
+            echo 'COVERAGE_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Stage Main Coverage Baseline
+        if: github.event_name == 'push' && steps.coverage.outcome == 'success'
+        run: |
+          mkdir -p coverage-baseline
+          cp coverage/coverage-summary.json coverage-baseline/
+          echo "main @ ${GITHUB_SHA::7}" > coverage-baseline/label.txt
+
+      - name: Save Main Coverage Baseline
+        if: github.event_name == 'push' && steps.coverage.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: coverage-baseline
+          key: coverage-main-${{ github.sha }}
 
   e2e_tests:
     name: 🎭 Playwright E2E Tests
@@ -505,6 +542,12 @@ jobs:
               }
               const mentions = [...participants].map((login) => `@${login}`).join(' ')
               body += `\n${mentions} — ${failed.length} advisory check(s) need a look: ${failed.map(([name]) => name).join(', ')}.`
+            }
+
+            // Written by scripts/ci/report_coverage.ts; empty when unit tests didn't run.
+            const coverage_report = needs.unit_tests.outputs.coverage_report
+            if (coverage_report) {
+              body += `\n<details><summary>📊 Unit test coverage</summary>\n\n${coverage_report}\n</details>\n`
             }
 
             try {

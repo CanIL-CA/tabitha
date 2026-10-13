@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
-	import { get_source_data, get_sources_url } from '$lib/examples'
+	import { get_source_data, get_sources_url } from '#lib/examples/index.js'
 	import Icon from '@iconify/svelte'
 	import { SourceEntitiesPlain } from '@tabitha/ui'
 	import type { Reference, ConceptKey, SourceResult } from '@tabitha/types'

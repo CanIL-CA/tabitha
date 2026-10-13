@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation'
 	import { network_state } from '@tabitha/ui'
-	import BackTranslation from '$lib/BackTranslation.svelte'
-	import CopyButton from '$lib/CopyButton.svelte'
-	import { save_state } from '$lib/save'
-	import { Tokens } from '$lib/tokens'
+	import BackTranslation from '#lib/BackTranslation.svelte'
+	import CopyButton from '#lib/CopyButton.svelte'
+	import { save_state } from '#lib/save/index.js'
+	import { Tokens } from '#lib/tokens/index.js'
 	import { create_editor_client } from '@tabitha/api-client'
 	import Icon from '@iconify/svelte'
 	import type { AiAssistResult } from '@tabitha/types'
@@ -144,7 +144,7 @@
 {/if}
 
 <style lang="postcss">
-	@reference '$lib/app.css';
+	@reference '#lib/app.css';
 
 	/* had to override daisyui's sizing so I could make the line bigger */
 	.divider::before,

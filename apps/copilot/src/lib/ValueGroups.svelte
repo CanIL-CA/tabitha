@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
-	import { m } from '$lib/paraglide/messages'
+	import { m } from '#lib/paraglide/messages.js'
 
 	type GroupOption = {
 		value: string
@@ -20,7 +20,10 @@
 	)
 	let selected_count = $derived(selected_values.length)
 
-	const toggle_selected = (value: string, is_selected: boolean): void => {
+	const toggle_selected = ({ value, is_selected }: {
+		value: string
+		is_selected: boolean
+	}): void => {
 		selected_values = is_selected
 			? [...selected_values, value]
 			: selected_values.filter(selected_value => selected_value !== value)
@@ -86,7 +89,7 @@
 							type="checkbox"
 							checked={selected_values.includes(option.value)}
 							onchange={event =>
-								toggle_selected(option.value, event.currentTarget.checked)}
+								toggle_selected({ value: option.value, is_selected: event.currentTarget.checked })}
 							class="checkbox checkbox-sm"
 						/>
 						{option.label()}

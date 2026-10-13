@@ -6,34 +6,37 @@ const WIRED_HOOKS = [
 	'export const handle = sequence(noindex_handle, cors_handle, rate_limit_handle)',
 ].join('\n')
 
-function app(name: string, hooks_content: string | null) {
+function app({ name, hooks_content }: {
+	name: string
+	hooks_content: string | null
+}) {
 	return { name, hooks_path: `apps/${name}/src/hooks.server.ts`, hooks_content }
 }
 
 describe('find_noindex_findings', () => {
 	it('passes a tool app that puts noindex_handle in its sequence', () => {
-		expect(find_noindex_findings(app('sources', WIRED_HOOKS))).toEqual([])
+		expect(find_noindex_findings(app({ name: 'sources', hooks_content: WIRED_HOOKS }))).toEqual([])
 	})
 
 	it('warns about a tool app that never imports @tabitha/noindex', () => {
-		const findings = find_noindex_findings(app('sources', 'export const handle = sequence(cors_handle)'))
+		const findings = find_noindex_findings(app({ name: 'sources', hooks_content: 'export const handle = sequence(cors_handle)' }))
 		expect(findings.map(f => f.severity)).toEqual(['warning'])
 	})
 
 	it('warns about a tool app that imports noindex_handle but leaves it out of the sequence', () => {
 		const hooks = "import { noindex_handle } from '@tabitha/noindex'\nexport const handle = sequence(cors_handle)"
-		expect(find_noindex_findings(app('editor', hooks)).map(f => f.severity)).toEqual(['warning'])
+		expect(find_noindex_findings(app({ name: 'editor', hooks_content: hooks })).map(f => f.severity)).toEqual(['warning'])
 	})
 
 	it('warns about a tool app with no hooks.server.ts at all', () => {
-		expect(find_noindex_findings(app('new-tool', null)).map(f => f.severity)).toEqual(['warning'])
+		expect(find_noindex_findings(app({ name: 'new-tool', hooks_content: null })).map(f => f.severity)).toEqual(['warning'])
 	})
 
 	it('passes the public site without noindex', () => {
-		expect(find_noindex_findings(app('www', null))).toEqual([])
+		expect(find_noindex_findings(app({ name: 'www', hooks_content: null }))).toEqual([])
 	})
 
 	it('errors when the public site uses noindex', () => {
-		expect(find_noindex_findings(app('www', WIRED_HOOKS)).map(f => f.severity)).toEqual(['error'])
+		expect(find_noindex_findings(app({ name: 'www', hooks_content: WIRED_HOOKS })).map(f => f.severity)).toEqual(['error'])
 	})
 })

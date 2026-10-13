@@ -2,9 +2,9 @@
 	import { onMount } from 'svelte'
 	import { fade } from 'svelte/transition'
 	import Icon from '@iconify/svelte'
-	import { ExampleSummary, Filters, get_examples, SourceData, TargetData } from '$lib/examples'
-	import { by_book_order } from '@tabitha/types/patterns'
-	import type { Concept } from '$lib/types'
+	import { ExampleSummary, Filters, get_examples, SourceData, TargetData } from '#lib/examples/index.js'
+	import { book_order_index } from '@tabitha/types/patterns'
+	import type { Concept } from '#lib/types.js'
 	import type { ConceptKey, ConceptExample, PartOfSpeech } from '@tabitha/types'
 
 	type Props = {
@@ -21,7 +21,7 @@
 	let all_examples = $state<ConceptExample[]>([])
 	let filtered_examples = $state<ConceptExample[]>([])
 	let displayed_examples = $derived(
-		filtered_examples.toSorted(by_book_order).slice(0, MAX_EXAMPLES_DISPLAYED),
+		filtered_examples.toSorted((a, b) => book_order_index(a) - book_order_index(b)).slice(0, MAX_EXAMPLES_DISPLAYED),
 	)
 
 	async function load_examples() {

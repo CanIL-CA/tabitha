@@ -34,16 +34,19 @@ const NOINDEX_IN_SEQUENCE_PATTERN = /sequence\([^)]*\bnoindex_handle\b/
 export function find_noindex_findings(app: SvelteKitApp): NoindexFinding[] {
 	const content = app.hooks_content ?? ''
 	const imports_noindex = NOINDEX_IMPORT_PATTERN.test(content)
-	const finding = (severity: NoindexFinding['severity'], message: string) => [{ app_name: app.name, file_path: app.hooks_path, severity, message }]
+	const finding = ({ severity, message }: {
+		severity: NoindexFinding['severity']
+		message: string
+	}) => [{ app_name: app.name, file_path: app.hooks_path, severity, message }]
 
 	if (INDEXABLE_APPS.has(app.name)) {
 		return imports_noindex
-			? finding('error', `apps/${app.name} is a public, indexable site but uses @tabitha/noindex, which hides it from search engines. Remove it, or drop "${app.name}" from INDEXABLE_APPS if the app is no longer public.`)
+			? finding({ severity: 'error', message: `apps/${app.name} is a public, indexable site but uses @tabitha/noindex, which hides it from search engines. Remove it, or drop "${app.name}" from INDEXABLE_APPS if the app is no longer public.` })
 			: []
 	}
 
 	if (!imports_noindex || !NOINDEX_IN_SEQUENCE_PATTERN.test(content)) {
-		return finding('warning', `apps/${app.name} is a tool/API app but doesn't put noindex_handle from @tabitha/noindex in its handle sequence, so search engines may index it. Add it first in sequence(...), or add "${app.name}" to INDEXABLE_APPS if it's meant to be public.`)
+		return finding({ severity: 'warning', message: `apps/${app.name} is a tool/API app but doesn't put noindex_handle from @tabitha/noindex in its handle sequence, so search engines may index it. Add it first in sequence(...), or add "${app.name}" to INDEXABLE_APPS if it's meant to be public.` })
 	}
 
 	return []

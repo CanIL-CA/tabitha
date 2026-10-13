@@ -1,5 +1,5 @@
-import { can_approve_change, get_all_changes, get_pending_changes, transform_with_users } from '$lib/server/changes/changes'
-import type { OntologyChange } from '$lib/types'
+import { can_approve_change, get_all_changes, get_pending_changes, transform_with_users } from '#lib/server/changes/changes.js'
+import type { OntologyChange } from '#lib/types.js'
 import type { PageServerLoad } from './$types'
 
 export async function load({ locals, url: { searchParams } }: Parameters<PageServerLoad>[0]) {

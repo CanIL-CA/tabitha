@@ -3,12 +3,15 @@ import { create_logger } from '../log'
 
 const log = create_logger('Sources migration')
 
-export function migrate_source_features(tbta_db: Database, sources_db: Database) {
+export function migrate_source_features({ tbta_db, sources_db }: {
+	tbta_db: Database
+	sources_db: Database
+}) {
 	const transformed_data = transform_tbta_data(tbta_db)
 
 	create_tabitha_table(sources_db)
 
-	load_data(sources_db, transformed_data)
+	load_data({ targets_db: sources_db, transformed_data })
 }
 
 const CATEGORIES: Record<number, string> = {
@@ -157,7 +160,10 @@ function create_tabitha_table(tabitha_sources_db: Database) {
 	return tabitha_sources_db
 }
 
-function load_data(targets_db: Database, transformed_data: TransformedData[]) {
+function load_data({ targets_db, transformed_data }: {
+	targets_db: Database
+	transformed_data: TransformedData[]
+}) {
 	log.step('Loading data into Features table...')
 
 	transformed_data.forEach(({ category, feature, position, code, value, example }, index) => {

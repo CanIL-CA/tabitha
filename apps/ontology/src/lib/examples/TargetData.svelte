@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
-	import { get_target_data } from '$lib/examples'
+	import { get_target_data } from '#lib/examples/index.js'
 	import type { Reference, TargetTextData } from '@tabitha/types'
 
 	type Props = {

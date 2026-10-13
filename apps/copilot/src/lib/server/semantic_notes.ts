@@ -1,7 +1,7 @@
 import { check_input_safety, type AiClient } from '@tabitha/ai'
 import { CopilotError } from './copilot_core'
 import system_instruction_template from './semantic_notes_prompt.md?raw'
-import type { CopilotLlmInput, CopilotLlmOutput } from '$lib/types'
+import type { CopilotLlmInput, CopilotLlmOutput } from '#lib/types.js'
 
 // The AI Gateway's prompt-injection guardrail is off gateway-wide (see @tabitha/ai's input_guard
 // and ADR 0007), so this is a local, best-effort substitute scoped to the translator-authored
@@ -26,7 +26,7 @@ export async function get_semantic_notes({ llm_input, ai }: { llm_input: Copilot
 	const safety_issue = check_verse_text_safety(llm_input.english_text) ?? (llm_input.lwc_text ? check_verse_text_safety(llm_input.lwc_text) : undefined)
 	if (safety_issue) {
 		console.warn(`copilot: semantic-notes rejected verse text: ${safety_issue}`)
-		throw new CopilotError('Potential safety issue found in the English/LWC text.', { retryable: false })
+		throw new CopilotError({ message: 'Potential safety issue found in the English/LWC text.', retryable: false })
 	}
 
 	const system_instruction = system_instruction_template.replace('{{TRANSLATE_OR_CITE_INSTRUCTION}}', () => translate_tbta_text
@@ -91,7 +91,7 @@ export async function get_semantic_notes({ llm_input, ai }: { llm_input: Copilot
 		})
 	} catch (error) {
 		const message = error instanceof Error ? error.message : `${error}`
-		throw new CopilotError(`Error generating semantic notes: ${message}`)
+		throw new CopilotError({ message: `Error generating semantic notes: ${message}` })
 	}
 
 	return {
@@ -106,7 +106,8 @@ function postprocess(caution: string) {
 }
 
 function check_verse_text_safety(text: string): string | undefined {
-	return check_input_safety(text, {
+	return check_input_safety({
+		text,
 		max_length: MAX_VERSE_TEXT_LENGTH,
 		too_long_message: `Verse text is too long (${text.length} characters, max ${MAX_VERSE_TEXT_LENGTH}).`,
 		suspicious_message: 'Verse text looks like it might contain instructions rather than scripture.',

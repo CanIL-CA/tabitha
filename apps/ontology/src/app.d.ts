@@ -2,7 +2,7 @@
 /// <reference types="vite-plugin-pwa/client" />
 import type { Auth } from '@auth/sveltekit'
 import type { D1Database } from '@cloudflare/workers-types'
-import type { OntologyUser, SaveResult } from '$lib/types'
+import type { OntologyUser, SaveResult } from '#lib/types.js'
 
 declare global {
 	namespace App {

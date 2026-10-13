@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Option, Options } from '$lib/types'
+	import type { Option, Options } from '#lib/types.js'
 	import type { ContextArgumentName } from '@tabitha/types'
 
 	type Props = {

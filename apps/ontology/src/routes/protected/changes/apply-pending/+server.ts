@@ -1,6 +1,6 @@
-import { error, json } from '@sveltejs/kit'
+import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
-import { apply_pending_changes } from '$lib/server/changes/changes'
+import { apply_pending_changes } from '#lib/server/changes/changes.js'
 
 export async function POST({ locals }: Parameters<RequestHandler>[0]) {
 	if (!locals.user) {
@@ -9,7 +9,7 @@ export async function POST({ locals }: Parameters<RequestHandler>[0]) {
 
 	try {
 		const result = await apply_pending_changes(locals.db_ontology)
-		return json(result)
+		return Response.json(result)
 
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : String(err)

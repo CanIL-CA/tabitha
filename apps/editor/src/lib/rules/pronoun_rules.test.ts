@@ -2,14 +2,18 @@ import { describe, expect, test } from 'vitest'
 import { PRONOUN_TAGS, PRONOUN_RULES } from './pronoun_rules'
 import { TOKEN_TYPE, create_clause_token, create_token, flatten_sentence } from '../token'
 import { apply_rules } from './rules_processor'
-import { expect_error_to_match } from '$lib/test_helps'
-import type { Sentence, Token } from '$lib/types'
+import { expect_error_to_match } from '#lib/test_helps.js'
+import type { Sentence, Token } from '#lib/types.js'
 
 function create_tokens(tokens: string[]): Token[] {
 	return tokens.map(token => create_token({ token, type: TOKEN_TYPE.LOOKUP_WORD }))
 }
 
-function create_pronoun_token(pronoun: string, referent: string, referent_lookup?: string): Token {
+function create_pronoun_token({ pronoun, referent, referent_lookup }: {
+	pronoun: string
+	referent: string
+	referent_lookup?: string
+}): Token {
 	const pronoun_token = create_token({ token: pronoun, type: TOKEN_TYPE.FUNCTION_WORD })
 	return create_token({ token: referent, type: TOKEN_TYPE.LOOKUP_WORD, lookup_terms: [referent_lookup ?? referent], pronoun: pronoun_token })
 }
@@ -21,12 +25,12 @@ function create_sentence(tokens: Token[]): Sentence {
 describe('invalid tokens: pronouns', () => {
 	describe('valid', () => {
 		test.each([
-			[[create_pronoun_token('I', 'Paul')], PRONOUN_TAGS.get('i')],
-			[[create_pronoun_token('myself', 'Paul')], PRONOUN_TAGS.get('myself')],
-			[[create_pronoun_token('You', 'Paul')], PRONOUN_TAGS.get('you')],
-			[[create_pronoun_token('you', 'Paul')], PRONOUN_TAGS.get('you')],
-			[[create_pronoun_token('we', 'people')], PRONOUN_TAGS.get('we')],
-			[[create_pronoun_token('each-other', 'people')], PRONOUN_TAGS.get('each-other')],
+			[[create_pronoun_token({ pronoun: 'I', referent: 'Paul' })], PRONOUN_TAGS.get('i')],
+			[[create_pronoun_token({ pronoun: 'myself', referent: 'Paul' })], PRONOUN_TAGS.get('myself')],
+			[[create_pronoun_token({ pronoun: 'You', referent: 'Paul' })], PRONOUN_TAGS.get('you')],
+			[[create_pronoun_token({ pronoun: 'you', referent: 'Paul' })], PRONOUN_TAGS.get('you')],
+			[[create_pronoun_token({ pronoun: 'we', referent: 'people' })], PRONOUN_TAGS.get('we')],
+			[[create_pronoun_token({ pronoun: 'each-other', referent: 'people' })], PRONOUN_TAGS.get('each-other')],
 		])('%s', (test_tokens, exptected_tag) => {
 			const INPUT = [create_sentence(test_tokens)]
 			const EXPECTED_OUTPUT = test_tokens.map(token => ({ ...token, tag: { 'pronoun': exptected_tag } }))
@@ -139,8 +143,8 @@ describe('invalid tokens: pronouns', () => {
 
 	test('invalid: invalid pronoun used with referent', () => {
 		const test_tokens = [create_sentence([
-			create_pronoun_token('her', 'Mary'),
-			create_pronoun_token('token', 'Mary'),
+			create_pronoun_token({ pronoun: 'her', referent: 'Mary' }),
+			create_pronoun_token({ pronoun: 'token', referent: 'Mary' }),
 		])]
 		const checked_tokens = apply_rules({ sentences: test_tokens, rules: PRONOUN_RULES }).flatMap(flatten_sentence)
 

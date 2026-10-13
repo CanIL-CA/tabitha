@@ -1,5 +1,5 @@
-import type { Sentence, Token } from '$lib/types'
-import type { TokenRule } from '$lib/rules/types'
+import type { Sentence, Token } from '#lib/types.js'
+import type { TokenRule } from '#lib/rules/types.js'
 export function rules_applier(rules: TokenRule[]): (sentences: Sentence[]) => Sentence[] {
 	return sentences => apply_rules({ sentences, rules })
 }

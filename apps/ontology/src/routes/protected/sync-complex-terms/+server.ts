@@ -1,5 +1,5 @@
-import { error, json } from '@sveltejs/kit'
-import { sync_complex_terms } from '$lib/server/complex_terms'
+import { error } from '@sveltejs/kit'
+import { sync_complex_terms } from '#lib/server/complex_terms.js'
 import type { RequestHandler } from './$types'
 
 export async function POST({ locals }: Parameters<RequestHandler>[0]) {
@@ -9,7 +9,7 @@ export async function POST({ locals }: Parameters<RequestHandler>[0]) {
 
 	try {
 		const count = await sync_complex_terms(locals.db_ontology)
-		return json({
+		return Response.json({
 			success: true,
 			count,
 			timestamp: new Date().toISOString(),

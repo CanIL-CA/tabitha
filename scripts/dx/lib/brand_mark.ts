@@ -30,7 +30,10 @@ const FONT_STACK = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
 // small mark in the atomic-number position (top-left) instead of a superscript.
 // Used as-is for the favicon and for the "any"-purpose manifest icons, since both
 // are shown at their own bounds rather than run through an OS mask shape.
-export function build_cell_svg(letter: string, size: number): string {
+export function build_cell_svg({ letter, size }: {
+	letter: string
+	size: number
+}): string {
 	const inset = size / 64
 	const rx = size / 64 * 4
 	const border = size / 64 * 1.5
@@ -45,7 +48,10 @@ export function build_cell_svg(letter: string, size: number): string {
 // Maskable variant: full-bleed background (no corner radius or border — the OS
 // applies its own mask shape) with the mark kept inside the ~80%-diameter safe
 // zone android/other launchers guarantee stays visible after masking.
-export function build_maskable_svg(letter: string, size: number): string {
+export function build_maskable_svg({ letter, size }: {
+	letter: string
+	size: number
+}): string {
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
 	<rect width="${size}" height="${size}" fill="${CANIL_RED}" />
 	<text x="${size * 0.352}" y="${size * 0.381}" text-anchor="start" font-family="${FONT_STACK}" font-size="${size * 0.09}" font-weight="500" fill="${CANIL_WHITE}" fill-opacity="0.65">T</text>

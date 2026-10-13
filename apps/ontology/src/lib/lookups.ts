@@ -30,7 +30,7 @@ const required: Record<string, string> = {
 	I: 'Agent proposition',
 }
 
-const optional: Record<string, string> = Object.entries(required).reduce(lowercase_and_parens, {})
+const optional: Record<string, string> = Object.entries(required).reduce<Record<string, string>>(lowercase_and_parens, {})
 
 /**
  * Creates an object holding lowercase keys and parenthesized values:

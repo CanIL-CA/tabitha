@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '$lib/app.css'
+	import '#lib/app.css'
 	import type { Snippet } from 'svelte'
 	import { page } from '$app/state'
 

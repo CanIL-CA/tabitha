@@ -36,7 +36,7 @@ const sources_db = new Database(sources_db_name, { readwrite: true, create: fals
 log.step(`Opening Sources_Complex database: ${sources_db_complex_name}`)
 const sources_db_complex = new Database(sources_db_complex_name, { readwrite: true, create: false })
 
-await load_examples(tabitha_db, sources_db, sources_db_complex)
+await load_examples({ db_ontology: tabitha_db, db_sources: sources_db, db_sources_complex: sources_db_complex })
 
 create_indexes(tabitha_db)
 

@@ -3,9 +3,9 @@ import { analyze } from './index'
 import { entityfy } from './entityfy'
 import { get_features_for_token } from './features'
 import { populate_noun_list, replace_punctuation } from './other_rules'
-import { TOKEN_TYPE, create_token, create_lookup_result } from '$lib/token'
+import { TOKEN_TYPE, create_token, create_lookup_result } from '#lib/token.js'
 import type { EditorAnalyzedEntity } from '@tabitha/types'
-import type { Sentence } from '$lib/types'
+import type { Sentence } from '#lib/types.js'
 
 describe('analyzer', () => {
 	describe('analyze pipeline', () => {

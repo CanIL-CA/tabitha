@@ -3,7 +3,10 @@ import { findings } from './types'
 const TEMPLATE_LITERAL_PATTERN = /`([^`]*)`/g
 const SYSTEM_INSTRUCTION_PROXIMITY_WINDOW = 120
 
-export function check_ai_prompts_in_md_files(file_path: string, content: string) {
+export function check_ai_prompts_in_md_files({ file_path, content }: {
+	file_path: string
+	content: string
+}) {
 	// Philosophy 15: AI prompts live in separate Markdown files -- a system_instruction sent to
 	// the AI client should be sourced from an imported *.md file (via '?raw'), not authored inline
 	// as a template literal, so the prompt reads and edits like the document it actually is.

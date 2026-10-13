@@ -18,7 +18,7 @@ This document defines mandatory guidelines and code standards for Svelte 5 (Rune
 - **Always use `$props()`** for declaring component props:
   ```svelte
   <script lang="ts">
-    interface Props {
+    type Props = {
       title: string
       count?: number
       onselect?: (id: string) => void

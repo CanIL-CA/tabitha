@@ -1,4 +1,4 @@
-import type { Concept } from '$lib/types'
+import type { Concept } from '#lib/types.js'
 import type { ConceptSearchFilter } from '@tabitha/types'
 
 const FUNCTION_WORDS: [string, string][] = [

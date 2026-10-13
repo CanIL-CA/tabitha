@@ -1,5 +1,5 @@
-import { get_version } from '$lib/server/ontology'
-import type { OntologyUser } from '$lib/types'
+import { get_version } from '#lib/server/ontology.js'
+import type { OntologyUser } from '#lib/types.js'
 import type { LayoutServerLoadEvent } from './$types'
 
 type LayoutData = {

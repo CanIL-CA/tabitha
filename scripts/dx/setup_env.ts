@@ -65,7 +65,10 @@ export function forced_local_value(key: string): string | undefined {
 	return undefined
 }
 
-function generate_local_env_content(template_content: string, existing_content?: string): string {
+function generate_local_env_content({ template_content, existing_content }: {
+	template_content: string
+	existing_content?: string
+}): string {
 	const existing_vars = existing_content ? parse_env_file(existing_content) : new Map<string, string>()
 	const lines = template_content.split('\n')
 	const output_lines: string[] = []
@@ -147,7 +150,7 @@ export async function setup_env() {
 		const template_content = readFileSync(env_template, 'utf-8')
 		const existing_content = existsSync(env_local) ? readFileSync(env_local, 'utf-8') : undefined
 
-		const new_content = generate_local_env_content(template_content, existing_content)
+		const new_content = generate_local_env_content({ template_content, existing_content })
 		writeFileSync(env_local, new_content, 'utf-8')
 
 		console.log(`   🔗 ${app_name}: Configured .env.local with local port discovery & preserved secrets.`)

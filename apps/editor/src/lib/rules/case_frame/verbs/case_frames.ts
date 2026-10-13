@@ -1,7 +1,7 @@
-import { TOKEN_TYPE } from '$lib/token'
+import { TOKEN_TYPE } from '#lib/token.js'
 import { parse_case_frame_rule, parse_sense_rules } from '../common'
 import { by_adposition, by_clause_tag, by_complementizer, by_adposition_concept, by_relative_context, directly_after_verb, directly_after_verb_with_adposition, directly_before_verb, patient_from_subordinate_clause, predicate_adjective, with_be_auxiliary, with_no_double_patient } from './presets'
-import type { Token } from '$lib/types'
+import type { Token } from '#lib/types.js'
 import type {
 	ArgumentRoleRule,
 	ArgumentRulesForSense,
@@ -14,7 +14,7 @@ import type {
 	VerbRoleTag,
 	WordSense,
 	WordStem,
-} from '$lib/rules/case_frame/types'
+} from '#lib/rules/case_frame/types.js'
 
 const default_verb_case_frame_json: RoleRuleJson<VerbRoleTag> = {
 	'agent': directly_before_verb(),

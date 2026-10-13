@@ -1,6 +1,6 @@
 import type { CaseFrameStatus } from '@tabitha/types'
-import type { LookupResult, Tag } from '$lib/types'
-import type { RuleTriggerContext, TokenRule, TransformRuleJson, TokenFilterJsonBase, TokenContextFilterJson } from '$lib/rules/types'
+import type { LookupResult, Tag } from '#lib/types.js'
+import type { RuleTriggerContext, TokenRule, TransformRuleJson, TokenFilterJsonBase, TokenContextFilterJson } from '#lib/rules/types.js'
 
 export type RoleTag = string
 

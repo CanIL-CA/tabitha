@@ -51,19 +51,19 @@ for (const tbta_db_name of tbta_db_names) {
 
 	const tbta_db = new Database(tbta_db_name, { readwrite: true, create: false })
 
-	migrate_text_table(tbta_db, project, targets_db)
-	migrate_lexicon_table(tbta_db, project, targets_db)
+	migrate_text_table({ tbta_db, project, targets_db })
+	migrate_lexicon_table({ tbta_db, project, targets_db })
 
 	// Lexical forms are only implemented for English (for now).
 	if (project === 'English') {
-		await migrate_lexical_forms(project, targets_db, join(import.meta.dir, '../../data/inflections/csv'))
+		await migrate_lexical_forms({ project, targets_db, csv_dir: join(import.meta.dir, '../../data/inflections/csv') })
 	}
 
-	migrate_form_names_table(tbta_db, project, targets_db)
-	migrate_source_features_table(tbta_db, project, targets_db)
-	migrate_lexical_features_table(tbta_db, project, targets_db)
+	migrate_form_names_table({ tbta_db, project, targets_db })
+	migrate_source_features_table({ tbta_db, project, targets_db })
+	migrate_lexical_features_table({ tbta_db, project, targets_db })
 
-	await migrate_ideal_text_table(project, targets_db, join(import.meta.dir, '../../data/ideal_texts'))
+	await migrate_ideal_text_table({ project, targets_db, dir: join(import.meta.dir, '../../data/ideal_texts') })
 
 	// Each project's database now holds only that project's own data, so this run's own output is
 	// the only thing that needs verifying -- there's no longer a shared file where another

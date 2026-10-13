@@ -1,8 +1,7 @@
 import { PUBLIC_EDITOR_API_HOST } from '$env/static/public'
 import { create_editor_client } from '@tabitha/api-client'
-import { CATEGORY_ABBREVIATIONS } from '$lib/encoding/lookups'
-import { transform_features_to_codes } from '$lib/encoding/features'
-import { json } from '@sveltejs/kit'
+import { CATEGORY_ABBREVIATIONS } from '#lib/encoding/lookups.js'
+import { transform_features_to_codes } from '#lib/encoding/features.js'
 import type { RequestHandler } from './$types'
 import type { EditorAnalyzedEntity, SourceEntity, AnalysisResult } from '@tabitha/types'
 
@@ -23,7 +22,7 @@ export async function GET({ locals: { db }, url: { searchParams } }: Parameters<
 		source_entities: source_entities_with_features,
 		noun_list: api_result.noun_list,
 	}
-	return json(result)
+	return Response.json(result)
 }
 
 function transform_api_entity(api_entity: EditorAnalyzedEntity): SourceEntity {

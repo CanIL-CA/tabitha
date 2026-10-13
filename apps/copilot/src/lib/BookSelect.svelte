@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { polished_books } from '$lib/lookups'
-	import { m } from '$lib/paraglide/messages'
+	import { polished_books } from '#lib/lookups.js'
+	import { m } from '#lib/paraglide/messages.js'
 
 	let { book = $bindable(), disabled = false }: { book: string, disabled?: boolean } = $props()
 

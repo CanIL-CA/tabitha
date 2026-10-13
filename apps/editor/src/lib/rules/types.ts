@@ -1,5 +1,5 @@
 import type { CheckerTokenType, CheckerMessageLabel } from '@tabitha/types/editor'
-import type { Token, Tag, LookupResult } from '$lib/types'
+import type { Token, Tag, LookupResult } from '#lib/types.js'
 
 export type TokenFilter = (token: Token) => boolean
 export type TokenTransform = (token: Token) => Token

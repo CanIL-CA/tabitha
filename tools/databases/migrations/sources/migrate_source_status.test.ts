@@ -11,7 +11,12 @@ afterEach(() => {
 	while (temp_dirs.length > 0) rmSync(temp_dirs.pop()!, { recursive: true, force: true })
 })
 
-function make_csv_dir(date: string, { ot = '', nt = '', with_date_column = true }: { ot?: string, nt?: string, with_date_column?: boolean }): string {
+function make_csv_dir({ date, ot = '', nt = '', with_date_column = true }: {
+	date: string
+	ot?: string
+	nt?: string
+	with_date_column?: boolean
+}): string {
 	const dir = mkdtempSync(join(tmpdir(), 'tabitha-status-test-'))
 	temp_dirs.push(dir)
 
@@ -29,9 +34,9 @@ describe('migrate_source_status', () => {
 		db.run("INSERT INTO Sources VALUES ('Bible', 'Genesis', '1', '1', '')")
 
 		const date = '2026-08-29'
-		const csv_dir = make_csv_dir(date, { ot: '"May 1, 2026, 12:00:00 AM",Complete,Genesis 1:1-10,10\n' })
+		const csv_dir = make_csv_dir({ date, ot: '"May 1, 2026, 12:00:00 AM",Complete,Genesis 1:1-10,10\n' })
 
-		await migrate_source_status(bun_sqlite_runner(db), csv_dir, date)
+		await migrate_source_status({ runner: bun_sqlite_runner(db), csv_dir, date })
 
 		expect(db.query('SELECT status FROM Sources').get()).toEqual({ status: 'Ready to Translate' })
 	})
@@ -46,9 +51,9 @@ describe('migrate_source_status', () => {
 		// column, previously caused every status word to be parsed one character short (e.g.
 		// "Previously Complete" -> "reviously Complete"), silently falling back to "Not Started" for
 		// nearly every row.
-		const csv_dir = make_csv_dir(date, { ot: 'Previously Complete,Genesis 1:1-10,10\n', with_date_column: false })
+		const csv_dir = make_csv_dir({ date, ot: 'Previously Complete,Genesis 1:1-10,10\n', with_date_column: false })
 
-		await migrate_source_status(bun_sqlite_runner(db), csv_dir, date)
+		await migrate_source_status({ runner: bun_sqlite_runner(db), csv_dir, date })
 
 		expect(db.query('SELECT status FROM Sources').get()).toEqual({ status: 'Ready to Translate' })
 	})
@@ -59,19 +64,19 @@ describe('migrate_source_status', () => {
 		db.run("INSERT INTO Sources VALUES ('Bible', 'Genesis', '1', '1', '')")
 
 		const date = '2026-08-29'
-		const csv_dir = make_csv_dir(date, { ot: '"Aug 21, 2026, 12:00:00 AM",Phase 1 Sign-off,Genesis 1:1-10,10\n' })
+		const csv_dir = make_csv_dir({ date, ot: '"Aug 21, 2026, 12:00:00 AM",Phase 1 Sign-off,Genesis 1:1-10,10\n' })
 
-		await migrate_source_status(bun_sqlite_runner(db), csv_dir, date)
+		await migrate_source_status({ runner: bun_sqlite_runner(db), csv_dir, date })
 
 		expect(db.query('SELECT status FROM Sources').get()).toEqual({ status: 'Initial Analysis Complete' })
 	})
 
 	it('collects the same statements without executing them, and they apply cleanly when rendered and run against sqlite', async () => {
 		const date = '2026-08-29'
-		const csv_dir = make_csv_dir(date, { ot: '"May 1, 2026, 12:00:00 AM",Complete,Genesis 1:1-10,10\n' })
+		const csv_dir = make_csv_dir({ date, ot: '"May 1, 2026, 12:00:00 AM",Complete,Genesis 1:1-10,10\n' })
 
 		const runner = collecting_sql_runner()
-		await migrate_source_status(runner, csv_dir, date)
+		await migrate_source_status({ runner, csv_dir, date })
 
 		expect(runner.statements.length).toBeGreaterThan(0)
 
@@ -89,7 +94,8 @@ describe('migrate_source_status', () => {
 
 	it('produces identical Sources updates whether run via bun_sqlite_runner or collecting_sql_runner + render', async () => {
 		const date = '2026-08-29'
-		const csv_dir = make_csv_dir(date, {
+		const csv_dir = make_csv_dir({
+			date,
 			ot: '"May 1, 2026, 12:00:00 AM",Complete,Genesis 1:1-10,10\n"May 1, 2026, 12:00:00 AM",Drafter [HE1],Genesis 1:11-20,10\n',
 		})
 
@@ -102,10 +108,10 @@ describe('migrate_source_status', () => {
 		}
 
 		const direct_db = fresh_db()
-		await migrate_source_status(bun_sqlite_runner(direct_db), csv_dir, date)
+		await migrate_source_status({ runner: bun_sqlite_runner(direct_db), csv_dir, date })
 
 		const collecting = collecting_sql_runner()
-		await migrate_source_status(collecting, csv_dir, date)
+		await migrate_source_status({ runner: collecting, csv_dir, date })
 		const rendered_db = fresh_db()
 		rendered_db.run(render_sql_file(collecting.statements))
 

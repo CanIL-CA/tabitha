@@ -62,23 +62,21 @@ describe('Accessible-Name Collision Checker', () => {
 
 	describe('layout_chain_for_page', () => {
 		it('includes the root layout for a top-level page', () => {
-			const chain = layout_chain_for_page(
-				'/app/src/routes',
-				'/app/src/routes/+page.svelte',
-				['/app/src/routes/+layout.svelte'],
-			)
+			const chain = layout_chain_for_page({
+				page_path: '/app/src/routes/+page.svelte',
+				all_layouts: ['/app/src/routes/+layout.svelte'],
+			})
 			expect(chain).toEqual(['/app/src/routes/+layout.svelte'])
 		})
 
 		it('includes every layout from the routes root down to the page\'s own directory', () => {
-			const chain = layout_chain_for_page(
-				'/app/src/routes',
-				'/app/src/routes/settings/profile/+page.svelte',
-				[
+			const chain = layout_chain_for_page({
+				page_path: '/app/src/routes/settings/profile/+page.svelte',
+				all_layouts: [
 					'/app/src/routes/+layout.svelte',
 					'/app/src/routes/settings/+layout.svelte',
 				],
-			)
+			})
 			expect(chain).toEqual([
 				'/app/src/routes/+layout.svelte',
 				'/app/src/routes/settings/+layout.svelte',
@@ -86,11 +84,10 @@ describe('Accessible-Name Collision Checker', () => {
 		})
 
 		it('excludes a layout that lives under a sibling route branch', () => {
-			const chain = layout_chain_for_page(
-				'/app/src/routes',
-				'/app/src/routes/settings/+page.svelte',
-				['/app/src/routes/search/+layout.svelte'],
-			)
+			const chain = layout_chain_for_page({
+				page_path: '/app/src/routes/settings/+page.svelte',
+				all_layouts: ['/app/src/routes/search/+layout.svelte'],
+			})
 			expect(chain).toEqual([])
 		})
 	})

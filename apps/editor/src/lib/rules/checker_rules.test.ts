@@ -12,8 +12,8 @@ import {
 	create_pairing_token_for_test,
 	create_sentence_for_test,
 	lookup_result_for_test,
-} from '$lib/test_helps'
-import type { Token } from '$lib/types'
+} from '#lib/test_helps.js'
+import type { Token } from '#lib/types.js'
 
 describe('built-in checker rules', () => {
 	describe('sentence capitalization', () => {

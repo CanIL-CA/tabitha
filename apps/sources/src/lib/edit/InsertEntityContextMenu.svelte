@@ -1,11 +1,11 @@
 <script lang="ts">
-	import type { EntityContextMenuData } from '$lib/edit/types'
-	import type { FeatureMap, PageSourceEntity } from '$lib/types'
-	import ConceptDialog from '$lib/ConceptDialog.svelte'
+	import type { EntityContextMenuData } from '#lib/edit/types.js'
+	import type { FeatureMap, PageSourceEntity } from '#lib/types.js'
+	import ConceptDialog from '#lib/ConceptDialog.svelte'
 	import { entity_clipboard } from './clipboard.svelte'
 	import { DEFAULTS } from './default_entities'
 	import { page } from '$app/state'
-	import { fill_in_features } from '$lib/encoding/features'
+	import { fill_in_features } from '#lib/encoding/features.js'
 
 	type Props = {
 		source_entities: PageSourceEntity[]

@@ -3,12 +3,16 @@ import { create_logger } from '../log'
 
 const log = create_logger('Targets migration')
 
-export function migrate_form_names_table(tbta_db: Database, project: string, targets_db: Database) {
+export function migrate_form_names_table({ tbta_db, project, targets_db }: {
+	tbta_db: Database
+	project: string
+	targets_db: Database
+}) {
 	const transformed_data = transform_tbta_data(tbta_db)
 
-	create_tabitha_table(targets_db, project)
+	create_tabitha_table({ targets_db, project })
 
-	load_data(targets_db, project, transformed_data)
+	load_data({ targets_db, project, transformed_data })
 }
 
 type TransformedData = {
@@ -62,7 +66,10 @@ function transform_tbta_data(tbta_db: Database): TransformedData[] {
 	}
 }
 
-function create_tabitha_table(targets_db: Database, project: string) {
+function create_tabitha_table({ targets_db, project }: {
+	targets_db: Database
+	project: string
+}) {
 	log.step(`Creating Form_Names table in ${targets_db.filename}...`)
 
 	targets_db.run(`
@@ -82,7 +89,11 @@ function create_tabitha_table(targets_db: Database, project: string) {
 	return targets_db
 }
 
-function load_data(targets_db: Database, project: string, transformed_data: TransformedData[]) {
+function load_data({ targets_db, project, transformed_data }: {
+	targets_db: Database
+	project: string
+	transformed_data: TransformedData[]
+}) {
 	log.step('Loading data into Form_Names table...')
 
 	for (const { part_of_speech, name, position } of transformed_data) {

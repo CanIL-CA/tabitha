@@ -1,5 +1,5 @@
 import { default_flag_weights_for_discern, default_flag_weights_for_brief } from './default_flag_weights'
-import type { FlagWeightingMap, CopilotNoteSettings, LanguageProfile } from '$lib/types'
+import type { FlagWeightingMap, CopilotNoteSettings, LanguageProfile } from '#lib/types.js'
 import type { CopilotEncodingFlag } from '@tabitha/types/copilot'
 
 

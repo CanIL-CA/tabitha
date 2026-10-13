@@ -39,7 +39,7 @@ describe('Undeclared CLI Dependency Checker', () => {
 
 		it('flags a known CLI command missing from declared dependencies', () => {
 			const content = 'await $`wrangler d1 list`.text()'
-			const findings = find_undeclared_bin_deps(pkg, 'index.ts', content, new Set())
+			const findings = find_undeclared_bin_deps({ pkg, file_path: 'index.ts', content, declared: new Set() })
 			expect(findings.length).toBe(1)
 			expect(findings[0].command).toBe('wrangler')
 			expect(findings[0].expected_package).toBe('wrangler')
@@ -48,13 +48,13 @@ describe('Undeclared CLI Dependency Checker', () => {
 
 		it('does not flag a command whose package is already declared', () => {
 			const content = 'await $`wrangler d1 list`.text()'
-			const findings = find_undeclared_bin_deps(pkg, 'index.ts', content, new Set(['wrangler']))
+			const findings = find_undeclared_bin_deps({ pkg, file_path: 'index.ts', content, declared: new Set(['wrangler']) })
 			expect(findings).toEqual([])
 		})
 
 		it('ignores shell commands that are not in the known bin/package map', () => {
 			const content = 'await $`rm -rf ./dist`'
-			const findings = find_undeclared_bin_deps(pkg, 'index.ts', content, new Set())
+			const findings = find_undeclared_bin_deps({ pkg, file_path: 'index.ts', content, declared: new Set() })
 			expect(findings).toEqual([])
 		})
 	})

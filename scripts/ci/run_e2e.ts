@@ -54,7 +54,10 @@ async function wait_for_dev_servers(): Promise<void> {
 	}
 }
 
-function run(command: string, args: string[]): Promise<number> {
+function run({ command, args }: {
+	command: string
+	args: string[]
+}): Promise<number> {
 	return new Promise((resolve, reject) => {
 		const child = spawn(command, args, { stdio: 'inherit' })
 		child.on('error', reject)
@@ -67,7 +70,7 @@ function run(command: string, args: string[]): Promise<number> {
 // already handles starting/reusing its own server. Only the full, unfiltered run needs this.
 const extra_args = process.argv.slice(2)
 if (extra_args.length > 0) {
-	const code = await run('bunx', ['turbo', 'run', 'test:e2e', '--continue=dependencies-successful', ...extra_args])
+	const code = await run({ command: 'bunx', args: ['turbo', 'run', 'test:e2e', '--continue=dependencies-successful', ...extra_args] })
 	process.exit(code)
 }
 
@@ -86,7 +89,7 @@ try {
 	await wait_for_dev_servers()
 
 	console.log('🎭 All dev servers are healthy -- running the Playwright e2e suite...')
-	exit_code = await run('bunx', ['turbo', 'run', 'test:e2e', '--continue=dependencies-successful'])
+	exit_code = await run({ command: 'bunx', args: ['turbo', 'run', 'test:e2e', '--continue=dependencies-successful'] })
 } finally {
 	shut_down_dev_servers()
 }

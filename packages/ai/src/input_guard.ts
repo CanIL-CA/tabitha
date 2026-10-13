@@ -19,6 +19,7 @@ const SUSPICIOUS_PATTERNS: readonly RegExp[] = [
 ]
 
 export type CheckInputSafetyOptions = {
+	readonly text: string
 	readonly max_length: number
 	readonly too_long_message: string
 	readonly suspicious_message: string
@@ -28,7 +29,7 @@ export type CheckInputSafetyOptions = {
 /** Returns a rejection message if `text` looks unsafe to send to the model, or `undefined` if
  * it's fine. Callers decide what to do with the message -- show it to a user, log it and fail
  * soft, or both. */
-export function check_input_safety(text: string, { max_length, too_long_message, suspicious_message, log_label }: CheckInputSafetyOptions): string | undefined {
+export function check_input_safety({ text, max_length, too_long_message, suspicious_message, log_label }: CheckInputSafetyOptions): string | undefined {
 	if (text.length > max_length) {
 		return too_long_message
 	}

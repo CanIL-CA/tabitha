@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Concept } from '$lib/types'
-	import { DetailedCard, Level, Meaning, Occurrences } from '$lib'
-	import PendingChange from '$lib/PendingChange.svelte'
+	import type { Concept } from '#lib/types.js'
+	import { DetailedCard, Level, Meaning, Occurrences } from '#lib/index.js'
+	import PendingChange from '#lib/PendingChange.svelte'
 
 	type Props = {
 		concepts: Concept[]

@@ -1,7 +1,7 @@
-import { default_settings } from '$lib/lookups'
+import { default_settings } from '#lib/lookups.js'
 import type { CopilotRunEvent } from '@tabitha/usage'
 import type { CopilotResult } from '@tabitha/types'
-import type { CopilotSettings, LanguageProfile } from '$lib/types'
+import type { CopilotSettings, LanguageProfile } from '#lib/types.js'
 
 const PROFILE_FIELDS = Object.keys(default_settings.language_profile) as (keyof LanguageProfile)[]
 

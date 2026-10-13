@@ -1,4 +1,4 @@
-import { by_book_order } from '@tabitha/types/patterns'
+import { book_order_index } from '@tabitha/types/patterns'
 import { create_sources_client } from '@tabitha/api-client'
 import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
 import type { Reference, TargetTextResult, SourceResult } from '@tabitha/types'
@@ -17,7 +17,7 @@ export async function fetch_source_data(reference: Reference): Promise<SourceRes
 export function build_filter_options(matches: TargetTextResult[]): FilterMap {
 	const filter_map: FilterMap = new Map()
 
-	const book_names_found_in_examples = [...new Set(matches.toSorted(by_book_order).map(result => result.reference.id_primary))]
+	const book_names_found_in_examples = [...new Set(matches.toSorted((a, b) => book_order_index(a) - book_order_index(b)).map(result => result.reference.id_primary))]
 	filter_map.set('Book', ['Any', ...book_names_found_in_examples])
 
 	const audiences_found_in_examples = [...new Set(matches.flatMap(result => result.texts.map(t => t.audience)))].sort()

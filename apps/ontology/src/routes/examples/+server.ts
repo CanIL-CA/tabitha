@@ -1,7 +1,7 @@
 import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
 import { error } from '@sveltejs/kit'
 import { cached_json, create_sources_client } from '@tabitha/api-client'
-import { get_examples } from '$lib/server/ontology'
+import { get_examples } from '#lib/server/ontology.js'
 import type { RequestHandler } from './$types'
 import type { ConceptExample, SourceStatus } from '@tabitha/types'
 
