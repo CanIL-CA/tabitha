@@ -198,6 +198,7 @@ All contributions should adhere to the **15 TaBiThA Development Philosophies** a
 - **The 15 Philosophies**: see [AGENTS.md](AGENTS.md) for definitions and examples of each.
 - **Indentation & Formatting**: Literal `tab` characters for all indentation; `'single'` quotes; **no trailing semicolons**.
 - **Naming**: `snake_case` for functions/methods/variables/files; `PascalCase` strictly for Svelte components and TS types.
+- **SQL**: keywords in `ALL CAPS` (`SELECT … FROM … WHERE`), in `.sql` migrations and in SQL inside `.ts`/`.js`/`.svelte` string literals alike; `bun run check:sql-case` flags lowercase ones. Generated files keep their generator's casing.
 - **Testing Standard**:
   - **Unit Tests (`*.test.ts`)**: 100% pure, fast in-memory Vitest tests without network or database dependencies.
   - **E2E Tests (`*.spec.ts`)**: Multi-service browser integration tests executed via Playwright.

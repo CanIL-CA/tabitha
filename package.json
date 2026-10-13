@@ -44,6 +44,7 @@
     "check:philosophies": "bun scripts/audits/check_philosophies.ts",
     "check:a11y-names": "bun scripts/audits/check_accessible_name_collisions.ts",
     "check:noindex": "bun scripts/audits/check_noindex.ts",
+    "check:sql-case": "bun scripts/audits/check_sql_keyword_case.ts",
     "check:philosophy-docs": "bun scripts/audits/check_philosophy_count_sync.ts",
     "sync:philosophy-docs": "bun scripts/audits/check_philosophy_count_sync.ts --fix",
     "check:secrets": "bun scripts/audits/check_secrets.ts",

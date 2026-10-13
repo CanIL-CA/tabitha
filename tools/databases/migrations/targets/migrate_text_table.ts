@@ -37,7 +37,7 @@ function transform_tbta_data(tbta_db: Database): TransformedData[] {
 			SELECT *
 			FROM sqlite_master
 			WHERE type = 'table'
-				AND name like 'Target_EB_%'
+				AND name LIKE 'Target_EB_%'
 		`).all().map(({ name }) => name)
 
 		// Some TBTA project databases carry both "Target_EB_Revelation" and a legacy-named duplicate
