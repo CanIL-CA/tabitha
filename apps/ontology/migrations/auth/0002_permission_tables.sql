@@ -2,13 +2,13 @@
 -- migrations owned DB_Auth, so this is written to change nothing there (IF NOT EXISTS, INSERT OR IGNORE)
 -- and to build them from scratch locally. Never drop anything here: User_Permissions holds the real grants.
 
-create table if not exists Users (id integer primary key, email text, name text);
+CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, email TEXT, name TEXT);
 
-create table if not exists Permissions (id integer primary key, app text, permission text);
+CREATE TABLE IF NOT EXISTS Permissions (id INTEGER PRIMARY KEY, app TEXT, permission TEXT);
 
-create table if not exists User_Permissions (user_id integer, permission_id integer);
+CREATE TABLE IF NOT EXISTS User_Permissions (user_id INTEGER, permission_id INTEGER);
 
-insert or ignore into Permissions (id, app, permission) values
+INSERT OR IGNORE INTO Permissions (id, app, permission) VALUES
 	(1, 'ontology', 'PROTECTED_ACCESS'),
 	(2, 'ontology', 'ADD_CONCEPT'),
 	(3, 'ontology', 'UPDATE_CONCEPT'),
