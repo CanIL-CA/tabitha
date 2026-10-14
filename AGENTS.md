@@ -405,7 +405,7 @@ import system_instruction from './review_prompt.md?raw'
      - Everything else — route params, UI-only view models, internal helper shapes — stays local to the app, defined in an explicit module (e.g. `src/lib/types.ts`) that `import type`s from `@tabitha/types` where needed.
      - Do not declare domain types as ambient globals (`declare global { type X = ... }`) outside of SvelteKit's own generated `app.d.ts`. Ambient types hide where a type comes from and make accidental duplicates easy to introduce.
    - `@tabitha/ui` — Reusable Svelte 5 components styled with daisyUI 5.
-   - `@tabitha/api-client` — Typed HTTP client for inter-service communication.
+   - `@tabitha/api-client` — Typed HTTP client for inter-service communication. Server-side calls to a sibling app go through a service binding that the app registers in `hooks.server.ts` with `use_service_bindings` ([ADR 0023](docs/decisions/0023-cross-app-calls-via-service-bindings.md)).
    - `@tabitha/cors` — Shared CORS middleware for Worker request handlers.
    - `@tabitha/noindex` — `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps; `apps/www` stays indexable.
    - `@tabitha/complex-terms` — Reads the how-to Google Sheet into `Complex_Terms` rows (sheet parsing plus the table's SQL), shared by `apps/ontology`'s scheduled sync and `tools/databases`' Ontology migration. It has two consumers, not three, for the same reason API/DB contract types get a two-party bar: both write a table the app reads, so two copies would drift silently.

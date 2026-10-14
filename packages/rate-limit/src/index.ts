@@ -55,7 +55,12 @@ export function create_rate_limit_handle({
 			return resolve(event)
 		}
 
-		const limited = await enforce_rate_limit({ rate_limiter, key: event.getClientAddress() })
+		// Cloudflare's edge sets cf-connecting-ip on every public request, so only a sibling app's
+		// service binding call arrives without one, and that app has already rate limited its user
+		const client_address = event.getClientAddress()
+		if (!client_address) return resolve(event)
+
+		const limited = await enforce_rate_limit({ rate_limiter, key: client_address })
 		return limited ?? resolve(event)
 	}
 }

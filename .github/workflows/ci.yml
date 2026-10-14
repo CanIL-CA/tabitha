@@ -120,6 +120,14 @@ jobs:
           apps=$(echo "$dry_run" | sed -n '/^{/,$p' | jq -r '[.tasks[] | select(.task == "deploy:preview" and .command != "<NONEXISTENT>") | .package | sub("@tabitha/"; "")] | join(",")')
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
 
+      # Setup Workspace runs setup:env, whose .env.local files are for local dev and e2e. Vite bakes
+      # them into a build, so a Preview built with them would call localhost sibling hosts, with
+      # rate limiting and service bindings off. Previews build from the committed .env, as
+      # production does.
+      - name: Remove Local Env Files
+        if: steps.deployed_apps.outputs.apps != ''
+        run: rm -f apps/*/.env.local
+
       - name: Build Changed Apps for Preview
         if: steps.deployed_apps.outputs.apps != ''
         run: bunx turbo run build:preview ${{ needs.plan.outputs.turbo_filter }}

@@ -2,7 +2,7 @@
 
 ## Status
 
-Superseded by [0020](./0020-per-pr-worker-previews.md). Concurrent PRs kept overwriting each other's previews in the shared slot, so each PR now gets its own Worker Preview, which calls production siblings.
+Superseded by [0020](./0020-per-pr-worker-previews.md). Concurrent PRs kept overwriting each other's previews in the shared slot, so each PR now gets its own Worker Preview, which calls production siblings. Its reasons for rejecting service bindings were specific to previews. [0023](./0023-cross-app-calls-via-service-bindings.md) adopts them for server-side cross-app calls.
 
 ## Context
 

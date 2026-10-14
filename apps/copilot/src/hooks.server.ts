@@ -1,12 +1,21 @@
 import { sequence, type Handle, type ServerInit } from '@sveltejs/kit/hooks'
 import { create_ai_client, type AiClient } from '@tabitha/ai'
+import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
 import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
-import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$app/env/public'
+import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE_BINDINGS_DISABLED, PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { AI_GATEWAY_TOKEN, CLOUDFLARE_ACCOUNT_ID, GEMINI_LOCATION, GEMINI_PROJECT_ID } from '$app/env/private'
 import { paraglideMiddleware } from '#lib/paraglide/server.js'
 import { env } from 'cloudflare:workers'
+
+use_service_bindings({
+	routes: [
+		{ base_url: PUBLIC_SOURCES_API_HOST, binding: env.SOURCES },
+		{ base_url: PUBLIC_TARGETS_API_HOST, binding: env.TARGETS },
+	],
+	disabled: Boolean(PUBLIC_SERVICE_BINDINGS_DISABLED),
+})
 
 let ai: AiClient
 

@@ -62,6 +62,10 @@ export function forced_local_value(key: string): string | undefined {
 	// threshold isn't meant to survive -- disable rate limiting locally only
 	if (key === 'PUBLIC_RATE_LIMIT_DISABLED') return 'true'
 
+	// Sibling apps run under `vite dev` locally, which a service binding can't reach, so cross-app
+	// calls go to their local ports over HTTP instead
+	if (key === 'PUBLIC_SERVICE_BINDINGS_DISABLED') return 'true'
+
 	return undefined
 }
 

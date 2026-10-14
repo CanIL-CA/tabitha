@@ -17,7 +17,7 @@ Guidelines for architecting shared packages and adhering to coding standards acr
 | --- | --- |
 | **`@tabitha/types`** | Central repository for all universal TypeScript interfaces (linguistic concepts, clauses, token representations, and API payloads). Keep free of runtime dependencies. |
 | **`@tabitha/ui`** | Reusable Svelte 5 components styled with daisyUI 5. Export components from `src/index.ts`. |
-| **`@tabitha/api-client`** | Typed HTTP client for inter-service communication between the apps. |
+| **`@tabitha/api-client`** | Typed HTTP client for inter-service communication between the apps. Server-side calls go through service bindings registered with `use_service_bindings` (ADR 0023). |
 | **`@tabitha/ai`** | Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI. |
 | **`@tabitha/cors`** | Shared CORS middleware for Worker request handlers. |
 | **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
