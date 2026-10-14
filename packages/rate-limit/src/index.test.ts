@@ -94,6 +94,33 @@ describe('create_rate_limit_handle', () => {
 		expect(response.status).toBe(429)
 	})
 
+	it('passes a request with no client address through without touching the limiter', async () => {
+		let limiter_calls = 0
+		const rate_limiter = {
+			limit: async () => {
+				limiter_calls++
+				return { success: false }
+			},
+		} as unknown as RateLimit
+		const handle = create_rate_limit_handle({ env: { RATE_LIMITER: rate_limiter } })
+		const response = await handle({ event: fake_event({ client_address: '' }), resolve })
+		expect(await response.text()).toBe('ok')
+		expect(limiter_calls).toBe(0)
+	})
+
+	it('keys the limit by the client address', async () => {
+		let received_key: string | undefined
+		const rate_limiter = {
+			limit: async ({ key }: { key: string }) => {
+				received_key = key
+				return { success: true }
+			},
+		} as RateLimit
+		const handle = create_rate_limit_handle({ env: { RATE_LIMITER: rate_limiter } })
+		await handle({ event: fake_event({ client_address: '9.9.9.9' }), resolve })
+		expect(received_key).toBe('9.9.9.9')
+	})
+
 	it('resolves without checking the limit at all when disabled, even over the limit', async () => {
 		const handle = create_rate_limit_handle({ env: { RATE_LIMITER: fake_rate_limiter(false) }, disabled: true })
 		const response = await handle({ event: fake_event({}), resolve })

@@ -103,16 +103,14 @@
 	"previews": {
 		// Production's client, not a preview one: Google rejects wildcard redirect URIs, so a Preview
 		// signs in through production's registered callback via Better Auth's OAuth proxy
-		// (OAUTH_REDIRECT_PROXY_URL below -- a runtime var, because CI's setup:env blanks the .env value
-		// in the Preview build; see src/lib/server/better_auth.ts). The proxy only accepts payloads
-		// encrypted with its own BETTER_AUTH_SECRET, so a Preview's BETTER_AUTH_SECRET and
+		// (OAUTH_REDIRECT_PROXY_URL, which a Preview build takes from the committed .env). The proxy
+		// only accepts payloads encrypted with its own BETTER_AUTH_SECRET, so a Preview's BETTER_AUTH_SECRET and
 		// GOOGLE_OAUTH_CLIENT_SECRET (set once with `wrangler preview base-config secret put`) must be
 		// production's too.
 		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
 		// production, and recording is a no-op without the binding.
 		"vars": {
 			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // Ontology (prod)
-			"OAUTH_REDIRECT_PROXY_URL": "https://ontology.tabitha.bible",
 			"CLOUDFLARE_ACCOUNT_ID": "8582954a9e4c6f0259c6236be794d7d3",
 			"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
 			"GEMINI_LOCATION": "global"
