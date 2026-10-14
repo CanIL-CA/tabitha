@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit'
+import type { Handle } from '@sveltejs/kit/hooks'
 
 // A header, not a <meta> tag, so it also covers the JSON APIs. Don't pair it with a robots.txt
 // Disallow: a blocked URL is never fetched, so crawlers never see the header.

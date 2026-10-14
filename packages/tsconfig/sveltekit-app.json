@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"compilerOptions": {
+		"strict": true,
+		"types": ["$app/types", "@tabitha/vite-config/cloudflare-workers"]
+	},
+	"include": [
+		"${configDir}/src",
+		"${configDir}/e2e/**/*.ts",
+		"${configDir}/vite.config.js",
+		"${configDir}/playwright.config.js",
+		"${configDir}/worker-configuration.d.ts"
+	]
+}

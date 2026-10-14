@@ -1,4 +1,4 @@
-import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { PUBLIC_SOURCES_API_HOST } from '$app/env/public'
 import { create_sources_client } from '@tabitha/api-client'
 import type { SourceStatus } from '@tabitha/types'
 

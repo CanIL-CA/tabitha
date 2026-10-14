@@ -9,7 +9,7 @@ App code never constructs a `GoogleGenAI` client or holds a Gemini API key. Ever
 
 ## Creating a client
 
-`create_ai_client({ app, feature, gateway, defaults? })` returns an `AiClient`. The gateway values (`CLOUDFLARE_ACCOUNT_ID`, `AI_GATEWAY_TOKEN`, `GEMINI_PROJECT_ID`, `GEMINI_LOCATION`) are read from `$env/dynamic/private`; see `apps/copilot/src/hooks.server.ts` and `apps/editor/src/lib/server/ai_assist/client.ts`. The model and seed are fixed inside `packages/ai/src/client.ts` for every call site, so callers don't choose one.
+`create_ai_client({ app, feature, gateway, defaults? })` returns an `AiClient`. The gateway values (`CLOUDFLARE_ACCOUNT_ID`, `AI_GATEWAY_TOKEN`, `GEMINI_PROJECT_ID`, `GEMINI_LOCATION`) are dynamic vars read from `$app/env/private` (declared in each app's `src/env.ts`); see `apps/copilot/src/hooks.server.ts` and `apps/editor/src/lib/server/ai_assist/client.ts`. The model and seed are fixed inside `packages/ai/src/client.ts` for every call site, so callers don't choose one.
 
 ## Calls
 

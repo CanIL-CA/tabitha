@@ -1,14 +1,15 @@
-import { BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$env/static/private'
-import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$env/static/public'
-import { building } from '$app/environment'
+import { BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$app/env/private'
+import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$app/env/public'
+import { building } from '$app/env'
 import { get_user_info } from '#lib/server/auth.js'
 import { create_auth, type Auth } from '#lib/server/better_auth.js'
 import { resolve_redirect_proxy_url } from '#lib/server/redirect_proxy.js'
 import { create_cors_handle } from '@tabitha/cors'
 import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
-import { error, type Handle, type RequestEvent } from '@sveltejs/kit'
-import { sequence } from '@sveltejs/kit/hooks'
+import { error } from '@sveltejs/kit'
+import { sequence, type Handle } from '@sveltejs/kit/hooks'
+import { env } from 'cloudflare:workers'
 import { svelteKitHandler } from 'better-auth/svelte-kit'
 
 const cors_handle = create_cors_handle({ allow_localhost: Boolean(PUBLIC_CORS_ALLOW_LOCALHOST) })
@@ -16,18 +17,19 @@ const cors_handle = create_cors_handle({ allow_localhost: Boolean(PUBLIC_CORS_AL
 // /protected/* already requires a signed-in, authorized session (see authz_handle below), and
 // /auth/* is Better Auth's sign-in flow itself -- neither needs the public-read-API throttle.
 const rate_limit_handle = create_rate_limit_handle({
+	env,
 	skip_path_prefixes: ['/protected', '/auth'],
 	disabled: Boolean(PUBLIC_RATE_LIMIT_DISABLED),
 })
 
 const db_config_handle: Handle = async function db_config_handle({ event, resolve }) {
-	if (!event.platform?.env.DB_Ontology) {
-		console.error('Database binding DB_Ontology is missing from platform environment.')
+	if (!env.DB_Ontology) {
+		console.error('Database binding DB_Ontology is missing from env.')
 		throw error(500, 'Database configuration error: DB_Ontology binding is missing.')
 	}
 
-	event.locals.db_ontology = event.platform.env.DB_Ontology.withSession()
-	event.locals.db_auth = event.platform.env.DB_Auth.withSession()
+	event.locals.db_ontology = env.DB_Ontology.withSession()
+	event.locals.db_auth = env.DB_Auth.withSession()
 
 	return resolve(event)
 }
@@ -36,15 +38,13 @@ const db_config_handle: Handle = async function db_config_handle({ event, resolv
 // for the life of the isolate.
 let auth: Auth | undefined
 
-function get_auth(event: RequestEvent): Auth {
-	const env = event.platform?.env
-
+function get_auth(): Auth {
 	auth ??= create_auth({
-		db_auth: env!.DB_Auth,
-		secret: env?.BETTER_AUTH_SECRET || BETTER_AUTH_SECRET,
-		google_client_id: env?.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID,
-		google_client_secret: env?.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT_SECRET,
-		oauth_proxy_url: resolve_redirect_proxy_url({ runtime: env?.OAUTH_REDIRECT_PROXY_URL, build: OAUTH_REDIRECT_PROXY_URL }),
+		db_auth: env.DB_Auth,
+		secret: env.BETTER_AUTH_SECRET || BETTER_AUTH_SECRET,
+		google_client_id: env.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID,
+		google_client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT_SECRET,
+		oauth_proxy_url: resolve_redirect_proxy_url({ runtime: env.OAUTH_REDIRECT_PROXY_URL, build: OAUTH_REDIRECT_PROXY_URL }),
 	})
 
 	return auth
@@ -52,7 +52,7 @@ function get_auth(event: RequestEvent): Auth {
 
 // https://www.better-auth.com/docs/integrations/svelte-kit
 const authn_handle: Handle = async function authn_handle({ event, resolve }) {
-	const auth = get_auth(event)
+	const auth = get_auth()
 
 	const session = await auth.api.getSession({ headers: event.request.headers })
 	if (session?.user.email) {

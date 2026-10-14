@@ -13,7 +13,7 @@ vi.mock('./concept_embeddings', () => ({
 }))
 
 const env = {
-	DB_Ontology: {} as D1Database,
+	DB_Ontology: { withSession: () => ({}) } as unknown as D1Database,
 	VECTORIZE_Concepts: {} as ConceptIndex,
 }
 

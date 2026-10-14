@@ -1,7 +1,7 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { CREATE_COMPLEX_TERMS_TABLE_SQL, INSERT_COMPLEX_TERMS_SQL, fetch_complex_terms } from '@tabitha/complex-terms'
 
-export async function sync_complex_terms(db: D1Database): Promise<number> {
+export async function sync_complex_terms(db: D1DatabaseSession): Promise<number> {
 	console.info('fetching latest complex terms spreadsheet data')
 	const terms = await fetch_complex_terms()
 	console.info(`received ${terms.length} rows from spreadsheet`)

@@ -1,4 +1,4 @@
-import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
+import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 import { create_ontology_client } from '@tabitha/api-client'
 import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
 import { create_lookup_result } from '#lib/token.js'

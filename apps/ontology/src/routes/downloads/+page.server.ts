@@ -1,3 +1,4 @@
+import { env } from 'cloudflare:workers'
 import type { R2Object, R2Objects } from '@cloudflare/workers-types'
 import type { PageServerLoad } from './$types'
 import { get_version } from '#lib/server/ontology.js'
@@ -12,11 +13,11 @@ type Backup = {
 
 const VERSION_REGEX = /^Ontology_([\d-]+)\.tabitha.sqlite$/
 
-export async function load({ locals: { db_ontology }, platform }: Parameters<PageServerLoad>[0]) {
+export async function load({ locals: { db_ontology } }: Parameters<PageServerLoad>[0]) {
 	console.info('checking for downloads...')
 
 	// https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#bucket-method-definitions
-	const { objects }: R2Objects = await platform!.env.R2_db_backups.list()
+	const { objects }: R2Objects = await env.R2_db_backups.list()
 
 	if (!objects) {
 		return { backups: [], pending: true }

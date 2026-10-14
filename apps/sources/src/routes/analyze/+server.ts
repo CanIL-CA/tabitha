@@ -1,4 +1,4 @@
-import { PUBLIC_EDITOR_API_HOST } from '$env/static/public'
+import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
 import { create_editor_client } from '@tabitha/api-client'
 import { CATEGORY_ABBREVIATIONS } from '#lib/encoding/lookups.js'
 import { transform_features_to_codes } from '#lib/encoding/features.js'

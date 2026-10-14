@@ -1,8 +1,8 @@
-import type { D1Database, D1Result } from '@cloudflare/workers-types'
+import type { D1DatabaseSession, D1Result } from '@cloudflare/workers-types'
 import type { DbSource } from '#lib/types.js'
 import type { Reference, PrimaryId, SecondaryId, SourceType, TertiaryId } from '@tabitha/types'
 
-export async function get_types(db: D1Database): Promise<SourceType[]> {
+export async function get_types(db: D1DatabaseSession): Promise<SourceType[]> {
 	const sql = `
 		SELECT DISTINCT type
 		FROM Sources
@@ -12,7 +12,7 @@ export async function get_types(db: D1Database): Promise<SourceType[]> {
 	return results
 }
 
-export async function get_primary_ids({ db, type }: { db: D1Database, type: string }): Promise<PrimaryId[]> {
+export async function get_primary_ids({ db, type }: { db: D1DatabaseSession, type: string }): Promise<PrimaryId[]> {
 	const sql = `
 		SELECT DISTINCT id_primary
 		FROM Sources
@@ -23,7 +23,7 @@ export async function get_primary_ids({ db, type }: { db: D1Database, type: stri
 	return results
 }
 
-export async function get_secondary_ids({ db, type, id_primary }: { db: D1Database, type: string, id_primary: string }): Promise<SecondaryId[]> {
+export async function get_secondary_ids({ db, type, id_primary }: { db: D1DatabaseSession, type: string, id_primary: string }): Promise<SecondaryId[]> {
 	const sql = `
 		SELECT DISTINCT id_secondary
 		FROM Sources
@@ -35,7 +35,7 @@ export async function get_secondary_ids({ db, type, id_primary }: { db: D1Databa
 	return results
 }
 
-export async function get_tertiary_ids({ db, type, id_primary, id_secondary }: { db: D1Database, type: string, id_primary: string, id_secondary: string }): Promise<TertiaryId[]> {
+export async function get_tertiary_ids({ db, type, id_primary, id_secondary }: { db: D1DatabaseSession, type: string, id_primary: string, id_secondary: string }): Promise<TertiaryId[]> {
 	const sql = `
 		SELECT DISTINCT id_tertiary
 		FROM Sources
@@ -48,7 +48,7 @@ export async function get_tertiary_ids({ db, type, id_primary, id_secondary }: {
 	return results
 }
 
-export async function get_source_data({ db, type, id_primary, id_secondary, id_tertiary }: Reference & { db: D1Database }): Promise<DbSource | null> {
+export async function get_source_data({ db, type, id_primary, id_secondary, id_tertiary }: Reference & { db: D1DatabaseSession }): Promise<DbSource | null> {
 	const sql = `
 		SELECT *
 		FROM Sources

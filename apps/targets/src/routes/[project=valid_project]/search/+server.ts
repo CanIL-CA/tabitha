@@ -1,5 +1,5 @@
-import { env } from '$env/dynamic/private'
-import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { API_BIBLE_KEY } from '$app/env/private'
+import { PUBLIC_SOURCES_API_HOST } from '$app/env/public'
 import { parse_search_query, search_text } from '#lib/server/search.js'
 import { run_phrase_mode } from '#lib/server/phrase_mode.js'
 import { MODE } from '#lib/search/modes.js'
@@ -17,7 +17,7 @@ export async function GET({ locals: { db }, params: { project }, url: { searchPa
 			phrase: q,
 			// the valid_project route matcher has already checked this against TARGET_PROJECTS
 			project: project as TargetProject,
-			api_key: env.API_BIBLE_KEY ?? '',
+			api_key: API_BIBLE_KEY,
 			sources_api_host: PUBLIC_SOURCES_API_HOST,
 		})
 

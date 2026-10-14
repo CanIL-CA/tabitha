@@ -1,3 +1,3 @@
-export async function handleError({ error, event }) {
+export function handleError({ error, event }) {
 	console.error('hooks.client.handleError: ', { error, event })
 }

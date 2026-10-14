@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { PUBLIC_SOURCES_API_HOST } from '$app/env/public'
 import { build_filter_options, build_search_regex, filter_search_results, get_sources_url } from './helpers'
 import { book_order_index } from '@tabitha/types/patterns'
 import type { TargetTextResult } from '@tabitha/types'

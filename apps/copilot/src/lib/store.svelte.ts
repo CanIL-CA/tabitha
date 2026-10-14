@@ -1,4 +1,4 @@
-import { browser } from '$app/environment'
+import { browser } from '$app/env'
 
 export function persisted<T extends object>({ key, defaultValue }: { key: string, defaultValue: T }) {
 	let state = $state(defaultValue)

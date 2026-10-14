@@ -1,6 +1,6 @@
 ---
 name: vite-config
-description: Vite, SvelteKit, and build configuration skill for TaBiThA. TRIGGER when inspecting, creating, or modifying vite.config.js, svelte.config.js, or package build configurations across apps and packages.
+description: Vite, SvelteKit, and build configuration skill for TaBiThA. TRIGGER when inspecting, creating, or modifying vite.config.js (which holds the SvelteKit config since SvelteKit 3) or package build configurations across apps and packages.
 metadata:
   version: 1.x
 ---
@@ -37,17 +37,13 @@ export default create_app_vite_config({
 
 ---
 
-## 2. Application `svelte.config.js`
+## 2. SvelteKit configuration (no `svelte.config.js`)
 
-Every SvelteKit application uses `create_app_svelte_config` configured for Cloudflare Workers:
+SvelteKit 3 no longer reads `svelte.config.js`; its options go to the `sveltekit()` plugin, which `create_app_vite_config` registers with:
 
-```javascript
-import { create_app_svelte_config } from '@tabitha/vite-config/svelte'
-
-export default create_app_svelte_config()
-```
-
-- Pre-configures `@sveltejs/adapter-cloudflare` and `vitePreprocess()`.
+- `@sveltejs/adapter-cloudflare` (skipped under Vitest, see sveltejs/kit#17344), `vitePreprocess()`, and a 30-minute `version.pollInterval`.
+- App-specific SvelteKit options passed as `kit` and spread over those defaults.
+- A Vitest alias that stubs `cloudflare:workers`, and `@tabitha/vite-config/cloudflare-workers` for typing `env` from it (already in `@tabitha/tsconfig/sveltekit-app.json`'s `types`).
 
 ---
 

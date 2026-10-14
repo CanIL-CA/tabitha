@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
+	import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 	import { SourceEntitiesPlain } from '@tabitha/ui'
 	import Icon from '@iconify/svelte'
 	import { fetch_source_data, get_sources_url } from './helpers'

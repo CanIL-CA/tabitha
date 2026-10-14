@@ -3,12 +3,8 @@ import { to_data_point, type UsageApp, type UsageDataset, type UsageEvent } from
 
 export type * from './events'
 
-// Apps read the binding off platform.env; only production declares it (see wrangler.jsonc).
-export type UsageEnv = {
-	readonly USAGE?: UsageDataset
-}
-
 type RecordUsageEventOptions = {
+	// The app's `env.USAGE` binding; only production declares it (see wrangler.jsonc).
 	readonly dataset: UsageDataset | undefined
 	readonly app: UsageApp
 	readonly event: UsageEvent

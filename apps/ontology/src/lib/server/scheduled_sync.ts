@@ -26,10 +26,11 @@ type SchedulerAuthorizationOptions = {
  * ontology -- but still run if that sync fails, since approved concept edits need embedding either way.
  */
 export async function run_scheduled_sync(env: ScheduledSyncEnv): Promise<ScheduledSyncSummary> {
-	const complex_terms = await sync_complex_terms(env.DB_Ontology).catch((error: unknown) => error)
+	const db = env.DB_Ontology.withSession()
+	const complex_terms = await sync_complex_terms(db).catch((error: unknown) => error)
 
 	const embeddings = await sync_concept_embeddings({
-		concepts: await get_all_concepts(env.DB_Ontology),
+		concepts: await get_all_concepts(db),
 		index: env.VECTORIZE_Concepts,
 		embedder: create_concept_embedder(env),
 	})

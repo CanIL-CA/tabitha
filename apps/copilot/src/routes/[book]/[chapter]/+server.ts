@@ -1,6 +1,7 @@
 import { default_settings } from '#lib/lookups.js'
 import { fetch_verses_for_chapter } from '#lib/fetches.js'
 import { error } from '@sveltejs/kit'
+import { env } from 'cloudflare:workers'
 import { get_request_caller, record_usage_event } from '@tabitha/usage'
 import { get_verse_result } from '#lib/server/verse_result.js'
 import { translate_json } from '#lib/server/brief/brief.js'
@@ -9,7 +10,7 @@ import type { RequestHandler } from './$types'
 import type { CopilotResult } from '@tabitha/types'
 import type { CopilotSettings } from '#lib/types.js'
 
-export async function GET({ params: { book, chapter }, url: { searchParams }, locals: { ai }, request, platform }: Parameters<RequestHandler>[0]) {
+export async function GET({ params: { book, chapter }, url: { searchParams }, locals: { ai }, request }: Parameters<RequestHandler>[0]) {
 	const chapter_int = parseInt(chapter)
 	if (!chapter_int) {
 		error(400, 'chapter must be an integer')
@@ -108,7 +109,7 @@ export async function GET({ params: { book, chapter }, url: { searchParams }, lo
 				controller.error(err)
 			} finally {
 				record_usage_event({
-					dataset: platform?.env.USAGE,
+					dataset: env.USAGE,
 					app: 'copilot',
 					event: to_copilot_run_event({
 						caller: get_request_caller(request),

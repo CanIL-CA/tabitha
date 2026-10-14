@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { DbRowText, ParsedSearchQuery } from '#lib/types.js'
 import type { TargetTextResult } from '@tabitha/types'
 
@@ -16,7 +16,7 @@ export function parse_search_query(q: string): ParsedSearchQuery {
 }
 
 export async function search_text({ db, project, parsed_q }: {
-	db: D1Database
+	db: D1DatabaseSession
 	project: string
 	parsed_q: ParsedSearchQuery
 }): Promise<TargetTextResult[]> {

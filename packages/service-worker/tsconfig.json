@@ -1,0 +1,9 @@
+{
+	"extends": "@tabitha/tsconfig/base.json",
+	"compilerOptions": {
+		"lib": ["ESNext", "WebWorker"]
+	},
+	"include": [
+		"src/**/*"
+	]
+}

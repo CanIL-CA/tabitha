@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { Reference } from '@tabitha/types'
 
 const { get_source_data, get_secondary_ids, get_tertiary_ids, get_primary_ids } = vi.hoisted(() => ({
@@ -18,7 +18,7 @@ vi.mock('./read', () => ({
 
 const { get_previous_reference, get_next_reference } = await import('./navigation')
 
-const db = {} as D1Database
+const db = {} as D1DatabaseSession
 
 beforeEach(() => {
 	vi.clearAllMocks()

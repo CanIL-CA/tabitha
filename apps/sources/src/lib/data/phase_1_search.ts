@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { book_order_index } from '@tabitha/types/patterns'
 import type { SourceStatus } from '@tabitha/types'
 import type { Phase1SearchResults, MatchSegment } from '#lib/types.js'
@@ -85,7 +85,7 @@ type DbPhase1Row = {
  * SQL `LIKE` only narrows the candidates -- D1 has no regex support, and `LIKE` can't tell a
  * whole word from part of one -- so the whole-word check runs here on what comes back.
  */
-export async function search_phase_1({ db, q }: { db: D1Database, q: string }): Promise<Phase1SearchResults> {
+export async function search_phase_1({ db, q }: { db: D1DatabaseSession, q: string }): Promise<Phase1SearchResults> {
 	const terms = parse_phase_1_query(q)
 	if (!terms.length) return { terms, hits: [], total_count: 0 }
 

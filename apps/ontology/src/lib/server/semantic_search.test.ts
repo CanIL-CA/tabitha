@@ -3,7 +3,7 @@ import { EMBEDDING_DIMENSIONS } from '@tabitha/ai'
 import { find_related_concepts } from './semantic_search'
 import { get_concepts_by_keys } from './ontology'
 import type { ConceptIndex } from './concept_embeddings'
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { Concept } from '#lib/types.js'
 
 vi.mock('./ontology', () => ({ get_concepts_by_keys: vi.fn() }))
@@ -11,7 +11,7 @@ vi.mock('./ontology', () => ({ get_concepts_by_keys: vi.fn() }))
 const fetch_mock = vi.fn()
 vi.stubGlobal('fetch', fetch_mock)
 
-const db = {} as D1Database
+const db = {} as D1DatabaseSession
 
 function make_concept(stem: string): Concept {
 	return {

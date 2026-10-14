@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit'
+import type { Handle } from '@sveltejs/kit/hooks'
 
 const PROD_ALLOWED_ORIGIN_PATTERN = String.raw`\.tabitha\.bible(:\d+)?$`
 const PREVIEW_ALLOWED_ORIGIN_PATTERN = String.raw`\.tbta\.workers\.dev(:\d+)?$`

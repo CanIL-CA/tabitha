@@ -1,9 +1,9 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { get_primary_ids, get_secondary_ids, get_source_data, get_tertiary_ids } from './read'
 import { BIBLE_BOOKS } from '@tabitha/types/patterns'
 import type { Book, Reference } from '@tabitha/types'
 
-export async function get_previous_reference({ db, reference }: { db: D1Database, reference: Reference }): Promise<Reference | null> {
+export async function get_previous_reference({ db, reference }: { db: D1DatabaseSession, reference: Reference }): Promise<Reference | null> {
 	// try decrementing id_tertiary
 	let previous: Reference = {
 		...reference,
@@ -49,7 +49,7 @@ export async function get_previous_reference({ db, reference }: { db: D1Database
 	return await get_source_data({ db, ...previous }) ? previous : null
 }
 
-export async function get_next_reference({ db, reference }: { db: D1Database, reference: Reference }): Promise<Reference | null> {
+export async function get_next_reference({ db, reference }: { db: D1DatabaseSession, reference: Reference }): Promise<Reference | null> {
 	// try incrementing id_tertiary
 	let next: Reference = {
 		...reference,
@@ -97,7 +97,7 @@ export async function get_next_reference({ db, reference }: { db: D1Database, re
  * order for other types (eg. `Grammar Introduction`), so this falls back to whatever order
  * `get_primary_ids` returns them in.
  */
-async function get_primary_order({ db, type }: { db: D1Database, type: string }): Promise<Book> {
+async function get_primary_order({ db, type }: { db: D1DatabaseSession, type: string }): Promise<Book> {
 	if (type === 'Bible') {
 		return BIBLE_BOOKS
 	}
@@ -112,7 +112,7 @@ function find_book_index({ reference, primary_order }: { reference: Reference, p
 	return index_string ? Number(index_string) : undefined
 }
 
-async function get_last_chapter({ db, type, book_name }: { db: D1Database, type: string, book_name: string }): Promise<string | null> {
+async function get_last_chapter({ db, type, book_name }: { db: D1DatabaseSession, type: string, book_name: string }): Promise<string | null> {
 	const secondary_ids = await get_secondary_ids({ db, type, id_primary: book_name })
 	if (secondary_ids.length === 0) {
 		return null
@@ -120,7 +120,7 @@ async function get_last_chapter({ db, type, book_name }: { db: D1Database, type:
 	return Math.max(...secondary_ids.map(({ id_secondary }) => Number(id_secondary))).toString()
 }
 
-async function get_last_verse({ db, type, book_name, chapter }: { db: D1Database, type: string, book_name: string, chapter: string }): Promise<string | null> {
+async function get_last_verse({ db, type, book_name, chapter }: { db: D1DatabaseSession, type: string, book_name: string, chapter: string }): Promise<string | null> {
 	const tertiary_ids = await get_tertiary_ids({ db, type, id_primary: book_name, id_secondary: chapter })
 	if (tertiary_ids.length === 0) {
 		return null

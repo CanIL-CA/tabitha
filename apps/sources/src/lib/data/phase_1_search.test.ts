@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { MAX_HITS, parse_phase_1_query, search_phase_1, to_match_segments } from './phase_1_search'
 
 type Row = { id_primary: string, id_secondary: string, id_tertiary: string, phase_1_encoding: string, status: string }
@@ -16,7 +16,7 @@ const row = ({ reference, phase_1_encoding, status = 'Ready to Translate' }: {
 const fake_db = (rows: Row[]) => {
 	const bind = vi.fn(() => ({ all: async () => ({ results: rows }) }))
 	const prepare = vi.fn(() => ({ bind }))
-	return { db: { prepare } as unknown as D1Database, prepare, bind }
+	return { db: { prepare } as unknown as D1DatabaseSession, prepare, bind }
 }
 
 describe('parse_phase_1_query', () => {

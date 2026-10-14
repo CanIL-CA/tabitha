@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit'
+import type { Handle } from '@sveltejs/kit/hooks'
 import type { RateLimit } from '@cloudflare/workers-types'
 
 type EnforceRateLimitOptions = {
@@ -26,6 +26,9 @@ type RateLimiterEnv = {
 }
 
 type CreateRateLimitHandleOptions = {
+	// The app's `env` from `cloudflare:workers`, read on each request rather than when the handle is
+	// created, since the binding is only reachable while a request is being handled.
+	readonly env: RateLimiterEnv
 	readonly skip_path_prefixes?: readonly string[]
 	// Local dev and CI run fast, unpaced automated request bursts (a full e2e suite, a dev
 	// reloading a page repeatedly) that routinely exceed a threshold meant for real-world abuse.
@@ -34,9 +37,10 @@ type CreateRateLimitHandleOptions = {
 }
 
 export function create_rate_limit_handle({
+	env,
 	skip_path_prefixes = [],
 	disabled = false,
-}: CreateRateLimitHandleOptions = {}): Handle {
+}: CreateRateLimitHandleOptions): Handle {
 	return async function rate_limit_handle({ event, resolve }) {
 		if (disabled) return resolve(event)
 
@@ -45,10 +49,9 @@ export function create_rate_limit_handle({
 			return resolve(event)
 		}
 
-		const platform = event.platform as { env?: RateLimiterEnv } | undefined
-		const rate_limiter = platform?.env?.RATE_LIMITER
+		const rate_limiter = env.RATE_LIMITER
 		if (!rate_limiter) {
-			console.error('RATE_LIMITER binding is missing from platform environment.')
+			console.error('RATE_LIMITER binding is missing from env.')
 			return resolve(event)
 		}
 

@@ -1,8 +1,8 @@
-import { env } from '$env/dynamic/private'
+import { AI_GATEWAY_TOKEN, CLOUDFLARE_ACCOUNT_ID, GEMINI_LOCATION, GEMINI_PROJECT_ID } from '$app/env/private'
 import { check_input_safety, AiResponseError } from '@tabitha/ai'
 import { concept_key, create_concept_embedder, read_concept_key, type ConceptIndex, type ConceptLookupKey } from './concept_embeddings'
 import { get_concepts_by_keys } from './ontology'
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { Concept } from '#lib/types.js'
 
 const ONE_WEEK_IN_SECONDS = 7 * 24 * 60 * 60
@@ -16,7 +16,7 @@ const MAX_SEARCH_TERM_LENGTH = 200
 const MAX_RELATED_CONCEPTS = 10
 
 type FindRelatedConceptsOptions = {
-	readonly db: D1Database
+	readonly db: D1DatabaseSession
 	readonly index: ConceptIndex | undefined
 	readonly search_term: string
 }
@@ -57,7 +57,7 @@ export async function find_related_concepts({ db, index, search_term }: FindRela
 
 async function find_nearest_concept_keys({ index, search_term }: { index: ConceptIndex, search_term: string }): Promise<ConceptLookupKey[]> {
 	try {
-		const vector = await create_concept_embedder(env).embed_text({
+		const vector = await create_concept_embedder({ CLOUDFLARE_ACCOUNT_ID, AI_GATEWAY_TOKEN, GEMINI_PROJECT_ID, GEMINI_LOCATION }).embed_text({
 			purpose: 'query',
 			text: search_term,
 			// The gateway's shared, durable cache answers a repeated search term without calling Vertex.

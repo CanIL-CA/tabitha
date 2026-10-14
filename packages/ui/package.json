@@ -23,7 +23,7 @@
   },
   "peerDependencies": {
     "@iconify/svelte": "^5.2.2",
-    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/kit": "^3.0.1",
     "@tailwindcss/typography": "^0.5.20",
     "daisyui": "^5.7.47",
     "svelte": "^5.56.4",
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@iconify/svelte": "^5.2.2",
-    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/kit": "^3.0.1",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
     "eslint": "^10.12.0",

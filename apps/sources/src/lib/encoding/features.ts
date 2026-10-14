@@ -1,5 +1,5 @@
-import type { D1Database } from '@cloudflare/workers-types'
-import { PUBLIC_TARGETS_API_HOST } from '$env/static/public'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
+import { PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { create_targets_client } from '@tabitha/api-client'
 import { GRAMMAR_ONLY_FEATURES, WORD_ENTITY_CATEGORIES } from './lookups'
 import type { DbFeature, FeatureInfo, FeatureMap } from '#lib/types.js'
@@ -14,13 +14,13 @@ import type {
 
 const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST, cache: true })
 
-export async function get_source_features(db: D1Database): Promise<DbFeature[]> {
+export async function get_source_features(db: D1DatabaseSession): Promise<DbFeature[]> {
 	const sql = 'SELECT * FROM Features'
 	const { results } = await db.prepare(sql).all<DbFeature>()
 	return results
 }
 
-export async function load_source_feature_map(db: D1Database): Promise<FeatureMap> {
+export async function load_source_feature_map(db: D1DatabaseSession): Promise<FeatureMap> {
 	const sql = 'SELECT * FROM Features'
 	const { results } = await db.prepare(sql).all<DbFeature>()
 
@@ -141,7 +141,7 @@ export function fill_in_features({ source_entity, feature_map }: { source_entity
 	return { feature_codes, features: new_features }
 }
 
-export async function transform_features_to_codes({ db, source_entities }: { db: D1Database, source_entities: SourceEntity[] }): Promise<SourceEntity[]> {
+export async function transform_features_to_codes({ db, source_entities }: { db: D1DatabaseSession, source_entities: SourceEntity[] }): Promise<SourceEntity[]> {
 	const feature_map = await load_source_feature_map(db)
 
 	return source_entities.map(entity => {

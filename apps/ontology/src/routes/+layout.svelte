@@ -8,7 +8,6 @@
 	import { Header, Footer, theme_state } from '@tabitha/ui'
 	import { auth_client } from '#lib/auth_client.js'
 	import Icon from '@iconify/svelte'
-	import { registerSW } from 'virtual:pwa-register'
 	import { sync_pending } from '#lib/offline/sync.js'
 	import { report_active_theme } from '@tabitha/usage/client'
 
@@ -18,16 +17,13 @@
 	let version = $derived(data.version)
 	let show_search_bar = $derived(page.url.pathname === '/')
 
-	// No-op instead of the default forced reload: the page picks up a new version on its next navigation.
-	registerSW({ immediate: true, onNeedReload: () => {} })
-
 	async function sign_in() {
 		await auth_client.signIn.social({ provider: 'google', callbackURL: page.url.href })
 	}
 
 	async function sign_out() {
 		await auth_client.signOut()
-		await goto('/', { invalidateAll: true })
+		await goto('/', { refreshAll: true })
 	}
 
 	onMount(() => {

@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { Reference, SourceEncodedResult } from '@tabitha/types'
 
 /**
@@ -12,7 +12,7 @@ import type { Reference, SourceEncodedResult } from '@tabitha/types'
  * there an encoding?" asks that question directly, rather than reading a `status` field and
  * being expected to know it answers something else.
  */
-export async function get_verse_encoding_availability({ db, references }: { db: D1Database, references: Reference[] }): Promise<SourceEncodedResult[]> {
+export async function get_verse_encoding_availability({ db, references }: { db: D1DatabaseSession, references: Reference[] }): Promise<SourceEncodedResult[]> {
 	const sql = `
 		SELECT LENGTH(COALESCE(semantic_encoding, '')) > 0 AS has_encoding
 		FROM Sources

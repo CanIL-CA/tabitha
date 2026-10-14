@@ -110,7 +110,7 @@ async function sync_ci_bun_version() {
 async function regenerate_worker_and_framework_types() {
 	console.log('🔄 Regenerating SvelteKit & Cloudflare Worker type artifacts...')
 	try {
-		await $`cd apps/ontology && bunx wrangler types ./worker-configuration.d.ts`.quiet()
+		await $`cd apps/ontology && bunx wrangler types --include-runtime=false ./worker-configuration.d.ts`.quiet()
 		console.log('   ✓ Regenerated Cloudflare Worker types for ontology.\n')
 	} catch (err) {
 		console.warn('   ⚠️  Could not regenerate wrangler types:', err instanceof Error ? err.message : err)
