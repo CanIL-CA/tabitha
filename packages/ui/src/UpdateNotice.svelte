@@ -1,27 +1,16 @@
 <script lang="ts">
 	import { beforeNavigate } from '$app/navigation'
 	import { updated } from '$app/state'
-	import { onMount } from 'svelte'
 	import { get_ui_messages } from './i18n/ui_messages'
 
 	const messages = get_ui_messages()
 
 	// Picks up a new deployment silently: the next in-app link becomes a full page load instead of
 	// a client-side navigation, so the user lands on the new version without being prompted.
-	// https://svelte.dev/docs/kit/configuration#version
+	// SvelteKit sets `updated` on its own poll (see version.pollInterval), on server responses, and
+	// whenever the tab becomes visible or focused. https://svelte.dev/docs/kit/configuration#version
 	beforeNavigate(({ willUnload, to }) => {
 		if (updated.current && !willUnload && to?.url) location.href = to.url.href
-	})
-
-	// Users often leave tabs open indefinitely, so re-check immediately when they come back
-	// to the tab rather than waiting for the next background poll (see version.pollInterval).
-	onMount(() => {
-		function on_visibility_change() {
-			if (document.visibilityState === 'visible') updated.check()
-		}
-
-		document.addEventListener('visibilitychange', on_visibility_change)
-		return () => document.removeEventListener('visibilitychange', on_visibility_change)
 	})
 </script>
 

@@ -49,4 +49,4 @@ SvelteKit serves the worker at `/service-worker.js` rather than the plugin's `/s
 - The caching behavior is ours to maintain. Anything beyond network-first and precaching, such as stale-while-revalidate or background sync, has to be written and tested in `@tabitha/service-worker`.
 - Runtime caches are now per deployment. A cached API response no longer survives a deploy, while under Workbox it lasted its 24 hours regardless.
 - The apps are installable for the first time.
-- `context.setOffline()` stalled page reactivity in Playwright with the plugin's worker (see `apps/ontology/e2e/README.md`). That hasn't been rechecked with this worker, so e2e tests still simulate offline per request.
+- `context.setOffline()` stalled page reactivity in Playwright with the plugin's worker. It doesn't with this one (checked in a production build), so the ontology e2e specs' per-request offline simulation is a choice, not a workaround.

@@ -20,13 +20,15 @@ See [`docs/decisions/0021-better-auth-sessions-in-d1.md`](../../../docs/decision
 - The local Auth D1 must exist with Better Auth's tables (`bun run db:load:ontology` loads it and applies `migrations/auth/`).
 - `bun` must be on `PATH` (same requirement as `bun run db:grant`/`db:load` generally).
 
-## ⚠️ Don't use `context.setOffline()` to simulate offline in this app
+## Simulating offline: fail the request
 
-This app registers a service worker, and Playwright/Chrome's `context.setOffline(true)` interacted badly with the earlier `vite-plugin-pwa` one: confirmed directly, it stalled page reactivity entirely — even a plain form field edit stopped updating component state, unrelated to any app code. That hasn't been rechecked with the native worker (`@tabitha/service-worker`), so keep simulating offline by failing the specific request:
+The offline specs fail just the submit request instead of calling `context.setOffline(true)`:
 
 ```ts
 await page.route('**/protected/concept/update/submit', route => route.abort('internetdisconnected'))
 ```
+
+The feature under test is a failed write, and the rest of the page keeps working while it fails. E2E runs against `vite dev`, where SvelteKit doesn't register a service worker, so a browser-wide offline switch would only test the browser.
 
 See `e2e/offline_queue.spec.ts` for a full example.
 
