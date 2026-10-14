@@ -1,6 +1,6 @@
-import { get_auto_scroll_speed, get_slot_beside_entity, is_no_op_slot, type DraggedRange, type EntityDrop } from './drag_positions'
-
 const DRAG_THRESHOLD_PX = 4
+const AUTO_SCROLL_EDGE_PX = 48
+const AUTO_SCROLL_MAX_SPEED_PX = 16
 
 type Point = {
 	readonly x: number
@@ -8,31 +8,31 @@ type Point = {
 }
 
 type PendingPress = {
-	readonly index: number
+	readonly id: number
 	readonly element: HTMLElement
 	readonly start: Point
 }
 
-type ActiveDrag = DraggedRange
-
 type EntityDragOptions = {
-	readonly get_range_length: (index: number) => number
-	readonly on_drop: (drop: EntityDrop) => void
+	readonly on_drop: (drop: { dragged_id: number, slot: number }) => void
 }
 
 /**
  * Pointer-driven drag and drop for source entities.
  * Entities mark themselves with `data-entity-index`, drop slots with `data-drop-slot`.
+ * Only tracks which entity is dragged and which slot is under the pointer; what range that drags is up to the caller.
  */
 export class EntityDrag {
-	active = $state.raw<ActiveDrag | null>(null)
+	dragged_id = $state<number | null>(null)
 	pointer = $state.raw<Point>({ x: 0, y: 0 })
-	drop_slot = $state<number | null>(null)
+	pointer_slot = $state<number | null>(null)
 
-	ghost_position = $derived<Point | null>(this.active && {
+	is_dragging = $derived(this.dragged_id !== null)
+
+	ghost_position = $derived<Point | null>(this.is_dragging ? {
 		x: this.pointer.x - 5,
 		y: this.pointer.y - 5,
-	})
+	} : null)
 
 	#options: EntityDragOptions
 	#press: PendingPress | null = null
@@ -44,13 +44,13 @@ export class EntityDrag {
 		this.#options = options
 	}
 
-	press({ event, index }: { event: PointerEvent, index: number }) {
+	press({ event, id }: { event: PointerEvent, id: number }) {
 		if (event.button !== 0) return
 		if (!(event.currentTarget instanceof HTMLElement)) return
 		if (event.target instanceof Element && event.target.closest('.dropdown-content')) return
 
 		this.#press = {
-			index,
+			id,
 			element: event.currentTarget,
 			start: { x: event.clientX, y: event.clientY },
 		}
@@ -71,10 +71,10 @@ export class EntityDrag {
 
 	#move(event: PointerEvent) {
 		this.pointer = { x: event.clientX, y: event.clientY }
-		if (!this.active && !this.#has_passed_threshold()) return
-		if (!this.active) this.#start()
+		if (!this.is_dragging && !this.#has_passed_threshold()) return
+		if (!this.is_dragging) this.#start()
 
-		this.#update_drop_slot()
+		this.#update_pointer_slot()
 	}
 
 	#has_passed_threshold() {
@@ -87,48 +87,38 @@ export class EntityDrag {
 	#start() {
 		if (!this.#press) return
 
-		const { index, element } = this.#press
-		this.active = {
-			drag_index: index,
-			range_length: this.#options.get_range_length(index),
-		}
+		const { id, element } = this.#press
+		this.dragged_id = id
 		this.#scroll_container = find_scroll_container(element)
 		window.getSelection()?.removeAllRanges()
 		this.#scroll_frame = requestAnimationFrame(this.#auto_scroll)
 	}
 
-	#update_drop_slot() {
-		const slot = find_slot_at_point(this.pointer)
-		if (slot === null || !this.active) {
-			this.drop_slot = null
-			return
-		}
-
-		const { drag_index, range_length } = this.active
-		this.drop_slot = is_no_op_slot({ slot, drag_index, range_length }) ? null : slot
+	#update_pointer_slot() {
+		this.pointer_slot = this.is_dragging ? find_slot_at_point(this.pointer) : null
 	}
 
 	#auto_scroll = () => {
-		if (!this.active || !this.#scroll_container) return
+		if (!this.is_dragging || !this.#scroll_container) return
 
 		const { top, bottom } = this.#scroll_container.getBoundingClientRect()
 		const speed = get_auto_scroll_speed({ pointer_y: this.pointer.y, top, bottom })
 		if (speed !== 0) {
 			this.#scroll_container.scrollBy(0, speed)
-			this.#update_drop_slot()
+			this.#update_pointer_slot()
 		}
 		this.#scroll_frame = requestAnimationFrame(this.#auto_scroll)
 	}
 
 	#release() {
-		const { active, drop_slot } = this
+		const { dragged_id, pointer_slot } = this
 		this.#finish()
-		if (!active) return
+		if (dragged_id === null) return
 
 		suppress_next_click()
-		if (drop_slot === null) return
+		if (pointer_slot === null) return
 
-		this.#options.on_drop({ drag_index: active.drag_index, range_length: active.range_length, slot: drop_slot })
+		this.#options.on_drop({ dragged_id, slot: pointer_slot })
 	}
 
 	#finish() {
@@ -137,8 +127,8 @@ export class EntityDrag {
 		this.#press = null
 		this.#scroll_container = null
 		cancelAnimationFrame(this.#scroll_frame)
-		this.active = null
-		this.drop_slot = null
+		this.dragged_id = null
+		this.pointer_slot = null
 	}
 }
 
@@ -152,7 +142,9 @@ function find_slot_at_point({ x, y }: Point): number | null {
 	if (!entity_element) return null
 
 	const { left, width } = entity_element.getBoundingClientRect()
-	return get_slot_beside_entity({ index: Number(entity_element.dataset.entityIndex), pointer_x: x, left, width })
+
+	const index = Number(entity_element.dataset.entityIndex)
+	return x < left + width / 2 ? index : index + 1
 }
 
 function find_scroll_container(element: HTMLElement): Element | null {
@@ -171,4 +163,21 @@ function suppress_next_click() {
 	}
 	window.addEventListener('click', swallow_click, { capture: true, once: true })
 	setTimeout(() => window.removeEventListener('click', swallow_click, { capture: true }))
+}
+
+type AutoScrollOptions = {
+	readonly pointer_y: number
+	readonly top: number
+	readonly bottom: number
+}
+
+/** Pixels to scroll this frame: negative near the top edge, positive near the bottom, faster the closer to the edge. */
+function get_auto_scroll_speed({ pointer_y, top, bottom }: AutoScrollOptions): number {
+	const top_overlap = top + AUTO_SCROLL_EDGE_PX - pointer_y
+	const bottom_overlap = pointer_y - (bottom - AUTO_SCROLL_EDGE_PX)
+	const speed_for = (overlap: number) => Math.round(AUTO_SCROLL_MAX_SPEED_PX * Math.min(1, overlap / AUTO_SCROLL_EDGE_PX))
+
+	if (top_overlap > 0) return -speed_for(top_overlap)
+	if (bottom_overlap > 0) return speed_for(bottom_overlap)
+	return 0
 }
