@@ -41,7 +41,7 @@ export default create_app_vite_config({
 
 SvelteKit 3 no longer reads `svelte.config.js`; its options go to the `sveltekit()` plugin, which `create_app_vite_config` registers with:
 
-- `@sveltejs/adapter-cloudflare` (skipped under Vitest, see sveltejs/kit#17344), `vitePreprocess()`, and a 30-minute `version.pollInterval`.
+- `@sveltejs/adapter-cloudflare`, `vitePreprocess()`, and a 30-minute `version.pollInterval`.
 - App-specific SvelteKit options passed as `kit` and spread over those defaults.
 - A Vitest alias that stubs `cloudflare:workers`, and `@tabitha/vite-config/cloudflare-workers` for typing `env` from it (already in `@tabitha/tsconfig/sveltekit-app.json`'s `types`).
 

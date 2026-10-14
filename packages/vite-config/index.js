@@ -43,10 +43,7 @@ export function create_app_vite_config({
 		plugins: [
 			tailwindcss(),
 			sveltekit({
-				// The adapter starts a Workers runtime for every Vite server, and two at once on the same
-				// .wrangler/state can fail with SQLITE_BUSY_RECOVERY (sveltejs/kit#17344). Unit tests
-				// never need bindings, so Vitest runs without it.
-				adapter: process.env.VITEST ? undefined : adapter(),
+				adapter: adapter(),
 				// Needed for the `<style lang="postcss">` blocks that use Tailwind's @apply.
 				preprocess: vitePreprocess(),
 				// Users might leave a tab open indefinitely, so poll for new deployments more often

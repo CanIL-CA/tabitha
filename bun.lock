@@ -37,7 +37,7 @@
         "@iconify/svelte": "^5.2.2",
         "@neoconfetti/svelte": "^2.2.2",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tabitha/eslint-config": "workspace:*",
@@ -78,7 +78,7 @@
         "@cloudflare/workers-types": "^5.20261010.1",
         "@eslint/compat": "^2.1.1",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tabitha/eslint-config": "workspace:*",
@@ -119,7 +119,7 @@
         "@eslint/compat": "^2.1.1",
         "@iconify/svelte": "^5.2.2",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tabitha/eslint-config": "workspace:*",
@@ -172,7 +172,7 @@
         "@eslint/compat": "^2.1.1",
         "@iconify/svelte": "^5.2.2",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tabitha/eslint-config": "workspace:*",
@@ -211,7 +211,7 @@
         "@eslint/compat": "^2.1.1",
         "@iconify/svelte": "^5.2.2",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tabitha/eslint-config": "workspace:*",
@@ -244,7 +244,7 @@
       "devDependencies": {
         "@eslint/compat": "^2.1.1",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tabitha/eslint-config": "workspace:*",
@@ -430,7 +430,7 @@
       "peerDependencies": {
         "@cloudflare/workers-types": "^5.20261010.1",
         "@playwright/test": "^1.64.0",
-        "@sveltejs/adapter-cloudflare": "^8.0.0",
+        "@sveltejs/adapter-cloudflare": "^8.0.1",
         "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tailwindcss/vite": "^4.3.3",
@@ -940,7 +940,7 @@
 
     "@sveltejs/acorn-typescript": ["@sveltejs/acorn-typescript@1.0.13", "", { "peerDependencies": { "acorn": "^8.9.0" } }, "sha512-wgKggnhZVL9Bfx1OaKKTrYY9BFRk6C8UAkQNUcIv1+llzYrIqy+RZm5HPKzn0NpEBvTVhTqB4kQyllZywsRBRQ=="],
 
-    "@sveltejs/adapter-cloudflare": ["@sveltejs/adapter-cloudflare@8.0.0", "", { "dependencies": { "@cloudflare/workers-types": "^5.20260813.1", "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@sveltejs/kit": "^3.0.0-next.0", "wrangler": "^4.118.0" } }, "sha512-68jVq1x4nya+/Dpg1NrWlz6LFWAX/F3DrsR8KQGl1bOt4G8oUp0kLLeMx+LI4AZQccGEmE7Nt2tOZwsParE6FA=="],
+    "@sveltejs/adapter-cloudflare": ["@sveltejs/adapter-cloudflare@8.0.1", "", { "dependencies": { "@cloudflare/workers-types": "^5.20260925.1", "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@sveltejs/kit": "^3.0.0-next.0", "wrangler": "^4.118.0" } }, "sha512-KISMvrFOLpn7sm7wQr26XhkVIBYQLq1wYcFZvNgHqWxyN/kVZb/ldu7+jJtWi+Ai0mNw+OPRecHadzEB5TGQ6A=="],
 
     "@sveltejs/kit": ["@sveltejs/kit@3.0.1", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1", "@standard-schema/spec": "^1.1.0", "cookie": "^2.0.1", "devalue": "^5.9.4", "esm-env": "^1.2.2", "magic-string": "^1.2.3", "mrmime": "^2.0.1", "sirv": "^3.0.2" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "@sveltejs/vite-plugin-svelte": "^7.0.0", "svelte": "^5.57.1", "typescript": "^6.0.0", "vite": "^8.0.12" }, "optionalPeers": ["@opentelemetry/api", "typescript"], "bin": { "svelte-kit": "svelte-kit.js" } }, "sha512-8JMCCq7ZUJELi3hbhb0+c9Rs8qnbHW90vhOfM+t1FSF4fhIpG9/FOsH4IYgcITMhbdkSrrn+Kvd9G+q8A+UO6Q=="],
 

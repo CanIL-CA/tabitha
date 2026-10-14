@@ -51,7 +51,7 @@
     "@iconify/svelte": "^5.2.2",
     "@neoconfetti/svelte": "^2.2.2",
     "@playwright/test": "^1.64.0",
-    "@sveltejs/adapter-cloudflare": "^8.0.0",
+    "@sveltejs/adapter-cloudflare": "^8.0.1",
     "@sveltejs/kit": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tabitha/eslint-config": "workspace:*",
