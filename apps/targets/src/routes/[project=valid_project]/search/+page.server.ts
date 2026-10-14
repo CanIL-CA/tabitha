@@ -1,5 +1,6 @@
-import { env } from '$env/dynamic/private'
-import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { env } from 'cloudflare:workers'
+import { API_BIBLE_KEY } from '$app/env/private'
+import { PUBLIC_SOURCES_API_HOST } from '$app/env/public'
 import { extract_exact_phrase } from '#lib/api_bible/search.server.js'
 import { parse_search_query, search_text } from '#lib/server/search.js'
 import { run_phrase_mode } from '#lib/server/phrase_mode.js'
@@ -9,7 +10,7 @@ import type { PageServerLoad } from './$types'
 import type { ReturnTo } from '#lib/types.js'
 import type { TargetProject } from '@tabitha/types'
 
-export async function load({ url: { searchParams }, params: { project }, locals: { db }, platform }: Parameters<PageServerLoad>[0]) {
+export async function load({ url: { searchParams }, params: { project }, locals: { db } }: Parameters<PageServerLoad>[0]) {
 	// the valid_project route matcher has already checked this against TARGET_PROJECTS
 	const target_project = project as TargetProject
 
@@ -22,7 +23,7 @@ export async function load({ url: { searchParams }, params: { project }, locals:
 	}
 
 	const record_search = (outcome: Pick<SearchEvent, 'scope' | 'result_count' | 'note'>) => record_usage_event({
-		dataset: platform?.env.USAGE,
+		dataset: env.USAGE,
 		app: 'targets',
 		event: { kind: 'search', filter: target_project, q, referred_by: return_to?.app, ...outcome },
 	})
@@ -33,7 +34,7 @@ export async function load({ url: { searchParams }, params: { project }, locals:
 		const phrase_results = await run_phrase_mode({
 			phrase: q,
 			project: target_project,
-			api_key: env.API_BIBLE_KEY ?? '',
+			api_key: API_BIBLE_KEY,
 			sources_api_host: PUBLIC_SOURCES_API_HOST,
 		})
 		record_search({

@@ -60,8 +60,8 @@ export type ConceptDocument = {
 }
 
 /**
- * The same four values whether they come from SvelteKit's `$env/dynamic/private` (semantic search)
- * or the Worker's own `platform.env` (the scheduled sync, which reads its bindings from there too).
+ * The same four values whether they come from SvelteKit's `$app/env/private` (semantic search)
+ * or the Worker's own `env` (the scheduled sync, which reads its bindings from there too).
  */
 export type GatewayEnv = {
 	readonly CLOUDFLARE_ACCOUNT_ID?: string

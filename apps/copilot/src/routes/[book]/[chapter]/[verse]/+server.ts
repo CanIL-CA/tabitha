@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit'
+import { env } from 'cloudflare:workers'
 import { get_request_caller, record_usage_event } from '@tabitha/usage'
 import { get_verse_result } from '#lib/server/verse_result.js'
 import { default_settings } from '#lib/lookups.js'
@@ -9,7 +10,7 @@ import type { RequestHandler } from './$types'
 import type { CopilotResult, VerseReference } from '@tabitha/types'
 import type { CopilotSettings, CopilotStep, CopilotStreamLine } from '#lib/types.js'
 
-export async function GET({ params: { book, chapter, verse }, url: { searchParams }, locals: { ai }, request, platform }: Parameters<RequestHandler>[0]) {
+export async function GET({ params: { book, chapter, verse }, url: { searchParams }, locals: { ai }, request }: Parameters<RequestHandler>[0]) {
 	const chapter_int = parseInt(chapter)
 	const verse_int = parseInt(verse)
 	if (!chapter_int || !verse_int) {
@@ -48,7 +49,7 @@ export async function GET({ params: { book, chapter, verse }, url: { searchParam
 				send(result)
 			} finally {
 				record_usage_event({
-					dataset: platform?.env.USAGE,
+					dataset: env.USAGE,
 					app: 'copilot',
 					event: to_copilot_run_event({ caller: get_request_caller(request), run: 'verse', book, settings, verse_count: 1, results: result ? [result] : [] }),
 				})

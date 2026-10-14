@@ -6,7 +6,10 @@
       "inputs": [
         "src/app.html",
         "src/routes/**",
-        "svelte.config.js"
+        "src/env.ts",
+        "src/params.ts",
+        "package.json",
+        "vite.config.*"
       ],
       "outputs": [".svelte-kit/**"]
     },
@@ -18,7 +21,6 @@
         "package.json",
         "tsconfig.json",
         "vite.config.*",
-        "svelte.config.*",
         "wrangler.jsonc"
       ],
       "outputs": [".svelte-kit/**", "dist/**", "build/**"]
@@ -31,7 +33,6 @@
         "package.json",
         "tsconfig.json",
         "vite.config.*",
-        "svelte.config.*",
         "wrangler.jsonc"
       ],
       "outputs": [".svelte-kit/**", "dist/**", "build/**"]
@@ -44,7 +45,6 @@
         "package.json",
         "tsconfig.json",
         "vite.config.*",
-        "svelte.config.*",
         "wrangler.jsonc"
       ],
       "outputs": [".svelte-kit/**", "dist/**", "build/**"]
@@ -67,8 +67,9 @@
         "src/**",
         "e2e/**",
         "playwright.config.js",
-        "svelte.config.js",
-        "tsconfig.json"
+        "vite.config.js",
+        "tsconfig.json",
+        "worker-configuration.d.ts"
       ]
     },
     "check:lint": {
@@ -136,7 +137,6 @@
       ]
     },
     "test:unit": {
-      "dependsOn": ["build"],
       "inputs": [
         "src/**",
         "vitest.config.*",

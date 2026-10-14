@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { AiClient } from '@tabitha/ai'
 import type { BriefInput, BriefSettings, BriefTnnBasedOutput } from '#lib/types.js'
 
-vi.mock('$env/dynamic/private', () => ({ env: { API_KEY_AQUIFER: 'test-key' } }))
+vi.mock('$app/env/private', () => ({ API_KEY_AQUIFER: 'test-key' }))
 
 const { create_brief_for_verse, mark_for_translation, translate_json } = await import('./brief')
 const { AiResponseError } = await import('@tabitha/ai')

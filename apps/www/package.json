@@ -27,7 +27,6 @@
 		"clean:powerwash": "(bun run clean:svelte & bun run clean:deps) && bun install"
 	},
 	"dependencies": {
-		"@sveltejs/kit": "^2.70.3",
 		"@tabitha/api-client": "workspace:*",
 		"@tabitha/types": "workspace:*",
 		"@tabitha/ui": "workspace:*",
@@ -39,9 +38,11 @@
 	"devDependencies": {
 		"@eslint/compat": "^2.1.1",
 		"@playwright/test": "^1.64.0",
-		"@sveltejs/adapter-cloudflare": "^7.2.9",
+		"@sveltejs/adapter-cloudflare": "^8.0.0",
+		"@sveltejs/kit": "^3.0.1",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@tabitha/eslint-config": "workspace:*",
+		"@tabitha/tsconfig": "workspace:*",
 		"@tabitha/vite-config": "workspace:*",
 		"@tailwindcss/vite": "^4.3.3",
 		"eslint": "^10.12.0",

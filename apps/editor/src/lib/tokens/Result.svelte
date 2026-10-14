@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { CheckerToken } from '@tabitha/types'
-	import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
+	import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 	import TokenDisplay from './TokenDisplay.svelte'
 	import PopupMenu from './PopupMenu.svelte'
 	import Table from './Table.svelte'

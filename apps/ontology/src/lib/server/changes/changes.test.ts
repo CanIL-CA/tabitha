@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { OntologyChange, ConceptCreateData, OntologyUser } from '#lib/types.js'
 
 vi.mock('./concepts', () => ({
@@ -22,7 +22,7 @@ const { create_concept } = await import('./concepts')
 
 type QueuedResponse = { first?: unknown, all?: unknown[], run?: { last_row_id?: number } }
 
-// Fakes just enough of D1Database to drive changes.ts's own queries. Callers queue responses in
+// Fakes just enough of D1DatabaseSession to drive changes.ts's own queries. Callers queue responses in
 // the order changes.ts issues them.
 function make_db(responses: QueuedResponse[] = []) {
 	const statements: { bind: ReturnType<typeof vi.fn> }[] = []
@@ -39,7 +39,7 @@ function make_db(responses: QueuedResponse[] = []) {
 		return { ...result, bind }
 	})
 
-	return { db: { prepare } as unknown as D1Database, statements }
+	return { db: { prepare } as unknown as D1DatabaseSession, statements }
 }
 
 function make_change(overrides: Partial<OntologyChange> = {}): OntologyChange {

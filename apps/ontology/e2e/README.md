@@ -22,7 +22,7 @@ See [`docs/decisions/0021-better-auth-sessions-in-d1.md`](../../../docs/decision
 
 ## ⚠️ Don't use `context.setOffline()` to simulate offline in this app
 
-This app registers a PWA service worker (`vite-plugin-pwa`), and Playwright/Chrome's `context.setOffline(true)` interacts badly with it: confirmed directly, it stalls page reactivity entirely — even a plain form field edit stops updating component state, unrelated to any app code. Simulate offline by failing the specific request instead:
+This app registers a service worker, and Playwright/Chrome's `context.setOffline(true)` interacted badly with the earlier `vite-plugin-pwa` one: confirmed directly, it stalled page reactivity entirely — even a plain form field edit stopped updating component state, unrelated to any app code. That hasn't been rechecked with the native worker (`@tabitha/service-worker`), so keep simulating offline by failing the specific request:
 
 ```ts
 await page.route('**/protected/concept/update/submit', route => route.abort('internetdisconnected'))

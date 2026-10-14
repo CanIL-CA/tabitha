@@ -1,6 +1,6 @@
 import { book_order_index } from '@tabitha/types/patterns'
 import { create_sources_client } from '@tabitha/api-client'
-import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { PUBLIC_SOURCES_API_HOST } from '$app/env/public'
 import type { Reference, TargetTextResult, SourceResult } from '@tabitha/types'
 import type { FilterMap } from '../types'
 

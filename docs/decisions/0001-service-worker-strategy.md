@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [0022](./0022-native-service-worker.md). `@vite-pwa/sveltekit` blocked the SvelteKit 3 upgrade, and the plugin's main draw, background sync, was never used, so the apps now share a native SvelteKit service worker.
 
 ## Context
 

@@ -1,4 +1,4 @@
-import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
+import type { D1DatabaseSession, D1PreparedStatement } from '@cloudflare/workers-types'
 import { normalize_wildcards, parse_concept_sense, concepts_match } from '@tabitha/types/patterns'
 import { decode_categorization, transform_curated_examples } from '#lib/transformers.js'
 import { get_pending_changes } from './changes/changes'
@@ -10,7 +10,7 @@ import type { ConceptLookupKey } from './concept_embeddings'
 // 	https://www.sqlite.org/lang_expr.html#the_like_glob_regexp_match_and_extract_operators
 // 	https://developers.cloudflare.com/d1/platform/client-api/#searching-with-like
 // 	https://developers.cloudflare.com/d1/platform/client-api/#parameter-binding
-export async function get_all_concepts(db: D1Database): Promise<Concept[]> {
+export async function get_all_concepts(db: D1DatabaseSession): Promise<Concept[]> {
 	const { results } = await db.prepare('SELECT * FROM Concepts').all<DbRowConcept>()
 	const concepts = results.map(transform)
 
@@ -23,7 +23,7 @@ export async function get_all_concepts(db: D1Database): Promise<Concept[]> {
  * Exact, case-sensitive lookup of specific concepts -- both ontology entries and how-to-only
  * ones -- without reading either table in full.
  */
-export async function get_concepts_by_keys({ db, keys }: { db: D1Database, keys: ConceptLookupKey[] }): Promise<Concept[]> {
+export async function get_concepts_by_keys({ db, keys }: { db: D1DatabaseSession, keys: ConceptLookupKey[] }): Promise<Concept[]> {
 	if (!keys.length) return []
 
 	const key_rows = keys.map(() => '(?, ?, ?)').join(', ')
@@ -41,7 +41,7 @@ export async function get_concepts_by_keys({ db, keys }: { db: D1Database, keys:
 /**
  * case-insensitive match, will accept % as a wildcard as well as sense-specific search, e.g., love-A
  */
-export const get_concepts = (db: D1Database) => async (concept_filter: ConceptSearchFilter): Promise<Concept[]> => {
+export const get_concepts = (db: D1DatabaseSession) => async (concept_filter: ConceptSearchFilter): Promise<Concept[]> => {
 	const query_builder = build_concept_query({ db, table: 'Concepts' })
 
 	if (concept_filter.category && concept_filter.category !== 'all') {
@@ -93,7 +93,7 @@ function transform(match_from_db: DbRowConcept): Concept {
 	}
 }
 
-export async function get_version(db: D1Database): Promise<string> {
+export async function get_version(db: D1DatabaseSession): Promise<string> {
 	const sql = `
 		SELECT version
 		FROM Version
@@ -105,7 +105,7 @@ export async function get_version(db: D1Database): Promise<string> {
 /**
  * case-insensitive match, will accept % as a wildcard as well as sense-specific search, e.g., love-A
  */
-export const get_simplification_hints = (db: D1Database) => async (filter: ConceptSearchFilter): Promise<SimplificationHint[]> => {
+export const get_simplification_hints = (db: D1DatabaseSession) => async (filter: ConceptSearchFilter): Promise<SimplificationHint[]> => {
 	if (filter.scope === 'glosses') {
 		// a glosses search doesn't make sense for simplification hints
 		return []
@@ -150,7 +150,7 @@ export const get_simplification_hints = (db: D1Database) => async (filter: Conce
 /**
  * Concept is case-sensitive
  */
-export const get_examples = (db: D1Database) => async (
+export const get_examples = (db: D1DatabaseSession) => async (
 	concept: string,
 	part_of_speech: string,
 	source: string,
@@ -244,7 +244,7 @@ type ConceptQueryBuilder = {
 	prepare: () => D1PreparedStatement
 }
 
-function build_concept_query({ db, table }: { db: D1Database, table: string }): ConceptQueryBuilder {
+function build_concept_query({ db, table }: { db: D1DatabaseSession, table: string }): ConceptQueryBuilder {
 	const all_filters: string[] = []
 	const all_params: (string | number)[] = []
 	let order_by_sql = ''

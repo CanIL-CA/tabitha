@@ -1,7 +1,7 @@
 type RedirectProxySources = {
-	/** The Worker's runtime var (`platform.env.OAUTH_REDIRECT_PROXY_URL`). */
+	/** The Worker's runtime var (`env.OAUTH_REDIRECT_PROXY_URL` from `cloudflare:workers`). */
 	readonly runtime?: string
-	/** The build-time value (`$env/static/private`). */
+	/** The build-time value (`$app/env/private`, a static var). */
 	readonly build: string
 }
 

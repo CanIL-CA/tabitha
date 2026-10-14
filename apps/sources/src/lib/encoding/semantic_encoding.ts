@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { CATEGORY_ABBREVIATIONS, CATEGORY_NAME_LOOKUP, WORD_ENTITY_CATEGORIES } from './lookups'
 import { load_source_feature_map, load_target_feature_map, decode_features } from './features'
 import { structure_entities } from './structured'
@@ -27,7 +27,7 @@ import type { PageSourceEntity } from '#lib/types.js'
  * ~\\wd ~\\tg R-~\\lu |        => { type: 'R', label: 'Paragraph', features: '', value: '|' }
  */
 type TransformSemanticEncodingOptions = {
-	db: D1Database
+	db: D1DatabaseSession
 	semantic_encoding: string
 }
 
@@ -61,7 +61,7 @@ export async function transform_semantic_encoding({ db, semantic_encoding }: Tra
 }
 
 type TransformTargetEncodingOptions = {
-	db: D1Database
+	db: D1DatabaseSession
 	semantic_encoding: string
 	project: string
 }

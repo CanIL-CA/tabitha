@@ -57,7 +57,7 @@ Ensure `"placement": { "mode": "off" }` in `wrangler.jsonc` when utilizing sessi
 
 ## 3. Cloudflare R2 Object Storage
 
-- Use typed R2 bucket bindings from `platform.env`:
+- Use typed R2 bucket bindings from `env` (`import { env } from 'cloudflare:workers'`; SvelteKit 3's adapter no longer sets `event.platform`):
   ```typescript
   // Upload object
   await env.R2_db_backups.put(filename, stream, {

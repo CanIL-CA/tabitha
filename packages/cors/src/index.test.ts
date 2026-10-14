@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit'
+import type { Handle } from '@sveltejs/kit/hooks'
 import { describe, expect, it } from 'vitest'
 import { create_cors_handle, get_cors_allowed_origin } from './index'
 

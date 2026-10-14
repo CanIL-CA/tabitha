@@ -1,4 +1,4 @@
-import { PUBLIC_SOURCES_API_HOST } from '$env/static/public'
+import { PUBLIC_SOURCES_API_HOST } from '$app/env/public'
 import { error } from '@sveltejs/kit'
 import { cached_json, create_sources_client } from '@tabitha/api-client'
 import { get_examples } from '#lib/server/ontology.js'

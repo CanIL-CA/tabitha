@@ -5,16 +5,12 @@
 	import { report_active_theme } from '@tabitha/usage/client'
 	import AppNav from '#lib/AppNav.svelte'
 	import { onMount, type Snippet } from 'svelte'
-	import { registerSW } from 'virtual:pwa-register'
 
 	type Props = {
 		children: Snippet
 	}
 
 	let { children }: Props = $props()
-
-	// No-op instead of the default forced reload: the page picks up a new version on its next navigation.
-	registerSW({ immediate: true, onNeedReload: () => {} })
 
 	onMount(() => report_active_theme(theme_state.current))
 </script>

@@ -6,13 +6,16 @@
   "tsconfig": "./base.json",
   "files": [
     "base.json",
-    "svelte.json"
+    "svelte.json",
+    "sveltekit-app.json"
   ],
   "exports": {
     ".": "./base.json",
     "./base": "./base.json",
     "./base.json": "./base.json",
     "./svelte": "./svelte.json",
-    "./svelte.json": "./svelte.json"
+    "./svelte.json": "./svelte.json",
+    "./sveltekit-app": "./sveltekit-app.json",
+    "./sveltekit-app.json": "./sveltekit-app.json"
   }
 }

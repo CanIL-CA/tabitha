@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit'
+import type { Handle } from '@sveltejs/kit/hooks'
 import { describe, expect, it } from 'vitest'
 import { noindex_handle } from './index'
 

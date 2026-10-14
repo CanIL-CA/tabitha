@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private'
+import { API_KEY_AQUIFER } from '$app/env/private'
 import { BRIEF_HEADINGS_ENGLISH } from '#lib/lookups.js'
 import { USFM_BOOK_CODES } from '@tabitha/types/patterns'
 import { AiResponseError, check_input_safety, type AiClient } from '@tabitha/ai'
@@ -38,7 +38,7 @@ const AQUIFER_UNRETRYABLE_STATUSES = new Set([401, 403, 406])
 
 async function fetch_aquifer(path: string): Promise<Response> {
 	const url = `https://api.aquifer.bible${path}`
-	const response = await fetch(url, { headers: { 'api-key': env.API_KEY_AQUIFER } })
+	const response = await fetch(url, { headers: { 'api-key': API_KEY_AQUIFER } })
 		.catch((error: unknown) => {
 			throw new CopilotError({ message: 'Could not reach Aquifer to fetch the TNN notes.', cause: error })
 		})

@@ -4,7 +4,7 @@ import { simplify_encoding } from '#lib/encoding/simplify.js'
 import { strip_gloss_classifiers } from '@tabitha/types/patterns'
 import { create_ontology_client } from '@tabitha/api-client'
 import { error } from '@sveltejs/kit'
-import { PUBLIC_ONTOLOGY_API_HOST } from '$env/static/public'
+import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 import type { Reference, SourceSimpleJsonResult, SourceEntity } from '@tabitha/types'
 import type { RequestHandler } from './$types'
 

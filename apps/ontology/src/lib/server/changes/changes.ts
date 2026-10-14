@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
 import { get_version } from '#lib/server/ontology.js'
 import { default_categories } from '#lib/lookups.js'
@@ -17,7 +17,7 @@ import type {
 } from '#lib/types.js'
 import { get_user_names } from '../auth'
 
-export async function get_all_changes(db: D1Database): Promise<OntologyChange[]> {
+export async function get_all_changes(db: D1DatabaseSession): Promise<OntologyChange[]> {
 	const sql = `
 		SELECT *
 		FROM Changes
@@ -27,7 +27,7 @@ export async function get_all_changes(db: D1Database): Promise<OntologyChange[]>
 	return results.map(transform)
 }
 
-export async function get_pending_changes(db: D1Database): Promise<OntologyChange[]> {
+export async function get_pending_changes(db: D1DatabaseSession): Promise<OntologyChange[]> {
 	const sql = `
 		SELECT *
 		FROM Changes
@@ -38,7 +38,7 @@ export async function get_pending_changes(db: D1Database): Promise<OntologyChang
 	return results.map(transform)
 }
 
-export async function get_version_applied_date({ db, version }: { db: D1Database, version: string }): Promise<Date | null> {
+export async function get_version_applied_date({ db, version }: { db: D1DatabaseSession, version: string }): Promise<Date | null> {
 	const sql = `
 		SELECT applied_date
 		FROM Changes
@@ -51,7 +51,7 @@ export async function get_version_applied_date({ db, version }: { db: D1Database
 }
 
 type GetChangeOptions = {
-	readonly db: D1Database
+	readonly db: D1DatabaseSession
 	readonly id: number
 }
 
@@ -61,7 +61,7 @@ export async function get_change({ db, id }: GetChangeOptions): Promise<Ontology
 }
 
 type ChangeSubmission = {
-	readonly db: D1Database
+	readonly db: D1DatabaseSession
 	readonly action: OntologyChangeAction
 	readonly data: ConceptUpdateData
 	readonly user: OntologyUser
@@ -154,7 +154,7 @@ export function can_approve_change({ change, permissions }: CanApproveChangeOpti
 }
 
 type ApproveChangeOptions = {
-	readonly db: D1Database
+	readonly db: D1DatabaseSession
 	readonly id: number
 	readonly user: OntologyUser
 }
@@ -217,7 +217,7 @@ export async function transform_with_users({ changes, locals }: { changes: Ontol
 	}))
 }
 
-export async function apply_pending_changes(db: D1Database): Promise<ApplyPendingResult> {
+export async function apply_pending_changes(db: D1DatabaseSession): Promise<ApplyPendingResult> {
 	const sql = `
 		SELECT *
 		FROM Changes
@@ -260,7 +260,7 @@ export async function apply_pending_changes(db: D1Database): Promise<ApplyPendin
 }
 
 type ApplyOneChangeOptions = {
-	readonly db: D1Database
+	readonly db: D1DatabaseSession
 	readonly change: OntologyChange
 	readonly version: string
 	readonly applied_date: string
@@ -314,7 +314,7 @@ async function apply_one_change({ db, change, version, applied_date }: ApplyOneC
 	}
 }
 
-async function set_version({ db, version }: { db: D1Database, version: string }) {
+async function set_version({ db, version }: { db: D1DatabaseSession, version: string }) {
 	const sql = `
 		UPDATE Version
 		SET version = ?
@@ -322,7 +322,7 @@ async function set_version({ db, version }: { db: D1Database, version: string })
 	await db.prepare(sql).bind(version).run()
 }
 
-async function get_next_version(db: D1Database): Promise<string> {
+async function get_next_version(db: D1DatabaseSession): Promise<string> {
 	const current_version = await get_version(db)
 
 	// Any data update only ever bumps the patch version number.

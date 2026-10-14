@@ -1,4 +1,4 @@
-import { PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$env/static/public'
+import { PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { create_sources_client, create_targets_client } from '@tabitha/api-client'
 import { BRIEF_HEADINGS_ENGLISH } from './lookups'
 import { read_ndjson_stream } from './ndjson'

@@ -98,9 +98,10 @@ graph TD
 | **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
 | **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows, for both Ontology's scheduled sync and the Ontology migration. |
 | **`@tabitha/ai`** | Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI. |
-| **`@tabitha/vite-config`** | Standardized configuration helpers for Vite (`vite.config.js`), SvelteKit (`svelte.config.js`), Vitest, and Playwright (`playwright.config.js`). |
+| **`@tabitha/vite-config`** | Standardized configuration helpers for Vite and SvelteKit (`vite.config.js`, which holds the SvelteKit config since SvelteKit 3), Vitest, and Playwright (`playwright.config.js`). |
+| **`@tabitha/service-worker`** | The shared service worker each PWA app registers from `src/service-worker/index.ts`: precaching plus network-first for an allowlist of GET paths. |
 | **`@tabitha/eslint-config`** | Centralized ESLint flat configuration ensuring consistent formatting and quality rules. |
-| **`@tabitha/tsconfig`** | Base TypeScript configurations (`base.json`, `svelte.json`). |
+| **`@tabitha/tsconfig`** | Base TypeScript configurations (`base.json`, `svelte.json`, and `sveltekit-app.json` for the SvelteKit apps). |
 
 ### Tooling & Scripts (`tools/` & `scripts/`)
 
@@ -342,12 +343,15 @@ Every SvelteKit app uses `@tabitha/vite-config` and `@tabitha/eslint-config` to 
   export default create_app_vite_config({ port: PORTS.editor.port })
   ```
 
-- `svelte.config.js`:
+  SvelteKit's own options (the Cloudflare adapter, version polling) are built in; pass app-specific ones as `kit`. There's no `svelte.config.js`: SvelteKit 3 reads its config from the Vite plugin.
 
-  ```javascript
-  import { create_app_svelte_config } from '@tabitha/vite-config/svelte'
+- `tsconfig.json` (the shared base holds `strict`, `types` and `include`; SvelteKit only accepts the service-worker `exclude` when it's in the app's own file, so leave that line out if the app has no worker):
 
-  export default create_app_svelte_config()
+  ```json
+  {
+  	"extends": ["$app/tsconfig", "@tabitha/tsconfig/sveltekit-app.json"],
+  	"exclude": ["src/service-worker"]
+  }
   ```
 
 - `eslint.config.js`:
@@ -375,7 +379,11 @@ Every app's favicon and PWA manifest icons are generated, not hand-drawn: a shar
    <link rel="apple-touch-icon" href="%sveltekit.assets%/icon-192.png" />
    ```
 
-4. If the app is on `@vite-pwa/sveltekit`, point its `manifest.icons` at the three generated files (see `apps/ontology/vite.config.js` for a complete example) instead of leaving `manifest: false`.
+4. If the app is installable, list the three generated files under `icons` in its `static/manifest.webmanifest` and link that from `app.html` (see `apps/ontology` for a complete example):
+
+   ```html
+   <link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+   ```
 
 Only the letter needs choosing per app — color, shape, and sizing are shared, so the same two commands work for every app added to the monorepo.
 

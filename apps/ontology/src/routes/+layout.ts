@@ -1,4 +1,4 @@
-import { browser } from '$app/environment'
+import { browser } from '$app/env'
 import type { LayoutLoad } from './$types'
 
 // Resolved once here rather than by every date-displaying component, and only ever from the browser's

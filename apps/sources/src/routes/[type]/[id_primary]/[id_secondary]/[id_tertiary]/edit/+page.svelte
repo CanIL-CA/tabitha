@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '#lib/types.js'
-	import { PUBLIC_EDITOR_API_HOST } from '$env/static/public'
+	import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken, NounListEntry } from '@tabitha/types'
 	import { Navigation } from '#lib/index.js'

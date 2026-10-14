@@ -1,4 +1,4 @@
-import { PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$env/static/public'
+import { PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { create_ontology_client, create_sources_client, create_targets_client } from '@tabitha/api-client'
 import type { ConceptExample, ConceptKey, Reference, SourceResult, TargetTextData } from '@tabitha/types'
 

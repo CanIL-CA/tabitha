@@ -1,14 +1,4 @@
 {
-	"extends": "./.svelte-kit/tsconfig.json",
-	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"sourceMap": true,
-		"strict": true,
-		"moduleResolution": "bundler"
-	}
+	"extends": ["$app/tsconfig", "@tabitha/tsconfig/sveltekit-app.json"],
+	"exclude": ["src/service-worker"]
 }

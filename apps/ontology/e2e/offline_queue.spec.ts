@@ -7,8 +7,8 @@ test('an edit made while offline is queued locally, then syncs once back online'
 	await page.goto('/protected/concept/update?concept=love-A-Verb')
 
 	// Simulate offline by failing just the submit request, rather than context.setOffline() --
-	// that also cuts off the active PWA service worker in a way that stalls page reactivity
-	// entirely (confirmed unrelated to this feature: even a plain field edit doesn't register).
+	// that also cut off the earlier PWA plugin's service worker in a way that stalled page reactivity
+	// entirely (confirmed unrelated to this feature: even a plain field edit didn't register).
 	await page.route('**/protected/concept/update/submit', route => route.abort('internetdisconnected'))
 
 	await page.locator('textarea[name="gloss"]').fill(gloss)

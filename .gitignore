@@ -6,9 +6,6 @@ node_modules
 dist
 build
 
-# vite-plugin-pwa dev-mode service worker output
-dev-dist
-
 # Paraglide i18n compiler output (see @tabitha/vite-config/paraglide)
 **/src/lib/paraglide/
 

@@ -1,4 +1,4 @@
-import { PUBLIC_TARGETS_API_HOST } from '$env/static/public'
+import { PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { create_targets_client } from '@tabitha/api-client'
 import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
 import { create_lookup_result } from '#lib/token.js'

@@ -490,30 +490,19 @@ monorepo:
 
   This `.env`/`.env.local` split is a repo convention layered on top of SvelteKit's own env
   system, which is a separate, orthogonal 2×2: static (frozen into the bundle at build/dev-server
-  start) vs. dynamic (read at request time), crossed with public (safe for client code) vs.
-  private (server-only) -- see
-  [`$env/static/private`](https://svelte.dev/docs/kit/$env-static-private),
-  [`$env/static/public`](https://svelte.dev/docs/kit/$env-static-public),
-  [`$env/dynamic/private`](https://svelte.dev/docs/kit/$env-dynamic-private), and
-  [`$env/dynamic/public`](https://svelte.dev/docs/kit/$env-dynamic-public). This monorepo mostly
-  uses the two **static** modules, but a handful of server-only values consumed inside request
-  handlers -- the AI Gateway token (`AI_GATEWAY_TOKEN`), Vertex project/location, and Aquifer API
-  credentials in `apps/copilot/src/hooks.server.ts`, `apps/copilot/src/lib/server/brief/brief.ts`,
-  and `apps/ontology/src/lib/server/semantic_search.ts`
-  -- are read via `$env/dynamic/private` instead. Nothing yet needs `$env/dynamic/public`. Which
-  of the two (public vs. private) to use is about client-bundle exposure only, and is unrelated to whether a
-  given var happens to be blank or populated in `.env` -- a var can be public and blank (e.g.
-  `PUBLIC_CORS_ALLOW_LOCALHOST`, whose correct production value genuinely is "off"), or private
-  and populated (e.g. `GOOGLE_OAUTH_CLIENT_ID`, non-sensitive but server-only, holding a real
-  value in production).
-
-  SvelteKit is moving toward a different, [explicit environment variables
-  system](https://svelte.dev/docs/kit/environment-variables) (`$app/env/private` /
-  `$app/env/public`, declared in a per-app `src/env.ts`) that will eventually replace `$env/*`
-  entirely -- but as of this writing it's still an opt-in experimental flag
-  (`kit.experimental.explicitEnvironmentVariables`) that only becomes the default in SvelteKit 3.
-  Nothing in this monorepo has opted into it; every app still uses the four modules above. Revisit
-  this section if/when that migration happens.
+  start) vs. dynamic (read when the app starts), crossed with public (safe for client code) vs.
+  private (server-only). Each app declares every var it reads in `src/env.ts`
+  ([`defineEnvVars`](https://svelte.dev/docs/kit/environment-variables), with `public: true`
+  and/or `static: true`) and imports it from `$app/env/public` or `$app/env/private`. This
+  monorepo mostly uses static vars, but a handful of server-only values consumed inside request
+  handlers -- the AI Gateway token (`AI_GATEWAY_TOKEN`), Vertex project/location, the Aquifer and
+  api.bible keys, and the scheduler token -- are dynamic, with an `optional` schema so an unset
+  one reads as `''` instead of stopping the app from starting. Nothing yet needs a public dynamic
+  var. Which of the two (public vs. private) to use is about client-bundle exposure only, and is
+  unrelated to whether a given var happens to be blank or populated in `.env` -- a var can be
+  public and blank (e.g. `PUBLIC_CORS_ALLOW_LOCALHOST`, whose correct production value genuinely
+  is "off"), or private and populated (e.g. `GOOGLE_OAUTH_CLIENT_ID`, non-sensitive but
+  server-only, holding a real value in production).
 
 Either way, a developer should be able to tell at a glance -- from the checked-in file alone,
 without needing to open a vault -- which values are actually sensitive. Every committed `.env`
@@ -523,12 +512,12 @@ follows the same two-tier skeleton, ordered from most open to most private:
 # ══════════════════════════════════════════════════════════════════════════
 # OPEN CONFIG
 # Real values, safe to commit. May be public (client-exposed) or private
-# (server-only) -- see the $env/... tag on each line for which SvelteKit
+# (server-only) -- see the $app/env/... tag on each line for which SvelteKit
 # module to import it from. Cloudflare: belongs in wrangler.jsonc's `vars`
 # block for real deployments, not a `wrangler secret`.
 # ══════════════════════════════════════════════════════════════════════════
 
-# $env/static/public -- <why this is safe to expose to the client>
+# $app/env/public (static) -- <why this is safe to expose to the client>
 PUBLIC_SOME_HOST=https://example.tabitha.bible
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -540,7 +529,7 @@ PUBLIC_SOME_HOST=https://example.tabitha.bible
 # scripts/audits/check_cloudflare.ts enforces this.
 # ══════════════════════════════════════════════════════════════════════════
 
-# $env/static/private -- <where to obtain this credential>
+# $app/env/private (static) -- <where to obtain this credential>
 SOME_SECRET=
 ```
 
@@ -548,12 +537,12 @@ SOME_SECRET=
 dynamic, doesn't matter, since public/private is purely about client-bundle exposure (see above)
 and has nothing to do with sensitivity. `SECRETS` holds everything left blank in `.env` and
 filled only in `.env.local` or the deployment's own secret store. Each var gets a one-line
-comment: for `OPEN CONFIG`, the `$env/...` module it's read through plus (when not obvious) why
+comment: for `OPEN CONFIG`, the `$app/env/...` module it's read through (marked `(static)` when
+it's a static var) plus (when not obvious) why
 that value is correct; for `SECRETS`, the module plus a link to where a developer obtains their
 own credential. `tools/*` scripts (Bun, not SvelteKit) use the same two-tier shape but skip the
-`$env/...` tags, since they read `process.env` directly rather than importing from `$env/*`. See
-`apps/ontology/.env` for a populated real-world example spanning both tiers and three of the four
-`$env` modules.
+`$app/env/...` tags, since they read `process.env` directly. See `apps/ontology/.env` for a
+populated real-world example spanning both tiers and all three kinds of var it uses.
 
 ---
 
