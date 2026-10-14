@@ -1,106 +1,101 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { Reference } from '@tabitha/types'
 
-const { get_source_data, get_secondary_ids, get_tertiary_ids, get_primary_ids } = vi.hoisted(() => ({
-	get_source_data: vi.fn(),
-	get_secondary_ids: vi.fn(),
-	get_tertiary_ids: vi.fn(),
-	get_primary_ids: vi.fn(),
-}))
+// 'Bible/Genesis/1/1' reads as type/primary/secondary/tertiary
+function verse(path: string): Reference {
+	const [type, id_primary, id_secondary, id_tertiary] = path.split('/')
+	return { type, id_primary, id_secondary, id_tertiary } as Reference
+}
 
-vi.mock('./read', () => ({
-	get_source_data,
-	get_secondary_ids,
-	get_tertiary_ids,
-	get_primary_ids,
-}))
+// A small corpus standing in for the Sources table: enough of the Bible to cross chapter, book and
+// testament boundaries, and an ordered non-Bible type with no canonical book order
+const CORPUS: Reference[] = [
+	'Bible/Genesis/1/1',
+	'Bible/Genesis/1/2',
+	'Bible/Genesis/2/1',
+	'Bible/Malachi/4/1',
+	'Bible/Malachi/4/6',
+	'Bible/Matthew/1/1',
+	'Bible/Matthew/1/2',
+	'Bible/Revelation/22/1',
+	'Bible/Revelation/22/2',
+	'Grammar Introduction/Nouns/1/1',
+	'Grammar Introduction/Nouns/3/5',
+	'Grammar Introduction/Verbs/1/1',
+	'Grammar Introduction/Adjectives/1/1',
+].map(verse)
+
+// The read layer is the database boundary, so it's replaced by one that answers from the corpus
+vi.mock('./read', () => {
+	const same = ({ a, b }: { a: string, b: string }) => a.toLowerCase() === b.toLowerCase()
+	const unique = <T>(values: T[]): T[] => [...new Set(values)]
+	return {
+		get_primary_ids: async ({ type }: { type: string }) =>
+			unique(CORPUS.filter(v => same({ a: v.type, b: type })).map(v => v.id_primary)).map(id_primary => ({ id_primary })),
+		get_secondary_ids: async ({ type, id_primary }: { type: string, id_primary: string }) =>
+			unique(CORPUS.filter(v => same({ a: v.type, b: type }) && same({ a: v.id_primary, b: id_primary })).map(v => v.id_secondary)).map(id_secondary => ({ id_secondary })),
+		get_tertiary_ids: async ({ type, id_primary, id_secondary }: { type: string, id_primary: string, id_secondary: string }) =>
+			unique(CORPUS.filter(v => same({ a: v.type, b: type }) && same({ a: v.id_primary, b: id_primary }) && v.id_secondary === id_secondary).map(v => v.id_tertiary)).map(id_tertiary => ({ id_tertiary })),
+		get_source_data: async (reference: Reference) =>
+			CORPUS.find(v => same({ a: v.type, b: reference.type }) && same({ a: v.id_primary, b: reference.id_primary }) && v.id_secondary === reference.id_secondary && v.id_tertiary === reference.id_tertiary) ?? null,
+	}
+})
 
 const { get_previous_reference, get_next_reference } = await import('./navigation')
 
 const db = {} as D1DatabaseSession
 
-beforeEach(() => {
-	vi.clearAllMocks()
-})
-
 describe('get_previous_reference', () => {
 	it('returns null when already at the very first verse of the Bible', async () => {
-		const reference: Reference = { type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' }
-
-		const result = await get_previous_reference({ db, reference })
-
-		expect(result).toBeNull()
-		expect(get_source_data).not.toHaveBeenCalled()
+		expect(await get_previous_reference({ db, reference: verse('Bible/Genesis/1/1') })).toBeNull()
 	})
 
-	it("crosses a book boundary, landing on the previous book's last chapter and verse", async () => {
-		get_secondary_ids.mockResolvedValueOnce([{ id_secondary: '1' }, { id_secondary: '4' }])
-		get_tertiary_ids.mockResolvedValueOnce([{ id_tertiary: '1' }, { id_tertiary: '6' }])
-		get_source_data.mockResolvedValueOnce({})
-
-		const reference: Reference = { type: 'Bible', id_primary: 'Matthew', id_secondary: '1', id_tertiary: '1' }
-		const result = await get_previous_reference({ db, reference })
-
-		expect(result).toEqual({ type: 'Bible', id_primary: 'Malachi', id_secondary: '4', id_tertiary: '6' })
+	it('steps back within a chapter', async () => {
+		expect(await get_previous_reference({ db, reference: verse('Bible/Genesis/1/2') })).toEqual(verse('Bible/Genesis/1/1'))
 	})
 
-	it('crosses a primary-id boundary for a non-Bible type, using get_primary_ids order', async () => {
-		get_primary_ids.mockResolvedValueOnce([
-			{ id_primary: 'Nouns' },
-			{ id_primary: 'Verbs' },
-			{ id_primary: 'Adjectives' },
-		])
-		get_secondary_ids.mockResolvedValueOnce([{ id_secondary: '1' }, { id_secondary: '3' }])
-		get_tertiary_ids.mockResolvedValueOnce([{ id_tertiary: '1' }, { id_tertiary: '5' }])
-		get_source_data.mockResolvedValueOnce({})
+	it('crosses a chapter boundary, landing on the previous chapter\'s last verse', async () => {
+		expect(await get_previous_reference({ db, reference: verse('Bible/Genesis/2/1') })).toEqual(verse('Bible/Genesis/1/2'))
+	})
 
-		const reference: Reference = { type: 'Grammar Introduction', id_primary: 'Verbs', id_secondary: '1', id_tertiary: '1' }
-		const result = await get_previous_reference({ db, reference })
+	it('crosses a book boundary, landing on the previous book\'s last chapter and verse', async () => {
+		expect(await get_previous_reference({ db, reference: verse('Bible/Matthew/1/1') })).toEqual(verse('Bible/Malachi/4/6'))
+	})
 
-		expect(result).toEqual({ type: 'Grammar Introduction', id_primary: 'Nouns', id_secondary: '3', id_tertiary: '5' })
-		expect(get_primary_ids).toHaveBeenCalledWith({ db, type: 'Grammar Introduction' })
+	it('crosses a primary-id boundary for a non-Bible type, in the order the type\'s ids are stored', async () => {
+		expect(await get_previous_reference({ db, reference: verse('Grammar Introduction/Verbs/1/1') }))
+			.toEqual(verse('Grammar Introduction/Nouns/3/5'))
+	})
+
+	it('returns null at the first primary id of a non-Bible type', async () => {
+		expect(await get_previous_reference({ db, reference: verse('Grammar Introduction/Nouns/1/1') })).toBeNull()
 	})
 })
 
 describe('get_next_reference', () => {
-	it('returns null when already at the very last verse of the Bible', async () => {
-		get_source_data.mockResolvedValueOnce(null).mockResolvedValueOnce(null)
+	it('returns null when already at the very last verse in the corpus', async () => {
+		expect(await get_next_reference({ db, reference: verse('Bible/Revelation/22/2') })).toBeNull()
+	})
 
-		const reference: Reference = { type: 'Bible', id_primary: 'Revelation', id_secondary: '22', id_tertiary: '21' }
-		const result = await get_next_reference({ db, reference })
+	it('steps forward within a chapter', async () => {
+		expect(await get_next_reference({ db, reference: verse('Bible/Genesis/1/1') })).toEqual(verse('Bible/Genesis/1/2'))
+	})
 
-		expect(result).toBeNull()
-		expect(get_source_data).toHaveBeenCalledTimes(2)
+	it('crosses a chapter boundary to the next chapter\'s first verse', async () => {
+		expect(await get_next_reference({ db, reference: verse('Bible/Genesis/1/2') })).toEqual(verse('Bible/Genesis/2/1'))
 	})
 
 	it('crosses the Old Testament / New Testament seam from Malachi into Matthew', async () => {
-		get_source_data
-			.mockResolvedValueOnce(null) // Malachi 4:7 doesn't exist
-			.mockResolvedValueOnce(null) // Malachi 5:1 doesn't exist
-			.mockResolvedValueOnce({}) // Matthew 1:1 exists
-
-		const reference: Reference = { type: 'Bible', id_primary: 'Malachi', id_secondary: '4', id_tertiary: '6' }
-		const result = await get_next_reference({ db, reference })
-
-		expect(result).toEqual({ type: 'Bible', id_primary: 'Matthew', id_secondary: '1', id_tertiary: '1' })
+		expect(await get_next_reference({ db, reference: verse('Bible/Malachi/4/6') })).toEqual(verse('Bible/Matthew/1/1'))
 	})
 
-	it('crosses a primary-id boundary for a non-Bible type, using get_primary_ids order', async () => {
-		get_source_data
-			.mockResolvedValueOnce(null) // Nouns 3:6 doesn't exist
-			.mockResolvedValueOnce(null) // Nouns 4:1 doesn't exist
-			.mockResolvedValueOnce({}) // Verbs 1:1 exists
-		get_primary_ids.mockResolvedValueOnce([
-			{ id_primary: 'Nouns' },
-			{ id_primary: 'Verbs' },
-			{ id_primary: 'Adjectives' },
-		])
+	it('crosses a primary-id boundary for a non-Bible type, in the order the type\'s ids are stored', async () => {
+		expect(await get_next_reference({ db, reference: verse('Grammar Introduction/Nouns/3/5') }))
+			.toEqual(verse('Grammar Introduction/Verbs/1/1'))
+	})
 
-		const reference: Reference = { type: 'Grammar Introduction', id_primary: 'Nouns', id_secondary: '3', id_tertiary: '5' }
-		const result = await get_next_reference({ db, reference })
-
-		expect(result).toEqual({ type: 'Grammar Introduction', id_primary: 'Verbs', id_secondary: '1', id_tertiary: '1' })
-		expect(get_primary_ids).toHaveBeenCalledWith({ db, type: 'Grammar Introduction' })
+	it('returns null at the last primary id of a non-Bible type', async () => {
+		expect(await get_next_reference({ db, reference: verse('Grammar Introduction/Adjectives/1/1') })).toBeNull()
 	})
 })

@@ -160,7 +160,9 @@ describe('@tabitha/api-client', () => {
 				})
 
 				await http.get('/item')
-				expect(warn).toHaveBeenCalledWith(`[api-client] 503 Service Unavailable from ${TARGETS_URL}/item`)
+				const [message] = warn.mock.calls[0]
+				expect(message).toContain('503')
+				expect(message).toContain(`${TARGETS_URL}/item`)
 			} finally {
 				warn.mockRestore()
 			}

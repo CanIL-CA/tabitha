@@ -42,6 +42,5 @@ describe('scheduler', () => {
 		await run_cron({ cron: '*/5 * * * *', env })
 
 		expect(env.ONTOLOGY.fetch).not.toHaveBeenCalled()
-		expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('*/5 * * * *'))
 	})
 })

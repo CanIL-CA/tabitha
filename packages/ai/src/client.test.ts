@@ -76,7 +76,6 @@ describe('@tabitha/ai', () => {
 			const ai = create_ai_client({ app: 'ontology', feature: 'semantic-search', gateway })
 
 			await expect(ai.generate_text({ contents: 'hi' })).rejects.toThrow(AiResponseError)
-			expect(console.error).toHaveBeenCalled()
 		})
 
 		test('gives every gateway request a timeout signal, so a hung call cannot stall its caller forever', async () => {

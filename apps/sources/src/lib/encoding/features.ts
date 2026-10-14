@@ -54,7 +54,7 @@ export async function load_target_feature_map(project: string): Promise<FeatureM
 function by_feature_name(category_entry: [EncodingEntityCategory, DbFeature[]]): [EncodingEntityCategory, FeatureInfo[]] {
 	const [category, features] = category_entry
 	const infos = [...Map.groupBy(features, ({ feature }) => feature).entries()]
-		.toSorted(([, db_features]) => db_features[0].position)
+		.toSorted(([, a_features], [, b_features]) => a_features[0].position - b_features[0].position)
 		.map(([name, db_features]) => ({ name, values: db_features }))
 	return [category, infos]
 }
