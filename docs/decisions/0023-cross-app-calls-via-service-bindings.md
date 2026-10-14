@@ -8,7 +8,7 @@ Accepted. Amends [0020](./0020-per-pr-worker-previews.md) and replaces [0015](./
 
 Every app rate limits by client IP: 60 requests per 60 seconds, keyed on `getClientAddress()`, which reads `cf-connecting-ip`. When an app's Worker calls a sibling's public host (`targets.tabitha.bible`), the request goes out through Cloudflare's edge. On 2026-10-14, zone analytics for `targets.tabitha.bible` over three days showed about 28,000 requests from users in Canada, the US and the Philippines, all with client IP `2a06:98c0:3600::103`. That's the address Cloudflare documents for Worker subrequests between zones. Browser IPs made up only a few hundred requests. So every user of `editor` (and `copilot`, `sources` and `ontology`) shared one 60-request-per-minute limit on each sibling. The editor's Worker logged 68 `[api-client] 429` warnings in the week before #195, when a long passage made about 250 lookups per check.
 
-#195 batched the editor's lookups (about 2 requests per check), which hides the problem for now. The shared limit still caps all users together, at about 15 editor checks a minute.
+PR #195 batched the editor's lookups (about 2 requests per check), which hides the problem for now. The shared limit still caps all users together, at about 15 editor checks a minute.
 
 ADR 0015 rejected service bindings, but for reasons that were specific to previews:
 
