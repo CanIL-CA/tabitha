@@ -5,14 +5,24 @@ import { create_lookup_result } from '#lib/token.js'
 import type { Token, LookupResult } from '#lib/types.js'
 import type { TargetFormResult, PartOfSpeech } from '@tabitha/types'
 
-const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST, cache: true })
+const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST })
 
-export async function check_forms(lookup_token: Token) {
+// Looks up every token's form in one request, rather than one request per token
+export async function check_forms(lookup_tokens: Token[]) {
 	// At this point there is always just one lookup term
 	// The term is expected to have no sense attached to it
+	const words = [...new Set(lookup_tokens.map(lookup_token => lookup_token.lookup_terms[0]))]
+	const forms_by_word = words.length ? await targets_client.lookup_forms_batch({ words, project: 'English' }) : {}
+
+	for (const lookup_token of lookup_tokens) {
+		apply_form_results({ lookup_token, form_results: forms_by_word[lookup_token.lookup_terms[0]] ?? [] })
+	}
+}
+
+function apply_form_results({ lookup_token, form_results }: { lookup_token: Token, form_results: TargetFormResult[] }) {
 	const term = lookup_token.lookup_terms[0]
 
-	const lookup_results = (await targets_client.lookup_forms({ word: term, project: 'English' }))
+	const lookup_results = form_results
 		.filter(result => !result.stem.includes(' '))
 		.reduce<LookupResult[]>(transform_results, [])
 

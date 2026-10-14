@@ -8,7 +8,7 @@ describe('lookups module', () => {
 	beforeEach(() => {
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
 			ok: true,
-			json: async () => [],
+			json: async () => ({}),
 		}))
 	})
 
@@ -54,8 +54,8 @@ describe('removing results that are only in the English lexicon', () => {
 		vi.unstubAllGlobals()
 	})
 
-	function stub_ontology_search(results: object[]) {
-		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => results }))
+	function stub_ontology_search({ term, results }: { term: string, results: object[] }) {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ [term]: results }) }))
 	}
 
 	function lookup_sentence_with(token: Token): Sentence[] {
@@ -63,7 +63,7 @@ describe('removing results that are only in the English lexicon', () => {
 	}
 
 	test('a lexicon-only part of speech is removed when the word is in the Ontology: God gives life to all people. (cf. Acts 17:25)', async () => {
-		stub_ontology_search([life_noun_in_ontology])
+		stub_ontology_search({ term: 'life', results: [life_noun_in_ontology] })
 		const life_token = create_lookup_token_for_test({ token: 'life', lookup_terms: ['life'], lookup_results: [
 			lookup_result_for_test({ stem: 'life', sense: '', part_of_speech: 'Noun', ontology_status: 'unknown' }),
 			lookup_result_for_test({ stem: 'life', sense: '', part_of_speech: 'Adjective', ontology_status: 'unknown' }),
@@ -74,7 +74,7 @@ describe('removing results that are only in the English lexicon', () => {
 		expect(life_token.lookup_results.map(result => `${result.stem}-${result.sense} ${result.part_of_speech}`)).toEqual(['life-A Noun'])
 	})
 	test('lexicon results are kept when the word is not in the Ontology at all: Peter looked intently at him. (cf. Acts 3:4)', async () => {
-		stub_ontology_search([])
+		stub_ontology_search({ term: 'intently', results: [] })
 		const intently_token = create_lookup_token_for_test({ token: 'intently', lookup_terms: ['intently'], lookup_results: [
 			lookup_result_for_test({ stem: 'intently', sense: '', part_of_speech: 'Adverb', ontology_status: 'unknown' }),
 		] })
