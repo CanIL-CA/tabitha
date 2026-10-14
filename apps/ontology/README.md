@@ -15,6 +15,9 @@
     - `scope` (`stems` | `glosses` | `all`, optional, default `stems`) — Search scope.
     - `category` (`string`, optional) — Filter by grammatical category.
   - **Example:** `/search?q=love&scope=all`
+- `POST /search` — Searches stems for many terms in one request, for callers checking a whole passage.
+  - **Body:** `{ "terms": string[] }` (at most 1000). Terms match stems exactly, case-insensitive, with no wildcards or senses.
+  - **Response:** each requested term mapped to its concepts, e.g. `{ "love": [...] }`.
 
 ### 2. Simplification Hints API
 

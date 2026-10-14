@@ -84,6 +84,9 @@ tracking. That difference is intentional, not an inconsistency.
 - `GET /[project]/lookup/forms?word={word}` — Look up lexical stem matches and inflected forms.
   - **Query Params:** `word` (`string`, required) — Word or pattern (supports wildcards `*`, `#`, `%`).
   - **Example:** `/English/lookup/forms?word=followed`
+- `POST /[project]/lookup/forms` — Look up the forms of many words in one request, for callers checking a whole passage.
+  - **Body:** `{ "words": string[] }` (at most 1000). Words match exactly, case-insensitive, with no wildcards.
+  - **Response:** each requested word mapped to its forms, e.g. `{ "followed": [...] }`.
 
 ---
 

@@ -37,6 +37,14 @@ export function create_ontology_client(options: OntologyClientOptions) {
 		},
 
 		/**
+		 * Search concepts for many stems in one request, keyed by each requested term.
+		 * Terms match stems exactly (case-insensitive), without wildcards or senses.
+		 */
+		async search_concepts_batch({ terms }: { terms: string[] }): Promise<Record<string, OntologyResult[]>> {
+			return await http.post<Record<string, OntologyResult[]>>('/search', { terms }) ?? {}
+		},
+
+		/**
 		 * Look up a single concept by its stem, sense, and optional part of speech.
 		 */
 		async get_concept({ stem, sense, part_of_speech }: ConceptKey): Promise<OntologyResult | null> {

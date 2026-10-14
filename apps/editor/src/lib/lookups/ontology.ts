@@ -5,11 +5,19 @@ import { create_lookup_result } from '#lib/token.js'
 import type { Token, LookupResult } from '#lib/types.js'
 import type { OntologyResult } from '@tabitha/types'
 
-const ontology_client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST, cache: true })
+const ontology_client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST })
 
-export async function check_ontology(lookup_token: Token) {
-	const results = (await Promise.all(lookup_token.lookup_terms.map(term => ontology_client.search_concepts({ q: term })))).flat()
+// Searches every token's terms in one request, rather than one request per term
+export async function check_ontology(lookup_tokens: Token[]) {
+	const terms = [...new Set(lookup_tokens.flatMap(lookup_token => lookup_token.lookup_terms))]
+	const results_by_term = terms.length ? await ontology_client.search_concepts_batch({ terms }) : {}
 
+	for (const lookup_token of lookup_tokens) {
+		apply_ontology_results({ lookup_token, results: lookup_token.lookup_terms.flatMap(term => results_by_term[term] ?? []) })
+	}
+}
+
+function apply_ontology_results({ lookup_token, results }: { lookup_token: Token, results: OntologyResult[] }) {
 	const found_results = results.reduce<LookupResult[]>(transform_results, [])
 	const not_found_results = lookup_token.lookup_results.filter(lookup => !results.some(LOOKUP_FILTERS.MATCHES_LOOKUP(lookup)))
 	lookup_token.lookup_results = found_results.concat(not_found_results)

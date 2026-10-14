@@ -38,10 +38,41 @@ export async function get_concepts_by_keys({ db, keys }: { db: D1DatabaseSession
 	return merge_how_to_results({ concepts: concept_rows.map(transform), how_to_results })
 }
 
+// D1 rejects a statement with more than 100 bound parameters
+const MAX_STEMS_PER_QUERY = 100
+
+/**
+ * Exact, case-insensitive lookup of every concept -- ontology entries and how-to-only ones -- for
+ * many stems at once. Unlike get_concepts, there are no wildcards, senses, or pending changes.
+ */
+export async function get_concepts_by_stems({ db, stems }: { db: D1DatabaseSession, stems: string[] }): Promise<Concept[]> {
+	const unique_stems = [...new Set(stems.map(stem => stem.toLowerCase()))]
+	const stem_chunks = Array.from(
+		{ length: Math.ceil(unique_stems.length / MAX_STEMS_PER_QUERY) },
+		(_, index) => unique_stems.slice(index * MAX_STEMS_PER_QUERY, (index + 1) * MAX_STEMS_PER_QUERY),
+	)
+
+	const [concept_rows, how_to_results] = await Promise.all([
+		Promise.all(stem_chunks.map(chunk_stems => select_by_stems<DbRowConcept>({ sql: `SELECT * FROM Concepts WHERE lower(stem) IN (${placeholders(chunk_stems)}) ORDER BY id`, stems: chunk_stems }))),
+		Promise.all(stem_chunks.map(chunk_stems => select_by_stems<SimplificationHint>({ sql: `SELECT * FROM Complex_Terms WHERE lower(stem) IN (${placeholders(chunk_stems)})`, stems: chunk_stems }))),
+	])
+
+	return merge_how_to_results({ concepts: concept_rows.flat().map(transform), how_to_results: how_to_results.flat() })
+
+	function placeholders(chunk_stems: string[]): string {
+		return chunk_stems.map(() => '?').join(', ')
+	}
+
+	async function select_by_stems<T>({ sql, stems }: { sql: string, stems: string[] }): Promise<T[]> {
+		const { results } = await db.prepare(sql).bind(...stems).all<T>()
+		return results
+	}
+}
+
 /**
  * case-insensitive match, will accept % as a wildcard as well as sense-specific search, e.g., love-A
  */
-export const get_concepts = (db: D1DatabaseSession) => async (concept_filter: ConceptSearchFilter): Promise<Concept[]> => {
+export const get_concepts =(db: D1DatabaseSession) => async (concept_filter: ConceptSearchFilter): Promise<Concept[]> => {
 	const query_builder = build_concept_query({ db, table: 'Concepts' })
 
 	if (concept_filter.category && concept_filter.category !== 'all') {

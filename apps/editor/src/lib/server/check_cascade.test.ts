@@ -54,11 +54,11 @@ function lookup_forms(word: string): Partial<TargetFormResult>[] {
 }
 
 beforeAll(() => {
-	vi.stubGlobal('fetch', async (input: string | URL | Request) => {
-		const url = new URL(input instanceof Request ? input.url : input.toString())
-		const search_query = url.searchParams.get('q')
-		const form_word = url.searchParams.get('word')
-		return Response.json(search_query !== null ? search_ontology(search_query) : lookup_forms(form_word ?? ''))
+	vi.stubGlobal('fetch', async (_input: string | URL | Request, init?: RequestInit) => {
+		const { terms, words }: { terms?: string[]; words?: string[] } = JSON.parse(String(init?.body))
+		return Response.json(terms
+			? Object.fromEntries(terms.map(term => [term, search_ontology(term)]))
+			: Object.fromEntries((words ?? []).map(word => [word, lookup_forms(word)])))
 	})
 })
 

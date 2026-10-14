@@ -50,5 +50,13 @@ export function create_targets_client(options: TargetsClientOptions) {
 		async lookup_forms({ word, project }: { word: string, project: string }): Promise<TargetFormResult[]> {
 			return await http.get<TargetFormResult[]>(`/${project}/lookup/forms?word=${encodeURIComponent(word)}`) ?? []
 		},
+
+		/**
+		 * Look up the lexical forms of many words in one request, keyed by each requested word.
+		 * Words match exactly (case-insensitive), without wildcards.
+		 */
+		async lookup_forms_batch({ words, project }: { words: string[], project: string }): Promise<Record<string, TargetFormResult[]>> {
+			return await http.post<Record<string, TargetFormResult[]>>(`/${project}/lookup/forms`, { words }) ?? {}
+		},
 	}
 }
