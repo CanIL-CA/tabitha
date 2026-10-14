@@ -17,7 +17,7 @@ function stub_services({ verses, encoded_verses = [], api_bible_status = 200 }: 
 	readonly api_bible_status?: number
 }) {
 	vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
-		if (input.startsWith(SOURCES_HOST)) {
+		if (new URL(input).origin === new URL(SOURCES_HOST).origin) {
 			const references: Reference[] = JSON.parse(init?.body as string)
 			return Response.json(references.map(reference => ({ reference, has_encoding: encoded_verses.includes(reference.id_tertiary) })))
 		}
