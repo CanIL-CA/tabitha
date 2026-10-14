@@ -8,9 +8,10 @@
 	import InsertEntityContextMenu from './InsertEntityContextMenu.svelte'
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
 	import { structure_entities } from '#lib/encoding/structured.js'
-	import { view_settings, set_settings } from '#lib/settings/settings.svelte.js'
 	import { entity_clipboard } from './clipboard.svelte'
 	import { get_edit_history } from './history.svelte'
+	import { EntityDrag } from './entity_drag.svelte'
+	import { get_insert_position, summarize_dragged_range, type EntityDrop } from './drag_positions'
 	import type { PageSourceEntity } from '#lib/types.js'
 	import type { EntityContextMenuData } from '#lib/edit/types.js'
 
@@ -33,15 +34,19 @@
 				: [selected_entity.id, selected_entity.id],
 	)
 
-	let entity_highlights: string[] = $derived(source_entities.map((_, i) => {
-		if (hover_range && i >= hover_range[0] && i <= hover_range[1]) {
-			return 'bg-base-300'
-		}
-		if (select_range && i >= select_range[0] && i <= select_range[1]) {
-			return 'bg-neutral-content'
-		}
-		return ''
-	}))
+	const ENTITY_STATE_CLASSES = {
+		hover: 'bg-base-300',
+		selected: 'bg-neutral-content',
+		dragging: 'bg-neutral-content opacity-40',
+		idle: '',
+	} as const
+
+	function get_entity_state({ i, range_check }: { i: number, range_check: (arg: { i: number, range: IndexRange | null }) => boolean }): keyof typeof ENTITY_STATE_CLASSES {
+		if (range_check({ i, range: drag_range })) return 'dragging'
+		if (range_check({ i, range: hover_range })) return 'hover'
+		if (range_check({ i, range: select_range })) return 'selected'
+		return 'idle'
+	}
 
 	const component_filters: [(entity: PageSourceEntity) => boolean, typeof Concept][] = [
 		[is_boundary_start, BoundaryStart],
@@ -49,6 +54,10 @@
 		[({ concept }) => !!concept, Concept],
 		[() => true, Punctuation],
 	]
+
+	function get_entity_component(entity: PageSourceEntity) {
+		return component_filters.find(([filter]) => filter(entity))?.[1] ?? Punctuation
+	}
 
 	let toolbar_entity_id = $state<number | null>(null)
 	$effect(() => {
@@ -94,11 +103,18 @@
 		insert_context_menu_data.entity_id = -1
 	}
 
-	function insert_button_in_range({ i, range }: { i: number, range: IndexRange|null }) {
-		return !!range?.length && (i > range[0] && i <= range[range.length - 1])
+	function insert_button_mouseover(i: number) {
+		if (entity_in_range({ i, range: drag_range })) return
+
+		// look at the parent of the entity in the insert slot, because the insert button is like a single entity within that parent
+		const parent_id = source_entities[i].parent_id
+		hover_range = parent_id === -1 ? null : get_boundary_range(parent_id)
+		toolbar_entity_id = null
 	}
 
 	function entity_mouseover(i: number) {
+		if (entity_in_range({ i, range: drag_range })) return
+
 		hover_range = get_boundary_range(i)
 
 		if (toolbar_entity_id !== i) {
@@ -149,45 +165,57 @@
 		}
 	}
 
-	let dragged_entity = $state<number | null>(null)
-	let previous_popup_setting = $state(false)
-
-	function drag_entity(i: number) {
-		dragged_entity = i
-
-		// temporarily hide any hover popup so that the ghost drag item doesn't include it
-		previous_popup_setting = view_settings.show_hover_popups
-		set_settings({ show_hover_popups: false })
-
-		toolbar_entity_id = null
+	function on_entity_drag({ e, i }: { e: PointerEvent, i: number }) {
+		const drag_index = is_boundary_end(source_entities[i]) ? source_entities[i].parent_id : i
+		entity_drag.press({ event: e, index: drag_index })
 	}
 
-	function paste_entity(i: number) {
-		if (dragged_entity === null) {
-			return
-		}
+	const entity_drag = new EntityDrag({
+		get_range_length: get_action_range_length,
+		on_drop: move_entities,
+	})
 
-		const range_length = get_action_range_length(dragged_entity)
-		const insert_pos = get_insert_position({ drop_index: i, drag_index: dragged_entity, range_length })
+	let drag_range = $derived<IndexRange | null>(entity_drag.active && [
+		entity_drag.active.drag_index,
+		entity_drag.active.drag_index + entity_drag.active.range_length - 1,
+	])
+
+	let drag_ghost = $derived(entity_drag.active && summarize_dragged_range({
+		entities: source_entities.slice(entity_drag.active.drag_index, entity_drag.active.drag_index + entity_drag.active.range_length),
+	}))
+
+	function entity_in_range({ i, range }: { i: number, range: IndexRange | null }) {
+		return !!range && i >= range[0] && i <= range[1]
+	}
+
+	function insert_button_in_range({ i, range }: { i: number, range: IndexRange | null }) {
+		return !!range && i > range[0] && i <= range[1]
+	}
+
+	const INSERT_BUTTON_STATE_CLASSES = {
+		drop_target: 'btn-accent opacity-100 scale-125 shadow-md',
+		menu_open: 'btn-primary opacity-100',
+		dragging_elsewhere: 'btn-primary opacity-0',
+		idle: 'btn-primary opacity-0 focus:opacity-100 hover:opacity-100',
+	} as const
+
+	function get_insert_button_state(i: number): keyof typeof INSERT_BUTTON_STATE_CLASSES {
+		if (entity_drag.drop_slot === i) return 'drop_target'
+		if (entity_drag.active) return 'dragging_elsewhere'
+		if (insert_context_menu_data.entity_id === i) return 'menu_open'
+		return 'idle'
+	}
+
+	// actions
+
+	function move_entities({ drag_index, range_length, slot }: EntityDrop) {
+		const insert_position = get_insert_position({ drag_index, range_length, slot })
 		edit_history().record()
-		const entities = source_entities.splice(dragged_entity, range_length)
-		source_entities.splice(insert_pos, 0, ...entities)
+		const moved_entities = source_entities.splice(drag_index, range_length)
+		source_entities.splice(insert_position, 0, ...moved_entities)
 
 		structure_entities(source_entities)
-		select_entity(insert_pos)
-
-		dragged_entity = null
-		set_settings({ show_hover_popups: previous_popup_setting })
-
-		function get_insert_position({ drop_index, drag_index, range_length }: { drop_index: number, drag_index: number, range_length: number }) {
-			if (drop_index < drag_index) {
-				return drop_index
-			} else if (drop_index < drag_index + range_length) {
-				return drag_index
-			} else {
-				return drop_index - range_length
-			}
-		}
+		select_entity(insert_position)
 	}
 
 	function copy_entity(i: number) {
@@ -213,25 +241,31 @@
 </script>
 
 {#snippet insert_button(i: number)}
-	{@const opacity_classes = insert_context_menu_data.entity_id === i ? 'opacity-100' : 'opacity-0 focus:opacity-100 hover:opacity-100'}
 	<button
 		onclick={e => open_insert_context_menu({ event: e, entity_id: i })}
 		onkeydown={e => e.key === 'Enter' && open_insert_context_menu({ event: e, entity_id: i })}
-		ondragover={e => e.preventDefault()}
-		ondrop={() => paste_entity(i)}
 		aria-label="Insert Constituent"
-		class="btn btn-xs btn-primary mt-4 h-12 w-4 text-lg {opacity_classes} transition-opacity duration-150"
+		class="btn btn-xs mt-4 h-12 w-4 text-lg {INSERT_BUTTON_STATE_CLASSES[get_insert_button_state(i)]} transition-[opacity,scale] duration-150"
 	>
 		+
 	</button>
 {/snippet}
 
-<div class="inline-flex flex-wrap py-3">
+{#snippet entity_component(entity: PageSourceEntity)}
+	{@const Component = get_entity_component(entity)}
+	<Component source_entity={entity} />
+{/snippet}
+
+<div class="inline-flex flex-wrap py-3 {entity_drag.active ? 'select-none cursor-grabbing **:cursor-grabbing [&_.dropdown-content]:hidden!' : ''}">
 	{#each source_entities as entity}
 		{@const i = entity.id}
-		{@const Component = component_filters.find(([filter]) => filter(entity))?.[1]}
 
-		<div class="{insert_button_in_range({ i, range: hover_range }) || insert_button_in_range({ i, range: select_range }) ? entity_highlights[i] : ''}">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			data-drop-slot={i}
+			onmouseenter={() => insert_button_mouseover(i)}
+			class="{ENTITY_STATE_CLASSES[get_entity_state({ i, range_check: insert_button_in_range })]} z-10"
+		>
 			{@render insert_button(i)}
 		</div>
 
@@ -239,22 +273,21 @@
 			<div
 				role="button"
 				tabindex="0"
-				draggable="true"
+				data-entity-index={i}
 				onclick={() => entity_focus(i)}
 				onkeydown={e => (e.key === 'Enter' || e.key === ' ') && entity_focus(i)}
 				onmouseenter={() => entity_mouseover(i)}
 				onfocus={() => entity_focus(i)}
 				onmouseleave={entity_mouseout}
 				onblur={() => {}}
-				ondragstart={() => drag_entity(i)}
-				ondragover={e => e.preventDefault()}
-				ondrop={() => paste_entity(i)}
-				class="id-{i} cursor-pointer content-center h-20 {entity_highlights[i]}"
+				onpointerdown={e => on_entity_drag({ e, i })}
+				ondragstart={e => e.preventDefault()}
+				class="id-{i} cursor-pointer content-center h-20 {ENTITY_STATE_CLASSES[get_entity_state({ i, range_check: entity_in_range })]} transition-opacity"
 			>
-				<Component source_entity={entity} />
+				{@render entity_component(entity)}
 			</div>
 
-			{#if toolbar_entity_id === i}
+			{#if toolbar_entity_id === i && !entity_drag.active}
 				{#snippet toolbar_item(action: () => void, icon: string, color: string = '')}
 					<li>
 						<button onclick={action} class="p-0">
@@ -264,7 +297,7 @@
 				{/snippet}
 				<ul
 					out:fade={{ duration: 150 }}
-					class="menu menu-horizontal flex-nowrap shadow-lg inset-shadow-sm bg-base-100 rounded-box p-0 absolute left-[65%] top-[-8px] z-40"
+					class="menu menu-horizontal flex-nowrap shadow-lg inset-shadow-sm bg-base-100 rounded-box p-0 absolute left-[65%] -top-2 z-40"
 				>
 					{@render toolbar_item(() => copy_entity(i), 'material-symbols:content-copy-outline')}
 					{@render toolbar_item(() => delete_entity(i), 'material-symbols:delete-outline-rounded', 'text-error')}
@@ -273,9 +306,27 @@
 		</div>
 	{/each}
 
-	<div>
+	<div data-drop-slot={source_entities.length}>
 		{@render insert_button(source_entities.length)}
 	</div>
+
+	{#if drag_ghost && entity_drag.ghost_position}
+		<div
+			aria-hidden="true"
+			style:transform="translate({entity_drag.ghost_position.x}px, {entity_drag.ghost_position.y}px)"
+			class="fixed top-0 left-0 z-50 pointer-events-none flex items-center h-18 px-2 rounded-box border-2 border-base-content/50 bg-base-100 shadow-xl"
+		>
+			{#each drag_ghost.shown_entities as ghost_entity (ghost_entity.id)}
+				{@render entity_component(ghost_entity)}
+			{/each}
+			{#if drag_ghost.hidden_count > 0}
+				<span class="badge badge-neutral badge-sm ms-1">+{drag_ghost.hidden_count}</span>
+			{/if}
+			{#if drag_ghost.closing_entity}
+				{@render entity_component(drag_ghost.closing_entity)}
+			{/if}
+		</div>
+	{/if}
 
 	{#if insert_context_menu_data.is_open}
 		<InsertEntityContextMenu
