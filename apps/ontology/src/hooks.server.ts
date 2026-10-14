@@ -3,7 +3,6 @@ import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE
 import { building } from '$app/env'
 import { get_user_info } from '#lib/server/auth.js'
 import { create_auth, type Auth } from '#lib/server/better_auth.js'
-import { resolve_redirect_proxy_url } from '#lib/server/redirect_proxy.js'
 import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
 import { noindex_handle } from '@tabitha/noindex'
@@ -53,7 +52,7 @@ function get_auth(): Auth {
 		secret: env.BETTER_AUTH_SECRET || BETTER_AUTH_SECRET,
 		google_client_id: env.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID,
 		google_client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT_SECRET,
-		oauth_proxy_url: resolve_redirect_proxy_url({ runtime: env.OAUTH_REDIRECT_PROXY_URL, build: OAUTH_REDIRECT_PROXY_URL }),
+		oauth_proxy_url: OAUTH_REDIRECT_PROXY_URL || undefined,
 	})
 
 	return auth

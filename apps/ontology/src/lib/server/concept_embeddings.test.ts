@@ -216,10 +216,11 @@ describe('sync_concept_embeddings', () => {
 	it('clears more unsearchable concepts than Vectorize accepts in one delete call', async () => {
 		const index = create_fake_index()
 		const proper_names = Array.from({ length: 150 }, (_, i) => make_concept({ stem: `Name${i}`, gloss: '(proper name) a person' }))
+		for (const { stem } of proper_names) index.vectors.set(`${stem}-A-Verb`, { id: `${stem}-A-Verb`, values: [0.1] })
 
 		await sync_concept_embeddings({ concepts: proper_names, index, embedder: create_fake_embedder() })
 
-		expect(index.deleteByIds).toHaveBeenCalledTimes(2)
+		expect(index.vectors.size).toBe(0)
 	})
 
 	it('leaves a concept whose embedding failed unindexed, so the next run retries it', async () => {
@@ -246,8 +247,8 @@ describe('sync_concept_embeddings', () => {
 
 		await sync_concept_embeddings({ concepts: [make_concept({ stem: 'x'.repeat(80) })], index, embedder })
 
+		expect(index.vectors.size).toBe(0)
 		expect(embedder.embed_text).not.toHaveBeenCalled()
-		expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('64-byte'))
 	})
 })
 

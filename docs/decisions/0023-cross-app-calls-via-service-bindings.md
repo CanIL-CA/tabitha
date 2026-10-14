@@ -56,4 +56,4 @@ A local experiment (two Workers under `wrangler dev` 4.149, plus `getPlatformPro
 - ⚠️ A sibling no longer limits calls that arrive through a binding. If a calling app fans one user request out into many sibling calls, the caller's limit is the only guard.
 - ⚠️ Local dev uses HTTP while production uses the binding, so a binding-only failure shows up first in a Preview. A Preview's binding reaches production siblings, so it can't show a change to a sibling's contract either. Those still need a local run (ADR 0020).
 - Not yet confirmed in production: that the deployed runtime, like `wrangler dev`, adds no `cf-connecting-ip` to a binding call. The first Preview from this change should show it, through the sibling's own logs.
-- ADR 0020's runtime `previews.vars` for `OAUTH_REDIRECT_PROXY_URL` was a workaround for `.env.local` being baked into Previews. It's harmless now, but no longer needed.
+- ADR 0020's runtime `previews.vars` entry for `OAUTH_REDIRECT_PROXY_URL` was a workaround for `.env.local` being baked into Previews. It's removed: a Preview now takes the value from the committed `.env`, as production does.

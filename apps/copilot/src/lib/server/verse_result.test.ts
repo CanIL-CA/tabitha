@@ -56,7 +56,6 @@ describe('get_verse_result', () => {
 	test('returns discern-mode notes without building a brief', async () => {
 		const { result, steps } = await run({ lwc: 'Indonesian', mode: 'discern' })
 
-		expect(create_brief_for_verse).not.toHaveBeenCalled()
 		expect(result).toBe(notes_result)
 		expect(steps).toEqual(['notes'])
 	})

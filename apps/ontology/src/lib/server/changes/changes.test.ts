@@ -1,46 +1,54 @@
-import { describe, expect, it, vi } from 'vitest'
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
+import { describe, expect, it } from 'vitest'
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { OntologyChange, ConceptCreateData, OntologyUser } from '#lib/types.js'
+import { apply_change_directly, approve_change, can_approve_change, suggest_change } from './changes'
 
-vi.mock('./concepts', () => ({
-	create_concept: vi.fn().mockResolvedValue(undefined),
-	update_concept: vi.fn().mockResolvedValue(undefined),
-	get_concept_for_update: vi.fn().mockResolvedValue({
-		stem: 'love',
-		sense: 'A',
-		part_of_speech: 'Verb',
-		level: '1',
-		gloss: 'old gloss',
-		brief_gloss: '',
-		categories: [],
-		curated_examples: '',
-	}),
-}))
+// The tables changes.ts and the modules it calls read and write, as they're defined in the Ontology
+// snapshots (tools/databases/snapshots), with the Version row set to what that snapshot had.
+const SCHEMA = `
+	CREATE TABLE Concepts (id INTEGER, stem TEXT, sense TEXT, part_of_speech TEXT, occurrences INTEGER, gloss TEXT, brief_gloss TEXT, note TEXT, categorization TEXT, curated_examples TEXT, level INTEGER);
+	CREATE TABLE Changes (id INTEGER PRIMARY KEY, concept_stem TEXT, concept_sense TEXT, concept_part_of_speech TEXT, action TEXT, data TEXT, suggested_by_id INTEGER, suggested_date TEXT, approved_by_id INTEGER, approved_date TEXT, applied_date TEXT, version TEXT);
+	CREATE TABLE Complex_Terms (stem TEXT, sense TEXT, part_of_speech TEXT, structure TEXT, pairing TEXT, explication TEXT, ontology_status TEXT, level INTEGER, notes TEXT);
+	CREATE TABLE Version (version TEXT);
+	INSERT INTO Version VALUES ('3.0.9500');
+	INSERT INTO Concepts VALUES (1, 'faith', 'A', 'Noun', 0, 'trust in God', '', NULL, 'o', '', 1);
+	INSERT INTO Concepts VALUES (2, 'trust', 'A', 'Noun', 0, 'rely on', '', NULL, 'o', '', 1);
+`
 
-const { apply_change_directly, suggest_change, approve_change, can_approve_change } = await import('./changes')
-const { create_concept } = await import('./concepts')
+// Wraps an in-memory SQLite database in the slice of D1's session API that the Ontology code uses
+function create_test_db(): { db: D1DatabaseSession, query: <T>(sql: string) => T[] } {
+	const sqlite = new DatabaseSync(':memory:', { enableDoubleQuotedStringLiterals: true })
+	sqlite.exec(SCHEMA)
 
-type QueuedResponse = { first?: unknown, all?: unknown[], run?: { last_row_id?: number } }
-
-// Fakes just enough of D1DatabaseSession to drive changes.ts's own queries. Callers queue responses in
-// the order changes.ts issues them.
-function make_db(responses: QueuedResponse[] = []) {
-	const statements: { bind: ReturnType<typeof vi.fn> }[] = []
-
-	const prepare = vi.fn(() => {
-		const response = responses[statements.length] ?? {}
-		const result = {
-			first: vi.fn().mockResolvedValue(response.first ?? null),
-			all: vi.fn().mockResolvedValue({ results: response.all ?? [] }),
-			run: vi.fn().mockResolvedValue({ meta: { last_row_id: response.run?.last_row_id } }),
+	function statement({ sql, params = [] }: { sql: string, params?: SQLInputValue[] }) {
+		return {
+			bind: (...bound: SQLInputValue[]) => statement({ sql, params: bound }),
+			first: async (column?: string) => {
+				const row = sqlite.prepare(sql).get(...params) as Record<string, unknown> | undefined
+				return (column && row ? row[column] : row) ?? null
+			},
+			all: async () => ({ results: sqlite.prepare(sql).all(...params) }),
+			run: async () => ({ meta: { last_row_id: Number(sqlite.prepare(sql).run(...params).lastInsertRowid) } }),
 		}
-		const bind = vi.fn().mockReturnValue(result)
-		statements.push({ bind })
-		return { ...result, bind }
-	})
+	}
 
-	return { db: { prepare } as unknown as D1DatabaseSession, statements }
+	return {
+		db: { prepare: (sql: string) => statement({ sql }) } as unknown as D1DatabaseSession,
+		query: <T>(sql: string) => sqlite.prepare(sql).all() as T[],
+	}
 }
+
+type ChangeRow = {
+	action: string
+	suggested_by_id: number | null
+	approved_by_id: number | null
+	applied_date: string | null
+	version: string | null
+}
+
+const CHANGES_SQL = 'SELECT action, suggested_by_id, approved_by_id, applied_date, version FROM Changes'
+const CONCEPT_STEMS_SQL = 'SELECT stem FROM Concepts WHERE part_of_speech = \'Noun\' ORDER BY id'
 
 function make_change(overrides: Partial<OntologyChange> = {}): OntologyChange {
 	return {
@@ -94,82 +102,76 @@ describe('can_approve_change', () => {
 	})
 })
 
-describe('suggest_change', () => {
-	const create_data: ConceptCreateData = {
-		stem: 'peace',
-		sense: 'A',
-		part_of_speech: 'Noun',
-		level: '1',
-		gloss: 'a state of calm',
-		brief_gloss: '',
-		categories: [],
-		curated_examples: '',
-	}
+const create_data: ConceptCreateData = {
+	stem: 'peace',
+	sense: 'A',
+	part_of_speech: 'Noun',
+	level: '1',
+	gloss: 'a state of calm',
+	brief_gloss: '',
+	categories: [],
+	curated_examples: '',
+}
 
+describe('suggest_change', () => {
 	it('records a suggestion, and does not apply it, when the user lacks permission', async () => {
-		const { db, statements } = make_db()
+		const { db, query } = create_test_db()
 
 		const applied = await suggest_change({ db, action: 'create', data: create_data, user })
 
 		expect(applied).toBe(false)
-		expect(create_concept).not.toHaveBeenCalled()
-		expect(statements).toHaveLength(1)
-		expect(statements[0].bind).toHaveBeenCalledWith('peace', 'A', 'Noun', expect.any(String), 'create', user.id, expect.any(String))
+		expect(query<ChangeRow>(CHANGES_SQL)).toEqual([
+			{ action: 'create', suggested_by_id: user.id, approved_by_id: null, applied_date: null, version: null },
+		])
+		expect(query<{ stem: string }>(CONCEPT_STEMS_SQL).map(({ stem }) => stem)).toEqual(['faith', 'trust'])
 	})
 })
 
 describe('apply_change_directly', () => {
-	const create_data: ConceptCreateData = {
-		stem: 'peace',
-		sense: 'A',
-		part_of_speech: 'Noun',
-		level: '1',
-		gloss: 'a state of calm',
-		brief_gloss: '',
-		categories: [],
-		curated_examples: '',
-	}
-
-	it('applies immediately when the user is authorized', async () => {
-		const { db } = make_db([
-			{ run: { last_row_id: 42 } }, // the initial INSERT
-			{ first: '3.0.9500' }, // get_next_version's SELECT
-			{}, // apply_one_change's UPDATE after a successful create_concept
-		])
+	it('applies a new concept immediately, in its sorted place, when the user is authorized', async () => {
+		const { db, query } = create_test_db()
 
 		const applied = await apply_change_directly({ db, action: 'create', data: create_data, user })
 
 		expect(applied).toBe(true)
-		expect(create_concept).toHaveBeenCalledWith({ db, data: expect.objectContaining({ stem: 'peace', gloss: 'a state of calm' }) })
+		expect(query<{ stem: string }>(CONCEPT_STEMS_SQL).map(({ stem }) => stem)).toEqual(['faith', 'peace', 'trust'])
+		expect(query<{ gloss: string }>('SELECT gloss FROM Concepts WHERE stem = \'peace\'')).toEqual([{ gloss: 'a state of calm' }])
+	})
+
+	it('records who approved the change, when it was applied, and the new version', async () => {
+		const { db, query } = create_test_db()
+
+		await apply_change_directly({ db, action: 'create', data: create_data, user })
+
+		const [change] = query<ChangeRow>(CHANGES_SQL)
+		expect(change).toMatchObject({ action: 'create', suggested_by_id: null, approved_by_id: user.id, version: '3.0.9501' })
+		expect(change.applied_date).not.toBeNull()
+		expect(query<{ version: string }>('SELECT version FROM Version')).toEqual([{ version: '3.0.9501' }])
 	})
 })
 
 describe('approve_change', () => {
-	it('records the approving user on the change', async () => {
-		const { db, statements } = make_db([
-			{}, // the UPDATE that records the approval
-			{
-				first: {
-					id: 1,
-					concept_stem: 'love',
-					concept_sense: 'A',
-					concept_part_of_speech: 'Verb',
-					data: '{}',
-					action: 'update',
-					suggested_by_id: 2,
-					suggested_date: new Date().toISOString(),
-					approved_by_id: user.id,
-					approved_date: new Date().toISOString(),
-					applied_date: null,
-					version: null,
-				},
-			}, // get_change's re-fetch
-		])
+	const suggestion = `INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date)
+		VALUES (1, 'peace', 'A', 'Noun', 'create', '{}', 2, '2026-10-01T00:00:00.000Z')`
+
+	it('records the approving user on the change, leaving it unapplied', async () => {
+		const { db, query } = create_test_db()
+		query(suggestion)
 
 		const updated = await approve_change({ db, id: 1, user })
 
-		expect(statements[0].bind).toHaveBeenCalledWith(user.id, expect.any(String), 1)
 		expect(updated.approved_by?.id).toBe(user.id)
 		expect(updated.applied_date).toBeNull()
+		expect(query<ChangeRow>(CHANGES_SQL)[0]).toMatchObject({ suggested_by_id: 2, approved_by_id: user.id })
+	})
+
+	it('keeps the first approver when a change is approved again', async () => {
+		const { db, query } = create_test_db()
+		query(suggestion)
+		await approve_change({ db, id: 1, user })
+
+		const updated = await approve_change({ db, id: 1, user: { ...user, id: 7 } })
+
+		expect(updated.approved_by?.id).toBe(user.id)
 	})
 })
