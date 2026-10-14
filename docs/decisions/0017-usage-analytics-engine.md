@@ -29,6 +29,7 @@ Events carry no user ID, IP address, cookie, or session identifier. Editor text 
 | `copilot_run` | copilot | `apps/copilot/src/routes/[book]/[chapter]/[verse]/+server.ts` (`verse`) and `[book]/[chapter]/+server.ts` (`batch`), once the stream finishes |
 | `check` | editor | `apps/editor/src/routes/check/+server.ts` |
 | `ai_assist` | editor | `apps/editor/src/routes/ai-assist/generate/+server.ts` |
+| `ai_call` | copilot, editor | One per successful Gemini call, from the `on_usage` callback each app passes to `create_ai_client` (`apps/copilot/src/hooks.server.ts`, `apps/editor/src/lib/server/ai_assist/client.ts`). Token counts and timing only, never prompt or response text |
 | `theme` | all five | Each root layout calls `report_active_theme` (`@tabitha/usage/client`), which POSTs that app's `/usage/theme` once per browser session via `navigator.sendBeacon`; `handle_theme_report` only accepts names from the shared `themes` list |
 
 Some endpoints are also called by other apps (e.g. sources' edit page calls the editor's `/check`), so API events record a `caller` from `get_request_caller`:
@@ -41,19 +42,21 @@ Some endpoints are also called by other apps (e.g. sources' edit page calls the 
 
 Analytics Engine columns are positional (`blob1`…`blob20`, `double1`…`double20`), so new fields are appended — never reordered. Every event starts with `blob1` = app and `blob2` = kind; `index1` is the kind (Analytics Engine's sampling key). Free text (queries, error messages) is trimmed and capped at 100 characters; queries are also lowercased.
 
-| Column | `search` | `theme` | `copilot_run` | `check` | `ai_assist` |
-| --- | --- | --- | --- | --- | --- |
-| `blob3` | scope | theme name | caller | caller | status (`ok`/`error`) |
-| `blob4` | filter | — | run (`verse`/`batch`) | status (`ok`/`warning`/`error`) | checker status of the output |
-| `blob5` | query | — | book | — | error message |
-| `blob6` | note | — | mode (`brief`/`discern`) | — | — |
-| `blob7` | referred by | — | LWC | — | — |
-| `blob8` | — | — | MTT level | — | — |
-| `blob9` | — | — | customized language-profile fields, comma-separated | — | — |
-| `blob10` | — | — | error message (single verse only) | — | — |
-| `double1` | result count (absent when the search hands off) | — | verses requested | errors | notes returned |
-| `double2` | — | — | verses that errored | warnings | — |
-| `double3` | — | — | sensitivity | tokens | — |
+| Column | `search` | `theme` | `copilot_run` | `check` | `ai_assist` | `ai_call` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `blob3` | scope | theme name | caller | caller | status (`ok`/`error`) | feature |
+| `blob4` | filter | — | run (`verse`/`batch`) | status (`ok`/`warning`/`error`) | checker status of the output | gateway cache status (`HIT`/`MISS`, empty when absent) |
+| `blob5` | query | — | book | — | error message | thinking level (`default` when unset) |
+| `blob6` | note | — | mode (`brief`/`discern`) | — | — | — |
+| `blob7` | referred by | — | LWC | — | — | — |
+| `blob8` | — | — | MTT level | — | — | — |
+| `blob9` | — | — | customized language-profile fields, comma-separated | — | — | — |
+| `blob10` | — | — | error message (single verse only) | — | — | — |
+| `double1` | result count (absent when the search hands off) | — | verses requested | errors | notes returned | prompt tokens |
+| `double2` | — | — | verses that errored | warnings | — | output tokens |
+| `double3` | — | — | sensitivity | tokens | — | thought tokens |
+| `double4` | — | — | — | — | — | cached prompt tokens |
+| `double5` | — | — | — | — | — | duration (ms) |
 
 Search fields per app:
 
@@ -113,6 +116,17 @@ SELECT blob3 AS status, blob4 AS check_status, SUM(_sample_interval) AS requests
 FROM tabitha_usage
 WHERE blob1 = 'editor' AND blob2 = 'ai_assist'
 GROUP BY status, check_status
+```
+
+Tokens and cache behavior per app and feature. Billed output is `double2 + double3`; `double4` is the part of the prompt Vertex served from its own cache, and `blob4` is the AI Gateway's exact-match cache status:
+
+```sql
+SELECT blob1 AS app, blob3 AS feature, blob5 AS thinking_level, SUM(_sample_interval) AS calls,
+	SUM(_sample_interval * double1) AS prompt_tokens, SUM(_sample_interval * double2) AS output_tokens,
+	SUM(_sample_interval * double3) AS thought_tokens, SUM(_sample_interval * double4) AS cached_tokens
+FROM tabitha_usage
+WHERE blob2 = 'ai_call'
+GROUP BY app, feature, thinking_level
 ```
 
 Editor checks from the editor's own UI vs. other apps:
