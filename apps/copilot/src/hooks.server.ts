@@ -4,6 +4,7 @@ import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
 import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
+import { record_usage_event } from '@tabitha/usage'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE_BINDINGS_DISABLED, PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { AI_GATEWAY_TOKEN, CLOUDFLARE_ACCOUNT_ID, GEMINI_LOCATION, GEMINI_PROJECT_ID } from '$app/env/private'
 import { paraglideMiddleware } from '#lib/paraglide/server.js'
@@ -29,6 +30,7 @@ export const init: ServerInit = async () => {
 			project: GEMINI_PROJECT_ID,
 			location: GEMINI_LOCATION,
 		},
+		on_usage: usage => record_usage_event({ dataset: env.USAGE, app: 'copilot', event: { kind: 'ai_call', ...usage } }),
 	})
 }
 

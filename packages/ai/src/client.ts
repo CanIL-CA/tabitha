@@ -1,6 +1,7 @@
 import { AiResponseError } from './errors'
 import type {
 	AiCallDefaults,
+	AiCallUsage,
 	AiClient,
 	AiGatewayConfig,
 	CreateAiClientOptions,
@@ -53,9 +54,15 @@ type VertexEmbedContentResponse = {
 
 type VertexGenerateContentResponse = {
 	candidates?: { content?: { parts?: { text?: string, thought?: boolean }[] } }[]
+	usageMetadata?: {
+		promptTokenCount?: number
+		candidatesTokenCount?: number
+		thoughtsTokenCount?: number
+		cachedContentTokenCount?: number
+	}
 }
 
-export function create_ai_client({ app, feature, gateway, defaults }: CreateAiClientOptions): AiClient {
+export function create_ai_client({ app, feature, gateway, defaults, on_usage }: CreateAiClientOptions): AiClient {
 	const url = build_gateway_url(gateway)
 
 	async function call({ contents, system_instruction, config }: {
@@ -68,7 +75,8 @@ export function create_ai_client({ app, feature, gateway, defaults }: CreateAiCl
 		// rather than forwarded into the request body.
 		const { httpOptions, ...generation_config } = config as AiCallDefaults & { httpOptions?: { headers?: Record<string, string> } }
 
-		const response = await post_to_gateway({
+		const started_at = Date.now()
+		const { json, cache_status } = await post_to_gateway({
 			url,
 			token: gateway.token,
 			app,
@@ -81,7 +89,13 @@ export function create_ai_client({ app, feature, gateway, defaults }: CreateAiCl
 			},
 		})
 
-		const text = extract_text(response as VertexGenerateContentResponse)
+		const response = json as VertexGenerateContentResponse
+		report_usage({
+			on_usage,
+			usage: to_usage({ feature, response, cache_status, thinking_level: generation_config.thinkingConfig?.thinkingLevel, duration_ms: Date.now() - started_at }),
+		})
+
+		const text = extract_text(response)
 		if (!text) {
 			throw new AiResponseError(`Empty response from model "${FIXED_MODEL}" (app "${app}", feature "${feature}")`)
 		}
@@ -130,7 +144,7 @@ export function create_embedding_client({ app, feature, gateway }: CreateEmbeddi
 	})
 
 	async function embed_text(params: EmbedTextParams): Promise<number[]> {
-		const response = await post_to_gateway({
+		const { json } = await post_to_gateway({
 			url,
 			token: gateway.token,
 			app,
@@ -140,7 +154,8 @@ export function create_embedding_client({ app, feature, gateway }: CreateEmbeddi
 				content: { parts: [{ text: format_embedding_input(params) }] },
 				outputDimensionality: EMBEDDING_DIMENSIONS,
 			},
-		}) as VertexEmbedContentResponse
+		})
+		const response = json as VertexEmbedContentResponse
 
 		const values = response.embedding?.values ?? []
 		if (values.length !== EMBEDDING_DIMENSIONS) {
@@ -172,7 +187,7 @@ type PostToGatewayOptions = {
 	readonly body: object
 }
 
-async function post_to_gateway({ url, token, app, feature, headers, body }: PostToGatewayOptions): Promise<unknown> {
+async function post_to_gateway({ url, token, app, feature, headers, body }: PostToGatewayOptions): Promise<{ json: unknown, cache_status: string }> {
 	let response: Response
 	try {
 		response = await fetch(url, {
@@ -201,7 +216,7 @@ async function post_to_gateway({ url, token, app, feature, headers, body }: Post
 
 	// The timeout signal also covers reading the body, so a stall mid-response times out here.
 	try {
-		return await response.json()
+		return { json: await response.json(), cache_status: response.headers.get('cf-aig-cache-status') ?? '' }
 	} catch (cause) {
 		throw_if_timed_out({ cause, app, feature, url })
 		throw cause
@@ -234,6 +249,38 @@ function build_model_url({ gateway, model_method }: { gateway: AiGatewayConfig, 
 	return `https://gateway.ai.cloudflare.com/v1/${gateway.account_id}/${GATEWAY_NAME}/google-vertex-ai/${VERTEX_API_VERSION}`
 		+ `/projects/${encodeURIComponent(gateway.project)}/locations/${encodeURIComponent(gateway.location)}`
 		+ `/publishers/google/models/${model_method}`
+}
+
+type ToUsageOptions = {
+	feature: string
+	response: VertexGenerateContentResponse
+	cache_status: string
+	thinking_level: string | undefined
+	duration_ms: number
+}
+
+export function to_usage({ feature, response, cache_status, thinking_level, duration_ms }: ToUsageOptions): AiCallUsage {
+	const metadata = response.usageMetadata
+
+	return {
+		feature,
+		prompt_tokens: metadata?.promptTokenCount ?? 0,
+		output_tokens: metadata?.candidatesTokenCount ?? 0,
+		thought_tokens: metadata?.thoughtsTokenCount ?? 0,
+		cached_tokens: metadata?.cachedContentTokenCount ?? 0,
+		cache_status,
+		thinking_level: thinking_level ?? 'default',
+		duration_ms,
+	}
+}
+
+// Telemetry must never break the call it observes.
+function report_usage({ on_usage, usage }: { on_usage: ((usage: AiCallUsage) => void) | undefined, usage: AiCallUsage }): void {
+	try {
+		on_usage?.(usage)
+	} catch (err) {
+		console.warn('Failed to report AI usage:', err)
+	}
 }
 
 function extract_text(response: VertexGenerateContentResponse): string {

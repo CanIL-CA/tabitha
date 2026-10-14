@@ -1,5 +1,7 @@
 import { AI_GATEWAY_TOKEN, CLOUDFLARE_ACCOUNT_ID, GEMINI_LOCATION, GEMINI_PROJECT_ID } from '$app/env/private'
 import { create_ai_client, type AiClient } from '@tabitha/ai'
+import { record_usage_event } from '@tabitha/usage'
+import { env } from 'cloudflare:workers'
 
 export function create_editor_ai_client(): AiClient {
 	return create_ai_client({
@@ -11,5 +13,6 @@ export function create_editor_ai_client(): AiClient {
 			project: GEMINI_PROJECT_ID,
 			location: GEMINI_LOCATION,
 		},
+		on_usage: usage => record_usage_event({ dataset: env.USAGE, app: 'editor', event: { kind: 'ai_call', ...usage } }),
 	})
 }

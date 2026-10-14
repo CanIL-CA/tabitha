@@ -16,6 +16,7 @@ const gateway: AiGatewayConfig = {
 function mock_response(text: string) {
 	fetch_mock.mockResolvedValue({
 		ok: true,
+		headers: new Headers(),
 		json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }),
 	})
 }
@@ -111,6 +112,7 @@ describe('@tabitha/ai', () => {
 		test('throws AiResponseError naming the timeout when the response body stalls past the timeout', async () => {
 			fetch_mock.mockResolvedValue({
 				ok: true,
+				headers: new Headers(),
 				json: async () => { throw new DOMException('The operation was aborted due to timeout', 'TimeoutError') },
 			})
 			const ai = create_ai_client({ app: 'copilot', feature: 'copilot', gateway })
@@ -222,7 +224,7 @@ describe('@tabitha/ai', () => {
 
 	describe('create_embedding_client', () => {
 		function mock_embedding(values: number[]) {
-			fetch_mock.mockResolvedValue({ ok: true, json: async () => ({ embedding: { values } }) })
+			fetch_mock.mockResolvedValue({ ok: true, headers: new Headers(), json: async () => ({ embedding: { values } }) })
 		}
 
 		test('sends one text to gemini-embedding-2 at the global location, whatever location the gateway config names', async () => {
