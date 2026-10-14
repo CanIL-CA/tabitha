@@ -24,6 +24,19 @@
 			"previews_enabled": true
 		}
 	],
+	// Server-side calls to sibling apps go through these rather than their public hosts, whose
+	// edge shows every user as one IP to the sibling's rate limiter
+	// (docs/decisions/0023-cross-app-calls-via-service-bindings.md).
+	"services": [
+		{
+			"binding": "ONTOLOGY",
+			"service": "ontology"
+		},
+		{
+			"binding": "TARGETS",
+			"service": "targets"
+		}
+	],
 	"ratelimits": [
 		{
 			"name": "RATE_LIMITER",
@@ -60,6 +73,16 @@
 	"previews": {
 		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
 		// production, and recording is a no-op without the binding.
+		"services": [
+			{
+				"binding": "ONTOLOGY",
+				"service": "ontology"
+			},
+			{
+				"binding": "TARGETS",
+				"service": "targets"
+			}
+		],
 		"ratelimits": [
 			{
 				"name": "RATE_LIMITER",

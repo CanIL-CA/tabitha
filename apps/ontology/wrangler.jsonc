@@ -30,6 +30,19 @@
 			"previews_enabled": true
 		}
 	],
+	// Server-side calls to sibling apps go through these rather than their public hosts, whose
+	// edge shows every user as one IP to the sibling's rate limiter
+	// (docs/decisions/0023-cross-app-calls-via-service-bindings.md).
+	"services": [
+		{
+			"binding": "SOURCES",
+			"service": "sources"
+		},
+		{
+			"binding": "TARGETS",
+			"service": "targets"
+		}
+	],
 	"ratelimits": [
 		{
 			"name": "RATE_LIMITER",
@@ -104,6 +117,16 @@
 			"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
 			"GEMINI_LOCATION": "global"
 		},
+		"services": [
+			{
+				"binding": "SOURCES",
+				"service": "sources"
+			},
+			{
+				"binding": "TARGETS",
+				"service": "targets"
+			}
+		],
 		"ratelimits": [
 			{
 				"name": "RATE_LIMITER",

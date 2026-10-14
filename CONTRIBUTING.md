@@ -93,7 +93,7 @@ graph TD
 | --- | --- |
 | **`@tabitha/types`** | Universal TypeScript interfaces for linguistic concepts, clauses, tokens, references, and API payloads. |
 | **`@tabitha/ui`** | Shared Svelte 5 components (buttons, badges, concept cards, headers, layouts) styled with daisyUI 5. |
-| **`@tabitha/api-client`** | Typed HTTP client for inter-service communication across applications. |
+| **`@tabitha/api-client`** | Typed HTTP client for inter-service communication across applications. Server-side calls go through service bindings ([ADR 0023](docs/decisions/0023-cross-app-calls-via-service-bindings.md)). |
 | **`@tabitha/cors`** | Shared CORS middleware for Cloudflare Worker request handlers. |
 | **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
 | **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows, for both Ontology's scheduled sync and the Ontology migration. |

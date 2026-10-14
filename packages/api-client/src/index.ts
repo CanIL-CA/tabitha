@@ -1,5 +1,6 @@
 export * from './http'
 export * from './response'
+export * from './service_bindings'
 export * from './ontology'
 export * from './sources'
 export * from './targets'

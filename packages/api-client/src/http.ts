@@ -1,4 +1,5 @@
 import { clean_trailing_slash } from '@tabitha/types/patterns'
+import { find_service_fetch } from './service_bindings'
 
 export type ClientOptions = {
 	base_url: string
@@ -63,7 +64,8 @@ async function fetch_with_rate_limit_retry(do_fetch: () => Promise<Response>): P
 export function create_http_client(options: ClientOptions): HttpClient {
 	const { base_url, cache = false } = options
 	const clean_base = clean_trailing_slash(base_url)
-	const get_fetch = () => options.fetch ?? globalThis.fetch
+	// Resolved per call, since an app registers its bindings after its modules create their clients
+	const get_fetch = () => options.fetch ?? find_service_fetch(clean_base) ?? globalThis.fetch
 
 	function build_url({ path, is_get = false }: { path: string, is_get?: boolean }): string {
 		const normalized_path = path.startsWith('/') ? path : `/${path}`
