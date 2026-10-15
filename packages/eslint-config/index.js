@@ -8,6 +8,7 @@ import ts from 'typescript-eslint'
 import { includeIgnoreFile } from '@eslint/compat'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { no_escaped_quote_rule } from './no_escaped_quote_rule.js'
 import { one_parameter_rule } from './one_parameter_rule.js'
 
 const root_gitignore_path = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.gitignore')
@@ -28,7 +29,7 @@ export const baseConfig = [
 		plugins: {
 			'@stylistic': stylistic,
 			'import-x': import_x,
-			'tabitha': { rules: { 'one-parameter': one_parameter_rule } },
+			'tabitha': { rules: { 'no-escaped-quote': no_escaped_quote_rule, 'one-parameter': one_parameter_rule } },
 		},
 
 		rules: {
@@ -48,6 +49,8 @@ export const baseConfig = [
 				'single',
 				{
 					avoidEscape: true,
+					// Backticks only where they save an escape: a string holding both kinds of quote.
+					allowTemplateLiterals: 'avoidEscape',
 				},
 			],
 			'@stylistic/arrow-parens': ['error', 'as-needed'],
@@ -73,6 +76,7 @@ export const baseConfig = [
 			// callbacks, object methods, and named functions passed straight to a call as its callback are
 			// exempt: they have the shape their API gives them (see one_parameter_rule.js).
 			'tabitha/one-parameter': 'error',
+			'tabitha/no-escaped-quote': 'error',
 		},
 	},
 

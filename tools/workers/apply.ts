@@ -9,6 +9,16 @@ import {
 } from './config'
 
 const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4'
+
+/** Placeholder code for a Worker this tool creates. Connecting a Worker to the repo needs the Worker
+ * to exist first, and the first production build from `main` replaces this. */
+const STUB_WORKER_SCRIPT = `export default {
+	fetch() {
+		return new Response('Not deployed yet', { status: 503 })
+	},
+}
+`
+const STUB_COMPATIBILITY_DATE = '2026-10-04'
 const REPO_ROOT = join(import.meta.dir, '..', '..')
 
 /** Cloudflare's error code for a Worker that exists but isn't connected to a repo yet. */
@@ -62,8 +72,10 @@ export type FieldChange = { field: string; from: unknown; to: unknown }
 
 export type AppPlan = {
 	worker_name: string
+	/** True when no Worker by this name exists yet, so `apply` uploads a placeholder one before connecting it. */
+	create_worker: boolean
 	/** True when the Worker isn't connected to the repo yet, so `apply` creates its build settings. */
-	create: boolean
+	connect: boolean
 	field_changes: FieldChange[]
 	env_var_changes: FieldChange[]
 	/** Drift this tool reports but doesn't fix -- fix it by hand. */
@@ -71,9 +83,9 @@ export type AppPlan = {
 }
 
 /** Computes (and, if `apply` is true, performs) the changes needed to bring every app's Workers
- * Builds production settings in line with `config.ts`. A Worker that exists but isn't connected
- * to the repo yet gets connected, with the git repository and build token copied from an
- * already-connected Worker. Never touches `branch`, `path_excludes`, `root_directory` (except
+ * Builds production settings in line with `config.ts`. A missing Worker is created with placeholder
+ * code, and a Worker that isn't connected to the repo yet gets connected, with the git repository
+ * and build token copied from an already-connected Worker. Never touches `branch`, `path_excludes`, `root_directory` (except
  * when connecting), the Previews settings, or any environment variable this tool doesn't itself
  * declare in `managed_environment_variables` -- anything else already set, by hand or by
  * something else, is left alone. */
@@ -94,18 +106,6 @@ export async function reconcile_workers({ credentials, apply, apps = desired_app
 
 	const plans: AppPlan[] = []
 	for (const app of apps) {
-		const tag = worker_tags.get(app.worker_name)
-		if (!tag) {
-			plans.push({
-				worker_name: app.worker_name,
-				create: false,
-				field_changes: [],
-				env_var_changes: [],
-				problems: [`No Worker named "${app.worker_name}" exists yet; run its first \`bunx wrangler deploy\` from apps/${app.app_dir}, then re-run this tool`],
-			})
-			continue
-		}
-
 		const desired: DesiredSettings = {
 			build_command,
 			deploy_command: production_deploy_command,
@@ -113,18 +113,23 @@ export async function reconcile_workers({ credentials, apply, apps = desired_app
 			path_includes: await derive_watch_paths(app.app_dir),
 		}
 
+		const tag = worker_tags.get(app.worker_name)
 		const current = current_configs.get(app.worker_name)
-		if (!current) {
+		if (!tag || !current) {
 			if (!template) throw new Error(`Can't connect "${app.worker_name}": no other Worker is connected to the repo to copy its git repository and build token from.`)
-			if (apply) await create_build_config({ credentials, worker_tag: tag, app, desired, template, fetch_impl })
-			plans.push({ worker_name: app.worker_name, create: true, field_changes: [], env_var_changes: [], problems: [] })
+			if (apply) {
+				const worker_tag = tag ?? await upload_stub_worker({ credentials, worker_name: app.worker_name, fetch_impl })
+				await create_build_config({ credentials, worker_tag, app, desired, template, fetch_impl })
+			}
+			plans.push({ worker_name: app.worker_name, create_worker: !tag, connect: true, field_changes: [], env_var_changes: [], problems: [] })
 			continue
 		}
 
 		const changes = await reconcile_production_settings({ credentials, worker_tag: tag, current, desired, apply, fetch_impl })
 		plans.push({
 			worker_name: app.worker_name,
-			create: false,
+			create_worker: false,
+			connect: false,
 			...changes,
 			problems: current.previews_enabled
 				? ['Workers Builds preview builds are on; CI builds PR previews, so turn off "Builds for Preview branches" in Settings -> Builds']
@@ -207,6 +212,28 @@ async function create_build_config({ credentials, worker_tag, app, desired, temp
 		},
 		fetch_impl,
 	})
+}
+
+/** Creates a Worker running `STUB_WORKER_SCRIPT` and returns its tag. Uploading through the API
+ * rather than a local `wrangler deploy` keeps `.env.local` out of production entirely. */
+async function upload_stub_worker({ credentials, worker_name, fetch_impl }: {
+	credentials: CloudflareCredentials
+	worker_name: string
+	fetch_impl: typeof fetch
+}): Promise<string> {
+	const form = new FormData()
+	form.append('metadata', JSON.stringify({ main_module: 'index.js', compatibility_date: STUB_COMPATIBILITY_DATE }))
+	form.append('index.js', new Blob([STUB_WORKER_SCRIPT], { type: 'application/javascript+module' }), 'index.js')
+
+	// No Content-Type header: fetch sets the multipart boundary itself.
+	const path = `/workers/scripts/${worker_name}`
+	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/accounts/${credentials.account_id}${path}`, {
+		method: 'PUT',
+		headers: { Authorization: `Bearer ${credentials.api_token}` },
+		body: form,
+	})
+	if (!response.ok) throw new Error(`PUT ${path} failed: ${response.status} ${await response.text()}`)
+	return ((await response.json()) as { result: { tag: string } }).result.tag
 }
 
 /** Derives the production watch paths from the app's own `package.json`, rather than
@@ -296,9 +323,9 @@ if (import.meta.main) {
 	for (const plan of plans) {
 		for (const problem of plan.problems) console.log(`${plan.worker_name}: ⚠️ ${problem}`)
 
-		if (plan.create) {
+		if (plan.connect) {
 			any_changes = true
-			console.log(`${plan.worker_name}: ${apply ? 'connected' : 'would connect'} to the repo, with production builds from main and preview builds off`)
+			console.log(`${plan.worker_name}: ${connect_message({ plan, apply })}, with production builds from main and preview builds off`)
 			continue
 		}
 
@@ -316,6 +343,11 @@ if (import.meta.main) {
 	}
 
 	if (!apply && any_changes) console.log('\nRun with --run to apply these changes.')
+}
+
+function connect_message({ plan, apply }: { plan: AppPlan, apply: boolean }): string {
+	if (plan.create_worker) return apply ? 'created with placeholder code and connected to the repo' : 'would create with placeholder code and connect to the repo'
+	return apply ? 'connected to the repo' : 'would connect to the repo'
 }
 
 function require_env(key: string): string {

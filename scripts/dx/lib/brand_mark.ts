@@ -13,6 +13,8 @@ export const APP_LETTERS: Record<string, string> = {
 	editor: 'E',
 	ontology: 'O',
 	sources: 'S',
+	// S is taken by sources; V is the next distinct letter of "survey".
+	survey: 'V',
 	targets: 'T',
 }
 

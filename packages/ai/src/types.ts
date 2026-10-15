@@ -27,11 +27,30 @@ export type AiGatewayConfig = {
  */
 export type AiCallDefaults = Partial<Omit<GenerateContentConfig, 'seed'>>
 
+/**
+ * What one successful generation call cost, as Vertex's `usageMetadata` and the gateway's
+ * `cf-aig-cache-status` header report it. Billed output is `output_tokens + thought_tokens`.
+ * `cache_status` is empty when the gateway sent no header; `thinking_level` is `default` when the
+ * call left Vertex's own level in place.
+ */
+export type AiCallUsage = {
+	readonly feature: string
+	readonly prompt_tokens: number
+	readonly output_tokens: number
+	readonly thought_tokens: number
+	readonly cached_tokens: number
+	readonly cache_status: string
+	readonly thinking_level: string
+	readonly duration_ms: number
+}
+
 export type CreateAiClientOptions = {
 	app: string
 	feature: string
 	gateway: AiGatewayConfig
 	defaults?: AiCallDefaults
+	// Called once per successful generation call. A throw here never fails the call.
+	on_usage?: (usage: AiCallUsage) => void
 }
 
 export type GenerateJsonParams = {

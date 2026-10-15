@@ -26,7 +26,7 @@ describe('to_copilot_run_event', () => {
 		expect(event).toMatchObject({ mode: 'brief', lwc: 'English', sensitivity: 1, verse_count: 1, error_count: 1, error: 'No English text for this verse' })
 	})
 
-	it('counts a batch\'s errors without a single reason', () => {
+	it("counts a batch's errors without a single reason", () => {
 		const event = to_copilot_run_event({ caller: 'same-origin', run: 'batch', book: 'John', settings: default_settings, verse_count: 3, results: [ok_result, error_result, error_result] })
 
 		expect(event).toMatchObject({ run: 'batch', verse_count: 3, error_count: 2, error: undefined })

@@ -3,7 +3,7 @@ import { find_missing_top_level_permissions, find_secret_github_tokens } from '.
 
 describe('GitHub Actions Token & Permissions Audit', () => {
 	describe('Rule: Secret Used as GitHub Token', () => {
-		it('flags a PAT passed as github-script\'s github-token', () => {
+		it("flags a PAT passed as github-script's github-token", () => {
 			const workflow = `
       - uses: actions/github-script@v9
         with:
@@ -15,7 +15,7 @@ describe('GitHub Actions Token & Permissions Audit', () => {
 			expect(findings[0].message).toContain('secrets.PR_SUMMARY_TOKEN')
 		})
 
-		it('flags a PAT passed as checkout\'s token and as GH_TOKEN', () => {
+		it("flags a PAT passed as checkout's token and as GH_TOKEN", () => {
 			const workflow = `
         with:
           token: \${{ secrets.BOT_PAT }}

@@ -1,6 +1,9 @@
-import { parse_for_test } from '.'
+import { apply_transform_and_sense_rules, parse_for_test } from '.'
+import { clausify, flatten_sentences } from './clausify'
+import { tokenize_input } from './tokenize'
+import { RULES, rules_applier } from '#lib/rules/index.js'
 import { describe, expect, test } from 'vitest'
-import { TOKEN_TYPE } from '../token'
+import { TOKEN_TYPE, create_lookup_result } from '../token'
 import { ERRORS } from './error_messages'
 import { expect_error, expect_error_to_match, expect_no_message } from '#lib/test_helps.js'
 
@@ -324,6 +327,29 @@ describe('parse', () => {
 			expect(results[23].token).toBe('.')
 			expect_error({ token: results[23], message: ERRORS.MISSING_PERIOD })
 			expect(results).length(24)
+		})
+	})
+
+	describe('syntax errors in one sentence', () => {
+		function transformed_like_tokens(text: string) {
+			let sentences = clausify(tokenize_input(text))
+			sentences = rules_applier(RULES.SYNTAX)(sentences)
+			sentences = rules_applier(RULES.LOOKUP)(sentences)
+			for (const token of flatten_sentences(sentences)) {
+				// stand-in for the ontology lookup
+				if (['be', 'like'].includes(token.token)) {
+					token.lookup_results = [create_lookup_result({ stem: token.token, part_of_speech: token.token === 'be' ? 'Verb' : 'Adjective' })]
+				}
+			}
+			sentences = rules_applier(RULES.PART_OF_SPEECH)(sentences)
+			return flatten_sentences(apply_transform_and_sense_rules(sentences)).filter(token => token.token === 'like')
+		}
+
+		test('do not stop later rules from running on other sentences', () => {
+			const [like_in_valid_sentence, like_in_broken_sentence] = transformed_like_tokens('John be like Bob. Mary be like Sue [.')
+
+			expect(like_in_valid_sentence.type).toBe(TOKEN_TYPE.FUNCTION_WORD)
+			expect(like_in_broken_sentence.type).toBe(TOKEN_TYPE.LOOKUP_WORD)
 		})
 	})
 })

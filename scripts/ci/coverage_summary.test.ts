@@ -46,7 +46,7 @@ describe('workspace_of', () => {
 })
 
 describe('coverage_by_workspace', () => {
-	it('sums each workspace\'s files and skips the overall total', () => {
+	it("sums each workspace's files and skips the overall total", () => {
 		const coverage = coverage_by_workspace({
 			root_dir: ROOT,
 			summary: {

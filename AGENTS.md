@@ -397,6 +397,7 @@ import system_instruction from './review_prompt.md?raw'
    - `targets` (:1382) — Target language lexicon, inflection engine, and forms.
    - `copilot` (:9000) — AI translation guidance, routed through `@tabitha/ai` and the Cloudflare AI Gateway.
    - `www` (:1455) — Public-facing informational site.
+   - `survey` (:1086) — Link-only blinded A/B reviews with stored scores, in its own D1 owned by migrations. Surveys are published by `bun run publish` with the publisher's own wrangler login, not through the app ([ADR 0024](docs/decisions/0024-survey-app.md)).
    - `scheduler` (no port) — Cron-only plain Cloudflare Worker, not SvelteKit: triggers each app's scheduled work through a service binding. A `scheduled` export in a SvelteKit app's `hooks.server.ts` is never called, so recurring work goes behind an app endpoint that `scheduler` calls ([ADR 0018](docs/decisions/0018-scheduled-work-via-scheduler-worker.md)). See CONTRIBUTING.md's "How to Add a New App" before adding another app.
 
 2. **Shared Packages (`packages/*`)**:
@@ -604,7 +605,8 @@ Copilot's own worktrees and hides them from the Source Control panel while the p
 (`isCopilotWorktreeFolder` in `microsoft/vscode`'s `extensions/git/src/util.ts`). That's an easy
 trap here, since `apps/copilot` makes `copilot-<feature>` a natural name. Put the scope later
 instead (`fix-copilot-brief-sections`). A `PreToolUse` hook in `.claude/settings.json` rejects
-these prefixes when Claude Code's `EnterWorktree` tool creates a worktree.
+these prefixes when Claude Code's `EnterWorktree` tool creates a worktree, and when a shell command
+runs `git worktree add` or `git worktree move`.
 
 ---
 

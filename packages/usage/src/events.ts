@@ -54,7 +54,19 @@ export type AiAssistEvent = {
 	readonly message?: string
 }
 
-export type UsageEvent = SearchEvent | ThemeEvent | CopilotRunEvent | CheckEvent | AiAssistEvent
+export type AiCallEvent = {
+	readonly kind: 'ai_call'
+	readonly feature: string
+	readonly cache_status: string
+	readonly thinking_level: string
+	readonly prompt_tokens: number
+	readonly output_tokens: number
+	readonly thought_tokens: number
+	readonly cached_tokens: number
+	readonly duration_ms: number
+}
+
+export type UsageEvent = SearchEvent | ThemeEvent | CopilotRunEvent | CheckEvent | AiAssistEvent | AiCallEvent
 
 // A structural subset of Cloudflare's AnalyticsEngineDataset, so neither this package nor an
 // app without generated Worker types needs @cloudflare/workers-types to use it.
@@ -106,6 +118,11 @@ function to_fields(event: UsageEvent): { blobs: string[], doubles: number[] } {
 			return {
 				blobs: [event.status, event.check_status, clip(event.message)],
 				doubles: [event.note_count],
+			}
+		case 'ai_call':
+			return {
+				blobs: [event.feature, event.cache_status, event.thinking_level],
+				doubles: [event.prompt_tokens, event.output_tokens, event.thought_tokens, event.cached_tokens, event.duration_ms],
 			}
 	}
 }

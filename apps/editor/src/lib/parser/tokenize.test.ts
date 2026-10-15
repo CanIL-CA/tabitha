@@ -126,10 +126,10 @@ describe('tokenize_input', () => {
 		const EXPECTED_OUTPUT = [
 			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: 'Paul' }) }),
 			create_pronoun_token({ pronoun: 'abc', referent_token: create_word_token({ token: 'test' }) }),
-			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: "Paul's", lookup_term: 'Paul' }) }),
 			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'son-C', lookup_term: 'son', sense: 'C' }) }),
-			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'son\'s-C', lookup_term: 'son', sense: 'C' }) }),
-			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: 'sons\'-C', lookup_term: 'sons', sense: 'C' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: "son's-C", lookup_term: 'son', sense: 'C' }) }),
+			create_pronoun_token({ pronoun: 'your', referent_token: create_word_token({ token: "sons'-C", lookup_term: 'sons', sense: 'C' }) }),
 			create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION }),
 			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: 'Paul' }) }),
 			create_pronoun_token({ pronoun: 'you', referent_token: create_pairing({ left_token: create_word_token({ token: 'follower' }), right_token: create_word_token({ token: 'disciple' }), pairing_type: 'simple-complex' }) }),
@@ -331,12 +331,12 @@ describe('tokenize_input', () => {
 		const INPUT = "Paul's Paul’s Jesus’ Jesus' sons’-C you(Paul’s)"
 
 		const EXPECTED_OUTPUT = [
-			create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }),
-			create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }),
-			create_word_token({ token: 'Jesus\'', lookup_term: 'Jesus' }),
+			create_word_token({ token: "Paul's", lookup_term: 'Paul' }),
+			create_word_token({ token: "Paul's", lookup_term: 'Paul' }),
 			create_word_token({ token: "Jesus'", lookup_term: 'Jesus' }),
-			create_word_token({ token: 'sons\'-C', lookup_term: 'sons', sense: 'C' }),
-			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: 'Paul\'s', lookup_term: 'Paul' }) }),
+			create_word_token({ token: "Jesus'", lookup_term: 'Jesus' }),
+			create_word_token({ token: "sons'-C", lookup_term: 'sons', sense: 'C' }),
+			create_pronoun_token({ pronoun: 'you', referent_token: create_word_token({ token: "Paul's", lookup_term: 'Paul' }) }),
 		]
 
 		expect(tokenize_input(INPUT)).toEqual(EXPECTED_OUTPUT)

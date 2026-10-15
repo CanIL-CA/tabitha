@@ -1,0 +1,3 @@
+{
+	"extends": ["$app/tsconfig", "@tabitha/tsconfig/sveltekit-app.json"]
+}

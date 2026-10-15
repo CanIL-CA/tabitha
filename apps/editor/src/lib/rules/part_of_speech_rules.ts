@@ -39,7 +39,7 @@ const part_of_speech_rules_json = [
 			},
 		},
 		'remove': 'Noun',
-		'comment': 'Daniel 1:5 The king allowed the men to drink(N/V) the king\'s wine.',
+		'comment': "Daniel 1:5 The king allowed the men to drink(N/V) the king's wine.",
 	},
 	{
 		'name': 'If Noun-Verb preceded by Negative Verb Polarity or Modal words, delete the Noun',
@@ -66,7 +66,7 @@ const part_of_speech_rules_json = [
 			'precededby': { 'category': 'Adjective|Conjunction' },
 		},
 		'remove': 'Verb',
-		'comment': 'Preceded by an Adjective: Daniel 1:7 The official gave new names(N/V) to the men... Preceded by a Conjunction: Because we don\'t allow coordinate VPs in these propositions, if there\'s a Conjunction preceding the Noun/Verb, the word must be a Noun. Daniel 2:37 God has given wealth and honor(N/V) to you.',
+		'comment': "Preceded by an Adjective: Daniel 1:7 The official gave new names(N/V) to the men... Preceded by a Conjunction: Because we don't allow coordinate VPs in these propositions, if there's a Conjunction preceding the Noun/Verb, the word must be a Noun. Daniel 2:37 God has given wealth and honor(N/V) to you.",
 	},
 	{
 		'name': 'If certain Noun/Verbs are preceded by chief, remove the Verb',
@@ -94,7 +94,7 @@ const part_of_speech_rules_json = [
 			'precededby': { 'tag': 'relation', 'skip': 'adjp_attributive' },
 		},
 		'remove': 'Verb',
-		'comment': 'Gideon returned to the Israelite\'s camp.',
+		'comment': "Gideon returned to the Israelite's camp.",
 	},
 	{
 		'name': 'If Noun-Verb preceded by a Noun, delete the Noun',
@@ -113,7 +113,7 @@ const part_of_speech_rules_json = [
 			'notfollowedby': { 'token': 'of' },
 		},
 		'remove': 'Noun',
-		'comment': '"The people [that are in the tribe named Levi] saw(N/V) Mary." This only works because cases like "the judge\'s(N/V) house" are handled earlier.',
+		'comment': `"The people [that are in the tribe named Levi] saw(N/V) Mary." This only works because cases like "the judge's(N/V) house" are handled earlier.`,
 	},
 	{
 		'name': 'If Noun-Verb preceded by Verb, delete the Verb',
@@ -129,7 +129,7 @@ const part_of_speech_rules_json = [
 		'category': 'Adposition|Conjunction',
 		'trigger': { 'tag': { 'position': 'first_word' }, 'stem': 'so|instead' },
 		'remove': 'Adposition',
-		'comment': 'only for \'so\'. \'for\' might be the \'for each...\' sense',
+		'comment': "only for 'so'. 'for' might be the 'for each...' sense",
 	},
 	{
 		'name': 'If Adposition-Conjunction is the first word of a (non-quote) subordinate clause, remove Conjunction',
@@ -244,7 +244,7 @@ const part_of_speech_rules_json = [
 		'comment': '...as good as...',
 	},
 	{
-		'name': 'If Noun-Adjective preceded by \'be\' or \'feel\', remove Noun',
+		'name': "If Noun-Adjective preceded by 'be' or 'feel', remove Noun",
 		'category': 'Noun|Adjective',
 		'context': {
 			'precededby': { 'category': 'Verb', 'stem': 'be|feel', 'skip': ['vp_modifiers', 'adjp_modifiers_predicative'] },
@@ -253,7 +253,7 @@ const part_of_speech_rules_json = [
 		'comment': "Infected Eye 1:1 Melissa's eye is sore(N/Adj).  Infected Eye 1:15 Janet's eyes were still sore(N/Adj).",
 	},
 	{
-		'name': 'If Noun-Adjective "silver" or "gold" is preceded by \'have\' and not followed by Noun, remove Adjective',
+		'name': `If Noun-Adjective "silver" or "gold" is preceded by 'have' and not followed by Noun, remove Adjective`,
 		'category': 'Noun|Adjective',
 		'trigger': { 'stem': 'silver|gold' },
 		'context': {
@@ -264,7 +264,7 @@ const part_of_speech_rules_json = [
 		'comment': 'Acts 3:6 Peter did not have silver(N/Adj).',
 	},
 	{
-		'name': 'If Noun-Adjective "silver" or "gold" is preceded by \'of\' and not followed by Noun, remove Adjective',
+		'name': `If Noun-Adjective "silver" or "gold" is preceded by 'of' and not followed by Noun, remove Adjective`,
 		'category': 'Noun|Adjective',
 		'trigger': { 'stem': 'silver|gold' },
 		'context': {
@@ -296,7 +296,7 @@ const part_of_speech_rules_json = [
 			},
 		},
 		'remove': 'Verb',
-		'comment': 'The man held the stick in the (man\'s) left(V/Adj) hand',
+		'comment': "The man held the stick in the (man's) left(V/Adj) hand",
 	},
 	{
 		'name': 'If Verb-Adjective followed by an article/demonstrative, remove Adjective',
@@ -362,7 +362,7 @@ const part_of_speech_rules_json = [
 		'trigger': { 'token': 'amazed|surprised' },
 		'context': { 'followedby': { 'category': 'Noun', 'skip': 'all' } },
 		'remove': 'Adjective',
-		'comment': 'The people were amazed(V/Adj) by Jesus\' words.',
+		'comment': "The people were amazed(V/Adj) by Jesus' words.",
 	},
 	{
 		'name': 'If Adjective-Adposition followed by a determiner, delete the Adjective',
@@ -456,7 +456,7 @@ const part_of_speech_rules_json = [
 		'comment': 'e.g. Peter sat close(Adp/Adj/Verb) to the fire. A lookup rule combined "close" and "to"',
 	},
 	{
-		'name': 'If Verb-Adposition precededby by a modal or \'not\', delete the Adposition',
+		'name': "If Verb-Adposition precededby by a modal or 'not', delete the Adposition",
 		'category': 'Verb|Adposition',
 		'context': {
 			'precededby': { 'tag': 'modal|verb_polarity', 'skip': 'vp_modifiers' },

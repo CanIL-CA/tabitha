@@ -30,7 +30,7 @@ describe('Cross-Package Relative Import Checker', () => {
 		expect(findings[0].specifier).toBe('../../packages/vite-config/ports.js')
 	})
 
-	it('does not flag a relative import that stays within the importing file\'s own package', () => {
+	it("does not flag a relative import that stays within the importing file's own package", () => {
 		const file_path = join(root, 'scripts/dx/doctor.ts')
 		const content = "import { check_cloudflare_configs } from '../audits/check_cloudflare'"
 

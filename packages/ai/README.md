@@ -40,6 +40,8 @@ const result = await ai.generate_json<MyShape>({
 
 `app`/`feature` are attached to every request as `cf-aig-metadata` for per-app cost/usage attribution in the gateway dashboard; they don't affect caching (confirmed empirically — see ADR 0007).
 
+Pass `on_usage` to `create_ai_client` to receive each successful call's token counts (prompt, output, thinking, cached), the gateway's cache status, the thinking level and the duration. A throw from it never fails the call. Apps forward it to `@tabitha/usage` as an `ai_call` event (see [ADR 0017](../../docs/decisions/0017-usage-analytics-engine.md)). Embedding calls don't report usage yet.
+
 ## Embeddings
 
 `create_embedding_client` is a separate, smaller factory for turning text into vectors (used by ontology's semantic search -- see [ADR 0016](../../docs/decisions/0016-semantic-search-via-vectorize-embeddings.md)). It goes through the same gateway, token, and error handling as `create_ai_client`.

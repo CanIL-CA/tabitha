@@ -12,14 +12,16 @@ export async function parse(text: string): Promise<Sentence[]> {
 	sentences = await perform_ontology_lookups(sentences)
 	sentences = rules_applier(RULES.PART_OF_SPEECH)(sentences)
 
-	if (flatten_sentences(sentences).some(token => token.messages.some(msg => msg.label === 'error'))) {
-		// If there are errors at this point, they are syntax-related (eg. bracket mismatch) and will likely mess up the transform and checker rules.
-		// Abort here until so those issues can be addressed first.
-		return sentences
-	}
+	return apply_transform_and_sense_rules(sentences)
+}
 
-	sentences = rules_applier(RULES.TRANSFORM)(sentences)
-	return rules_applier(RULES.ARGUMENT_AND_SENSE)(sentences)
+function has_syntax_error(sentence: Sentence): boolean {
+	return flatten_sentences([sentence]).some(token => token.messages.some(msg => msg.label === 'error'))
+}
+
+// Sentences with syntax errors (eg. bracket mismatch) skip these rules because the errors would likely mess them up. Other sentences are unaffected.
+export function apply_transform_and_sense_rules(sentences: Sentence[]): Sentence[] {
+	return sentences.map(sentence => has_syntax_error(sentence) ? sentence : rules_applier(RULES.ARGUMENT_AND_SENSE)(rules_applier(RULES.TRANSFORM)([sentence]))[0])
 }
 
 /**

@@ -89,11 +89,11 @@ describe('record_usage_event', () => {
 describe('get_request_caller', () => {
 	const request_with = (headers: Record<string, string>) => new Request('https://editor.tabitha.bible/check', { headers })
 
-	it('identifies the app\'s own pages', () => {
+	it("identifies the app's own pages", () => {
 		expect(get_request_caller(request_with({ 'sec-fetch-site': 'same-origin' }))).toBe('same-origin')
 	})
 
-	it('identifies another app\'s pages by their origin', () => {
+	it("identifies another app's pages by their origin", () => {
 		expect(get_request_caller(request_with({ 'sec-fetch-site': 'same-site', origin: 'https://sources.tabitha.bible' }))).toBe('sources.tabitha.bible')
 	})
 

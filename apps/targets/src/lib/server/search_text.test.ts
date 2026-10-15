@@ -22,7 +22,7 @@ describe('search_text', () => {
 		expect(await search_text({ db, project: 'English', parsed_q: { or_terms: [] } })).toEqual([])
 	})
 
-	it('gathers every audience\'s text for a verse into one result with its reference', async () => {
+	it("gathers every audience's text for a verse into one result with its reference", async () => {
 		const db = fake_db([
 			text_row({ book: 'Luke', chapter: 2, verse: 3, audience: 'Unchurched Adults', text: 'a' }),
 			text_row({ book: 'Luke', chapter: 2, verse: 3, audience: 'Church Adults', text: 'b' }),

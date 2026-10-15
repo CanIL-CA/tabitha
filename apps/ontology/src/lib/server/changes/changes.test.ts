@@ -48,7 +48,7 @@ type ChangeRow = {
 }
 
 const CHANGES_SQL = 'SELECT action, suggested_by_id, approved_by_id, applied_date, version FROM Changes'
-const CONCEPT_STEMS_SQL = 'SELECT stem FROM Concepts WHERE part_of_speech = \'Noun\' ORDER BY id'
+const CONCEPT_STEMS_SQL = "SELECT stem FROM Concepts WHERE part_of_speech = 'Noun' ORDER BY id"
 
 function make_change(overrides: Partial<OntologyChange> = {}): OntologyChange {
 	return {
@@ -135,7 +135,7 @@ describe('apply_change_directly', () => {
 
 		expect(applied).toBe(true)
 		expect(query<{ stem: string }>(CONCEPT_STEMS_SQL).map(({ stem }) => stem)).toEqual(['faith', 'peace', 'trust'])
-		expect(query<{ gloss: string }>('SELECT gloss FROM Concepts WHERE stem = \'peace\'')).toEqual([{ gloss: 'a state of calm' }])
+		expect(query<{ gloss: string }>("SELECT gloss FROM Concepts WHERE stem = 'peace'")).toEqual([{ gloss: 'a state of calm' }])
 	})
 
 	it('records who approved the change, when it was applied, and the new version', async () => {

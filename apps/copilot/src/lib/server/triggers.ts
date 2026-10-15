@@ -223,7 +223,7 @@ const triggers: TriggerTemplate[] = [
 			return closing && flags.length === 1 ? closing.weight : 0
 		},
 		flag_key: f => f.value,
-		prompt: 'Write something LIKE "This is the end of the quote where {speaker} was speaking to {listener}". You do not need to write a \'check\' for this.',
+		prompt: `Write something LIKE "This is the end of the quote where {speaker} was speaking to {listener}". You do not need to write a 'check' for this.`,
 	},
 	{
 		name: 'Vocabulary Alternate',

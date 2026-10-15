@@ -55,15 +55,15 @@ describe('get_previous_reference', () => {
 		expect(await get_previous_reference({ db, reference: verse('Bible/Genesis/1/2') })).toEqual(verse('Bible/Genesis/1/1'))
 	})
 
-	it('crosses a chapter boundary, landing on the previous chapter\'s last verse', async () => {
+	it("crosses a chapter boundary, landing on the previous chapter's last verse", async () => {
 		expect(await get_previous_reference({ db, reference: verse('Bible/Genesis/2/1') })).toEqual(verse('Bible/Genesis/1/2'))
 	})
 
-	it('crosses a book boundary, landing on the previous book\'s last chapter and verse', async () => {
+	it("crosses a book boundary, landing on the previous book's last chapter and verse", async () => {
 		expect(await get_previous_reference({ db, reference: verse('Bible/Matthew/1/1') })).toEqual(verse('Bible/Malachi/4/6'))
 	})
 
-	it('crosses a primary-id boundary for a non-Bible type, in the order the type\'s ids are stored', async () => {
+	it("crosses a primary-id boundary for a non-Bible type, in the order the type's ids are stored", async () => {
 		expect(await get_previous_reference({ db, reference: verse('Grammar Introduction/Verbs/1/1') }))
 			.toEqual(verse('Grammar Introduction/Nouns/3/5'))
 	})
@@ -82,7 +82,7 @@ describe('get_next_reference', () => {
 		expect(await get_next_reference({ db, reference: verse('Bible/Genesis/1/1') })).toEqual(verse('Bible/Genesis/1/2'))
 	})
 
-	it('crosses a chapter boundary to the next chapter\'s first verse', async () => {
+	it("crosses a chapter boundary to the next chapter's first verse", async () => {
 		expect(await get_next_reference({ db, reference: verse('Bible/Genesis/1/2') })).toEqual(verse('Bible/Genesis/2/1'))
 	})
 
@@ -90,7 +90,7 @@ describe('get_next_reference', () => {
 		expect(await get_next_reference({ db, reference: verse('Bible/Malachi/4/6') })).toEqual(verse('Bible/Matthew/1/1'))
 	})
 
-	it('crosses a primary-id boundary for a non-Bible type, in the order the type\'s ids are stored', async () => {
+	it("crosses a primary-id boundary for a non-Bible type, in the order the type's ids are stored", async () => {
 		expect(await get_next_reference({ db, reference: verse('Grammar Introduction/Nouns/3/5') }))
 			.toEqual(verse('Grammar Introduction/Verbs/1/1'))
 	})

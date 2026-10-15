@@ -18,7 +18,7 @@ describe('match_pattern', () => {
 		expect(match_pattern({ pattern: { category: 'Noun' }, root_entity: verb() })).toEqual([])
 	})
 
-	test('searches descendants depth first and records each match\'s index stack', () => {
+	test("searches descendants depth first and records each match's index stack", () => {
 		const root: CopilotEncodingEntity = {
 			category: 'Clause',
 			children: [
@@ -108,7 +108,7 @@ describe('match_pattern', () => {
 		expect(match_pattern({ pattern: { category: 'Verb', children: [{ category: 'Noun' }] }, root_entity: verb() })).toEqual([])
 	})
 
-	test('captures from child patterns carry the child\'s index stack', () => {
+	test("captures from child patterns carry the child's index stack", () => {
 		const pattern: PatternEntity = { category: 'Clause', children: [{ name: '$object', category: 'Noun' }] }
 		const root: CopilotEncodingEntity = { category: 'Clause', children: [{ category: 'Verb' }, { category: 'Noun', concept: 'letter' }] }
 

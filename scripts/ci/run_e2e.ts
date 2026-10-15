@@ -74,7 +74,7 @@ if (extra_args.length > 0) {
 	process.exit(code)
 }
 
-console.log('🚀 Starting every app\'s e2e dev server...')
+console.log("🚀 Starting every app's e2e dev server...")
 const dev_server_process = spawn('bunx', ['turbo', 'run', 'dev:e2e'], { stdio: 'inherit', detached: true })
 
 function shut_down_dev_servers(): void {

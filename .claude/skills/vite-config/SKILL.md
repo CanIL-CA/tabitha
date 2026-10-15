@@ -32,6 +32,7 @@ export default create_app_vite_config({
 - **Editor**: `1337`
 - **Copilot**: `9000`
 - **Www**: `1455`
+- **Survey**: `1086`
 
 `create_app_vite_config` enables `strictPort: true`, wires `@tailwindcss/vite`, registers `sveltekit()`, and embeds Vitest test configurations.
 

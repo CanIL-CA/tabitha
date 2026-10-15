@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+	<rect x="1" y="1" width="62" height="62" rx="4" fill="#d02031" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5" />
+	<text x="9.984" y="17.024" text-anchor="start" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="12.992" font-weight="500" fill="#ffffff" fill-opacity="0.65">T</text>
+	<text x="32" y="44.032" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="700" fill="#ffffff">V</text>
+</svg>

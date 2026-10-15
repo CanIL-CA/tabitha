@@ -9,9 +9,9 @@ type Preset = {
 
 const PRESETS: Record<string, Preset> = {
 	'1': {
-		name: '🌟 All 6 Applications',
-		description: 'Full Stack: Editor, Ontology, Sources, Targets, Copilot, Www',
-		apps: ['ontology', 'targets', 'sources', 'editor', 'copilot', 'www'],
+		name: '🌟 All 7 Applications',
+		description: 'Full Stack: Editor, Ontology, Sources, Targets, Copilot, Www, Survey',
+		apps: ['ontology', 'targets', 'sources', 'editor', 'copilot', 'www', 'survey'],
 	},
 	'2': {
 		name: '📚 Core Linguistics Engine',
