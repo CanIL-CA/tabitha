@@ -49,7 +49,7 @@ function create_index(stems: string[]): ConceptIndex {
 describe('find_related_concepts', () => {
 	beforeEach(() => {
 		fetch_mock.mockReset()
-		fetch_mock.mockResolvedValue({ ok: true, json: async () => ({ embedding: { values: Array(EMBEDDING_DIMENSIONS).fill(0.1) } }) })
+		fetch_mock.mockResolvedValue(Response.json({ embedding: { values: Array(EMBEDDING_DIMENSIONS).fill(0.1) } }))
 		vi.mocked(get_concepts_by_keys).mockReset()
 		vi.spyOn(console, 'error').mockImplementation(() => {})
 		vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -93,7 +93,7 @@ describe('find_related_concepts', () => {
 	})
 
 	it('returns nothing when embedding the search term fails', async () => {
-		fetch_mock.mockResolvedValue({ ok: false, status: 503, statusText: 'Unavailable', text: async () => '' })
+		fetch_mock.mockResolvedValue(new Response('', { status: 503, statusText: 'Unavailable' }))
 		vi.mocked(get_concepts_by_keys).mockResolvedValue([])
 		const index = create_index(['rejoice'])
 
