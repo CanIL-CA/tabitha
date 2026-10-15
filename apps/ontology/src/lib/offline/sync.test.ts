@@ -110,7 +110,7 @@ describe('offline sync', () => {
 			expect(outcomes.get(mutation.client_id)).toEqual({ type: 'synced', applied: false })
 		})
 
-		it('keeps a rejected mutation as failed, with the server\'s message', async () => {
+		it("keeps a rejected mutation as failed, with the server's message", async () => {
 			const mutation = await queued()
 			fake_server([json_response({ body: { message: 'Gloss is required' }, status: 400 })])
 

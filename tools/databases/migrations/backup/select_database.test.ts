@@ -31,15 +31,15 @@ const CONFIG_TEXT = `{
 }`
 
 describe('select_backup_database', () => {
-	it('backs up production\'s database, not the newer Previews copy loaded right after it', () => {
+	it("backs up production's database, not the newer Previews copy loaded right after it", () => {
 		expect(select_backup_database({ config_text: CONFIG_TEXT, binding: 'DB_Ontology', databases: [OLDER, PRODUCTION, PREVIEW_COPY] })).toBe(PRODUCTION.name)
 	})
 
-	it('backs up production\'s database, not a newer one an unmerged data-update PR created', () => {
+	it("backs up production's database, not a newer one an unmerged data-update PR created", () => {
 		expect(select_backup_database({ config_text: CONFIG_TEXT, binding: 'DB_Ontology', databases: [PRODUCTION, PREVIEW_COPY, UNMERGED] })).toBe(PRODUCTION.name)
 	})
 
-	it('throws when production\'s bound database no longer exists', () => {
+	it("throws when production's bound database no longer exists", () => {
 		expect(() => select_backup_database({ config_text: CONFIG_TEXT, binding: 'DB_Ontology', databases: [PREVIEW_COPY, UNMERGED] })).toThrow(/isn't in this account's D1 databases/)
 	})
 

@@ -35,7 +35,7 @@ describe('Accessible-Name Collision Checker', () => {
 			expect(labels.size).toBe(0)
 		})
 
-		it('extracts labels from a { name, href } data-array literal, driven by AppNav.svelte\'s actual shape', () => {
+		it("extracts labels from a { name, href } data-array literal, driven by AppNav.svelte's actual shape", () => {
 			const script = `
 				const links = [
 					{ name: 'Home', href: '/' },
@@ -69,7 +69,7 @@ describe('Accessible-Name Collision Checker', () => {
 			expect(chain).toEqual(['/app/src/routes/+layout.svelte'])
 		})
 
-		it('includes every layout from the routes root down to the page\'s own directory', () => {
+		it("includes every layout from the routes root down to the page's own directory", () => {
 			const chain = layout_chain_for_page({
 				page_path: '/app/src/routes/settings/profile/+page.svelte',
 				all_layouts: [

@@ -43,7 +43,7 @@ describe('repoint_d1_binding', () => {
 		const result = repoint_d1_binding({ config_text: CONFIG_TEXT, binding: 'DB_Ontology', database: NEW_DATABASE })
 
 		expect(result).toContain('"database_name": "Auth",\n\t\t\t"database_id": "auth-id"')
-		expect(result).toContain('// Previews share production\'s databases')
+		expect(result).toContain("// Previews share production's databases")
 	})
 
 	it('does not match a binding that only shares a prefix', () => {
@@ -90,7 +90,7 @@ describe('repoint_d1_binding', () => {
 		})
 
 		it('ignores braces inside comments and strings when finding the previews block', () => {
-			const config_text = CONFIG_TEXT.replace('// Previews share production\'s databases', '// a stray } in a comment\n\t\t"note": "and } in a string",')
+			const config_text = CONFIG_TEXT.replace("// Previews share production's databases", '// a stray } in a comment\n\t\t"note": "and } in a string",')
 
 			const result = repoint_d1_binding({ config_text, binding: 'DB_Ontology', database: NEW_DATABASE, preview_database: PREVIEW_DATABASE })
 

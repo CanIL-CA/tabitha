@@ -56,7 +56,7 @@ describe('get_all_book_statuses', () => {
 })
 
 describe('get_book_status', () => {
-	it('combines the statuses of the book\'s chapters', async () => {
+	it("combines the statuses of the book's chapters", async () => {
 		const reference = { type: 'Bible', id_primary: 'Luke' }
 		const db = fake_db({ rows: [{ status: 'Not Started' }, { status: 'Not Started' }] })
 

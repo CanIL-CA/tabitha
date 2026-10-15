@@ -137,7 +137,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'comment': '"that" should only be a demonstrative in this case. clear the syntax tag but keep the determiner one',
 	},
 	{
-		'name': 'tag subordinate clauses along with \'it\' as agent clauses',
+		'name': "tag subordinate clauses along with 'it' as agent clauses",
 		'trigger': { 'tag': { 'clause_type': 'subordinate_clause' } },
 		'context': { 'precededby': { 'tag': { 'syntax': 'agent_proposition_subject' }, 'skip': 'all' } },
 		'transform': { 'tag': { 'clause_type': 'agent_clause' } },
@@ -157,7 +157,7 @@ const transform_rules_json: TransformRuleJson[] = [
 			'precededby': { 'tag': { 'syntax': 'agent_proposition_subject' }, 'skip': ['np', 'vp'] },
 		},
 		'transform': { 'tag': { 'clause_type': 'agent_clause' } },
-		'comment': 'It please Mary [that John read this book]. - this was originally tagged as a relative clause but the \'it\' takes priority',
+		'comment': "It please Mary [that John read this book]. - this was originally tagged as a relative clause but the 'it' takes priority",
 	},
 	{
 		'name': "tag subordinate clauses starting with the infinitive 'to' as 'same_participant'",
@@ -228,7 +228,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'tag': { 'clause_type': 'adverbial_clause|adverbial_clause_same_subject' } },
 	},
 	{
-		'name': 'any remaining subordinate_clause is a \'different_participant\' patient clause by default',
+		'name': "any remaining subordinate_clause is a 'different_participant' patient clause by default",
 		'trigger': { 'tag': { 'clause_type': 'subordinate_clause' } },
 		'transform': { 'tag': { 'clause_type': 'patient_clause_different_participant' } },
 	},
@@ -239,7 +239,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'comment': 'Setting up for the case frame rules',
 	},
 	{
-		'name': 'tag \'that\' at the beginning of a main clause as a determiner when followed by a noun',
+		'name': "tag 'that' at the beginning of a main clause as a determiner when followed by a noun",
 		'trigger': { 'token': 'That|that' },
 		'context': {
 			'notprecededby': { 'token': '[', 'skip': { 'category': 'Conjunction' } },
@@ -306,7 +306,7 @@ const transform_rules_json: TransformRuleJson[] = [
 	},
 	// Interrogatives
 	{
-		'name': '\'who\'/\'what\' gets tagged as interrogative determiner when in a question',
+		'name': "'who'/'what' gets tagged as interrogative determiner when in a question",
 		'trigger': { 'token': 'Who|who|What|what' },
 		'context': {
 			'followedby': { 'token': '?', 'skip': 'all' },
@@ -347,7 +347,7 @@ const transform_rules_json: TransformRuleJson[] = [
 	},
 	// Noun-Noun relationships
 	{
-		'name': '\'named\' before a name and after a Verb becomes a function word',
+		'name': "'named' before a name and after a Verb becomes a function word",
 		'trigger': { 'token': 'named' },
 		'context': {
 			'precededby': { 'category': 'Verb', 'skip': 'all' },
@@ -356,7 +356,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'function': { 'relation': 'name', 'pre_np_adposition': 'relation' } },
 	},
 	{
-		'name': '\'named\' before a name and before a Verb becomes a function word',
+		'name': "'named' before a name and before a Verb becomes a function word",
 		'trigger': { 'token': 'named' },
 		'context': {
 			'followedby': [
@@ -367,7 +367,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'function': { 'relation': 'name', 'pre_np_adposition': 'relation' } },
 	},
 	{
-		'name': '\'of\' after group/crowd becomes a function word',
+		'name': "'of' after group/crowd becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'group|crowd' } },
 		'transform': { 'function': { 'relation': 'group' }, 'remove_tag': 'pre_np_adposition' },
@@ -391,7 +391,7 @@ const transform_rules_json: TransformRuleJson[] = [
 	},
 	// Senses of 'be'
 	{
-		'name': 'Tag \'there\' before \'be\' as existential',
+		'name': "Tag 'there' before 'be' as existential",
 		'trigger': { 'token': 'There|there' },
 		'context': {
 			'followedby': { 'stem': 'be', 'skip': 'vp_modifiers' },
@@ -409,7 +409,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'comment': "Since 'part' and 'like' are also words in the Ontology, this ensures the clause is interpreted correctly",
 	},
 	{
-		'name': '\'made of\' after \'be\' becomes a function word',
+		'name': "'made of' after 'be' becomes a function word",
 		'trigger': { 'token': 'made' },
 		'context': {
 			'precededby': { 'stem': 'be', 'skip': 'vp_modifiers' },
@@ -443,7 +443,7 @@ const transform_rules_json: TransformRuleJson[] = [
 			'followedby': { 'category': 'Verb', 'skip': 'all' },
 		},
 		'transform': { 'function': { 'auxiliary': 'flashback', 'time': 'past' } },
-		'comment': 'don\'t check for the perfect form because of cases like "have cry-out". The perfect is always indicative of the past in TBTA',
+		'comment': `don't check for the perfect form because of cases like "have cry-out". The perfect is always indicative of the past in TBTA`,
 	},
 	{
 		'name': 'be before a participle Verb indicates imperfective',
@@ -456,7 +456,7 @@ const transform_rules_json: TransformRuleJson[] = [
 			},
 		},
 		'transform': { 'function': { 'auxiliary': 'imperfective_aspect' } },
-		'comment': 'skip all because it may be a question (eg. "Are those people going?"). We\'ll have to assume it\'s not an error.',
+		'comment': `skip all because it may be a question (eg. "Are those people going?"). We'll have to assume it's not an error.`,
 	},
 	{
 		'name': 'be before a stem Verb, (especially one that contains a hyphen) indicates the clause is potentially passive',
@@ -480,10 +480,10 @@ const transform_rules_json: TransformRuleJson[] = [
 			},
 		},
 		'transform': { 'function': { 'auxiliary': 'passive' } },
-		'comment': 'skip all because it may be a question (eg. "Are those words written in the book?"). We\'ll have to assume it\'s not an error.',
+		'comment': `skip all because it may be a question (eg. "Are those words written in the book?"). We'll have to assume it's not an error.`,
 	},
 	{
-		'name': 'Any \'be\' verb remaining before another verb becomes a generic auxiliary',
+		'name': "Any 'be' verb remaining before another verb becomes a generic auxiliary",
 		'trigger': { 'category': 'Verb', 'stem': 'be' },
 		'context': {
 			'followedby': { 'category': 'Verb', 'skip': 'all' },

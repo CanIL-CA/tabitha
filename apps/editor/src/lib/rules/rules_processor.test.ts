@@ -62,7 +62,7 @@ describe('transform rules', () => {
 
 		const input_tokens = [
 			create_sentence_for_test([
-				create_token({ token: 'John\'s', type: TOKEN_TYPE.LOOKUP_WORD, lookup_terms: ['John'] }),
+				create_token({ token: "John's", type: TOKEN_TYPE.LOOKUP_WORD, lookup_terms: ['John'] }),
 				create_token({ token: 'peanut', type: TOKEN_TYPE.LOOKUP_WORD }),
 				create_token({ token: 'was', type: TOKEN_TYPE.LOOKUP_WORD }),
 				create_token({ token: 'a', type: TOKEN_TYPE.FUNCTION_WORD }),

@@ -19,9 +19,9 @@ describe('textify', () => {
 		expect(result).toBe(expected)
 	})
 
-	test('Jesus said to Jesus\' followers/disciples _implicit, ["You(followers) (imp) go."]', () => {
-		const test_tokens = tokenize_input('Jesus said to Jesus\' followers/disciples _implicit, ["You(followers) (imp) go."]')
-		const expected = 'Jesus said to Jesus\' disciples , " You (imp) go . "'
+	test(`Jesus said to Jesus' followers/disciples _implicit, ["You(followers) (imp) go."]`, () => {
+		const test_tokens = tokenize_input(`Jesus said to Jesus' followers/disciples _implicit, ["You(followers) (imp) go."]`)
+		const expected = `Jesus said to Jesus' disciples , " You (imp) go . "`
 
 		const result = textify(clausify(test_tokens))
 		expect(result).toBe(expected)

@@ -24,7 +24,7 @@
 		],
 		"PreToolUse": [
 			{
-				"matcher": "EnterWorktree",
+				"matcher": "EnterWorktree|Bash",
 				"hooks": [
 					{
 						"type": "command",

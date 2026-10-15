@@ -6,7 +6,7 @@ Welcome to the **TaBiThA** monorepo! This guide covers architecture, conventions
 
 ## 🗺️ System Architecture
 
-The TaBiThA monorepo consists of 7 Cloudflare Worker applications (6 SvelteKit apps plus a cron-only `scheduler` Worker) and 8 shared workspace packages managed with **Bun workspaces** and **Turborepo**:
+The TaBiThA monorepo consists of 8 Cloudflare Worker applications (7 SvelteKit apps plus a cron-only `scheduler` Worker) and 8 shared workspace packages managed with **Bun workspaces** and **Turborepo**:
 
 ```mermaid
 graph TD
@@ -17,6 +17,7 @@ graph TD
 		Targets["Targets (:1382)<br/>Target Language Lexicon & Forms"]
 		Copilot["Copilot (:9000)<br/>AI Translation Assistant"]
 		Www["Www (:1455)<br/>Public Marketing Site"]
+		Survey["Survey (:1086)<br/>Blinded A/B Reviews & D1 DB"]
 		Scheduler["Scheduler (cron only)<br/>Triggers Apps' Scheduled Work"]
 	end
 
@@ -85,6 +86,7 @@ graph TD
 | **`editor`** | `1337` | [http://localhost:1337](http://localhost:1337) | Interactive translation workbench, clause parser, rule processor, and UI. |
 | **`copilot`** | `9000` | [http://localhost:9000](http://localhost:9000) | AI translation guidance, theological constraint checking, and LLM calls via `@tabitha/ai` and the Cloudflare AI Gateway. |
 | **`www`** | `1455` | [http://localhost:1455](http://localhost:1455) | Public-facing marketing/informational site. |
+| **`survey`** | `1086` | [http://localhost:1086](http://localhost:1086) | Link-only blinded A/B reviews: reviewers score two outputs per item, and only the results link shows which was which. Backed by Cloudflare D1 SQLite. See [ADR 0024](docs/decisions/0024-survey-app.md). |
 | **`scheduler`** | — | — | Cron-only plain Worker (not SvelteKit) that triggers each app's scheduled work through a service binding. See [`apps/scheduler/README.md`](apps/scheduler/README.md) and [ADR 0018](docs/decisions/0018-scheduled-work-via-scheduler-worker.md). |
 
 ### Shared Packages (`packages/`)
@@ -146,7 +148,7 @@ bun run check:doctor
 ### 3. Start Development Servers
 
 ```bash
-# Start all 6 web apps concurrently
+# Start all 7 web apps concurrently
 bun run dev
 
 # Interactive launcher (choose presets e.g. Editor + Ontology)
@@ -159,6 +161,7 @@ bun run dev:sources
 bun run dev:targets
 bun run dev:copilot
 bun run dev:www
+bun run dev:survey
 
 # The cron-only scheduler Worker (wrangler dev --test-scheduled; see apps/scheduler/README.md)
 bun run dev:scheduler
@@ -322,9 +325,9 @@ Apps under `apps/*` are picked up automatically by Bun workspaces, Turborepo, CI
 1. **`package.json`** named `@tabitha/<app>`, with at least `check`, `check:lint`, `build`, `build:ci`, `test`, and `precommit`. Workers Builds runs `bun install && bun run build` before deploying, so a missing `build` fails the deploy, and CI only builds apps that define `build:ci`.
 2. **`wrangler.jsonc`** with `compatibility_date` and `nodejs_compat` (`bun run check:cloudflare` enforces both). Secrets go through `wrangler secret put`, never `vars`.
 3. **`.env`** following the two-tier convention in `AGENTS.md`; local values go in `.env.local`, never `.dev.vars` (gitignored as a safety net only).
-4. **Hardcoded lists**: `search_dirs` in `scripts/audits/check_philosophies.ts`, `PACKAGES_TO_COVER` in `scripts/ci/report_coverage.ts`, a `dev:<app>` script in the root `package.json`, and `desired_apps` in `tools/workers/config.ts`.
+4. **Hardcoded lists**: `search_dirs` in `scripts/audits/check_philosophies.ts`, a `dev:<app>` script in the root `package.json`, and `desired_apps` in `tools/workers/config.ts`. An app with D1 also goes in `apps_config` in `scripts/dx/db_load.ts` and `APP_NAMES` in `scripts/dx/db_status.ts`, or its local database is never built.
 5. **Docs**: the apps list in `AGENTS.md`, the diagram, apps table, and dev commands here, and the app sections of the root `README.md`.
-6. **Workers Builds**: after the app is merged to `main`, create an empty Worker with the app's name in the Cloudflare dashboard (**Workers & Pages → Create application → Start with Hello World**), run `bun run apply:run` in `tools/workers` to connect it to the repo, then push to `main` (an empty commit works) for its first real build. See [`tools/workers/README.md`](tools/workers/README.md#adding-a-new-apps-worker).
+6. **Workers Builds**: before the app's PR merges, run `bun run apply:run` in `tools/workers`. It creates the app's Worker with placeholder code and connects it to the repo, so the merge itself deploys the app. See [`tools/workers/README.md`](tools/workers/README.md#adding-a-new-apps-worker).
 
 **A SvelteKit app, additionally:** a port in `packages/vite-config/ports.js`, entries in `scripts/dx/dev_multi.ts`, `scripts/dx/dev_menu.ts`, `scripts/ci/run_e2e.ts` (if it has e2e tests), and `scripts/dx/doctor.ts`, a letter in `scripts/dx/lib/brand_mark.ts` (see "How to Generate an App's Icons" below), and `build:preview`/`deploy:preview` plus a `previews` block in `wrangler.jsonc` if it should get per-PR previews ([ADR 0020](docs/decisions/0020-per-pr-worker-previews.md)).
 
@@ -419,13 +422,13 @@ The `PATCH` bumps are handled automatically through the changes tracking system.
 
 ### Making local changes to Database schemas
 
-Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). Apart from Auth (below), there are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
+Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). Apart from Auth and Survey (below), there are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
 
 The process for the Auth db is a bit different and described below.
 
 #### Auth
 
-`DB_Auth` is the one database owned by D1 migrations, in `apps/ontology/migrations/auth/` ([ADR 0021](docs/decisions/0021-better-auth-sessions-in-d1.md)), not by a snapshot. It is a single, undated database shared by production and Previews, so a schema change reaches it as its own step.
+`DB_Auth` is owned by D1 migrations, in `apps/ontology/migrations/auth/` ([ADR 0021](docs/decisions/0021-better-auth-sessions-in-d1.md)), not by a snapshot. It is a single, undated database shared by production and Previews, so a schema change reaches it as its own step.
 
 To change its schema:
 
@@ -442,6 +445,10 @@ To change its schema:
    ```bash
    bunx wrangler d1 migrations apply DB_Auth --remote
    ```
+
+#### Survey
+
+`DB_Survey` is owned by D1 migrations too, in `apps/survey/migrations/` ([ADR 0024](docs/decisions/0024-survey-app.md)). The same rules apply: add the next numbered file, never edit an applied one, rebuild locally with `bun run db:load:survey`, and run `bunx wrangler d1 migrations apply DB_Survey --remote` from `apps/survey` before the code that needs it merges.
 
 #### Ontology/Sources/Targets
 

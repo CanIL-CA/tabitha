@@ -137,9 +137,9 @@ describe('to_concept_document', () => {
 	})
 
 	it('adds curated example sentences to a gloss shorter than three words', () => {
-		const concept = make_concept({ stem: 'black', gloss: '(LDV) the color', curated_examples: make_examples(['The man\'s clothes were black.']) })
+		const concept = make_concept({ stem: 'black', gloss: '(LDV) the color', curated_examples: make_examples(["The man's clothes were black."]) })
 
-		expect(to_concept_document(concept).text).toBe('the color: The man\'s clothes were black.')
+		expect(to_concept_document(concept).text).toBe("the color: The man's clothes were black.")
 	})
 
 	it('keeps a gloss of three or more words as is, even with curated examples', () => {

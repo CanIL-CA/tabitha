@@ -5,7 +5,7 @@ import { sign_in_as } from './support/sign_in'
 // Signs in a second, lower-privileged identity scoped to just this spec -- the suite's shared
 // storageState is always the fully-authorized fixture user (see e2e/README.md).
 
-test('a suggest-tier user\'s edit is held for approval, and an authorized reviewer can approve it', async ({ page, browser }) => {
+test("a suggest-tier user's edit is held for approval, and an authorized reviewer can approve it", async ({ page, browser }) => {
 	const suggester_email = `e2e-suggester-${Date.now()}@tabitha.local`
 	const gloss = `suggested gloss ${Date.now()}`
 

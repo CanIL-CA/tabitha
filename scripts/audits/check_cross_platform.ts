@@ -85,7 +85,7 @@ function check_posix_shell_syntax({ file_path, lines }: {
 				file_path,
 				line_number: idx + 1,
 				snippet: line.trim(),
-				message: 'Command string uses POSIX shell syntax (pipe, &&, or ;), which cmd.exe (execSync\'s default shell on Windows) can\'t parse. Build the input in JS and pass it via the `input` option, or invoke the target binary directly without shell chaining.',
+				message: "Command string uses POSIX shell syntax (pipe, &&, or ;), which cmd.exe (execSync's default shell on Windows) can't parse. Build the input in JS and pass it via the `input` option, or invoke the target binary directly without shell chaining.",
 			})
 		}
 	})

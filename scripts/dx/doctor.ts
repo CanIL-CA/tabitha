@@ -49,6 +49,7 @@ const APPS: { name: string, port: number, db_check?: DbCheck }[] = [
 	{ name: 'editor', port: 1337 },
 	{ name: 'copilot', port: 9000 },
 	{ name: 'www', port: 1455 },
+	{ name: 'survey', port: 1086, db_check: { binding: 'DB_Survey', table: 'Surveys' } },
 ]
 
 async function check_runtimes(): Promise<DiagnosticResult[]> {
@@ -245,7 +246,7 @@ export async function check_env_files(app_names?: string[]): Promise<DiagnosticR
 			name: 'App .env.local Secrets',
 			status: 'WARN',
 			message: `Missing or blank: ${unpopulated.join('; ')}`,
-			fix: 'See the "# SECRETS" section in that app\'s .env for where to obtain each value, then set it in the app\'s .env.local',
+			fix: `See the "# SECRETS" section in that app's .env for where to obtain each value, then set it in the app's .env.local`,
 		})
 	}
 
@@ -278,7 +279,7 @@ export async function check_env_files(app_names?: string[]): Promise<DiagnosticR
 			name: 'App .env.local Dev Identifiers',
 			status: 'WARN',
 			message: `Blank or production's value: ${prod_values.join('; ')}`,
-			fix: 'Run `bun run setup:env` to seed the dev value, or set your own in the app\'s .env.local (never the production one from .env)',
+			fix: "Run `bun run setup:env` to seed the dev value, or set your own in the app's .env.local (never the production one from .env)",
 		})
 	}
 
@@ -374,7 +375,7 @@ async function check_ai_gateway_tokens(): Promise<DiagnosticResult[]> {
 					name,
 					status: 'WARN',
 					message: `Unexpected HTTP ${http_code} from the AI Gateway (${used_by})`,
-					fix: 'Check the gateway\'s logs in the Cloudflare dashboard (AI → AI Gateway → tabitha)',
+					fix: "Check the gateway's logs in the Cloudflare dashboard (AI → AI Gateway → tabitha)",
 				},
 			}
 			results.push(result_by_status[status])
@@ -410,7 +411,7 @@ async function check_local_databases(): Promise<DiagnosticResult[]> {
 				name: `D1 Database (${app.name})`,
 				status: 'WARN',
 				message: `No matching D1 binding found in ${app.name}/wrangler.jsonc`,
-				fix: 'Check the app\'s wrangler.jsonc d1_databases configuration',
+				fix: "Check the app's wrangler.jsonc d1_databases configuration",
 			})
 			continue
 		}

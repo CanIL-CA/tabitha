@@ -33,7 +33,7 @@ afterEach(() => {
 })
 
 describe('transform_semantic_encoding', () => {
-	it('decodes a word\'s category, concept and features', async () => {
+	it("decodes a word's category, concept and features", async () => {
 		const [god] = await transform_semantic_encoding({ db, semantic_encoding: word({ tag: 'N-1A1s', value: 'God' }) })
 
 		expect(god).toMatchObject({
@@ -110,7 +110,7 @@ describe('transform_target_encoding', () => {
 		})
 	})
 
-	it('reads a paragraph\'s target as "|"', async () => {
+	it(`reads a paragraph's target as "|"`, async () => {
 		const [paragraph] = await transform_target_encoding({
 			db,
 			project: '',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { compare_stems } from './concepts'
 
 describe('compare_stems', () => {
-	it('orders characters by TBTA\'s custom sequence, not standard alphabetical order', () => {
+	it("orders characters by TBTA's custom sequence, not standard alphabetical order", () => {
 		// In the custom sequence '-0123456789abc...', '-' sorts before digits, which sort before letters.
 		expect(compare_stems({ a: '-abc', b: 'abc' })).toBeLessThan(0)
 		expect(compare_stems({ a: '9', b: 'a' })).toBeLessThan(0)

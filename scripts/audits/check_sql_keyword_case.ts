@@ -98,7 +98,7 @@ export function extract_literals(source: string): SourceLiteral[] {
 			const end = close === -1 ? source.length : close + 2
 			line += count_newlines(source.slice(index, end))
 			index = end
-		} else if (char === '\'' || char === '"' || char === '`') {
+		} else if (char === "'" || char === '"' || char === '`') {
 			const { text, end } = read_literal({ source, start: index })
 			literals.push({ text, line })
 			line += count_newlines(source.slice(index, end))

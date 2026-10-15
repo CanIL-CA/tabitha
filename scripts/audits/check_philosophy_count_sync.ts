@@ -212,7 +212,7 @@ async function run_cli() {
 	}
 	if (!should_fix) {
 		console.error(
-			'\n💡 Run with --fix to auto-sync the mentions that are a plain string swap (badge, intro sentence, summary bullet). A flagged table row still needs a manual edit, since its wording can\'t be generated.\n',
+			"\n💡 Run with --fix to auto-sync the mentions that are a plain string swap (badge, intro sentence, summary bullet). A flagged table row still needs a manual edit, since its wording can't be generated.\n",
 		)
 	} else {
 		console.error("\n💡 The mismatch(es) above couldn't be auto-fixed and need a manual edit.\n")

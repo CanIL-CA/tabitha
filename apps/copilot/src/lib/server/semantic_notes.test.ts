@@ -45,7 +45,7 @@ describe('get_semantic_notes', () => {
 		expect(result).toEqual({ notes: [], lwc_text: 'Lord, teach us to pray.' })
 	})
 
-	test('returns the model\'s notes, keeping the supplied LWC text', async () => {
+	test("returns the model's notes, keeping the supplied LWC text", async () => {
 		const ai = fake_ai({ output: { notes: [note], lwc_text: 'ignored' } })
 
 		const result = await get_semantic_notes({ llm_input: llm_input(), ai })
@@ -54,7 +54,7 @@ describe('get_semantic_notes', () => {
 		expect(result.lwc_text).toBe('Lord, teach us to pray.')
 	})
 
-	test('uses the model\'s translation as the LWC text when the verse has no LWC text in another language', async () => {
+	test("uses the model's translation as the LWC text when the verse has no LWC text in another language", async () => {
 		const ai = fake_ai({ output: { notes: [], lwc_text: 'Tuhan, ajarlah kami berdoa.' } })
 
 		const result = await get_semantic_notes({ llm_input: llm_input({ output_language: 'Indonesian', lwc_text: undefined, triggers: [] }), ai })
@@ -62,7 +62,7 @@ describe('get_semantic_notes', () => {
 		expect(result.lwc_text).toBe('Tuhan, ajarlah kami berdoa.')
 	})
 
-	test('strips sense letters the model left in a note\'s meaning or check', async () => {
+	test("strips sense letters the model left in a note's meaning or check", async () => {
 		const ai = fake_ai({ output: { notes: [{ ...note, meaning: 'The word pray (pray-A) is used.', check: 'Consider pray-A. Then stop.' }] } })
 
 		const [cleaned] = (await get_semantic_notes({ llm_input: llm_input(), ai })).notes

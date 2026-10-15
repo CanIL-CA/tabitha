@@ -62,7 +62,7 @@ describe('track_scripture_view', () => {
 		expect(browser.scripts).toHaveLength(1)
 	})
 
-	it('doesn\'t add the script when the page already has it', () => {
+	it("doesn't add the script when the page already has it", () => {
 		browser = install_fake_browser({ loaded_scripts: [TRACKER_URL] })
 
 		track_scripture_view('token-1')

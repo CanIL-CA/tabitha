@@ -73,7 +73,7 @@ globalThis.fetch = async (input, init) => {
 	}
 
 	if (/^https:\/\/api\.aquifer\.bible\/resources\/\d+$/.test(url) && method === 'GET') {
-		return new Response('[e2e mock] SIL Translator\'s Notes content for this verse.', { status: 200 })
+		return new Response("[e2e mock] SIL Translator's Notes content for this verse.", { status: 200 })
 	}
 
 	return original_fetch(input, init)
