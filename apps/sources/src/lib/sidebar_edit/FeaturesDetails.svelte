@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { is_used_in_source } from '#lib/encoding/features.js'
 	import { page } from '$app/state'
+	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import type { EntityFeature } from '@tabitha/types'
 	import type { PageSourceEntity, FeatureMap, FeatureInfo, FeatureValueInfo } from '#lib/types.js'
 
 	const { data = $bindable() }: { data: PageSourceEntity } = $props()
+
+	const edit_history = get_edit_history()
+
+	function set_feature_value({ feature, value }: { feature: EntityFeature, value: string }) {
+		edit_history().record()
+		feature.value = value
+	}
 
 	let filtered_features = $derived(data.features.filter(is_used_in_source(data.category)))
 	let category_features = $derived<FeatureInfo[]>((page.data.features as FeatureMap).get(data.category) ?? [])
@@ -36,7 +44,7 @@
 					<tr>
 						<td class="w-2/5">{feature.name}</td>
 						<td class="w-3/5">
-							<select bind:value={feature.value} class="select select-sm">
+							<select bind:value={() => feature.value, value => set_feature_value({ feature, value })} class="select select-sm">
 								{#each possible_values as value}
 									<option value={value.value}>{value.value}</option>
 								{/each}

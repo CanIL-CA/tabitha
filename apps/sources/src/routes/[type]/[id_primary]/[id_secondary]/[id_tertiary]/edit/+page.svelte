@@ -2,7 +2,7 @@
 	import type { PageSourceEntity } from '#lib/types.js'
 	import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
-	import type { EditorCheckResult, CheckerMessage, CheckerToken, NounListEntry } from '@tabitha/types'
+	import type { EditorCheckResult, CheckerMessage, CheckerToken } from '@tabitha/types'
 	import { Navigation } from '#lib/index.js'
 	import type { PageProps } from './$types'
 	import Settings from '#lib/settings/Settings.svelte'
@@ -10,21 +10,38 @@
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { structure_entities } from '#lib/encoding/structured.js'
+	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })
 
 	let { data }: PageProps = $props()
 
-	let phase1_text = $state('')
-	let source_entities = $state<PageSourceEntity[]>([])
-	let noun_list = $state<NounListEntry[]>([])
+	let phase1_text = $derived(data.source.phase_1_encoding)
+	let edit_history = $derived(new EditHistory({
+		source_entities: data.source.parsed_semantic_encoding,
+		noun_list: data.source.noun_list,
+	}))
+	set_edit_history(() => edit_history)
 
-	$effect(() => {
-		phase1_text = data.source.phase_1_encoding
-		source_entities = data.source.parsed_semantic_encoding
-		noun_list = data.source.noun_list
-	})
+	const HISTORY_SHORTCUTS: Record<string, () => void> = {
+		'z': () => edit_history.undo(),
+		'shift+z': () => edit_history.redo(),
+		'y': () => edit_history.redo(),
+	}
+
+	function handle_history_shortcut(event: KeyboardEvent) {
+		if (!event.ctrlKey && !event.metaKey) return
+		// leave the browser's native text undo alone inside text fields
+		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
+
+		const shortcut = `${event.shiftKey ? 'shift+' : ''}${event.key.toLowerCase()}`
+		const action = HISTORY_SHORTCUTS[shortcut]
+		if (!action) return
+
+		event.preventDefault()
+		action()
+	}
 
 	let is_checked = $state(false)
 	let checking = $state(false)
@@ -95,10 +112,11 @@
 				throw new Error('Analyze API failed')
 			}
 
-			source_entities = result.source_entities.map(entity => ({ ...entity, id: -1, parent_id: -1, boundary_category: '' }))
-			structure_entities(source_entities)
+			const analyzed_entities = result.source_entities.map(entity => ({ ...entity, id: -1, parent_id: -1, boundary_category: '' }))
+			structure_entities(analyzed_entities)
 
-			noun_list = result.noun_list
+			edit_history.record()
+			edit_history.current = { source_entities: analyzed_entities, noun_list: result.noun_list }
 		} catch (err) {
 			api_error = err instanceof Error ? err.message : 'Failed to analyze text'
 		} finally {
@@ -106,19 +124,21 @@
 		}
 	}
 
-	let selected_entity: PageSourceEntity|null = $state(null)
-	let sidebar_open = $state(false)
+	// selection is held by index, not object reference, so it survives undo/redo swapping in a new array
+	let selected_entity_id = $state<number | null>(null)
+	let selected_entity = $derived(selected_entity_id === null ? null : edit_history.current.source_entities[selected_entity_id] ?? null)
+	let sidebar_open = $derived(selected_entity !== null)
 
 	function on_entity_select(entity: PageSourceEntity|null) {
-		selected_entity = entity
-		sidebar_open = !!entity
+		selected_entity_id = entity?.id ?? null
 	}
 
 	function on_sidebar_close() {
-		selected_entity = null
-		sidebar_open = false
+		selected_entity_id = null
 	}
 </script>
+
+<svelte:window onkeydown={handle_history_shortcut} />
 
 <div class="flex flex-row flex-wrap max-w-full">
 	<Navigation nav_data={data.nav_data} url_end="/edit" />
@@ -142,6 +162,15 @@
 			<Icon icon="mdi:magnify" class="h-6 w-6" />
 		{/if}
 	</button>
+
+	<div class="join ml-4">
+		<button onclick={() => edit_history.undo()} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
+			<Icon icon="mdi:undo" class="h-6 w-6" />
+		</button>
+		<button onclick={() => edit_history.redo()} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
+			<Icon icon="mdi:redo" class="h-6 w-6" />
+		</button>
+	</div>
 
 	<div class="ml-4">
 		<Settings />
@@ -199,10 +228,10 @@
 	<div class="divider my-2"></div>
 	<div class="flex h-screen">
 		<div id="entity-container" class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
-			<SourceEntitiesEdit bind:source_entities {selected_entity} {on_entity_select} />
+			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} {selected_entity} {on_entity_select} />
 		</div>
 		{#if sidebar_open}
-			<Sidebar bind:entity={selected_entity} onclose={on_sidebar_close} bind:noun_list />
+			<Sidebar entity={selected_entity} onclose={on_sidebar_close} bind:noun_list={edit_history.current.noun_list} />
 		{/if}
 	</div>
 {/if}

@@ -2,11 +2,14 @@
 	import ConceptDialog from '#lib/ConceptDialog.svelte'
 	import ConceptDetails from '#lib/sidebar/ConceptDetails.svelte'
 	import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
+	import { get_edit_history } from '#lib/edit/history.svelte.js'
+	import Icon from '@iconify/svelte'
 	import type { OntologyResult, SourceEntity, PairingType } from '@tabitha/types'
 	import type { PageSourceConcept } from '#lib/types.js'
-	import Icon from '@iconify/svelte'
 
 	let { data = $bindable() }: { data: SourceEntity } = $props()
+
+	const edit_history = get_edit_history()
 
 	let pairing_concept = $derived<PageSourceConcept>(data.pairing_concept ?? {
 		stem: '',
@@ -39,12 +42,14 @@
 	function close_dialog() {
 		dialog_open = false
 		if (pairing_concept.stem) {
+			edit_history().record()
 			data.pairing_concept = pairing_concept
 			data.pairing_type = pairing_type
 		}
 	}
 
 	function remove_pairing() {
+		edit_history().record()
 		data.pairing_concept = null
 		data.pairing_type = null
 	}
