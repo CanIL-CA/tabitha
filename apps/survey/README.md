@@ -18,6 +18,8 @@ The script checks the file, randomly decides for each item which output shows as
 
 Republishing a file creates a new survey with new links; it never changes an existing one.
 
+Each reviewer sees the items in their own order, seeded by their reviewer cookie, so reviewers who stop partway don't all leave the same last items unanswered. The results page keeps the file's order.
+
 ## Local development
 
 ```sh
