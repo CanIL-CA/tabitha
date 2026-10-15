@@ -184,7 +184,7 @@
 		const range = get_action_range({ entities: source_entities, id: dragged_id })
 
 		// a slot on either side of the dragged range is a no-op
-		if (!range || (slot >= range[0] && slot <= range[1] + 1)) return
+		if (!range || slot >= range[0] && slot <= range[1] + 1) return
 
 		const range_length = get_range_length(range)
 

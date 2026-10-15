@@ -4,5 +4,7 @@
 	"ui_theme": "tema",
 	"ui_update_available": "Versi baru tersedia.",
 	"ui_refresh": "Muat ulang",
-	"ui_dismiss": "Tutup"
+	"ui_dismiss": "Tutup",
+	"ui_slow": "Ini memakan waktu lebih lama dari biasanya…",
+	"ui_stalled": "Ada masalah di pihak kami, bukan di pihak Anda. Silakan coba lagi dalam beberapa menit."
 }

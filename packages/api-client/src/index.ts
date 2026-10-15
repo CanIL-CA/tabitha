@@ -1,4 +1,5 @@
 export * from './http'
+export { use_request_tracking } from './request_tracking'
 export * from './response'
 export * from './service_bindings'
 export * from './ontology'
