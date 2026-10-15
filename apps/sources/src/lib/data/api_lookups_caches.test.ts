@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { create_fallback_ontology_data, fetch_all_concepts_for_part_of_speech, fetch_ontology_data_for_all_senses } from './api_lookups'
+import { create_fallback_ontology_data, fetch_all_concepts_for_part_of_speech } from './api_lookups'
 
 // The caches are module state with no reset, so each test uses its own key
 
@@ -52,32 +52,5 @@ describe('fetch_all_concepts_for_part_of_speech', () => {
 		const second = await fetch_all_concepts_for_part_of_speech('Adverb')
 
 		expect(second.map(({ stem }) => stem)).toEqual(['first'])
-	})
-})
-
-describe('fetch_ontology_data_for_all_senses', () => {
-	it('keeps only in-ontology results whose stem is exactly the one asked for', async () => {
-		respond_with([
-			concept({ stem: 'walk' }),
-			concept({ stem: 'walker' }),
-			concept({ stem: 'walk', status: 'not in ontology' }),
-		])
-
-		const result = await fetch_ontology_data_for_all_senses({ stem: 'walk', sense: 'A', part_of_speech: 'Verb' })
-
-		expect(result).toHaveLength(1)
-		expect(result[0].stem).toBe('walk')
-	})
-
-	it('remembers each stem and part of speech separately', async () => {
-		respond_with([concept({ stem: 'run', gloss: 'verb gloss' })])
-		await fetch_ontology_data_for_all_senses({ stem: 'run', sense: 'A', part_of_speech: 'Verb' })
-
-		respond_with([concept({ stem: 'run', gloss: 'noun gloss' })])
-		const verb = await fetch_ontology_data_for_all_senses({ stem: 'run', sense: 'A', part_of_speech: 'Verb' })
-		const noun = await fetch_ontology_data_for_all_senses({ stem: 'run', sense: 'A', part_of_speech: 'Noun' })
-
-		expect(verb[0].gloss).toBe('verb gloss')
-		expect(noun[0].gloss).toBe('noun gloss')
 	})
 })

@@ -4,7 +4,6 @@
 	import Icon from '@iconify/svelte'
 	import { fade } from 'svelte/transition'
 	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
-	import { check_for_pending_creates } from '#lib/offline/pending.js'
 	import { apply_pending_changes, approve_change } from '#lib/changes.js'
 	import { format_datetime, format_time } from '#lib/format.js'
 	import type { OntologyChange } from '#lib/types.js'
@@ -17,12 +16,13 @@
 	let save_result = $derived(page.state.save_result)
 
 	$effect(() => {
-		// these only live in this browser's offline queue, so the server can't have included them in data.changes
-		check_for_pending_creates().then(local => changes = [...local, ...data.changes])
+		if (!save_result) return
 
-		setTimeout(() => {
+		const dismiss_timer = setTimeout(() => {
 			save_result = undefined
 		}, 5000)
+
+		return () => clearTimeout(dismiss_timer)
 	})
 	
 	let applying_changes = $state(false)

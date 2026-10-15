@@ -2,7 +2,7 @@
 	import type { OntologyResult, ConceptKey } from '@tabitha/types'
 	import type { Snippet } from 'svelte'
 	import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
-	import { fetch_ontology_data_for_all_senses } from '#lib/data/api_lookups.js'
+	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import Icon from '@iconify/svelte'
 	import SidebarDetail from './SidebarDetail.svelte'
 
@@ -13,13 +13,9 @@
 	}
 	const { data, title, actions }: Props = $props()
 
-	let all_senses = $state<OntologyResult[]>([])
+	const ontology_senses = get_ontology_senses()
 
-	$effect(() => {
-		fetch_ontology_data_for_all_senses(data).then(fetched_senses => {
-			all_senses = fetched_senses
-		})
-	})
+	let all_senses = $derived(ontology_senses.senses_of(data))
 
 	function get_ontology_url_for_link({ stem, part_of_speech }: ConceptKey): string {
 		return `${PUBLIC_ONTOLOGY_API_HOST}/?q=${stem}&category=${part_of_speech}`

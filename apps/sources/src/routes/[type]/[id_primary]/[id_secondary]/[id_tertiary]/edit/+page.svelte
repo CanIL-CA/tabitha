@@ -11,11 +11,14 @@
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { structure_entities } from '#lib/encoding/structured.js'
 	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
+	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })
 
 	let { data }: PageProps = $props()
+
+	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
 	let edit_history = $derived(new EditHistory({

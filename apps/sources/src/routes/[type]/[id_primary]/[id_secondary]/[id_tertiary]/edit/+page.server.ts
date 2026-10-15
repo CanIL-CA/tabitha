@@ -1,4 +1,5 @@
 import { get_next_reference, get_previous_reference } from '#lib/data/navigation.js'
+import { load_ontology_senses } from '#lib/data/ontology_senses.js'
 import { get_source_data } from '#lib/data/read.js'
 import { load_source_feature_map } from '#lib/encoding/features.js'
 import { get_noun_list, structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
@@ -22,6 +23,7 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 	const next = await get_next_reference({ db, reference })
 
 	const features = await load_source_feature_map(db)
+	const ontology_senses = await load_ontology_senses(parsed_semantic_encoding)
 
 	return {
 		source: {
@@ -35,5 +37,6 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 			next,
 		},
 		features,
+		ontology_senses,
 	}
 }

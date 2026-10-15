@@ -1,4 +1,5 @@
 import { get_next_reference, get_previous_reference } from '#lib/data/navigation.js'
+import { load_ontology_senses } from '#lib/data/ontology_senses.js'
 import { get_source_data } from '#lib/data/read.js'
 import { get_noun_list, structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
 import { error } from '@sveltejs/kit'
@@ -20,6 +21,7 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 	const noun_list = get_noun_list(source.semantic_encoding)
 	const previous = await get_previous_reference({ db, reference })
 	const next = await get_next_reference({ db, reference })
+	const ontology_senses = await load_ontology_senses(parsed_semantic_encoding)
 
 	const data: PageData = {
 		source: {
@@ -32,6 +34,7 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 			current: reference,
 			next,
 		},
+		ontology_senses,
 	}
 	return data
 }

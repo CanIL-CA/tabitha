@@ -2,7 +2,6 @@
 	import type { PageProps } from './$types'
 	import Icon from '@iconify/svelte'
 	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
-	import { check_for_pending_creates } from '#lib/offline/pending.js'
 	import { format_datetime } from '#lib/format.js'
 	import { concepts_match } from '@tabitha/types/patterns'
 	import { change_made_between_versions } from '#lib/changes.js'
@@ -42,11 +41,6 @@
 		function is_a_match(change: OntologyChange): boolean {
 			return filters.every(filter => filter(change))
 		}
-	})
-
-	$effect(() => {
-		// these only live in this browser's offline queue, so the server can't have included them in data.changes
-		check_for_pending_creates().then(local => changes = [...local, ...data.changes])
 	})
 </script>
 

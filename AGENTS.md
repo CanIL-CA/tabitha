@@ -367,6 +367,31 @@ Keep `.svelte` component scripts limited to presentation and event wiring. Data 
 {/if}
 ```
 
+Where the loading code lives is half of the boundary; what triggers it is the other half:
+
+- **Data a page needs to render**, including anything tied to the URL, should come from the route's `load`. One batched call in the load beats one call per component: components that each fetch their own data on mount cost a request apiece on every page view.
+- **Data a user action asks for** (a click, a selection, a keystroke) should be fetched in that event handler, or in a function binding's setter (`bind:value={() => value, set_value}`).
+- **Never from `$effect`, `$derived` or a template expression.** Svelte reruns an effect whenever any state it read synchronously changes, including state read deep inside the functions it calls, so a load there can end up depending on state it never meant to and loop. This is how a request tracker that pushed onto a `$state` array from inside `@tabitha/api-client` once turned every fetching effect in sources into an infinite loop: one concept click sent thousands of requests to ontology and tripped its rate limit. `onMount` is acceptable only for browser-only state no load can see (e.g. a form restored from localStorage), since it runs once and tracks nothing.
+- **Shared code that may run inside a reactive context** (an api-client, a tracker, a cache) should not write `$state` as a side effect. If it has to, wrap the write in `untrack()` so callers never depend on it.
+
+`check_philosophies.ts` flags `await` and `.then(` inside an `$effect` block. It can't see an effect that calls a loading function without awaiting it, so the rule above carries more weight than the check.
+
+```svelte
+<!-- ❌ Avoid: each component loads its own data from an effect -->
+<script lang="ts">
+	let ontology_data = $state<OntologyResult | null>(null)
+	$effect(() => {
+		fetch_concept_ontology_data(data).then(result => ontology_data = result)
+	})
+</script>
+
+<!-- ✅ Preferred: the route's load fetches once for the whole page; the component derives from it -->
+<script lang="ts">
+	const ontology_senses = get_ontology_senses()
+	let ontology_data = $derived(ontology_senses.sense_of(data))
+</script>
+```
+
 ---
 
 ### 15. AI prompts live in separate Markdown files

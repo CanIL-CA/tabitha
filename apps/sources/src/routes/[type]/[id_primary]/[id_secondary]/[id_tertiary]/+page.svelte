@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '#lib/types.js'
+	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { Navigation, SourceEntities } from '#lib/index.js'
 	import Settings from '#lib/settings/Settings.svelte'
 	import Sidebar from '#lib/sidebar/Sidebar.svelte'
 	import Icon from '@iconify/svelte'
 
 	let { data } = $props()
+
+	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
 
 	let source = $derived(data.source)
 	let nav_data = $derived(data.nav_data)

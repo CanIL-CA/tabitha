@@ -1,31 +1,13 @@
 <script lang="ts">
-	import type { OntologyResult } from '@tabitha/types'
 	import type { PageSourceConcept } from '#lib/types.js'
-	import { fetch_concept_ontology_data } from '#lib/data/api_lookups.js'
+	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import HoverPopup from './HoverPopup.svelte'
 
 	let { data }: { data: PageSourceConcept } = $props()
 
-	let ontology_data = $state<OntologyResult | null>(null)
+	const ontology_senses = get_ontology_senses()
 
-	$effect(() => {
-		let canceled = false
-
-		if (data.ontology_data) {
-			ontology_data = data.ontology_data
-			return
-		}
-
-		fetch_concept_ontology_data(data).then(res => {
-			if (!canceled) {
-				ontology_data = res
-			}
-		})
-
-		return () => {
-			canceled = true
-		}
-	})
+	let ontology_data = $derived(ontology_senses.sense_of(data))
 </script>
 
 <HoverPopup>
@@ -37,16 +19,12 @@
 		{/if}
 	{/snippet}
 	{#snippet dropdown_content()}
+		{@const { level, gloss } = ontology_data}
 		<div class="text-base-content">
-			{#if ontology_data}
-				{@const { level, gloss } = ontology_data}
-				<p>
-					<span class="badge badge-outline L{level} badge-sm font-mono me-1">L{level}</span>
-					<span>{gloss}</span>
-				</p>
-			{:else}
-				<span>Loading Ontology data...</span>
-			{/if}
+			<p>
+				<span class="badge badge-outline L{level} badge-sm font-mono me-1">L{level}</span>
+				<span>{gloss}</span>
+			</p>
 		</div>
 	{/snippet}
 </HoverPopup>
