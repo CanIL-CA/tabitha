@@ -6,7 +6,7 @@ test('a queued create shows up as unsynced on the changes page', async ({ page }
 	const stem = `offlinecreate${Date.now()}`
 
 	await page.goto('/protected/concept/create')
-	// interacting before hydration finishes can throw off the debounced sense-lookup effect below
+	// a field filled before hydration finishes never reaches the debounced sense lookup below
 	await wait_for_hydration({ page })
 
 	await page.locator('input[name="stem"]').fill(stem)

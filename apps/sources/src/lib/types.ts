@@ -1,4 +1,5 @@
 import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, OntologyResult, SourceEntity, ConceptKey, SourceStatus } from '@tabitha/types'
+import type { SensesByConcept } from '#lib/data/ontology_senses.js'
 
 //===============
 // UI related
@@ -16,6 +17,7 @@ export type NavData = {
 export type PageData = {
 	source: PageSource
 	nav_data: NavData
+	ontology_senses: SensesByConcept
 }
 
 export type PageSource = DbSource & {

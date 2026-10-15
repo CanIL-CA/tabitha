@@ -48,39 +48,3 @@ test('status lookup page renders status overview', async ({ page }) => {
 
 	await expect(page).toHaveURL(/\/lookup\/status\/Bible\/Genesis$/)
 })
-
-test.skip('selecting word concept opens Constituent Inspector and loads ontology details', async ({ page }) => {
-	// Mock external ontology API to keep E2E tests fast, offline-capable, and deterministic
-	await page.route('**/search?*', async route => {
-		await route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify([
-				{
-					stem: 'God',
-					sense: 'A',
-					part_of_speech: 'Noun',
-					level: '1',
-					gloss: 'creator God',
-					categories: ['Noun'],
-					status: 'in ontology',
-				},
-			]),
-		})
-	})
-
-	await page.goto('/Bible/Genesis/1/1')
-	await wait_for_hydration({ page })
-
-	const conceptBadge = page.locator('div[role="button"]', { hasText: 'God' }).first()
-	await conceptBadge.click()
-
-	const sidebarHeading = page.locator('h3:has-text("Constituent Inspector")')
-	await expect(sidebarHeading).toBeVisible()
-
-	// TODO open the concept details before the 'View in Ontology' link
-
-	// Verify ontology data table content loaded cleanly from mocked API
-	const viewInOntologyLink = page.locator('a:has-text("View in Ontology")').first()
-	await expect(viewInOntologyLink).toBeVisible()
-})

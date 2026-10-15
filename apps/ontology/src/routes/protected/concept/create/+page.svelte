@@ -10,6 +10,9 @@
 	import { Toast } from '@tabitha/ui'
 	import { enqueue } from '#lib/offline/sync.js'
 	import type { SaveResult } from '#lib/types.js'
+	import type { PartOfSpeech } from '@tabitha/types'
+
+	const SENSE_LOOKUP_DELAY_MS = 500
 
 	let { data }: PageProps = $props()
 
@@ -17,9 +20,8 @@
 	let concept_data = $state(data.concept_data)
 	let can_save = $derived(concept_data.stem && concept_data.sense && concept_data.part_of_speech)
 
-	let debounced_stem_pos = $state({ stem: concept_data.stem, part_of_speech: concept_data.part_of_speech })
-	let debounce_delay = 500
 	let fetching_sense = $state(false)
+	let sense_lookup_timer: ReturnType<typeof setTimeout> | undefined
 
 	let saving = $state(false)
 	let error_message = $state('')
@@ -54,22 +56,26 @@
 		}
 	}
 
-	$effect(() => {
-		concept_data.categories = default_categories[concept_data.part_of_speech]?.slice() ?? []
-	})
+	function set_stem(stem: string) {
+		concept_data.stem = stem
+		look_up_next_sense()
+	}
 
-	$effect(() => {
-		// the timer prevents a fetch request from being sent on every keystroke
-		debounced_stem_pos = { stem: concept_data.stem, part_of_speech: concept_data.part_of_speech }
-		fetching_sense = true
+	function set_part_of_speech(part_of_speech: PartOfSpeech) {
+		concept_data.part_of_speech = part_of_speech
+		concept_data.categories = default_categories[part_of_speech]?.slice() ?? []
+		look_up_next_sense()
+	}
 
-		const timer = setTimeout(async () => {
-			const { stem, part_of_speech } = debounced_stem_pos
-			if (!stem || !part_of_speech) {
-				fetching_sense = false
-				return
-			}
+	// the timer prevents a fetch request from being sent on every keystroke
+	function look_up_next_sense() {
+		clearTimeout(sense_lookup_timer)
 
+		const { stem, part_of_speech } = concept_data
+		fetching_sense = Boolean(stem && part_of_speech)
+		if (!fetching_sense) return
+
+		sense_lookup_timer = setTimeout(async () => {
 			try {
 				concept_data.sense = await get_next_sense({ stem, part_of_speech })
 			} catch (err) {
@@ -77,10 +83,8 @@
 			} finally {
 				fetching_sense = false
 			}
-		}, debounce_delay)
-
-		return () => clearTimeout(timer)
-	})
+		}, SENSE_LOOKUP_DELAY_MS)
+	}
 </script>
 
 {#if error_message}
@@ -108,12 +112,12 @@
 			<section class="flex flex-wrap gap-4 items-end">
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Stem</legend>
-					<input name="stem" bind:value={concept_data.stem} class="input input-bordered" required />
+					<input name="stem" bind:value={() => concept_data.stem, set_stem} class="input input-bordered" required />
 				</fieldset>
 
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Part of speech</legend>
-					<select name="part_of_speech" bind:value={concept_data.part_of_speech} class="select select-bordered" required>
+					<select name="part_of_speech" bind:value={() => concept_data.part_of_speech, set_part_of_speech} class="select select-bordered" required>
 						{#each parts_of_speech as pos}
 							<option value={pos}>{pos}</option>
 						{/each}

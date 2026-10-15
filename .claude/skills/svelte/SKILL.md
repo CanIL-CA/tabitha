@@ -50,7 +50,9 @@ This document defines mandatory guidelines and code standards for Svelte 5 (Rune
   })
   ```
 - **NO `$: ` Declarations**: Never use legacy `$: ` reactive labels or statements.
-- **Side Effects (`$effect`)**: Use `$effect()` only for side effects (DOM updates, external library integration, sync). Do not use `$effect` to sync values that can be calculated with `$derived`.
+- **Side Effects (`$effect`)**: Use `$effect()` only for side effects (DOM updates, external library integration, timers with cleanup). Do not use `$effect` to sync values that can be calculated with `$derived`, or to react to a form field a function binding (`bind:value={() => value, set_value}`) or event handler could handle.
+- **NO data loading in `$effect`**: An effect reruns when any state it read synchronously changes, including state read inside the functions it calls, so a fetch there can loop. Page data comes from the route's `load`; data a user action asks for is fetched in that handler. See AGENTS.md Philosophy #14 for the full boundary.
+- **NO `$state` writes from shared code that effects may call**: a library function (api-client, tracker, cache) that writes `$state` makes its callers' effects depend on it. Wrap such writes in `untrack()`.
 
 ---
 

@@ -5,6 +5,7 @@
 	import Dialog from '#lib/Dialog.svelte'
 	import CopilotResultDisplay from '#lib/CopilotResultDisplay.svelte'
 	import Icon from '@iconify/svelte'
+	import { onMount } from 'svelte'
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 	import { AUTO_RETRY_LIMIT, auto_retry, needs_auto_retry, type AutoRetryStatus } from '#lib/auto_retry.js'
 	import { convert_to_usfm_document } from '#lib/usfm.js'
@@ -57,29 +58,42 @@
 	let doing_batch_operation = $derived(fetching_verse_count || fetching_chapter_count || fetching_results || generating_sfm)
 	let can_do_batch_operation = $derived(!doing_batch_operation && retry_set.size === 0)
 
-	$effect(() => {
-		fetching_verse_count = true
-		fetch_verses_for_chapter(reference)
-			.then(result => {
-				verses_in_chapter = result
-				end_verse = verses_in_chapter || start_verse
-			})
-			.finally(() => {
-				fetching_verse_count = false
-			})
+	// the saved reference comes from localStorage, which a load function can't read
+	onMount(() => {
+		look_up_verse_count()
+		look_up_chapter_count()
 	})
 
-	$effect(() => {
+	function set_book(book: string) {
+		reference.book = book
+		look_up_verse_count()
+		look_up_chapter_count()
+	}
+
+	function set_chapter(chapter: number) {
+		reference.chapter = chapter
+		look_up_verse_count()
+	}
+
+	async function look_up_verse_count() {
+		fetching_verse_count = true
+		try {
+			verses_in_chapter = await fetch_verses_for_chapter(reference)
+			end_verse = verses_in_chapter || start_verse
+		} finally {
+			fetching_verse_count = false
+		}
+	}
+
+	async function look_up_chapter_count() {
 		fetching_chapter_count = true
-		fetch_chapters_for_book({ book: reference.book })
-			.then(result => {
-				chapters_in_book = result
-				end_chapter = chapters_in_book || start_chapter
-			})
-			.finally(() => {
-				fetching_chapter_count = false
-			})
-	})
+		try {
+			chapters_in_book = await fetch_chapters_for_book({ book: reference.book })
+			end_chapter = chapters_in_book || start_chapter
+		} finally {
+			fetching_chapter_count = false
+		}
+	}
 
 	async function fetch_results() {
 		fetching_results = true
@@ -220,8 +234,8 @@
 		{#if range_mode === 'single_chapter'}
 			<h3 class="text-lg font-bold">{m.chapter()}</h3>
 
-			<BookSelect bind:book={reference.book} disabled={fetching_results} />
-			<input type="number" bind:value={reference.chapter} disabled={fetching_results} min="1" class="input w-20" />
+			<BookSelect bind:book={() => reference.book, set_book} disabled={fetching_results} />
+			<input type="number" bind:value={() => reference.chapter, set_chapter} disabled={fetching_results} min="1" class="input w-20" />
 
 			{#if verses_in_chapter === null}
 				<div class="prose mt-1">
@@ -240,7 +254,7 @@
 		{:else}
 			<h3 class="text-lg font-bold">{m.book()}</h3>
 
-			<BookSelect bind:book={reference.book} disabled={fetching_results} />
+			<BookSelect bind:book={() => reference.book, set_book} disabled={fetching_results} />
 
 			{#if chapters_in_book === null}
 				<div class="prose mt-1">

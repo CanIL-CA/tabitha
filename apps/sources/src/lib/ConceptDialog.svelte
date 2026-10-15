@@ -2,6 +2,7 @@
 	import type { OntologyResult } from '@tabitha/types'
 	import type { PageSourceConcept } from '#lib/types.js'
 	import { fetch_all_concepts_for_part_of_speech } from '#lib/data/api_lookups.js'
+	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import Icon from '@iconify/svelte'
 	import { onMount } from 'svelte'
 
@@ -12,13 +13,17 @@
 	}
 	let { concept = $bindable(), onclose, filter }: Props = $props()
 
+	const ontology_senses = get_ontology_senses()
+
 	let dialog: HTMLDialogElement
+	let all_concepts: OntologyResult[] = []
 	let concept_list = $state<OntologyResult[]>([])
 
 	onMount(() => {
 		dialog.showModal()
-		
+
 		fetch_all_concepts_for_part_of_speech(concept.part_of_speech).then(fetched_concepts => {
+			all_concepts = fetched_concepts
 			concept_list = filter ? fetched_concepts.filter(filter) : fetched_concepts
 
 			selected_index = concept_list.findIndex(({ stem, sense }) => concept.stem === stem && concept.sense === sense)
@@ -31,6 +36,8 @@
 	function set_concept() {
 		const selected_concept = concept_list[selected_index]
 		const { stem, sense, part_of_speech } = selected_concept
+		// the page loaded senses only for the stems it started with
+		ontology_senses.remember(all_concepts.filter(result => result.stem === stem))
 		concept = {
 			stem,
 			sense,

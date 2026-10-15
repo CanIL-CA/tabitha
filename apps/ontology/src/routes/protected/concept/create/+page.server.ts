@@ -1,3 +1,4 @@
+import { default_categories } from '#lib/lookups.js'
 import type { ConceptCreateData } from '#lib/types.js'
 
 // Reaching this page only requires PROTECTED_ACCESS (enforced in hooks.server.ts for all /protected
@@ -11,7 +12,7 @@ export async function load() {
 		level: '0',
 		gloss: '',
 		brief_gloss: '',
-		categories: [],
+		categories: default_categories.Noun?.slice() ?? [],
 		curated_examples: '',
 	}
 	return {
