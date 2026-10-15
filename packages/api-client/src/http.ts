@@ -1,5 +1,4 @@
 import { clean_trailing_slash } from '@tabitha/types/patterns'
-import { tracked } from './request_tracking'
 import { find_service_fetch } from './service_bindings'
 
 export type ClientOptions = {
@@ -9,14 +8,9 @@ export type ClientOptions = {
 	cache?: boolean
 }
 
-export type RequestOptions = RequestInit & {
-	/** Keeps the request out of the UI's "taking longer than usual" notice, for calls that are slow by design (e.g. AI). */
-	untracked?: boolean
-}
-
 export type HttpClient = {
-	get: <T>(path: string, init?: RequestOptions) => Promise<T | null>
-	post: <T>(path: string, body?: unknown, init?: RequestOptions) => Promise<T | null>
+	get: <T>(path: string, init?: RequestInit) => Promise<T | null>
+	post: <T>(path: string, body?: unknown, init?: RequestInit) => Promise<T | null>
 }
 
 const DEFAULT_CACHE_TAG = '1'
@@ -123,29 +117,25 @@ export function create_http_client(options: ClientOptions): HttpClient {
 	}
 
 	return {
-		async get<T>(path: string, options?: RequestOptions): Promise<T | null> {
+		async get<T>(path: string, init?: RequestInit): Promise<T | null> {
 			const url = build_url({ path, is_get: true })
-			const { untracked, ...init } = options ?? {}
-			const request = fetch_with_rate_limit_retry(() =>
-				options ? get_fetch()(url, { ...init, method: 'GET' }) : get_fetch()(url),
+			const res = await fetch_with_rate_limit_retry(() =>
+				init ? get_fetch()(url, { ...init, method: 'GET' }) : get_fetch()(url),
 			)
-			const res = await (untracked ? request : tracked(request))
 			return parse_response<T>(res)
 		},
 
-		async post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T | null> {
+		async post<T>(path: string, body?: unknown, init?: RequestInit): Promise<T | null> {
 			const url = build_url({ path })
-			const { untracked, ...init } = options ?? {}
-			const request = fetch_with_rate_limit_retry(() => get_fetch()(url, {
+			const res = await fetch_with_rate_limit_retry(() => get_fetch()(url, {
 				...init,
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					...init.headers,
+					...init?.headers,
 				},
 				body: body !== undefined ? JSON.stringify(body) : undefined,
 			}))
-			const res = await (untracked ? request : tracked(request))
 			return parse_response<T>(res)
 		},
 	}

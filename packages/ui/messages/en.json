@@ -4,7 +4,5 @@
 	"ui_theme": "theme",
 	"ui_update_available": "A new version is available.",
 	"ui_refresh": "Refresh",
-	"ui_dismiss": "Dismiss",
-	"ui_slow": "This is taking longer than usual…",
-	"ui_stalled": "Something's wrong on our end, not yours. Please try again in a few minutes."
+	"ui_dismiss": "Dismiss"
 }

@@ -40,11 +40,10 @@ export function create_editor_client(options: EditorClientOptions) {
 		},
 
 		/**
-		 * Convert English text into the more strict phase 1 syntax. Untracked: a model call can
-		 * legitimately take longer than the UI's slow-request notice allows.
+		 * Convert English text into the more strict phase 1 syntax
 		 */
 		async ai_assist_generate(text: string): Promise<AiAssistResult | null> {
-			return http.post<AiAssistResult>('/ai-assist/generate', { text: sanitize_input_whitespace(text) }, { untracked: true })
+			return http.post<AiAssistResult>('/ai-assist/generate', { text: sanitize_input_whitespace(text) })
 		},
 	}
 }

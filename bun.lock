@@ -418,7 +418,6 @@
       "name": "@tabitha/ui",
       "version": "1.0.0",
       "dependencies": {
-        "@tabitha/api-client": "workspace:*",
         "@tabitha/types": "workspace:*",
       },
       "devDependencies": {
