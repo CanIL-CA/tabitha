@@ -53,7 +53,7 @@ describe('collect_triggers', () => {
 		expect(collect({ flags: [flag({ name: 'Unused Flag', value: 'x', node_id: '0' })] })).toEqual([])
 	})
 
-	test('a single-flag trigger takes that flag\'s weight and node', () => {
+	test("a single-flag trigger takes that flag's weight and node", () => {
 		const metaphor = flag({ name: 'Metaphor', value: 'x', node_id: '2.1', weight: 4, anchor: { subject: 'word', state: 'light' } })
 
 		const [trigger] = collect({ flags: [metaphor] })

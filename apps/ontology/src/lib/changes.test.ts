@@ -59,7 +59,7 @@ describe('server round trips', () => {
 	})
 
 	describe('approve_change', () => {
-		it('posts to the approve route and revives the change\'s dates', async () => {
+		it("posts to the approve route and revives the change's dates", async () => {
 			const requests = fake_server([json_response({ body: { change: SERIALIZED_CHANGE } })])
 
 			const change = await approve_change(7)
@@ -81,7 +81,7 @@ describe('server round trips', () => {
 			expect(change.applied_date).toBeNull()
 		})
 
-		it('throws the server\'s message on failure', async () => {
+		it("throws the server's message on failure", async () => {
 			fake_server([json_response({ body: { message: 'Not allowed' }, status: 403 })])
 
 			await expect(approve_change(7)).rejects.toThrow('Not allowed')
@@ -115,7 +115,7 @@ describe('server round trips', () => {
 			expect(result.changes[0].suggested_by?.date).toEqual(new Date('2026-01-02T03:04:05.000Z'))
 		})
 
-		it('throws the server\'s message on failure', async () => {
+		it("throws the server's message on failure", async () => {
 			fake_server([json_response({ body: { message: 'Nothing to apply' }, status: 409 })])
 
 			await expect(apply_pending_changes()).rejects.toThrow('Nothing to apply')

@@ -24,6 +24,7 @@
     "test:unit:watch": "vitest watch",
     "test:e2e": "playwright test",
     "test:e2e:dev": "playwright test --ui",
+    "eval": "node eval/cli.ts",
     "gen": "wrangler types --include-runtime=false ./worker-configuration.d.ts",
     "precommit": "bun run check && bun run check:lint && bun run build && bun run test",
     "clean:svelte": "rm -rf .svelte-kit",

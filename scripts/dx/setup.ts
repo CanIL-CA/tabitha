@@ -30,7 +30,7 @@ async function install_claude_plugins() {
 	if (project_plugins.length === 0) return
 
 	if (!is_claude_cli_available()) {
-		console.log('🤖 Claude Code CLI not found -- skipping the project\'s Claude Code plugins (only needed if you use Claude Code).\n')
+		console.log("🤖 Claude Code CLI not found -- skipping the project's Claude Code plugins (only needed if you use Claude Code).\n")
 		return
 	}
 

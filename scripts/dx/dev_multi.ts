@@ -68,6 +68,15 @@ export const APPS: Record<string, AppInfo> = {
 		desc: 'Public Website & Marketing Site (Static)',
 		color: '\x1b[31m', // red
 	},
+	survey: {
+		id: 'survey',
+		index: 7,
+		pkg: '@tabitha/survey',
+		name: 'Survey',
+		port: 1086,
+		desc: 'Blinded A/B Reviews (D1)',
+		color: '\x1b[37m', // white
+	},
 }
 
 const COLOR_RESET = '\x1b[0m'

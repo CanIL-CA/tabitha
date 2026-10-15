@@ -57,7 +57,7 @@ function account_fetch({ workers, requests = [] }: {
 }): typeof fetch {
 	return mock(async (url: string, init?: RequestInit) => {
 		const method = init?.method ?? 'GET'
-		requests.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+		requests.push({ method, url, body: parse_body(init?.body) })
 
 		if (method === 'GET' && url.endsWith('/workers/scripts')) {
 			return json_response({ result: Object.keys(workers).map(name => ({ id: name, tag: `tag-${name}` })) })
@@ -67,9 +67,17 @@ function account_fetch({ workers, requests = [] }: {
 			const config = workers[tag_match[1]]
 			return config ? json_response({ result: config }) : not_connected()
 		}
+		const upload_match = url.match(/\/workers\/scripts\/(\w+)$/)
+		if (method === 'PUT' && upload_match) return json_response({ result: { id: upload_match[1], tag: `tag-${upload_match[1]}` } })
 		if (method === 'PATCH' || method === 'POST') return json_response({ result: {} })
 		throw new Error(`Unexpected request: ${method} ${url}`)
 	}) as unknown as typeof fetch
+}
+
+/** JSON bodies parse to objects; a multipart Worker upload becomes its parts as text. */
+function parse_body(body: RequestInit['body']): unknown {
+	if (body instanceof FormData) return Object.fromEntries([...body.keys()].map(key => [key, body.get(key)]))
+	return body ? JSON.parse(String(body)) : undefined
 }
 
 const writes = (requests: Request[]) => requests.filter(request => request.method !== 'GET')
@@ -79,7 +87,7 @@ describe('reconcile_workers', () => {
 		const requests: Request[] = []
 		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app], fetch_impl: account_fetch({ workers: { www: matching_config() }, requests }) })
 
-		expect(plan).toEqual({ worker_name: 'www', create: false, field_changes: [], env_var_changes: [], problems: [] })
+		expect(plan).toEqual({ worker_name: 'www', create_worker: false, connect: false, field_changes: [], env_var_changes: [], problems: [] })
 		expect(writes(requests)).toEqual([])
 	})
 
@@ -121,11 +129,14 @@ describe('reconcile_workers', () => {
 		expect(writes(requests)).toEqual([])
 	})
 
-	it('reports a Worker that has never been deployed, and still reconciles the others', async () => {
-		const [missing, template] = await reconcile_workers({ credentials, apply: true, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { sources: matching_config() } }) })
+	it("plans creating and connecting a Worker that doesn't exist yet, without writing when apply is false", async () => {
+		const requests: Request[] = []
 
-		expect(missing.problems).toEqual([expect.stringMatching(/No Worker named "www" exists yet/)])
+		const [missing, template] = await reconcile_workers({ credentials, apply: false, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { sources: matching_config() }, requests }) })
+
+		expect(missing).toEqual({ worker_name: 'www', create_worker: true, connect: true, field_changes: [], env_var_changes: [], problems: [] })
 		expect(template.problems).toEqual([])
+		expect(writes(requests)).toEqual([])
 	})
 
 	it('connects an unconnected Worker, copying the git repository and build token from a connected one', async () => {
@@ -133,7 +144,7 @@ describe('reconcile_workers', () => {
 
 		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { www: null, sources: matching_config() }, requests }) })
 
-		expect(plan).toEqual({ worker_name: 'www', create: true, field_changes: [], env_var_changes: [], problems: [] })
+		expect(plan).toEqual({ worker_name: 'www', create_worker: false, connect: true, field_changes: [], env_var_changes: [], problems: [] })
 		const settings = {
 			build_command,
 			deploy_command: production_deploy_command,
@@ -162,8 +173,22 @@ describe('reconcile_workers', () => {
 
 		const [plan] = await reconcile_workers({ credentials, apply: false, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { www: null, sources: matching_config() }, requests }) })
 
-		expect(plan.create).toBe(true)
+		expect(plan.connect).toBe(true)
 		expect(writes(requests)).toEqual([])
+	})
+
+	it('creates a missing Worker with placeholder code, then connects it by the tag the upload returns', async () => {
+		const requests: Request[] = []
+
+		const [plan] = await reconcile_workers({ credentials, apply: true, apps: [test_app, template_app], fetch_impl: account_fetch({ workers: { sources: matching_config() }, requests }) })
+
+		expect(plan).toMatchObject({ worker_name: 'www', create_worker: true, connect: true })
+		const [upload] = requests.filter(request => request.method === 'PUT')
+		expect(upload.url).toBe('https://api.cloudflare.com/client/v4/accounts/account-1/workers/scripts/www')
+		const { metadata, 'index.js': script } = upload.body as { metadata: string, 'index.js': Blob }
+		expect(JSON.parse(metadata)).toMatchObject({ main_module: 'index.js' })
+		expect(await script.text()).toContain('503')
+		expect(requests.filter(request => request.method === 'POST').map(request => (request.body as { script_tag: string }).script_tag)).toEqual(['tag-www'])
 	})
 
 	it('throws if no Worker is connected to copy the git repository and build token from', async () => {

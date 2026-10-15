@@ -79,7 +79,7 @@ describe('language profile weights', () => {
 		expect(weight_of({ flag: flag({ name: 'Verb Time', value: 'Tomorrow' }), profile })).toBe(4)
 	})
 
-	test('a language\'s distinguished noun numbers weigh 5', () => {
+	test("a language's distinguished noun numbers weigh 5", () => {
 		const profile = { noun_number: ['Dual'] }
 
 		expect(weight_of({ flag: flag({ name: 'Noun Number', value: 'Dual' }), profile })).toBe(5)

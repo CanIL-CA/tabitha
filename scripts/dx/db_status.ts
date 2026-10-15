@@ -37,7 +37,7 @@ type WranglerD1Config = {
 	d1_databases?: { binding?: string, database_name?: string, database_id?: string }[]
 }
 
-const APP_NAMES = ['ontology', 'sources', 'targets', 'editor', 'copilot']
+const APP_NAMES = ['ontology', 'sources', 'targets', 'editor', 'copilot', 'survey']
 
 function parse_wrangler_d1_configs(app_name: string): D1Config[] {
 	const wrangler_path = join(root_dir, 'apps', app_name, 'wrangler.jsonc')
@@ -237,7 +237,7 @@ export async function print_database_status() {
 	console.log('============================================================')
 	console.log('💡 Quick Commands:')
 	console.log('   • Reload all databases:       bun run db:load')
-	console.log('   • Reload specific database:   bun run db:load:ontology | bun run db:load:sources | bun run db:load:targets')
+	console.log('   • Reload specific database:   bun run db:load:ontology | bun run db:load:sources | bun run db:load:targets | bun run db:load:survey')
 	console.log('   • Health diagnostics:         bun run check:doctor')
 	console.log('============================================================\n')
 }

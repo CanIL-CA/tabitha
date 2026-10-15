@@ -106,7 +106,7 @@ describe('migrate_text_table', () => {
 		])
 	})
 
-	it('replaces a project\'s own rows rather than duplicating them on a second run', () => {
+	it("replaces a project's own rows rather than duplicating them on a second run", () => {
 		const targets_db = new Database(':memory:')
 
 		const first_run = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.' }] } })
@@ -120,7 +120,7 @@ describe('migrate_text_table', () => {
 		])
 	})
 
-	it('preserves another project\'s rows when reprocessing just one project (incremental rebuild)', () => {
+	it("preserves another project's rows when reprocessing just one project (incremental rebuild)", () => {
 		const targets_db = new Database(':memory:')
 
 		const english_db = make_tbta_db({ audiences: ['Literal'], tables: { Target_EB_Genesis: [{ reference: 'Genesis 1:1', verse: 'In the beginning.' }] } })

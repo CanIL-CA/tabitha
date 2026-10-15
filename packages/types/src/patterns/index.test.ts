@@ -37,7 +37,7 @@ describe('@tabitha/types/patterns', () => {
 		})
 
 		test('strip_jsonc_comments leaves URLs inside strings intact', () => {
-			const jsonc = '{\n  "proxy": "https://ontology.tabitha.bible/auth", // production\'s callback\n  "next": 1\n}'
+			const jsonc = `{\n  "proxy": "https://ontology.tabitha.bible/auth", // production's callback\n  "next": 1\n}`
 			const result = JSON.parse(strip_jsonc_comments(jsonc))
 			expect(result).toEqual({ proxy: 'https://ontology.tabitha.bible/auth', next: 1 })
 		})

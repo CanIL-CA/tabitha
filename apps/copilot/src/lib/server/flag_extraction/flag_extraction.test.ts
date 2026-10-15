@@ -7,7 +7,7 @@ describe('extract_flags', () => {
 		expect(extract_flags([])).toEqual([])
 	})
 
-	test('flags a verb feature, anchored at the verb\'s position in the tree', () => {
+	test("flags a verb feature, anchored at the verb's position in the tree", () => {
 		const encoding: CopilotEncodingEntity[] = [
 			{ category: 'Clause', children: [{ category: 'Noun', concept: 'Paul' }, { category: 'Verb', concept: 'write-01', features: { Time: 'Historic Past' } }] },
 		]

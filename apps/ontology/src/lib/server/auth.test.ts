@@ -164,7 +164,7 @@ describe('get_user_names', () => {
 		expect(result).toEqual(new Map([[1, 'Alice'], [7, 'Me']]))
 	})
 
-	it('uses the signed-in user\'s session name over the database row', async () => {
+	it("uses the signed-in user's session name over the database row", async () => {
 		const { locals } = make_locals({ tables: { users: [{ id: 7, email: 'me@example.com', name: 'Stale Name' }] }, user: current_user })
 
 		const result = await get_user_names(locals)
@@ -172,7 +172,7 @@ describe('get_user_names', () => {
 		expect(result.get(7)).toBe('Me')
 	})
 
-	it('falls back to the signed-in user\'s email when their session has no name', async () => {
+	it("falls back to the signed-in user's email when their session has no name", async () => {
 		const { locals } = make_locals({ tables: { users: [] }, user: { ...current_user, name: undefined as unknown as string } })
 
 		const result = await get_user_names(locals)

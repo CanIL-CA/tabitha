@@ -7,9 +7,9 @@ const SECOND_PERSON = ['you', 'your', 'yourself', 'yourselves']
 const THIRD_PERSON = ['he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves']
 
 const PRONOUN_MESSAGES = new Map([
-	['mine', '"mine" should be replaced with "my() X", e.g., That book is my(Paul\'s) book.'],
-	['ours', '"ours" should be replaced with "our() X", e.g., That book is our(Paul\'s) book.'],
-	['yours', '"yours" should be replaced with "your() X", e.g., That book is your(Paul\'s) book.'],
+	['mine', `"mine" should be replaced with "my() X", e.g., That book is my(Paul's) book.`],
+	['ours', `"ours" should be replaced with "our() X", e.g., That book is our(Paul's) book.`],
+	['yours', `"yours" should be replaced with "your() X", e.g., That book is your(Paul's) book.`],
 	['each-other', '"each-other" requires its respective Noun in parentheses, e.g., each-other(people).'],
 ])
 FIRST_PERSON.forEach(p => PRONOUN_MESSAGES.set(p, 'First person pronouns require their respective Noun in parentheses, e.g., {token}(Paul).'))

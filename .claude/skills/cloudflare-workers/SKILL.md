@@ -51,7 +51,7 @@ Ensure `"placement": { "mode": "off" }` in `wrangler.jsonc` when utilizing sessi
   `apps/<app>/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/<sha256(database_id)>.sqlite`
 - Use `bun run db:load` (`scripts/dx/db_load.ts`) to stream SQL snapshot dumps directly into Miniflare state in ~1-2 seconds.
 - Inspect local database health, tables, and row counts via `bun run db:status`.
-- **`DB_Auth` is the one D1 with native migrations** (`migrations_dir` in `apps/ontology/wrangler.jsonc`, owning its whole schema; [ADR 0021](../../../docs/decisions/0021-better-auth-sessions-in-d1.md)). `db_load` builds the local database from them, with no snapshot; a new migration reaches production with `bunx wrangler d1 migrations apply DB_Auth --remote` before the code that needs it merges. Every other D1 is a dated snapshot that `tools/databases` replaces whole, so don't add `migrations_dir` to those.
+- **`DB_Auth` and `DB_Survey` are the D1s with native migrations** (`migrations_dir` in `apps/ontology/wrangler.jsonc` and `apps/survey/wrangler.jsonc`, each owning its whole schema; [ADR 0021](../../../docs/decisions/0021-better-auth-sessions-in-d1.md), [ADR 0024](../../../docs/decisions/0024-survey-app.md)). `db_load` builds the local database from them, with no snapshot; a new migration reaches production with `bunx wrangler d1 migrations apply <binding> --remote` before the code that needs it merges. Every other D1 is a dated snapshot that `tools/databases` replaces whole, so don't add `migrations_dir` to those.
 
 ---
 
@@ -94,6 +94,7 @@ Under the hood, `apply.ts` shells out to `wrangler r2 bucket create`/`dev-url en
   - Editor: `1337`
   - Copilot: `9000`
   - Www: `1455`
+  - Survey: `1086`
   - Scheduler: none (a plain, cron-only Worker with no dev server)
 - **Cron triggers never go on a SvelteKit app.** `@sveltejs/adapter-cloudflare`'s generated Worker only exports `fetch`, so a `scheduled` export in `hooks.server.ts` (or a `triggers.crons` entry in a SvelteKit app's `wrangler.jsonc`) is silently never called. Put the work behind a token-checked `POST` endpoint in the app, and add a cron plus a job to `apps/scheduler`, which calls it through a service binding. See [ADR 0018](../../../docs/decisions/0018-scheduled-work-via-scheduler-worker.md) and `apps/scheduler/README.md`.
 - Validate all workspace configurations with `bun run check:cloudflare`.
@@ -102,7 +103,7 @@ Under the hood, `apply.ts` shells out to `wrangler r2 bucket create`/`dev-url en
 
 ## 5. Workers Builds Git Integration (Monorepo Cutover)
 
-Every app deploys to production via Cloudflare Workers Builds (Cloudflare's git integration), not any script or GitHub Actions step in this repo. `tools/workers` connects a new Worker to `CanIL-CA/tabitha` through `POST /accounts/{account_id}/builds/workers`, which needs the Worker's tag, so the Worker has to exist first: create an empty Hello World Worker with the app's name in the dashboard, run `bun run apply:run`, then push to `main` for the first real build (steps in `tools/workers/README.md`). The Worker Previews endpoints (`POST /builds/workers`, `GET`/`PATCH /builds/workers/{tag}`) aren't in Cloudflare's public API reference yet; their shapes come from the generated SDK in Cloudflare's `cf` CLI. All Workers share one repo connection, so after an org or repo move, reconnect one Worker in the dashboard and the rest follow.
+Every app deploys to production via Cloudflare Workers Builds (Cloudflare's git integration), not any script or GitHub Actions step in this repo. `tools/workers` connects a new Worker to `CanIL-CA/tabitha` through `POST /accounts/{account_id}/builds/workers`, which needs the Worker's tag, so the Worker has to exist first: `apply:run` uploads a placeholder Worker (`PUT /accounts/{account_id}/workers/scripts/{name}`, a module that answers 503) and then connects it, and the next push to `main` touching the app replaces it (steps in `tools/workers/README.md`). The Worker Previews endpoints (`POST /builds/workers`, `GET`/`PATCH /builds/workers/{tag}`) aren't in Cloudflare's public API reference yet; their shapes come from the generated SDK in Cloudflare's `cf` CLI. All Workers share one repo connection, so after an org or repo move, reconnect one Worker in the dashboard and the rest follow.
 
 The **Build command**/**Deploy command**/**Variables** below are per-Worker settings stored in Cloudflare, not in this repo, so a tooling change in git (package manager, build script) doesn't reach them on its own. Update them through `tools/workers` (below) in the same change.
 

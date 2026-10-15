@@ -20,7 +20,7 @@ describe('check_pure_functions: boolean flag parameters', () => {
 	})
 
 	it('flags an arrow function with a lone boolean parameter used in a ternary', () => {
-		const result = check({ content: 'const label = (active: boolean) => {\n\treturn active ? \'on\' : \'off\'\n}' })
+		const result = check({ content: "const label = (active: boolean) => {\n\treturn active ? 'on' : 'off'\n}" })
 		expect(result.length).toBe(1)
 		expect(result[0].message).toContain('"label"')
 	})

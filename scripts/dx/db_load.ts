@@ -38,6 +38,10 @@ export const apps_config: Record<string, AppConfig> = {
 		app_dir: join(root_dir, 'apps/targets'),
 		wrangler_path: join(root_dir, 'apps/targets/wrangler.jsonc'),
 	},
+	survey: {
+		app_dir: join(root_dir, 'apps/survey'),
+		wrangler_path: join(root_dir, 'apps/survey/wrangler.jsonc'),
+	},
 }
 
 export function parse_wrangler_jsonc(file_path: string): { d1_databases?: D1DatabaseEntry[] } | null {

@@ -10,12 +10,12 @@
 
 <div class="page-kicker">The project</div>
 <h1>Privacy Policy</h1>
-<p class="page-dek">Last updated: October 10, 2026</p>
+<p class="page-dek">Last updated: October 15, 2026</p>
 
 <div class="page-body">
 	<p>
-		This policy covers tabitha.bible and its subdomains (editor, copilot, ontology, sources, and
-		targets .tabitha.bible) — together, "the TaBiThA site." TaBiThA is a research and innovation
+		This policy covers tabitha.bible and its subdomains (editor, copilot, ontology, sources, targets,
+		and survey .tabitha.bible) — together, "the TaBiThA site." TaBiThA is a research and innovation
 		project of <a href="https://www.canil.ca">CanIL</a>.
 	</p>
 
@@ -41,10 +41,20 @@
 		to have it deleted.
 	</p>
 
+	<h2>Survey responses (survey)</h2>
+	<p>
+		survey.tabitha.bible collects reviews from people the project invites by link, such as
+		translation consultants comparing two versions of a tool's output. It stores the name you
+		type, your answers, and your comments, so the project can read the results and know whose
+		scores are whose. Only the people who ran the survey see the results. A cookie on that survey's
+		link remembers your answers in your browser, so you can come back later; it holds a random
+		identifier, nothing about you. Contact us below to have your responses deleted.
+	</p>
+
 	<h2>Cookies and tracking</h2>
 	<p>
-		Outside of the sign-in session ontology.tabitha.bible sets for signed-in users, this site
-		doesn't use cookies, run third-party analytics scripts, or use any third-party advertising or
+		Outside of the sign-in session ontology.tabitha.bible sets for signed-in users and the cookie
+		survey.tabitha.bible sets to keep your answers, this site doesn't use cookies, run third-party analytics scripts, or use any third-party advertising or
 		tracking pixels.
 	</p>
 
