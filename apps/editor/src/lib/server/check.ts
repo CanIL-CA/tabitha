@@ -1,7 +1,5 @@
 import { backtranslate } from '#lib/backtranslator/index.js'
-import { parse } from '#lib/parser/index.js'
-import { RULES } from '#lib/rules/index.js'
-import { apply_rules } from '#lib/rules/rules_processor.js'
+import { check_sentences, parse } from '#lib/parser/index.js'
 import { apply_text_insertions } from '#lib/text_insertions.js'
 
 import type {
@@ -17,20 +15,20 @@ import type { LookupResult, Sentence, Token } from '#lib/types.js'
 
 export async function run_check(text: string): Promise<EditorCheckResult> {
 	const sentences = await parse(text)
-	return to_check_result({ sentences, checked_sentences: apply_rules({ sentences, rules: RULES.CHECKER }) })
+	return to_check_result({ sentences, checked_sentences: check_sentences(sentences) })
 }
 
 // Inserts the checker's auto-fix tokens into the text, then checks the fixed text
 export async function run_check_with_auto_fixes(text: string): Promise<EditorCheckResult> {
 	const sentences = await parse(text)
-	const checked_sentences = apply_rules({ sentences, rules: RULES.CHECKER })
+	const checked_sentences = check_sentences(sentences)
 	const auto_fix_tokens = checked_sentences.flatMap(({ clause }) => expand_internal_token(clause)).filter(token => token.insertion)
 	if (!auto_fix_tokens.length) return to_check_result({ sentences, checked_sentences })
 
 	const auto_fixes = auto_fix_tokens.map(token => token.insertion!)
 	const { text: fixed_text, inserted_ranges } = apply_text_insertions({ text, insertions: auto_fixes })
 	const parsed_fixed_sentences = await parse(fixed_text)
-	const fixed_sentences = apply_rules({ sentences: parsed_fixed_sentences, rules: RULES.CHECKER })
+	const fixed_sentences = check_sentences(parsed_fixed_sentences)
 
 	inserted_ranges.forEach(({ start, end }, index) => {
 		const inserted_token = fixed_sentences
