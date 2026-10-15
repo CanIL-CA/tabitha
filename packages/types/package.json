@@ -14,6 +14,7 @@
     "./editor": "./src/editor.ts",
     "./copilot": "./src/copilot.ts",
     "./target": "./src/target.ts",
+    "./survey": "./src/survey.ts",
     "./patterns": "./src/patterns/index.ts"
   },
   "scripts": {

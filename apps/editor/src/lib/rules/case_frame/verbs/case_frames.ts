@@ -893,7 +893,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'other_rules': {
 				'extra_patient': {
 					...directly_after_verb(),
-					'extra_message': 'speak-A cannot be used with a regular object. The patient is expressed as \'speak about X\'',
+					'extra_message': "speak-A cannot be used with a regular object. The patient is expressed as 'speak about X'",
 				},
 			},
 		}],
@@ -962,7 +962,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['tell-A', {
 			'instrument': by_adposition('with'),
 			'patient_clause_different_participant': by_clause_tag('patient_clause_different_participant|relative_clause_that'),
-			'comment': 'the patient clause may have been interpreted as a relative clause if \'that\' was present',
+			'comment': "the patient clause may have been interpreted as a relative clause if 'that' was present",
 		}],
 		['tell-B', patient_from_subordinate_clause()],
 		['tell-C', {
@@ -1123,7 +1123,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		}],
 		['write-E', {
 			'patient_clause_different_participant': by_clause_tag('patient_clause_different_participant|relative_clause_that'),
-			'comment': 'the patient clause may have been interpreted as a relative clause if \'that\' was present',
+			'comment': "the patient clause may have been interpreted as a relative clause if 'that' was present",
 		}],
 	]],
 ])

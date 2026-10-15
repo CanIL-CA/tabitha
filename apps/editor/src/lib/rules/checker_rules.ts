@@ -110,13 +110,13 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
-		'name': 'Check for "Let\'s"',
-		'trigger': { 'token': 'Let\'s|let\'s' },
+		'name': `Check for "Let's"`,
+		'trigger': { 'token': "Let's|let's" },
 		'context': {
 			'followedby': { 'category': 'Verb', 'skip': 'vp_modifiers' },
 		},
 		'error': {
-			'message': 'Write \'We(X) {0:stem} _suggestiveLets\' instead. See P1 Checklist section 15.',
+			'message': "Write 'We(X) {0:stem} _suggestiveLets' instead. See P1 Checklist section 15.",
 		},
 	},
 	{
@@ -130,28 +130,28 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
-		'name': 'Check for \'May X...\'',
+		'name': "Check for 'May X...'",
 		'trigger': { 'token': 'May' },
 		'context': {
 			'followedby': { 'category': 'Noun' },
 		},
 		'error': {
-			'message': 'Write \'I(X) pray-hope [{0:token}...]\' instead. See P1 Checklist section 15.',
+			'message': "Write 'I(X) pray-hope [{0:token}...]' instead. See P1 Checklist section 15.",
 		},
 	},
 	{
-		'name': 'Avoid using \'way\'',
+		'name': "Avoid using 'way'",
 		'trigger': { 'stem': 'way' },
 		'suggest': {
-			'message': 'Consider rewording to avoid the use of \'way\'. If that is impossible, you can still use it in the sense of means or method.',
+			'message': "Consider rewording to avoid the use of 'way'. If that is impossible, you can still use it in the sense of means or method.",
 		},
 		'comment': 'See section X of the Phase 1 checklist',
 	},
 	{
-		'name': 'Cannot use \'even\'',
+		'name': "Cannot use 'even'",
 		'trigger': { 'stem': 'even' },
 		'error': {
-			'message': 'Cannot use \'even\'. Simply omit it or reword the sentence to get the right emphasis. See P1 Checklist section 17.',
+			'message': "Cannot use 'even'. Simply omit it or reword the sentence to get the right emphasis. See P1 Checklist section 17.",
 		},
 		'comment': 'See section 17 of the Phase 1 checklist',
 	},
@@ -172,14 +172,14 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'comment': 'See section 1 of the Phase 1 checklist',
 	},
 	{
-		'name': 'Cannot say "X\'s own Y"',
+		'name': `Cannot say "X's own Y"`,
 		'trigger': { 'token': 'own' },
 		'context': {
 			'precededby': { 'tag': { 'relation': 'genitive_saxon' }, 'skip': { 'token': 'very' } },
 			'followedby': { 'category': 'Noun', 'skip': 'np_modifiers' },
 		},
 		'error': {
-			'message': 'Cannot write "{0:token} own {1:token}". Simply omit \'own\' or write "{0:token} _emphasized {1:token}" if desired. See P1 Checklist section 17.',
+			'message': `Cannot write "{0:token} own {1:token}". Simply omit 'own' or write "{0:token} _emphasized {1:token}" if desired. See P1 Checklist section 17.`,
 		},
 		'comment': 'See section 17 of the Phase 1 checklist',
 	},
@@ -325,7 +325,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
-		'name': 'Some noun plurals aren\'t recognized',
+		'name': "Some noun plurals aren't recognized",
 		'trigger': { 'token': 'troubles|lands' },
 		'error': {
 			'message': "TBTA does not use the plural '{token}'. Put '_plural' after the singular form to indicate plurality.",
@@ -472,7 +472,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
-		'name': 'Cannot use \'now\' as a conjuntion to start a sentence',
+		'name': "Cannot use 'now' as a conjuntion to start a sentence",
 		'trigger': { 'token': 'Now', 'tag': { 'position': 'first_word' } },
 		'warning': {
 			'message': "Note TBTA does not have the discourse marker 'now', only the adverb 'now' meaning 'at the present time'.",
@@ -515,7 +515,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'comment': 'eg. John went to the market XX[in-order-to be seen by Mary]XX.',
 	},
 	{
-		'name': 'Don\'t allow passives in \'by\' adverbial clauses',
+		'name': "Don't allow passives in 'by' adverbial clauses",
 		'trigger': { 'tag': { 'auxiliary': 'passive' } },
 		'context': {
 			'precededby': { 'stem': 'by', 'skip': 'all' },
@@ -707,7 +707,7 @@ const builtin_checker_rules: BuiltInRule[] = [
 		},
 	},
 	{
-		name: 'Warn user if the word\'s complexity is ambiguous',
+		name: "Warn user if the word's complexity is ambiguous",
 		comment: '',
 		rule: {
 			trigger: token => token.type === TOKEN_TYPE.LOOKUP_WORD,
@@ -781,7 +781,7 @@ const builtin_checker_rules: BuiltInRule[] = [
 					const that_token = trigger_token.sub_tokens[1]
 					return {
 						token_to_flag: that_token,
-						warning: 'This is being interpreted as a relative clause. If it\'s supposed to be a complement clause, remove the \'that\'.',
+						warning: "This is being interpreted as a relative clause. If it's supposed to be a complement clause, remove the 'that'.",
 					}
 				}
 			}),
@@ -949,16 +949,16 @@ function* check_ontology_status(token: Token): Generator<MessageInfo, void, unkn
 		yield { token_to_flag: token, suggest: "Add '_noun', '_verb', '_adj', '_adv', '_adp', '_conj', or '_part' after the unknown word so the editor can check the syntax more accurately." }
 
 	} else if (top_result.ontology_status === 'approved') {
-		yield { token_to_flag: token, info: 'The {category} \'{stem}\' will be added to the Ontology in a future update. Consult the How-To document for more info.' }
+		yield { token_to_flag: token, info: "The {category} '{stem}' will be added to the Ontology in a future update. Consult the How-To document for more info." }
 
 	} else if (top_result.ontology_status === 'suggested') {
-		yield { token_to_flag: token, error: 'The {category} \'{stem}\' is not in the Ontology, but discussion is ongoing. Hover over the word for potential hints from the How-To document.' }
+		yield { token_to_flag: token, error: "The {category} '{stem}' is not in the Ontology, but discussion is ongoing. Hover over the word for potential hints from the How-To document." }
 
 	} else if (top_result.ontology_status === 'not used') {
-		yield { token_to_flag: token, error: 'The {category} \'{stem}\' is not in the Ontology. Hover over the word for hints from the How-To document.' }
+		yield { token_to_flag: token, error: "The {category} '{stem}' is not in the Ontology. Hover over the word for hints from the How-To document." }
 
 	} else if (top_result.ontology_status === 'unknown') {
-		yield { token_to_flag: token, warning: 'The {category} \'{token}\' is not recognized. Consult the How-To document or consider using a different word.' }
+		yield { token_to_flag: token, warning: "The {category} '{token}' is not recognized. Consult the How-To document or consider using a different word." }
 	}
 	
 	if (top_result?.gloss.includes('DELETE')) {

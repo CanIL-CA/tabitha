@@ -55,7 +55,7 @@ describe('choose_strategy', () => {
 })
 
 describe('stale_cache_names', () => {
-	it('drops every cache but the current deployment\'s, including an earlier worker\'s', () => {
+	it("drops every cache but the current deployment's, including an earlier worker's", () => {
 		const current = Object.values(cache_names({ version: '2' }))
 		const existing = ['precache-1', 'runtime-1', 'precache-2', 'runtime-2', 'workbox-precache-v2-https://ontology.tabitha.bible/', 'ontology-examples-api']
 

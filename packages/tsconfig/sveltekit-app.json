@@ -7,6 +7,8 @@
 	"include": [
 		"${configDir}/src",
 		"${configDir}/e2e/**/*.ts",
+		"${configDir}/eval/**/*.ts",
+		"${configDir}/scripts/**/*.ts",
 		"${configDir}/vite.config.js",
 		"${configDir}/playwright.config.js",
 		"${configDir}/worker-configuration.d.ts"

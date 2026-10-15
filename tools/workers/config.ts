@@ -20,6 +20,7 @@ export const desired_apps: DesiredApp[] = [
 	{ worker_name: 'ontology', app_dir: 'ontology' },
 	{ worker_name: 'scheduler', app_dir: 'scheduler' },
 	{ worker_name: 'sources', app_dir: 'sources' },
+	{ worker_name: 'survey', app_dir: 'survey' },
 	{ worker_name: 'targets', app_dir: 'targets' },
 	{ worker_name: 'www', app_dir: 'www' },
 ]

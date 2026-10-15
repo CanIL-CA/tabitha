@@ -19,7 +19,7 @@ describe('scheduler', () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => {})
 	})
 
-	it('calls ontology\'s scheduled sync with the shared token every 12 hours', async () => {
+	it("calls ontology's scheduled sync with the shared token every 12 hours", async () => {
 		const env = create_env(new Response('{"complex_terms":42}'))
 
 		await run_cron({ cron: '0 */12 * * *', env })

@@ -1,0 +1,50 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "survey",
+	"compatibility_date": "2026-10-06",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": false,
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	// No per-PR Previews: a Preview would read and write the same database as production, so a
+	// test answer would land among real reviewers' (docs/decisions/0024-survey-app.md).
+	"routes": [
+		{
+			"pattern": "survey.tabitha.bible",
+			"custom_domain": true
+		}
+	],
+	"ratelimits": [
+		{
+			"name": "RATE_LIMITER",
+			"namespace_id": "6",
+			"simple": {
+				"limit": 60,
+				"period": 60
+			}
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB_Survey",
+			// Undated, unlike the TBTA-derived databases: it's long-lived and owned by its migrations.
+			"database_name": "Survey",
+			"database_id": "c4d7027c-0047-4636-8e4b-31b82f9c5ba9",
+			// Owns the whole schema; db:load builds the local database from these. Production gets
+			// `wrangler d1 migrations apply DB_Survey --remote` before the code that needs them merges.
+			"migrations_dir": "migrations"
+		}
+	],
+	"placement": {
+		"mode": "off"
+	}
+}

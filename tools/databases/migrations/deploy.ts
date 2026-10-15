@@ -154,7 +154,7 @@ function find_previews_block(config_text: string): { start: number; end: number 
 			return { start, end: i + 1 }
 		}
 	}
-	throw new Error('Unbalanced braces in the wrangler config\'s "previews" block.')
+	throw new Error(`Unbalanced braces in the wrangler config's "previews" block.`)
 }
 
 /** Returns the index of the closing quote of the string starting at `open`. */

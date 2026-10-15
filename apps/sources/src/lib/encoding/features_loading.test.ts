@@ -63,7 +63,7 @@ describe('get_source_features', () => {
 })
 
 describe('load_source_feature_map', () => {
-	it('groups the rows by category, then by feature, keeping each feature\'s values', async () => {
+	it("groups the rows by category, then by feature, keeping each feature's values", async () => {
 		const feature_map = await load_source_feature_map(fake_db([...VERB_FEATURES, ...NOUN_FEATURES]))
 
 		expect([...feature_map.keys()].toSorted()).toEqual(['Noun', 'Verb'])
@@ -72,7 +72,7 @@ describe('load_source_feature_map', () => {
 		expect(feature_map.get('Noun')?.[0].name).toBe('Number')
 	})
 
-	it('orders a category\'s features by position, whatever order the rows arrive in', async () => {
+	it("orders a category's features by position, whatever order the rows arrive in", async () => {
 		const shuffled = [VERB_FEATURES[2], VERB_FEATURES[3], VERB_FEATURES[0], VERB_FEATURES[1]]
 
 		const feature_map = await load_source_feature_map(fake_db(shuffled))
@@ -138,7 +138,7 @@ describe('fill_in_features', () => {
 		expect(result.features).toEqual([{ name: 'Time', value: 'Discourse' }, { name: 'Aspect', value: 'Unmarked' }])
 	})
 
-	it('falls back to the default for a value the feature doesn\'t have', async () => {
+	it("falls back to the default for a value the feature doesn't have", async () => {
 		const result = fill_in_features({
 			source_entity: verb_entity({ features: [{ name: 'Time', value: 'Someday' }] }),
 			feature_map: await verb_feature_map(),
@@ -147,7 +147,7 @@ describe('fill_in_features', () => {
 		expect(result.feature_codes).toBe('d.')
 	})
 
-	it('has no codes for a category the map doesn\'t know', async () => {
+	it("has no codes for a category the map doesn't know", async () => {
 		const result = fill_in_features({ source_entity: verb_entity({ category: 'Adverb' }), feature_map: await verb_feature_map() })
 
 		expect(result).toEqual({ feature_codes: '', features: [] })

@@ -116,7 +116,7 @@ describe('run_scheduled_sync', () => {
 		return { ...GATEWAY_ENV, DB_Ontology: db as unknown as D1Database, VECTORIZE_Concepts: index }
 	}
 
-	it('loads the sheet\'s terms, then embeds the concepts, including a term only the sheet knows', async () => {
+	it("loads the sheet's terms, then embeds the concepts, including a term only the sheet knows", async () => {
 		stub_network()
 		const db = create_fake_db({ concepts: [REJOICE_ROW] })
 		const index = create_fake_index()
@@ -139,7 +139,7 @@ describe('run_scheduled_sync', () => {
 		expect(summary).toEqual({ complex_terms: 1, embedded: 0, unchanged: 2, failed: 0 })
 	})
 
-	it('still embeds the ontology\'s concepts when the sheet can\'t be fetched, then surfaces that failure', async () => {
+	it("still embeds the ontology's concepts when the sheet can't be fetched, then surfaces that failure", async () => {
 		stub_network({ sheet_status: 503 })
 		const db = create_fake_db({ concepts: [REJOICE_ROW] })
 		const index = create_fake_index()

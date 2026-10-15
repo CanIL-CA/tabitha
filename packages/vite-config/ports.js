@@ -41,4 +41,9 @@ export const PORTS = {
 		emoji: '🖨️',
 		ref: 'Gur Thgraoret Ovoyr — Fpevcgher zrrgf gur cevagvat cerff',
 	},
+	survey: {
+		port: 1086,
+		emoji: '📋',
+		ref: 'Gur Qbzrfqnl Obbx — Jvyyvnz gur Pbadhrebe\'f terng fheirl bs Ratynaq, 1086',
+	},
 }

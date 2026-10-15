@@ -34,7 +34,7 @@ describe('use_service_bindings', () => {
 		expect(find_service_fetch('https://disabled.test')).toBeUndefined()
 	})
 
-	it('sets host from the request URL and keeps the caller\'s other headers', async () => {
+	it("sets host from the request URL and keeps the caller's other headers", async () => {
 		const calls: BoundCall[] = []
 		use_service_bindings({ routes: [{ base_url: 'https://headers.test', binding: fake_binding({ calls }) }] })
 
