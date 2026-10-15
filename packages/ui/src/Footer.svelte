@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
 	import ThemeSelector from './themes/ThemeSelector.svelte'
+	import SlowNotice from './slowness/SlowNotice.svelte'
 	import UpdateNotice from './UpdateNotice.svelte'
 
 	type Props = {
@@ -21,8 +22,9 @@
 <footer class="footer footer-horizontal mt-20 max-w-none bg-neutral p-10 text-neutral-content">
 	<nav>
 		<ThemeSelector {colors} />
-		<!-- Footer is the one layout piece every app includes, so it's the single place to mount this. -->
+		<!-- Footer is the one layout piece every app includes, so it's the single place to mount these. -->
 		<UpdateNotice />
+		<SlowNotice />
 	</nav>
 
 	{#if children}
