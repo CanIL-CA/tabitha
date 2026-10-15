@@ -3,6 +3,7 @@
 	import type { FeatureMap, PageSourceEntity } from '#lib/types.js'
 	import ConceptDialog from '#lib/ConceptDialog.svelte'
 	import { entity_clipboard } from './clipboard.svelte'
+	import { get_edit_history } from './history.svelte'
 	import { DEFAULTS } from './default_entities'
 	import { page } from '$app/state'
 	import { fill_in_features } from '#lib/encoding/features.js'
@@ -14,6 +15,8 @@
 		onclose_and_recalculate: () => void
 	}
 	let { source_entities = $bindable(), data, onclose, onclose_and_recalculate }: Props = $props()
+
+	const edit_history = get_edit_history()
 
 	let parent_category = $derived.by(() => {
 		const entity = source_entities[data.entity_id]
@@ -28,7 +31,8 @@
 			...entity,
 			...fill_in_features({ source_entity: entity, feature_map: page.data.features as FeatureMap }),
 		}))
-		
+
+		edit_history().record()
 		source_entities.splice(data.entity_id, 0, ...new_entities)
 		onclose_and_recalculate()
 	}
@@ -69,6 +73,7 @@
 	function paste_entities() {
 		const new_entities = entity_clipboard.paste()
 		if (new_entities !== null) {
+			edit_history().record()
 			source_entities.splice(data.entity_id, 0, ...new_entities)
 			onclose_and_recalculate()
 		} else {
