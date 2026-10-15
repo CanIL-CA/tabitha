@@ -20,7 +20,7 @@ bun run eval export brief-thinking-low     # write that comparison as a survey f
 
 `report` writes `eval/.data/reports/<baseline>-vs-<variant>.json` and prints a token and timing summary. Its automatic checks (same note triggers, section counts, word overlap) only catch a variant breaking something: running the baseline a second time already gives 16 of 30 cases a warning, about as many as a real variant. Whether a variant is as good is a human call.
 
-`export` turns the report into a blinded A/B survey, where consultants pick the better output per verse and tick problems. Publish the file from `apps/survey`, which prints a link for reviewers and a results link for you:
+`export` turns the report into a blinded A/B survey, where consultants pick the better output per verse and tick problems. Verses whose two outputs are identical are left out, and the results page counts them. Publish the file from `apps/survey`, which prints a link for reviewers and a results link for you:
 
 ```sh
 cd ../survey && bun run publish ../copilot/eval/.data/surveys/baseline-vs-brief-thinking-low.json

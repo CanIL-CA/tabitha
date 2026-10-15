@@ -10,9 +10,11 @@ const LEVEL_LABELS: Record<string, string> = { grade5: 'Grade 5', high_school: '
 
 export function to_survey({ report }: { report: Report }): SurveyDefinition {
 	const { baseline, variant, summary } = report
+	// A pair that renders the same has nothing to judge, so reviewers never see it.
+	const items = report.cases.map(to_item).filter(item => JSON.stringify(item.outputs[0]) !== JSON.stringify(item.outputs[1]))
 	return {
 		title: 'Copilot brief review',
-		description: `${summary.cases} verses, each with two copilot outputs made with different settings.`,
+		description: `${items.length} verses, each with two copilot outputs made with different settings.`,
 		instructions: [
 			'Read the verse and both outputs as a translation consultant preparing an MTT would. Which output is which is hidden and changes from verse to verse, so judge only what is on the page.',
 			'Pick which output you would rather hand to the translator, or "About the same" when neither is clearly better.',
@@ -45,8 +47,9 @@ export function to_survey({ report }: { report: Report }): SurveyDefinition {
 			usage_stat({ label: 'Prompt tokens', usage: summary.usage, pick: totals => totals.prompt_tokens }),
 			usage_stat({ label: 'Model time (s)', usage: summary.usage, pick: totals => Math.round(totals.duration_ms / 1000) }),
 			{ label: 'Automatic warnings', value: `${summary.cases_with_warnings} of ${summary.cases}`, detail: `median word overlap ${summary.median_word_overlap.toFixed(2)}` },
+			{ label: 'Identical outputs', value: `${summary.cases - items.length} of ${summary.cases}`, detail: 'left out of the review' },
 		],
-		items: report.cases.map(to_item),
+		items,
 	}
 }
 
