@@ -6,7 +6,7 @@
 	import { Punctuation } from '@tabitha/ui'
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import { get_action_range, get_hover_range, is_entity_in_range, type HoverTarget } from '#lib/edit/entity_ranges.js'
+	import { get_action_range, get_hover_range, is_entity_in_range, type HoverTarget } from '#lib/data/entity_ranges.js'
 
 	type Props = {
 		source_entities: PageSourceEntity[]

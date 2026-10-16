@@ -21,7 +21,7 @@
 		is_slot_in_range,
 		type HoverTarget,
 		type IndexRange,
-	} from './entity_ranges'
+	} from '#lib/data/entity_ranges.js'
 	import type { PageSourceEntity } from '#lib/types.js'
 	import type { EntityContextMenuData } from '#lib/edit/types.js'
 
