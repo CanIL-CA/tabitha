@@ -1,4 +1,4 @@
-import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, OntologyResult, SourceEntity, ConceptKey, SourceStatus } from '@tabitha/types'
+import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, SourceEntity, SourceStatus } from '@tabitha/types'
 import type { SensesByConcept } from '#lib/data/ontology_senses.js'
 
 //===============
