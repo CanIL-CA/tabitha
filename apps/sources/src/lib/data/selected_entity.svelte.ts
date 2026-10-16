@@ -1,5 +1,6 @@
 import { createContext } from 'svelte'
 import type { PageSourceEntity } from '#lib/types.js'
+import { is_boundary_end } from '#lib/encoding/entity_filters.ts'
 
 /**
  * The entity a page's components treat as selected. Held by id, not object reference, so the
@@ -14,7 +15,14 @@ export class SelectedEntity {
 	}
 
 	select(entity: PageSourceEntity | null) {
-		this.#id = entity?.id ?? null
+		if (!entity) {
+			this.#id = null
+		} else if (is_boundary_end(entity)) {
+			// select the boundary start instead
+			this.#id = entity.parent_id
+		} else {
+			this.#id = entity.id
+		}
 	}
 
 	clear() {

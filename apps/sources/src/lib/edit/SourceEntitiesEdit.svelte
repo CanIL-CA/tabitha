@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import { fade } from 'svelte/transition'
-	import Concept from '../entity_displays/Concept.svelte'
-	import BoundaryEnd from '../entity_displays/BoundaryEnd.svelte'
-	import BoundaryStart from '../entity_displays/BoundaryStart.svelte'
+	import Concept from '#lib/entity_displays/Concept.svelte'
+	import BoundaryEnd from '#lib/entity_displays/BoundaryEnd.svelte'
+	import BoundaryStart from '#lib/entity_displays/BoundaryStart.svelte'
 	import { Punctuation } from '@tabitha/ui'
 	import InsertEntityContextMenu from './InsertEntityContextMenu.svelte'
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
@@ -168,17 +168,7 @@
 	// actions
 
 	function select_entity(i: number) {
-		const entity = source_entities[i]
-		if (!entity) {
-			selected_entity.clear()
-		} else if (is_boundary_end(entity)) {
-			// select the boundary start instead
-			selected_entity.select(source_entities[entity.parent_id])
-		} else {
-			selected_entity.select(entity)
-		}
-
-		toolbar_entity_id = null
+		selected_entity.select(source_entities[i])
 	}
 
 	function drop_entities({ dragged_id, slot }: { dragged_id: number, slot: number }) {
@@ -272,8 +262,9 @@
 	{#each source_entities as entity}
 		{@const i = entity.id}
 
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
+			role="button"
+			tabindex="0"
 			data-drop-slot={i}
 			onmouseenter={() => insert_button_mouseover(i)}
 			onmouseleave={entity_mouseout}
