@@ -5,7 +5,7 @@
 	import { Navigation } from '#lib/index.js'
 	import type { PageProps } from './$types'
 	import Settings from '#lib/settings/Settings.svelte'
-	import Sidebar from '#lib/sidebar_edit/Sidebar.svelte'
+	import SelectedEntitySidebar from '#lib/sidebar_edit/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { structure_entities } from '#lib/encoding/structured.js'
@@ -227,7 +227,7 @@
 			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
 		</div>
 		{#if sidebar_open}
-			<Sidebar />
+			<SelectedEntitySidebar />
 		{/if}
 	</div>
 {/if}

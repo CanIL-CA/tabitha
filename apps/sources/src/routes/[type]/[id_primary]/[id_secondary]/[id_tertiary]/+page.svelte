@@ -3,7 +3,7 @@
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { Navigation, SourceEntities } from '#lib/index.js'
 	import Settings from '#lib/settings/Settings.svelte'
-	import Sidebar from '#lib/sidebar/Sidebar.svelte'
+	import SelectedEntitySidebar from '#lib/sidebar/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 
 	let { data } = $props()
@@ -57,7 +57,7 @@
 			<SourceEntities source_entities={source.parsed_semantic_encoding} />
 		</div>
 		{#if sidebar_open}
-			<Sidebar />
+			<SelectedEntitySidebar />
 		{/if}
 	</div>
 {/if}

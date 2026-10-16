@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { NounListEntry } from '@tabitha/types'
 	import type { PageSourceEntity } from '#lib/types.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import SidebarBase from '#lib/sidebar/SidebarBase.svelte'
+	import Sidebar from '#lib/Sidebar.svelte'
 	import SidebarDetail from '#lib/sidebar/SidebarDetail.svelte'
 	import SidebarEntityDisplay from '#lib/sidebar/SidebarEntityDisplay.svelte'
 	import ConceptDetails from '#lib/sidebar_edit/ConceptDetails.svelte'
@@ -20,7 +19,7 @@
 </script>
 
 {#if entity}
-	<SidebarBase heading='Constituent Inspector' onclose={() => selected_entity.clear()}>
+	<Sidebar heading='Constituent Inspector' onclose={() => selected_entity.clear()}>
 		<!--Entity Display-->
 		<section class="my-5">
 			<SidebarEntityDisplay {entity} />
@@ -71,5 +70,5 @@
 				</SidebarDetail>
 			{/if}
 		</section>
-	</SidebarBase>
+	</Sidebar>
 {/if}

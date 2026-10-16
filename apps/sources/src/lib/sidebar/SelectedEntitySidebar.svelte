@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SidebarBase from './SidebarBase.svelte'
+	import Sidebar from '#lib/Sidebar.svelte'
 	import SidebarDetail from './SidebarDetail.svelte'
 	import ConceptDetails from './ConceptDetails.svelte'
 	import AllSenseDetails from './AllSenseDetails.svelte'
@@ -14,7 +14,7 @@
 </script>
 
 {#if entity}
-	<SidebarBase heading='Constituent Inspector' onclose={() => selected_entity.clear()}>
+	<Sidebar heading='Constituent Inspector' onclose={() => selected_entity.clear()}>
 		<!--Entity Display-->
 		<section class="my-5">
 			<SidebarEntityDisplay {entity} />
@@ -59,5 +59,5 @@
 				</SidebarDetail>
 			{/if}
 		</section>
-	</SidebarBase>
+	</Sidebar>
 {/if}
