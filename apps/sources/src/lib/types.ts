@@ -25,16 +25,10 @@ export type PageSource = DbSource & {
 	noun_list: NounList
 }
 
-export type PageSourceEntity = Omit<SourceEntity, 'concept' | 'pairing_concept'> & {
+export type PageSourceEntity = SourceEntity & {
 	id: number
 	parent_id: number
 	boundary_category: string
-	concept: PageSourceConcept | null
-	pairing_concept: PageSourceConcept | null
-}
-
-export type PageSourceConcept = ConceptKey & {
-	ontology_data?: OntologyResult
 }
 
 //===============

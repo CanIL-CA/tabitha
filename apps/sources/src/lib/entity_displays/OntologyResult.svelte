@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { PageSourceConcept } from '#lib/types.js'
 	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import HoverPopup from './HoverPopup.svelte'
+	import type { ConceptKey } from '@tabitha/types'
 
-	let { data }: { data: PageSourceConcept } = $props()
+	let { data }: { data: ConceptKey } = $props()
 
 	const ontology_senses = get_ontology_senses()
 

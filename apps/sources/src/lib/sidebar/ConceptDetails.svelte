@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { OntologyResult } from '@tabitha/types'
-	import type { PageSourceConcept } from '#lib/types.js'
+	import type { ConceptKey, OntologyResult } from '@tabitha/types'
 	import type { Snippet } from 'svelte'
 	import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import Icon from '@iconify/svelte'
 
 	type Props = {
-		data: PageSourceConcept
+		data: ConceptKey
 		actions?: Snippet
 	}
 
@@ -18,11 +17,11 @@
 	let ontology_data = $derived(ontology_senses.sense_of(data))
 	let [category, usages] = $derived(get_category_and_usage({ concept: data, current_ontology: ontology_data }))
 
-	function get_ontology_url_for_link({ stem, part_of_speech }: PageSourceConcept) {
+	function get_ontology_url_for_link({ stem, part_of_speech }: ConceptKey) {
 		return `${PUBLIC_ONTOLOGY_API_HOST}/?q=${stem}&category=${part_of_speech}`
 	}
 
-	function get_category_and_usage({ concept, current_ontology }: { concept: PageSourceConcept, current_ontology: OntologyResult }): [string, string[]] {
+	function get_category_and_usage({ concept, current_ontology }: { concept: ConceptKey, current_ontology: OntologyResult }): [string, string[]] {
 		const categories = current_ontology.categories
 		if (concept.part_of_speech === 'Noun') {
 			return [categories.at(0) ?? '', []]
