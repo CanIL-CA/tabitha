@@ -5,24 +5,25 @@
 	import BoundaryStart from './BoundaryStart.svelte'
 	import { Punctuation } from '@tabitha/ui'
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
+	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 
 	type IndexRange = [number, number]
 
 	type Props = {
 		source_entities: PageSourceEntity[]
-		selected_entity: PageSourceEntity|null
-		on_entity_select: (entity: PageSourceEntity) => void
 	}
-	let { source_entities, selected_entity, on_entity_select }: Props = $props()
+	let { source_entities }: Props = $props()
+
+	const selected_entity = get_selected_entity()
 
 	let entity_divs: HTMLElement[] = $state([])
 
 	let hover_range: IndexRange | null = $state(null)
 	let select_range: IndexRange | null = $derived(
-		!selected_entity ? null
-			: is_boundary_start(selected_entity)
-				? get_boundary_range(selected_entity.id)
-				: [selected_entity.id, selected_entity.id],
+		!selected_entity.current ? null
+			: is_boundary_start(selected_entity.current)
+				? get_boundary_range(selected_entity.current.id)
+				: [selected_entity.current.id, selected_entity.current.id],
 	)
 
 	let entity_highlights = $derived(source_entities.map((_, i) => {
@@ -54,9 +55,9 @@
 		const entity = source_entities[i]
 		if (is_boundary_end(entity)) {
 			// select the boundary start instead
-			on_entity_select(source_entities[entity.parent_id])
+			selected_entity.select(source_entities[entity.parent_id])
 		} else {
-			on_entity_select(entity)
+			selected_entity.select(entity)
 		}
 	}
 

@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { PageSourceConcept } from '#lib/types.js'
 	import ConceptDetails from '#lib/sidebar/ConceptDetails.svelte'
 	import ConceptDialog from '#lib/ConceptDialog.svelte'
 	import Icon from '@iconify/svelte'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
+	import type { ConceptKey } from '@tabitha/types'
 
-	let { data = $bindable() }: { data: PageSourceConcept } = $props()
+	let { data = $bindable() }: { data: ConceptKey } = $props()
 
 	const edit_history = get_edit_history()
 
-	function set_concept(concept: PageSourceConcept) {
+	function set_concept(concept: ConceptKey) {
 		edit_history().record()
 		data = concept
 	}

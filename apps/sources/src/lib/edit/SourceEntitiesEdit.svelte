@@ -10,6 +10,7 @@
 	import { structure_entities } from '#lib/encoding/structured.js'
 	import { entity_clipboard } from './clipboard.svelte'
 	import { get_edit_history } from './history.svelte'
+	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { EntityDrag } from './entity_drag.svelte'
 	import {
 		get_action_range,
@@ -26,12 +27,11 @@
 
 	type Props = {
 		source_entities: PageSourceEntity[]
-		selected_entity: PageSourceEntity | null
-		on_entity_select: (entity: PageSourceEntity | null) => void
 	}
-	let { source_entities = $bindable(), selected_entity, on_entity_select }: Props = $props()
+	let { source_entities = $bindable() }: Props = $props()
 
 	const edit_history = get_edit_history()
+	const selected_entity = get_selected_entity()
 
 	const component_filters: [(entity: PageSourceEntity) => boolean, typeof Concept][] = [
 		[is_boundary_start, BoundaryStart],
@@ -55,7 +55,7 @@
 	)
 
 	let select_range = $derived(
-		selected_entity && get_action_range({ entities: source_entities, id: selected_entity.id }),
+		selected_entity.current && get_action_range({ entities: source_entities, id: selected_entity.current.id }),
 	)
 
 	let hover_target = $state<HoverTarget | null>(null)
@@ -96,7 +96,7 @@
 
 	let toolbar_entity_id = $state<number | null>(null)
 	$effect(() => {
-		if (selected_entity === null) {
+		if (selected_entity.current === null) {
 			toolbar_entity_id = null
 		}
 	})
@@ -158,8 +158,8 @@
 
 	function entity_focus(i: number) {
 		select_entity(i)
-		if (selected_entity) {
-			toolbar_entity_id = selected_entity.id
+		if (selected_entity.current) {
+			toolbar_entity_id = selected_entity.current.id
 		}
 	}
 
@@ -169,12 +169,12 @@
 	function select_entity(i: number) {
 		const entity = source_entities[i]
 		if (!entity) {
-			on_entity_select(null)
+			selected_entity.clear()
 		} else if (is_boundary_end(entity)) {
 			// select the boundary start instead
-			on_entity_select(source_entities[entity.parent_id])
+			selected_entity.select(source_entities[entity.parent_id])
 		} else {
-			on_entity_select(entity)
+			selected_entity.select(entity)
 		}
 
 		toolbar_entity_id = null

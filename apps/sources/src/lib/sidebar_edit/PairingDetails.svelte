@@ -4,14 +4,13 @@
 	import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import Icon from '@iconify/svelte'
-	import type { OntologyResult, SourceEntity, PairingType } from '@tabitha/types'
-	import type { PageSourceConcept } from '#lib/types.js'
+	import type { OntologyResult, SourceEntity, PairingType, ConceptKey } from '@tabitha/types'
 
 	let { data = $bindable() }: { data: SourceEntity } = $props()
 
 	const edit_history = get_edit_history()
 
-	let pairing_concept = $derived<PageSourceConcept>(data.pairing_concept ?? {
+	let pairing_concept = $derived<ConceptKey>(data.pairing_concept ?? {
 		stem: '',
 		sense: '',
 		part_of_speech: data.concept!.part_of_speech,
