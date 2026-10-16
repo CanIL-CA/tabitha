@@ -8,7 +8,7 @@
 	import InsertEntityContextMenu from './InsertEntityContextMenu.svelte'
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
 	import { structure_entities } from '#lib/encoding/structured.js'
-	import { entity_clipboard } from './clipboard.svelte'
+	import { get_clipboard } from './clipboard.svelte'
 	import { get_edit_history } from './history.svelte'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { EntityDrag } from './entity_drag.svelte'
@@ -32,6 +32,7 @@
 
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
+	const entity_clipboard = get_clipboard()
 
 	const component_filters: [(entity: PageSourceEntity) => boolean, typeof Concept][] = [
 		[is_boundary_start, BoundaryStart],

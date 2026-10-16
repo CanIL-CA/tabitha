@@ -2,7 +2,7 @@
 	import type { EntityContextMenuData } from '#lib/edit/types.js'
 	import type { FeatureMap, PageSourceEntity } from '#lib/types.js'
 	import ConceptDialog from '#lib/ConceptDialog.svelte'
-	import { entity_clipboard } from './clipboard.svelte'
+	import { get_clipboard } from './clipboard.svelte'
 	import { get_edit_history } from './history.svelte'
 	import { DEFAULTS } from './default_entities'
 	import { page } from '$app/state'
@@ -17,6 +17,7 @@
 	let { source_entities = $bindable(), data, onclose, onclose_and_recalculate }: Props = $props()
 
 	const edit_history = get_edit_history()
+	const entity_clipboard = get_clipboard()
 
 	let parent_category = $derived.by(() => {
 		const entity = source_entities[data.entity_id]

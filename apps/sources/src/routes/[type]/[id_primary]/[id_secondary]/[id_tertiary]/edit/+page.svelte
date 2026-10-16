@@ -10,6 +10,7 @@
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { structure_entities } from '#lib/encoding/structured.js'
 	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
+	import { EntityClipboard, set_clipboard } from '#lib/edit/clipboard.svelte.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 
@@ -19,6 +20,7 @@
 	let { data }: PageProps = $props()
 
 	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
+	set_clipboard(new EntityClipboard())
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
 	let edit_history = $derived(new EditHistory({
