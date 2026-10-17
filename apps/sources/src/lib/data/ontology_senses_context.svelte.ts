@@ -1,6 +1,5 @@
 import { createContext } from 'svelte'
 import type { ConceptKey, OntologyResult } from '@tabitha/types'
-import type { PageSourceConcept } from '#lib/types.js'
 import { find_sense, find_senses, group_senses_by_concept, type SensesByConcept } from './ontology_senses'
 
 /**
@@ -24,7 +23,7 @@ export class OntologySenses {
 		return find_senses({ senses: this.#senses(), concept })
 	}
 
-	sense_of(concept: PageSourceConcept): OntologyResult {
+	sense_of(concept: ConceptKey): OntologyResult {
 		return find_sense({ senses: this.#senses(), concept })
 	}
 

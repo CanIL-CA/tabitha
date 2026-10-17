@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { OntologyResult } from '@tabitha/types'
-	import type { PageSourceConcept } from '#lib/types.js'
+	import type { OntologyResult, ConceptKey } from '@tabitha/types'
 	import { fetch_all_concepts_for_part_of_speech } from '#lib/data/api_lookups.js'
 	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import Icon from '@iconify/svelte'
 	import { onMount } from 'svelte'
 
 	type Props = {
-		concept: PageSourceConcept
+		concept: ConceptKey
 		onclose: () => void
 		filter?: (result: OntologyResult) => boolean
 	}
@@ -42,7 +41,6 @@
 			stem,
 			sense,
 			part_of_speech,
-			ontology_data: selected_concept,
 		}
 
 		dialog.close()

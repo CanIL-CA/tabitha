@@ -1,7 +1,11 @@
 <script lang="ts">
 	import type { NounListEntry } from '@tabitha/types'
 	import type { PageSourceEntity } from '#lib/types.js'
-	let { data, noun_list }: { data: PageSourceEntity, noun_list: NounListEntry[] } = $props()
+	import { page } from '$app/state'
+
+	let { data }: { data: PageSourceEntity } = $props()
+
+	let noun_list = $derived<NounListEntry[]>(page.data.source.noun_list)
 </script>
 
 <table class="table table-sm table-zebra">

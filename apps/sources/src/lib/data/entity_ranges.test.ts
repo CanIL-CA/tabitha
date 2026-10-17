@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { structure_entities } from '#lib/encoding/structured.js'
-import { DEFAULTS } from './default_entities'
+import { DEFAULTS } from '#lib/edit/default_entities.js'
 import {
 	get_action_range,
 	get_enclosing_range,

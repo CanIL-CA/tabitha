@@ -50,14 +50,6 @@ describe('find_sense', () => {
 		expect(result.gloss).toBe('to make someone do something')
 	})
 
-	it('prefers ontology data the concept already carries', () => {
-		const picked = sense({ stem: 'make', sense: 'B', gloss: 'just picked in the editor' })
-
-		const result = find_sense({ senses, concept: { stem: 'make', sense: 'B', part_of_speech: 'Verb', ontology_data: picked } })
-
-		expect(result.gloss).toBe('just picked in the editor')
-	})
-
 	it('falls back to empty data for a sense the ontology lacks', () => {
 		const result = find_sense({ senses, concept: { stem: 'make', sense: 'Z', part_of_speech: 'Verb' } })
 

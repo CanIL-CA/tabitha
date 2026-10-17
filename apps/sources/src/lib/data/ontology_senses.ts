@@ -1,7 +1,7 @@
 import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 import { create_ontology_client } from '@tabitha/api-client'
 import type { ConceptKey, OntologyResult } from '@tabitha/types'
-import type { PageSourceConcept, PageSourceEntity } from '#lib/types.js'
+import type { PageSourceEntity } from '#lib/types.js'
 import { create_fallback_ontology_data } from './api_lookups'
 
 /** Every in-ontology sense of a stem, keyed by `concept_senses_key` (stem and part of speech). */
@@ -33,9 +33,8 @@ export function find_senses({ senses, concept }: { senses: SensesByConcept, conc
 }
 
 /** The concept's own ontology data when it carries some (e.g. just picked in the editor), else its sense from `senses`. */
-export function find_sense({ senses, concept }: { senses: SensesByConcept, concept: PageSourceConcept }): OntologyResult {
-	return concept.ontology_data
-		?? find_senses({ senses, concept }).find(({ sense }) => sense === concept.sense)
+export function find_sense({ senses, concept }: { senses: SensesByConcept, concept: ConceptKey }): OntologyResult {
+	return find_senses({ senses, concept }).find(({ sense }) => sense === concept.sense)
 		?? create_fallback_ontology_data(concept)
 }
 

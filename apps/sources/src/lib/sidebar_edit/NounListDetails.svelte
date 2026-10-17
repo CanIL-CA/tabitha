@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
-	import type { NounList } from '@tabitha/types'
 	import type { PageSourceEntity } from '#lib/types.js'
 
-	let { data = $bindable(), noun_list = $bindable() }: { data: PageSourceEntity, noun_list: NounList } = $props()
+	let { data = $bindable() }: { data: PageSourceEntity } = $props()
 
 	const edit_history = get_edit_history()
+	
+	let noun_list = $derived(edit_history().current.noun_list)
 
-	const next_index = $derived(calculate_next_index())
+	let next_index = $derived(calculate_next_index())
 
 	function set_index(index: string) {
 		edit_history().record()

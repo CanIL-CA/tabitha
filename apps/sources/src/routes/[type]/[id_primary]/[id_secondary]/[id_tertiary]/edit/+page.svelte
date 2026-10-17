@@ -1,17 +1,18 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '#lib/types.js'
 	import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken } from '@tabitha/types'
 	import { Navigation } from '#lib/index.js'
 	import type { PageProps } from './$types'
 	import Settings from '#lib/settings/Settings.svelte'
-	import Sidebar from '#lib/sidebar_edit/Sidebar.svelte'
+	import SelectedEntitySidebar from '#lib/sidebar_edit/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { structure_entities } from '#lib/encoding/structured.js'
 	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
+	import { EntityClipboard, set_clipboard } from '#lib/edit/clipboard.svelte.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
+	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })
@@ -19,6 +20,7 @@
 	let { data }: PageProps = $props()
 
 	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
+	set_clipboard(new EntityClipboard())
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
 	let edit_history = $derived(new EditHistory({
@@ -26,6 +28,10 @@
 		noun_list: data.source.noun_list,
 	}))
 	set_edit_history(() => edit_history)
+
+	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
+	set_selected_entity(selected_entity)
+	let sidebar_open = $derived(selected_entity.current !== null)
 
 	const HISTORY_SHORTCUTS: Record<string, () => void> = {
 		'z': () => edit_history.undo(),
@@ -126,19 +132,6 @@
 			analyzing = false
 		}
 	}
-
-	// selection is held by index, not object reference, so it survives undo/redo swapping in a new array
-	let selected_entity_id = $state<number | null>(null)
-	let selected_entity = $derived(selected_entity_id === null ? null : edit_history.current.source_entities[selected_entity_id] ?? null)
-	let sidebar_open = $derived(selected_entity !== null)
-
-	function on_entity_select(entity: PageSourceEntity|null) {
-		selected_entity_id = entity?.id ?? null
-	}
-
-	function on_sidebar_close() {
-		selected_entity_id = null
-	}
 </script>
 
 <svelte:window onkeydown={handle_history_shortcut} />
@@ -231,10 +224,10 @@
 	<div class="divider my-2"></div>
 	<div class="flex h-screen">
 		<div id="entity-container" class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
-			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} {selected_entity} {on_entity_select} />
+			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
 		</div>
 		{#if sidebar_open}
-			<Sidebar entity={selected_entity} onclose={on_sidebar_close} bind:noun_list={edit_history.current.noun_list} />
+			<SelectedEntitySidebar />
 		{/if}
 	</div>
 {/if}

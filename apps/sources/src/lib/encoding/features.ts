@@ -110,7 +110,7 @@ function feature_codes_to_structure({ category, feature_codes, feature_map }: { 
 		const code = feature_code_array[index]
 		const value_info = feature_info.values.find(v => v.code === code)
 		if (!value_info) {
-			console.error(`Unknown '${category}' feature code '${code}' of '${feature_info.name}'`)
+			console.warn(`Unknown '${category}' feature code '${code}' of '${feature_info.name}'`)
 		}
 		const value = value_info?.value || ''
 		return { name: feature_info.name, value }
@@ -124,7 +124,7 @@ function feature_structure_to_codes({ category, features, feature_map }: { categ
 		const value = features.find(f => f.name.toLowerCase() === feature_info.name.toLowerCase())?.value.toLowerCase()
 		const value_info = feature_info.values.find(v => v.value.toLowerCase() === value)
 		if (value && !value_info) {
-			console.error(`Unknown '${category}' feature value '${value}' of '${feature_info.name}'`)
+			console.warn(`Unknown '${category}' feature value '${value}' of '${feature_info.name}'`)
 		}
 		
 		// As a default, first try '.' if it exists as a code, otherwise use the first value

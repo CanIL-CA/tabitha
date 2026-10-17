@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { PageSourceEntity } from '#lib/types.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
+	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { Navigation, SourceEntities } from '#lib/index.js'
 	import Settings from '#lib/settings/Settings.svelte'
-	import Sidebar from '#lib/sidebar/Sidebar.svelte'
+	import SelectedEntitySidebar from '#lib/sidebar/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 
 	let { data } = $props()
@@ -13,18 +13,9 @@
 	let source = $derived(data.source)
 	let nav_data = $derived(data.nav_data)
 
-	let selected_entity = $state<PageSourceEntity | null>(null)
-	let sidebar_open = $state(false)
-
-	function on_entity_select(entity: PageSourceEntity) {
-		selected_entity = entity
-		sidebar_open = true
-	}
-
-	function on_sidebar_close() {
-		selected_entity = null
-		sidebar_open = false
-	}
+	const selected_entity = new SelectedEntity(() => data.source.parsed_semantic_encoding)
+	set_selected_entity(selected_entity)
+	let sidebar_open = $derived(selected_entity.current !== null)
 </script>
 
 <svelte:head>
@@ -63,10 +54,10 @@
 {#if source.parsed_semantic_encoding.length > 0}
 	<div class="flex h-screen">
 		<div class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
-			<SourceEntities source_entities={source.parsed_semantic_encoding} {selected_entity} {on_entity_select} />
+			<SourceEntities source_entities={source.parsed_semantic_encoding} />
 		</div>
 		{#if sidebar_open}
-			<Sidebar entity={selected_entity} onclose={on_sidebar_close} noun_list={source.noun_list} />
+			<SelectedEntitySidebar />
 		{/if}
 	</div>
 {/if}
