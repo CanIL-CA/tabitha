@@ -59,7 +59,7 @@ describe('transform_semantic_encoding', () => {
 		expect(entities.map(({ category, value }) => ({ category, value }))).toEqual([
 			{ category: 'Clause', value: '{' },
 			{ category: 'Noun', value: 'God' },
-			{ category: 'Paragraph', value: '|' },
+			{ category: 'Format Marker', value: 'Paragraph' },
 		])
 		expect(entities[0].concept).toBeNull()
 	})
@@ -110,14 +110,14 @@ describe('transform_target_encoding', () => {
 		})
 	})
 
-	it(`reads a paragraph's target as "|"`, async () => {
+	it(`reads a paragraph's target as "Paragraph"`, async () => {
 		const [paragraph] = await transform_target_encoding({
 			db,
 			project: '',
-			semantic_encoding: target_word({ tag: 'R-', value: 'x', target: 'Paragraph' }),
+			semantic_encoding: target_word({ tag: 'R-', value: 'Paragraph', target: '|' }),
 		})
 
-		expect(paragraph.target).toBe('|')
+		expect(paragraph.target).toBe('Paragraph')
 	})
 
 	it('keeps a user-defined "&" category as given, with no features', async () => {

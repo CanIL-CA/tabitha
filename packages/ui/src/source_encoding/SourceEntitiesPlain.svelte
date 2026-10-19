@@ -4,6 +4,7 @@
 	import BoundaryEnd from './BoundaryEnd.svelte'
 	import BoundaryStart from './BoundaryStart.svelte'
 	import Punctuation from './Punctuation.svelte'
+	import FormatMarker from './FormatMarker.svelte'
 
 	type Props = {
 		source_entities: SourceEntity[]
@@ -70,6 +71,8 @@
 					<BoundaryEnd {source_entity} />
 				{:else if source_entity.concept}
 					<Word {source_entity} {highlight_terms} {highlight_concept} {ontology_base_url} />
+				{:else if source_entity.category === 'Format Marker'}
+					<FormatMarker {source_entity} size="sm" />
 				{:else}
 					<Punctuation {source_entity} size="sm" />
 				{/if}
