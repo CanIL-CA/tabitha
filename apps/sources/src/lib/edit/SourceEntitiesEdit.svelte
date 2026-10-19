@@ -4,7 +4,7 @@
 	import Concept from '#lib/entity_displays/Concept.svelte'
 	import BoundaryEnd from '#lib/entity_displays/BoundaryEnd.svelte'
 	import BoundaryStart from '#lib/entity_displays/BoundaryStart.svelte'
-	import { Punctuation } from '@tabitha/ui'
+	import { Punctuation, FormatMarker } from '@tabitha/ui'
 	import InsertEntityContextMenu from './InsertEntityContextMenu.svelte'
 	import { is_boundary_end, is_boundary_start } from '#lib/encoding/entity_filters.js'
 	import { structure_entities } from '#lib/encoding/structured.js'
@@ -38,6 +38,7 @@
 		[is_boundary_start, BoundaryStart],
 		[is_boundary_end, BoundaryEnd],
 		[({ concept }) => !!concept, Concept],
+		[({ category }) => category === 'Format Marker', FormatMarker],
 		[() => true, Punctuation],
 	]
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '#lib/types.js'
 	import { is_boundary_start } from '#lib/encoding/entity_filters.js'
-	import { Punctuation } from '@tabitha/ui'
+	import { Punctuation, FormatMarker } from '@tabitha/ui'
 
 	let { entity }: { entity: PageSourceEntity } = $props()
 </script>
@@ -37,6 +37,8 @@
 				{/if}
 			</div>
 		</div>
+	{:else if entity.category === 'Format Marker'}
+		<FormatMarker source_entity={entity} size="lg" />
 	{:else}
 		<Punctuation source_entity={entity} />
 	{/if}

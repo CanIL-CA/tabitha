@@ -14,7 +14,7 @@ export const CATEGORY_NAME_LOOKUP = new Map<string, EncodingEntityCategory>([
 	['j', 'Adjective Phrase'],
 	['d', 'Adverb Phrase'],
 	['c', 'Clause'],
-	['R', 'Paragraph'],
+	['R', 'Format Marker'],
 	['E', 'Section'],
 	['.', 'period'],
 ])
@@ -33,7 +33,7 @@ export const CATEGORY_ABBREVIATIONS = new Map<EncodingEntityCategory, string>([
 	['Adjective Phrase', 'AdjP'],
 	['Adverb Phrase', 'AdvP'],
 	['Clause', 'C'],
-	['Paragraph', 'R'],
+	['Format Marker', 'Fmt'],
 	['Section', 'E'],
 	['period', 'period'],
 ])

@@ -43,11 +43,11 @@ export async function transform_semantic_encoding({ db, semantic_encoding }: Tra
 	function decode_entity(entity_match: RegExpMatchArray): SourceEntity {
 		const category_code = entity_match[1] ?? ''
 		const feature_codes = entity_match[2] ?? ''
-		const value = entity_match[3] === 'Paragraph' ? '|' : entity_match[3]
+		const value = convert_old_values(entity_match[3])
 
 		const category = (CATEGORY_NAME_LOOKUP.get(category_code) || '') as SourceEntityCategory
 		const category_abbr = CATEGORY_ABBREVIATIONS.get(category) || ''
-		const ontology_data = decode_concept_data({ value, category, raw_feature_codes: feature_codes })
+		const concept_data = decode_concept_data({ value, category, raw_feature_codes: feature_codes })
 		const features = decode_features({ raw_feature_codes: feature_codes, category, feature_map })
 
 		return {
@@ -55,7 +55,7 @@ export async function transform_semantic_encoding({ db, semantic_encoding }: Tra
 			category_abbr,
 			value,
 			...features,
-			...ontology_data,
+			...concept_data,
 		}
 	}
 }
@@ -81,13 +81,13 @@ export async function transform_target_encoding({ db, semantic_encoding, project
 		const is_user_defined = category_code === '&'
 
 		const category = is_user_defined ? entity_match[1].slice(1) : CATEGORY_NAME_LOOKUP.get(category_code) || ''
-		const category_abbr = is_user_defined ? category : CATEGORY_ABBREVIATIONS.get(category) || ''
+		const category_abbr = is_user_defined ? category : CATEGORY_ABBREVIATIONS.get(category as SourceEntityCategory) || ''
 		const raw_feature_codes = is_user_defined ? '' : entity_match[1]?.slice(2) || ''
 		const { feature_codes, features, noun_list_index } = decode_features({ raw_feature_codes, category, feature_map })
 
-		const value = entity_match[2]
+		const value = convert_old_values(entity_match[2])
 		const concept = decode_concept_data({ value, category, raw_feature_codes }).concept
-		const target = entity_match[3] === 'Paragraph' ? '|' : entity_match[3] || ''
+		const target = convert_old_values(entity_match[3]) || ''
 
 		return {
 			category,
@@ -100,6 +100,13 @@ export async function transform_target_encoding({ db, semantic_encoding, project
 			noun_list_index,
 		}
 	}
+}
+
+function convert_old_values(value: string) {
+	// Originally paragraphs were marked with the category code 'R' and value '|'.
+	// That category code has expanded to include other format markers like 'Poetry Begin', so the new
+	// value of paragraphs is 'Paragraph', but some older encodings haven't been updated yet.
+	return value === '|' ? 'Paragraph' : value
 }
 
 type ConceptPairingMatch = {

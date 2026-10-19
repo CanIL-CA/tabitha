@@ -196,9 +196,23 @@ const default_period: PageSourceEntity = {
 
 const default_paragraph: PageSourceEntity = {
 	...defaults,
-	category: 'Paragraph',
+	category: 'Format Marker',
 	category_abbr: 'R',
-	value: '|',
+	value: 'Paragraph',
+}
+
+const default_poetry_begin: PageSourceEntity = {
+	...defaults,
+	category: 'Format Marker',
+	category_abbr: 'R',
+	value: 'Poetry Begin',
+}
+
+const default_poetry_end: PageSourceEntity = {
+	...defaults,
+	category: 'Format Marker',
+	category_abbr: 'R',
+	value: 'Poetry End',
 }
 
 export const DEFAULTS = {
@@ -226,4 +240,6 @@ export const DEFAULTS = {
 	PARTICLE: default_particle,
 	PERIOD: default_period,
 	PARAGRAPH: default_paragraph,
+	POETRY_BEGIN: default_poetry_begin,
+	POETRY_END: default_poetry_end,
 }
