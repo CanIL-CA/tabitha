@@ -46,14 +46,14 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261010.1",
+    "@cloudflare/workers-types": "^5.20261015.1",
     "@eslint/compat": "^2.1.1",
     "@fontsource/fira-mono": "^5.3.0",
     "@iconify/svelte": "^5.2.2",
     "@neoconfetti/svelte": "^2.2.2",
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.64.1",
     "@sveltejs/adapter-cloudflare": "^8.0.1",
-    "@sveltejs/kit": "^3.0.1",
+    "@sveltejs/kit": "^3.1.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
@@ -62,11 +62,11 @@
     "@types/node": "^26.6.5",
     "eslint": "^10.12.0",
     "playwright": "^1.64.0",
-    "postcss": "^8.5.29",
+    "postcss": "^8.5.30",
     "svelte-check": "^4.7.6",
     "typescript": "^6.0.3",
     "vite": "8.3.4",
-    "vitest": "^5.0.3",
-    "wrangler": "^4.149.0"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.151.0"
   }
 }
