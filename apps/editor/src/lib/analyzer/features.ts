@@ -58,6 +58,9 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 		['Specificity', [
 			['Specific', { }],
+			['Non-specific', {
+				'trigger': { 'tag': { 'specificity': 'non_specific' } },
+			}],
 			['Not Applicable', {
 				'trigger': { 'tag': { 'specificity': 'not_applicable' } },
 			}],
