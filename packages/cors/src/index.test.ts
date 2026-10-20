@@ -8,6 +8,20 @@ function fake_event(origin: string | null): Parameters<Handle>[0]['event'] {
 	return { request: new Request('http://localhost/', { headers }) } as Parameters<Handle>[0]['event']
 }
 
+type PreflightOptions = {
+	readonly origin: string
+	readonly requested_headers: string
+}
+
+function fake_preflight_event({ origin, requested_headers }: PreflightOptions): Parameters<Handle>[0]['event'] {
+	const headers = new Headers({
+		'Origin': origin,
+		'Access-Control-Request-Method': 'POST',
+		'Access-Control-Request-Headers': requested_headers,
+	})
+	return { request: new Request('http://localhost/', { method: 'OPTIONS', headers }) } as Parameters<Handle>[0]['event']
+}
+
 describe('get_cors_allowed_origin', () => {
 	it('allows a production subdomain', () => {
 		expect(get_cors_allowed_origin({ origin: 'https://ontology.tabitha.bible', allow_localhost: false })).toBe('https://ontology.tabitha.bible')
@@ -81,5 +95,37 @@ describe('create_cors_handle', () => {
 		const handle = create_cors_handle({ allow_localhost: false })
 		const response = await handle({ event: fake_event(null), resolve })
 		expect(await response.text()).toBe('ok')
+	})
+
+	describe('preflight', () => {
+		const resolve_not_allowed: Parameters<Handle>[0]['resolve'] = async () => new Response('Method Not Allowed', { status: 405 })
+
+		it('answers a preflight from a trusted origin with 204 and the allowed method and headers', async () => {
+			const handle = create_cors_handle({ allow_localhost: true })
+			const event = fake_preflight_event({ origin: 'http://localhost:1947', requested_headers: 'content-type' })
+			const response = await handle({ event, resolve: resolve_not_allowed })
+			expect(response.status).toBe(204)
+			expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:1947')
+			expect(response.headers.get('Access-Control-Allow-Methods')).toContain('POST')
+			expect(response.headers.get('Access-Control-Allow-Headers')).toBe('content-type')
+			expect(response.headers.get('Vary')).toContain('Origin')
+		})
+
+		it('leaves a preflight from an untrusted origin to the app', async () => {
+			const handle = create_cors_handle({ allow_localhost: false })
+			const event = fake_preflight_event({ origin: 'https://evil.example.com', requested_headers: 'content-type' })
+			const response = await handle({ event, resolve: resolve_not_allowed })
+			expect(response.status).toBe(405)
+			expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull()
+		})
+
+		it('leaves an OPTIONS request without Access-Control-Request-Method to the app', async () => {
+			const handle = create_cors_handle({ allow_localhost: true })
+			const event = {
+				request: new Request('http://localhost/', { method: 'OPTIONS', headers: { Origin: 'http://localhost:1947' } }),
+			} as Parameters<Handle>[0]['event']
+			const response = await handle({ event, resolve: resolve_not_allowed })
+			expect(response.status).toBe(405)
+		})
 	})
 })
