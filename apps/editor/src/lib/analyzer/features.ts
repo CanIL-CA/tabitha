@@ -31,11 +31,8 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 		['Participant Tracking', [
 			['Routine', { }],
-			['First Mention', {
+			['First of Multiple Mentions', {
 				'context': { 'precededby': { 'tag': { 'determiner': 'indefinite_article' }, 'skip': 'np_modifiers' } },
-			}],
-			['Generic', {
-				'context': { 'followedby': { 'token': '_generic' } },
 			}],
 			['Frame Inferable', {
 				'context': { 'followedby': { 'token': '_frameInferable' } },
@@ -57,6 +54,15 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			}],
 			['Contextually Near', {
 				'context': { 'precededby': { 'tag': { 'determiner': 'remote_demonstrative' }, 'skip': 'np_modifiers' } },
+			}],
+		]],
+		['Specificity', [
+			['Specific', { }],
+			['Not Applicable', {
+				'trigger': { 'tag': { 'specificity': 'not_applicable' } },
+			}],
+			['Generic', {
+				'context': { 'followedby': { 'token': '_generic' } },
 			}],
 		]],
 		['Person', [
@@ -223,9 +229,7 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 	'Conjunction': [
 		['Implicit', [
 			['No', { }],
-			['Yes', {
-				'context': { 'followedby': { 'token': '_implicit' } },
-			}],
+			['Yes', { 'trigger': { 'tag': 'implicit' } }],
 		]],
 	],
 	'Noun Phrase': [
@@ -257,20 +261,30 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			}],
 		]],
 		['Implicit', [
-			// TODO this needs to be handled differently, since we need to know which Noun is the head of this NP
+			['Explanation of Name', {
+				'trigger': { 'tag': { 'implicit': 'explain_name' } },
+			}],
+			['Optional Agent of Passive', {
+				'trigger': { 'tag': { 'implicit': 'optional_agent_of_passive' } },
+			}],
+			['Implicit Phrase', {
+				'trigger': { 'tag': { 'implicit': 'implicit' } },
+			}],
+			['Dynamic Expansion (Metonymy)', {
+				'trigger': { 'tag': { 'implicit': 'dynamic_expansion' } },
+			}],
+			['Literal Expansion (Metonymy)', {
+				'trigger': { 'tag': { 'implicit': 'literal_expansion' } },
+			}],
+			['Implicit but Necessary', {
+				'trigger': { 'tag': { 'implicit': 'implicit_necessary' } },
+			}],
 		]],
 	],
 	'Verb Phrase': [
 		['Implicit', [
 			['No', { }],
-			['Yes', {
-				'context': {
-					'followedby': [
-						{ 'category': 'Verb', 'skip': 'vp_modifiers' },
-						{ 'token': '_implicit' },
-					],
-				},
-			}],
+			['Yes', { 'trigger': { 'tag': 'implicit' } }],
 		]],
 	],
 	'Adjective Phrase': [
@@ -281,20 +295,14 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			}],
 		]],
 		['Implicit', [
-			// TODO this needs to be handled differently, since we need to know which Adjective is the head of this AdjP
+			['No', { }],
+			['Yes', { 'trigger': { 'tag': 'implicit' } }],
 		]],
 	],
 	'Adverb Phrase': [
 		['Implicit', [
 			['No', { }],
-			['Yes', {
-				'context': {
-					'followedby': [
-						{ 'category': 'Adverb', 'skip': 'advp_modifiers' },
-						{ 'token': '_implicit' },
-					],
-				},
-			}],
+			['Yes', { 'trigger': { 'tag': 'implicit' } }],
 		]],
 	],
 	'Clause': [

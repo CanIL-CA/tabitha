@@ -653,38 +653,14 @@ const transform_rules_json: TransformRuleJson[] = [
 		'trigger': { 'stem': 'and|or|but', 'tag': { 'position': 'first_word' } },
 		'transform': { 'tag': { 'syntax': 'coord_clause' } },
 	},
-	// Noun List Indexing
+	// Implicit tagging
 	{
-		'name': 'Set tag for nouns indexed with _1',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_1' } },
-		'transform': { 'tag': { 'noun_index': '1' } },
+		'name': 'Tag plain implicit',
+		'trigger': { 'token': '_implicit' },
+		'context': { 'precededby': { 'category': 'Noun|Verb|Adjective|Adverb|Conjunction' } },
+		'context_transform': { 'tag': { 'implicit': 'implicit' } },
 	},
-	{
-		'name': 'Set tag for nouns indexed with _2',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_2' } },
-		'transform': { 'tag': { 'noun_index': '2' } },
-	},
-	{
-		'name': 'Set tag for nouns indexed with _3',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_3' } },
-		'transform': { 'tag': { 'noun_index': '3' } },
-	},
-	{
-		'name': 'Set tag for nouns indexed with _4',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_4' } },
-		'transform': { 'tag': { 'noun_index': '4' } },
-	},
-	{
-		'name': 'Set tag for nouns indexed with _5',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_5' } },
-		'transform': { 'tag': { 'noun_index': '5' } },
-	},
-]
+ ]
 
 export function parse_transform_rule({ rule_json, index }: {
 	rule_json: TransformRuleJson
@@ -762,6 +738,44 @@ const builtin_transform_rules: BuiltInRule[] = [
 				if (result.gloss.startsWith('(biblical unit)') || IS_CARDINAL_NUMBER.test(result.stem)) {
 					trigger_token.pairing_type = 'metric-biblical'
 				}
+			}),
+		},
+	},
+	{
+		name: 'Set Noun list index based on note',
+		comment: '',
+		rule: {
+			trigger: create_token_filter({ 'category': 'Noun' }),
+			context: create_context_filter({ 'followedby': { 'token': '_1|_2|_3|_4|_5' } }),
+			action: simple_rule_action(({ tokens, trigger_token, context_indexes, rule_id }) => {
+				const tag = { 'noun_index': tokens[context_indexes[0]].token[1] }
+				add_tag_to_token({ token: trigger_token, tag, rule_id })
+			}),
+		},
+	},
+	{
+		name: 'Set Noun-specific "implicit" tags',
+		comment: '',
+		rule: {
+			trigger: create_token_filter({ category: 'Noun' }),
+			context: create_context_filter({
+				'followedby': {
+					'token': '_explainName|_implicitExplainName|_implicitActiveAgent|_literalExpansion|_dynamicExpansion|_metonymy|_implicitNecessary|_necessaryImplicit',
+				},
+			}),
+			action: simple_rule_action(({ tokens, trigger_token, context_indexes, rule_id }) => {
+				const tag_map: Record<string, string> = {
+					'_explainName': 'explain_name',
+					'_implicitExplainName': 'explain_name',
+					'_implicitActiveAgent': 'optional_agent_of_passive',
+					'_literalExpansion': 'literal_expansion',
+					'_dynamicExpansion': 'dynamic_expansion',
+					'_metonymy': 'dynamic_expansion',
+					'_implicitNecessary': 'implicit_necessary',
+					'_necessaryImplicit': 'implicit_necessary',
+				}
+				const tag = { 'implicit': tag_map[tokens[context_indexes[0]].token] }
+				add_tag_to_token({ token: trigger_token, tag, rule_id })
 			}),
 		},
 	},
