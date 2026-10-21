@@ -1,5 +1,5 @@
 import { TOKEN_TYPE } from '#lib/token.js'
-import { rules_applier } from '#lib/rules/index.js'
+import { apply_rules } from '#lib/rules/index.js'
 import { phrasify } from '#lib/parser/phrasify.js'
 import { BT_STRUCTURAL_RULES } from './structural_rules'
 import type { Sentence, Token } from '#lib/types.js'
@@ -7,7 +7,7 @@ import type { Sentence, Token } from '#lib/types.js'
 export function backtranslate(sentences: Sentence[]): string {
 	const cleaned = remove_some_gap_tokens(sentences)
 	const phrasified = phrasify(cleaned)
-	const structured = rules_applier(BT_STRUCTURAL_RULES)(phrasified)
+	const structured = apply_rules({ sentences: phrasified, rules: BT_STRUCTURAL_RULES })
 	const text = textify(structured)
 	return find_replace(text)
 }

@@ -660,6 +660,23 @@ const transform_rules_json: TransformRuleJson[] = [
 		'context': { 'precededby': { 'category': 'Noun|Verb|Adjective|Adverb|Conjunction' } },
 		'context_transform': { 'tag': { 'implicit': 'implicit' } },
 	},
+	// Vocabulary Alternates
+	{
+		'name': 'Tag complex vocabulary alternates',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
+		'context': {
+			'subtokens': { 'token': '(complex)', 'skip': 'all' },
+		},
+		'transform': { 'tag': { 'vocabulary_alternate': 'complex' } },
+	},
+	{
+		'name': 'Tag simple vocabulary alternates',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
+		'context': {
+			'subtokens': { 'token': '(simple)', 'skip': 'all' },
+		},
+		'transform': { 'tag': { 'vocabulary_alternate': 'simple' } },
+	},
  ]
 
 export function parse_transform_rule({ rule_json, index }: {
@@ -776,6 +793,41 @@ const builtin_transform_rules: BuiltInRule[] = [
 				}
 				const tag = { 'implicit': tag_map[tokens[context_indexes[0]].token] }
 				add_tag_to_token({ token: trigger_token, tag, rule_id })
+			}),
+		},
+	},
+	{
+		name: 'Group tags for simple/complex vocabulary alternates',
+		comment: 'The alternates are already tagged with their type, so this assigns "first/last/coordinate" values',
+		rule: {
+			trigger: create_token_filter({ 'type': TOKEN_TYPE.CLAUSE, 'tag': 'vocabulary_alternate' }),
+			context: create_context_filter({ }),
+			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
+				const current = trigger_token.tag['vocabulary_alternate']
+				const previous = tokens[trigger_index - 1]?.tag['vocabulary_alternate']?.split('|')[0]	// the previous clause already has its new tag
+				const next = tokens[trigger_index + 1]?.tag['vocabulary_alternate']
+				const key = `${previous}|${current}|${next}`
+				const new_tag = {
+					'undefined|complex|undefined': 'complex|single',
+					'undefined|complex|simple': 'complex|single',
+					'undefined|complex|complex': 'complex|first',
+					'simple|complex|undefined': 'complex|single',
+					'simple|complex|simple': 'complex|single',
+					'simple|complex|complex': 'complex|first',
+					'complex|complex|undefined': 'complex|last',
+					'complex|complex|simple': 'complex|last',
+					'complex|complex|complex': 'complex|coordinate',
+					'undefined|simple|undefined': 'simple|single',
+					'undefined|simple|simple': 'simple|first',
+					'undefined|simple|complex': 'simple|single',
+					'simple|simple|undefined': 'simple|last',
+					'simple|simple|simple': 'simple|coordinate',
+					'simple|simple|complex': 'simple|last',
+					'complex|simple|undefined': 'simple|single',
+					'complex|simple|simple': 'simple|first',
+					'complex|simple|complex': 'simple|single',
+				}[key]!
+				add_tag_to_token({ token: trigger_token, tag: { 'vocabulary_alternate': new_tag }, rule_id })
 			}),
 		},
 	},

@@ -585,6 +585,19 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'message': 'Cannot have a nested independent clause. Instead, split the sentence into two.',
 		},
 	},
+	{
+		'name': 'Warn when there is no clause with (simple) after a clause with (complex)',
+		'comment': 'a simple alternate should (usually) follow a complex alternate',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'vocabulary_alternate': 'complex' } },
+		'context': {
+			'subtokens': { 'token': '(complex)', 'skip': 'all' },
+			'notfollowedby': { 'tag': 'vocabulary_alternate' },
+		},
+		'warning': {
+			'on': 'subtokens:0',
+			'message': 'A simple vocabulary alternate typically directly follows a complex alternate, but no simple alternate was found.',
+		},
+	},
 ]
 
 const builtin_checker_rules: BuiltInRule[] = [
@@ -782,30 +795,6 @@ const builtin_checker_rules: BuiltInRule[] = [
 					return {
 						token_to_flag: that_token,
 						warning: "This is being interpreted as a relative clause. If it's supposed to be a complement clause, remove the 'that'.",
-					}
-				}
-			}),
-		},
-	},
-	{
-		name: 'Warn when there is no clause with (simple) after a clause with (complex)',
-		comment: 'a simple alternate should (usually) follow a complex alternate',
-		rule: {
-			trigger: create_token_filter({ 'type': TOKEN_TYPE.CLAUSE }),
-			context: create_context_filter({
-				'subtokens': { 'token': '(complex)', 'skip': 'all' },
-			}),
-			action: message_set_action(({ tokens, trigger_index, subtoken_indexes }) => {
-				const next_clause_index = trigger_index + 1
-				const next_clause_context_filter = create_context_filter({
-					'subtokens': { 'token': '(simple)', 'skip': 'all' },
-				})
-
-				if (next_clause_index >= tokens.length || !next_clause_context_filter(tokens, next_clause_index).success) {
-					const complex_token = tokens[trigger_index].sub_tokens[subtoken_indexes[0]]
-					return {
-						token_to_flag: complex_token,
-						warning: 'A simple vocabulary alternate typically directly follows a complex alternate, but no simple alternate was found.',
 					}
 				}
 			}),

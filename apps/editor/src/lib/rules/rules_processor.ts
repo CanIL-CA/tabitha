@@ -1,8 +1,5 @@
 import type { Sentence, Token } from '#lib/types.js'
 import type { TokenRule } from '#lib/rules/types.js'
-export function rules_applier(rules: TokenRule[]): (sentences: Sentence[]) => Sentence[] {
-	return sentences => apply_rules({ sentences, rules })
-}
 
 export function apply_rules({ sentences, rules }: { sentences: Sentence[]; rules: TokenRule[] }): Sentence[] {
 	return apply_rules_to_tokens({ tokens: sentences.map(sentence => sentence.clause), rules }).map(clause => ({ clause }))
