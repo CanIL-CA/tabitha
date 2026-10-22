@@ -298,14 +298,7 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 		['Salience Band', [
 			['Primary Storyline', { }],
-			['Backgrounded Actions', {
-				'context': {
-					'subtokens': [
-						{ 'tag': { 'time': 'past' }, 'skip': 'all' },
-						{ 'tag': { 'auxiliary': 'imperfective_aspect' }, 'skip': 'all' },
-					],
-				},
-			}],
+			['Backgrounded Actions', by_subtoken_tag({ 'time': 'past', 'auxiliary': 'imperfective_aspect' })],
 			['Flashback', by_subtoken_tag({ 'auxiliary': 'flashback' })],
 		]],
 		['Implicit Information', [
