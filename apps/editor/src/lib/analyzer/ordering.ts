@@ -1,34 +1,39 @@
+import { create_token_filter } from '#lib/rules/rules_parser.js'
+import { TOKEN_TYPE } from '#lib/token.js'
 import { PUNCTUATION_PARTICLE_STEMS } from './other_rules'
-import type { EditorAnalyzedEntity, FeatureName, FeatureValue, SourceEntityCategory } from '@tabitha/types'
+import type { Sentence, Token } from '#lib/types.js'
+import type { TokenFilter } from '#lib/rules/types.js'
 
 /**
- * A constituent is either a single entity (eg. a conjunction or particle), or a bracketed span
- * of entities starting with its opening entity '(', '[', '{' and ending with its closing entity.
+ * A constituent is either a single token (eg. a clause, conjunction or particle), or a phrase span
+ * of tokens starting with its opening phrase token (eg. '{NP') and ending with its closing '}'.
  */
-type Constituent = EditorAnalyzedEntity[]
-type ConstituentFilter = (constituent: Constituent) => boolean
+type Constituent = Token[]
+// type ConstituentFilter = (constituent: Constituent) => boolean
 
 type OrderingPosition = 'before_verb' | 'after_verb' | 'end_of_clause'
 type OrderingRule = {
 	readonly name: string
-	readonly matches: ConstituentFilter
+	readonly matches: TokenFilter
 	readonly position: OrderingPosition
 }
-
-const OPENING_VALUES = new Set(['{', '[', '('])
-const CLOSING_VALUES = new Set(['}', ']', ')'])
 
 // the adpositions whose adverbial clauses belong at the end of the parent clause
 const END_OF_CLAUSE_ADPOSITIONS = new Set(['because-A', 'in-order-to-A', 'so-A', 'so-C', 'just-like-A', 'instead-A', 'more-than-A', 'until-A', 'by-A', 'without-C'])
 
+const SKIP_FILTERS: TokenFilter[] = [
+	{ 'type': [TOKEN_TYPE.PUNCTUATION, TOKEN_TYPE.NOTE, TOKEN_TYPE.FUNCTION_WORD].join('|') },
+	{ 'category': 'Particle', 'stem': [...PUNCTUATION_PARTICLE_STEMS].join('|') },
+].map(create_token_filter)
+
 // Each returns the index in the clause's constituents to insert at, or -1 when the position doesn't exist
 const INSERT_INDEX_GETTERS: Record<OrderingPosition, (children: Constituent[]) => number> = {
-	before_verb: children => children.findIndex(is_verb_phrase),
+	before_verb: children => children.findIndex(child => is_verb_phrase(child[0])),
 	after_verb: children => {
-		const verb_index = children.findIndex(is_verb_phrase)
+		const verb_index = children.findIndex(child => is_verb_phrase(child[0]))
 		return verb_index === -1 ? -1 : verb_index + 1
 	},
-	end_of_clause: children => children.findLastIndex(child => !is_punctuation(child)) + 1,
+	end_of_clause: children => children.findLastIndex(child => !should_skip(child[0])) + 1,
 }
 
 /**
@@ -39,111 +44,91 @@ const INSERT_INDEX_GETTERS: Record<OrderingPosition, (children: Constituent[]) =
 const ORDERING_RULES: OrderingRule[] = [
 	{
 		name: 'Place the agent NP before the verb',
-		matches: by_head_feature({ category: 'Noun Phrase', name: 'Semantic Role', value: 'Most Agent-like' }),
+		matches: create_token_filter({ 'token': '{NP', 'tag': { 'role': 'agent' } }),
 		position: 'before_verb',
 	},
 	{
 		name: 'Place the patient NP directly after the verb',
-		matches: by_head_feature({ category: 'Noun Phrase', name: 'Semantic Role', value: 'Most Patient-like' }),
+		matches: create_token_filter({ 'token': '{NP', 'tag': { 'role': 'patient' } }),
 		position: 'after_verb',
 	},
 	{
 		name: 'Place an agent clause before the verb',
-		matches: by_head_feature({ category: 'Clause', name: 'Type', value: 'Agent (Subject Complement)' }),
+		matches: create_token_filter({ 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'agent_clause' } }),
 		position: 'before_verb',
 	},
 	{
 		name: 'Place adverb phrases at the end of the clause',
-		matches: ([head]) => head.category === 'Adverb Phrase',
+		matches: create_token_filter({ 'token': '{AdvP' }),
 		position: 'end_of_clause',
 	},
 	{
 		name: 'Place some adverbial clauses at the end of the parent clause, based on their adposition',
-		matches: constituent => is_adverbial_clause(constituent)
-			&& END_OF_CLAUSE_ADPOSITIONS.has(get_clause_adposition_sense(constituent)),
+		matches: token => is_adverbial_clause(token)
+			&& END_OF_CLAUSE_ADPOSITIONS.has(get_clause_adposition_sense(token)),
 		position: 'end_of_clause',
 	},
 ]
 
-export function order_entities(entities: EditorAnalyzedEntity[]): EditorAnalyzedEntity[] {
-	return split_constituents(entities).flatMap(order_constituent)
+/**
+ * This expects phrasified tokens.
+ */
+export function order_constituents(sentences: Sentence[]): Sentence[] {
+	return sentences.map(({ clause }) => ({ clause: order_clause(clause) }))
 }
 
-function order_constituent(constituent: Constituent): Constituent {
-	const opening = constituent[0]
-	const closing = constituent[constituent.length - 1]
-	if (constituent.length < 2 || !is_opening(opening) || !is_closing(closing)) {
-		return constituent
-	}
+function order_clause(token: Token): Token {
+	if (token.type !== TOKEN_TYPE.CLAUSE) return token
 
-	const children = split_constituents(constituent.slice(1, -1)).map(order_constituent)
-	const ordered_children = opening.category === 'Clause' ? apply_ordering_rules(children) : children
-	return [opening, ...ordered_children.flat(), closing]
+	const children = split_constituents(token.sub_tokens.map(order_clause))
+	return { ...token, sub_tokens: apply_ordering_rules(children).flat() }
 }
 
-function split_constituents(entities: EditorAnalyzedEntity[]): Constituent[] {
+function split_constituents(tokens: Token[]): Constituent[] {
 	const constituents: Constituent[] = []
 	let depth = 0
 
-	for (const entity of entities) {
+	for (const token of tokens) {
 		if (depth === 0) {
 			constituents.push([])
 		}
-		constituents[constituents.length - 1].push(entity)
-		depth = Math.max(0, depth + get_depth_change(entity))
+		constituents[constituents.length - 1].push(token)
+		depth = Math.max(0, depth + get_depth_change(token))
 	}
 
 	return constituents
 }
 
-function get_depth_change(entity: EditorAnalyzedEntity): number {
-	if (is_opening(entity)) return 1
-	if (is_closing(entity)) return -1
-	return 0
-}
-
-function is_opening(entity: EditorAnalyzedEntity): boolean {
-	return entity.concept === null && OPENING_VALUES.has(entity.value)
-}
-
-function is_closing(entity: EditorAnalyzedEntity): boolean {
-	return entity.concept === null && CLOSING_VALUES.has(entity.value)
+function get_depth_change(token: Token): number {
+	if (token.type !== TOKEN_TYPE.PHRASE) return 0
+	return token.token === '}' ? -1 : 1
 }
 
 function apply_ordering_rules(children: Constituent[]): Constituent[] {
 	return ORDERING_RULES.reduce((ordered_children, rule) => apply_ordering_rule({ children: ordered_children, rule }), children)
 }
 
-function apply_ordering_rule({ children, rule }: { children: Constituent[]; rule: OrderingRule }): Constituent[] {
-	const to_move = children.filter(rule.matches)
+function apply_ordering_rule({ children, rule }: { children: Constituent[], rule: OrderingRule }): Constituent[] {
+	const to_move = children.filter(child => rule.matches(child[0]))
 	if (!to_move.length) return children
 
-	const remaining = children.filter(child => !rule.matches(child))
+	const remaining = children.filter(child => !rule.matches(child[0]))
 	const insert_index = INSERT_INDEX_GETTERS[rule.position](remaining)
 	if (insert_index === -1) return children
 
 	return [...remaining.slice(0, insert_index), ...to_move, ...remaining.slice(insert_index)]
 }
 
-function is_verb_phrase([head]: Constituent): boolean {
-	return head.category === 'Verb Phrase'
+const is_verb_phrase = create_token_filter({ 'token': '{VP' })
+
+const is_adverbial_clause = create_token_filter({ 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'adverbial_clause' } })
+
+function should_skip(token: Token): boolean {
+	return SKIP_FILTERS.some(filter => filter(token))
 }
 
-function is_punctuation([head]: Constituent): boolean {
-	return head.category === 'period'
-		|| head.category === 'Format Marker'
-		|| head.category === 'Particle' && PUNCTUATION_PARTICLE_STEMS.has(head.value)
-}
-
-const is_adverbial_clause = by_head_feature({ category: 'Clause', name: 'Type', value: 'Event Modifier (Adverbial Clause)' })
-
-function get_clause_adposition_sense(clause: Constituent): string {
-	const children = split_constituents(clause.slice(1, -1))
-	const adposition = children.find(([head]) => head.category === 'Adposition')?.[0].concept
+function get_clause_adposition_sense(clause: Token): string {
+	const is_adposition = create_token_filter({ 'category': 'Adposition' })
+	const adposition = clause.sub_tokens.find(is_adposition)?.lookup_results[0]
 	return adposition ? `${adposition.stem}-${adposition.sense}` : ''
-}
-
-function by_head_feature({ category, name, value }: { category: SourceEntityCategory; name: FeatureName; value: FeatureValue }): ConstituentFilter {
-	return ([head]) => head.category === category
-		&& head.features.some(feature => feature.name === name && feature.value === value)
 }

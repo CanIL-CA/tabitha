@@ -3,11 +3,27 @@ import { analyze } from './index'
 import { entityfy } from './entityfy'
 import { get_features_for_token } from './features'
 import { replace_gaps } from './gaps'
-import { order_entities } from './ordering'
+import { order_constituents } from './ordering'
 import { populate_noun_list, replace_punctuation } from './other_rules'
 import { TOKEN_TYPE, create_gap_token, create_token, create_lookup_result } from '#lib/token.js'
 import type { EditorAnalyzedEntity, PartOfSpeech } from '@tabitha/types'
 import type { Sentence, Tag, Token } from '#lib/types.js'
+
+const word = ({ stem, part_of_speech, tag = {} }: { stem: string; part_of_speech: PartOfSpeech; tag?: Tag }) => create_token({
+	token: stem,
+	type: TOKEN_TYPE.LOOKUP_WORD,
+	lookup_results: [create_lookup_result({ stem, part_of_speech, sense: 'A' })],
+	tag,
+})
+const phrase = ({ type, tag = {}, contents }: { type: string; tag?: Tag; contents: Token[] }) => [
+	create_token({ token: `{${type}`, type: TOKEN_TYPE.PHRASE, tag }),
+	...contents,
+	create_token({ token: '}', type: TOKEN_TYPE.PHRASE }),
+]
+const np = ({ role, contents }: { role?: string; contents: Token[] }) => phrase({ type: 'NP', tag: role ? { role } : {}, contents })
+const vp = (stem: string) => phrase({ type: 'VP', contents: [word({ stem, part_of_speech: 'Verb' })] })
+const clause = ({ clause_type, sub_tokens }: { clause_type: string; sub_tokens: Token[] }) => create_token({ token: '[', type: TOKEN_TYPE.CLAUSE, tag: { clause_type }, sub_tokens })
+const texts = (tokens: Token[]) => tokens.map(token => token.token)
 
 describe('analyzer', () => {
 	describe('analyze pipeline', () => {
@@ -114,128 +130,85 @@ describe('analyzer', () => {
 	})
 
 	describe('ordering', () => {
-		const entity = (overrides: Partial<EditorAnalyzedEntity>): EditorAnalyzedEntity => ({
-			category: '',
-			value: '',
-			features: [],
-			concept: null,
-			pairing_concept: null,
-			pairing_type: null,
-			noun_list_index: null,
-			...overrides,
+		const noun = (stem: string) => word({ stem, part_of_speech: 'Noun' })
+		const advp = (stem: string) => phrase({ type: 'AdvP', contents: [word({ stem, part_of_speech: 'Adverb' })] })
+		const adverbial_clause = ({ adposition, sub_tokens }: { adposition: string; sub_tokens: Token[] }) => clause({
+			clause_type: 'adverbial_clause',
+			sub_tokens: [word({ stem: adposition, part_of_speech: 'Adposition' }), ...sub_tokens],
 		})
-		const concept = ({ stem, part_of_speech }: { stem: string; part_of_speech: 'Noun' | 'Verb' }) => entity({ category: part_of_speech, value: stem, concept: { stem, sense: 'A', part_of_speech } })
-		const close = (value: string) => entity({ value })
-		const np = ({ stem, role }: { stem: string; role: string }) => [
-			entity({ category: 'Noun Phrase', value: '(', features: [{ name: 'Semantic Role', value: role }] }),
-			concept({ stem, part_of_speech: 'Noun' }),
-			close(')'),
-		]
-		const vp = (stem: string) => [entity({ category: 'Verb Phrase', value: '(' }), concept({ stem, part_of_speech: 'Verb' }), close(')')]
-		const clause = ({ type, children }: { type: string; children: EditorAnalyzedEntity[] }) => [
-			entity({ category: 'Clause', value: '[', features: [{ name: 'Type', value: type }] }),
-			...children,
-			close(']'),
-		]
-		const main_clause = (children: EditorAnalyzedEntity[]) => [
-			entity({ category: 'Clause', value: '{', features: [{ name: 'Type', value: 'Independent' }] }),
-			...children,
-			entity({ category: 'period', value: '.' }),
-			close('}'),
-		]
-		const stems = (entities: EditorAnalyzedEntity[]) => entities.filter(e => e.concept).map(e => e.value)
+		const period = () => create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION })
+		const order_main_clause = (sub_tokens: Token[]) => order_constituents([{ clause: clause({ clause_type: 'main_clause', sub_tokens }) }])[0].clause.sub_tokens
+		const stems = (tokens: Token[]): string[] => tokens.flatMap(token => token.type === TOKEN_TYPE.CLAUSE ? stems(token.sub_tokens) : token.lookup_results.map(lookup => lookup.stem))
 
 		test('places the agent NP before the verb and the patient NP directly after it', () => {
-			const entities = main_clause([
-				...np({ stem: 'letter', role: 'Most Patient-like' }),
+			const tokens = order_main_clause([
+				...np({ role: 'patient', contents: [noun('letter')] }),
 				...vp('write'),
-				...np({ stem: 'Paul', role: 'Most Agent-like' }),
-				...np({ stem: 'Corinth', role: 'Destination' }),
+				...np({ role: 'agent', contents: [noun('Paul')] }),
+				...np({ role: 'destination', contents: [noun('Corinth')] }),
+				period(),
 			])
 
-			const ordered = order_entities(entities)
-			expect(stems(ordered)).toEqual(['Paul', 'write', 'letter', 'Corinth'])
-			expect(ordered.at(-2)?.value).toBe('.')
-			expect(ordered.at(-1)?.value).toBe('}')
+			expect(stems(tokens)).toEqual(['Paul', 'write', 'letter', 'Corinth'])
+			expect(tokens.at(-1)?.token).toBe('.')
 		})
 
 		test('places an agent clause before the verb', () => {
-			const agent_clause = clause({ type: 'Agent (Subject Complement)', children: [...vp('obey')] })
-			const entities = main_clause([...vp('please'), ...np({ stem: 'God', role: 'Most Patient-like' }), ...agent_clause])
+			const agent_clause = clause({ clause_type: 'agent_clause', sub_tokens: vp('obey') })
+			const tokens = order_main_clause([...vp('please'), ...np({ role: 'patient', contents: [noun('God')] }), agent_clause])
 
-			expect(stems(order_entities(entities))).toEqual(['obey', 'please', 'God'])
+			expect(stems(tokens)).toEqual(['obey', 'please', 'God'])
 		})
 
 		test('orders nested clauses independently', () => {
 			const patient_clause = clause({
-				type: 'Patient (Object Complement)',
-				children: [...vp('come'), ...np({ stem: 'John', role: 'Most Agent-like' })],
+				clause_type: 'patient_clause_different_participant',
+				sub_tokens: [...vp('come'), ...np({ role: 'agent', contents: [noun('John')] })],
 			})
-			const entities = main_clause([...vp('say'), ...np({ stem: 'Paul', role: 'Most Agent-like' }), ...patient_clause])
+			const tokens = order_main_clause([...vp('say'), ...np({ role: 'agent', contents: [noun('Paul')] }), patient_clause])
 
-			expect(stems(order_entities(entities))).toEqual(['Paul', 'say', 'John', 'come'])
-		})
-
-		const advp = (stem: string) => [entity({ category: 'Adverb Phrase', value: '(' }), entity({ category: 'Adverb', value: stem, concept: { stem, sense: 'A', part_of_speech: 'Adverb' } }), close(')')]
-		const adverbial_clause = ({ adposition, children }: { adposition: string; children: EditorAnalyzedEntity[] }) => clause({
-			type: 'Event Modifier (Adverbial Clause)',
-			children: [entity({ category: 'Adposition', value: adposition, concept: { stem: adposition, sense: 'A', part_of_speech: 'Adposition' } }), ...children],
+			expect(stems(tokens)).toEqual(['Paul', 'say', 'John', 'come'])
 		})
 
 		test('places adverb phrases at the end of the clause, before punctuation', () => {
-			const exclamation = entity({ category: 'Particle', value: 'exclamation', concept: { stem: 'exclamation', sense: 'A', part_of_speech: 'Particle' } })
-			const entities = main_clause([
+			const exclamation = word({ stem: 'exclamation', part_of_speech: 'Particle' })
+			const tokens = order_main_clause([
 				...advp('quickly'),
-				...np({ stem: 'Paul', role: 'Most Agent-like' }),
+				...np({ role: 'agent', contents: [noun('Paul')] }),
 				...vp('write'),
-				...np({ stem: 'letter', role: 'Most Patient-like' }),
+				...np({ role: 'patient', contents: [noun('letter')] }),
 				exclamation,
+				period(),
 			])
 
-			const ordered = order_entities(entities)
-			expect(stems(ordered)).toEqual(['Paul', 'write', 'letter', 'quickly', 'exclamation'])
-			expect(ordered.at(-2)?.value).toBe('.')
+			expect(stems(tokens)).toEqual(['Paul', 'write', 'letter', 'quickly', 'exclamation'])
+			expect(tokens.at(-1)?.token).toBe('.')
 		})
 
 		test('places an adverbial clause at the end of its parent clause when its adposition is listed', () => {
-			const because_clause = adverbial_clause({ adposition: 'because', children: [...vp('love')] })
-			const entities = main_clause([...because_clause, ...vp('write'), ...advp('quickly')])
+			const because_clause = adverbial_clause({ adposition: 'because', sub_tokens: vp('love') })
+			const tokens = order_main_clause([because_clause, ...vp('write'), ...advp('quickly')])
 
-			expect(stems(order_entities(entities))).toEqual(['write', 'quickly', 'because', 'love'])
+			expect(stems(tokens)).toEqual(['write', 'quickly', 'because', 'love'])
 		})
 
 		test('leaves an adverbial clause in place when its adposition is not listed', () => {
-			const when_clause = adverbial_clause({ adposition: 'when', children: [...vp('arrive')] })
-			const entities = main_clause([...when_clause, ...vp('write')])
+			const when_clause = adverbial_clause({ adposition: 'when', sub_tokens: vp('arrive') })
+			const tokens = order_main_clause([when_clause, ...vp('write')])
 
-			expect(stems(order_entities(entities))).toEqual(['when', 'arrive', 'write'])
+			expect(stems(tokens)).toEqual(['when', 'arrive', 'write'])
 		})
 
 		test('leaves a clause without a verb unchanged', () => {
-			const entities = main_clause([...np({ stem: 'letter', role: 'Most Patient-like' }), ...np({ stem: 'Paul', role: 'Most Agent-like' })])
+			const sub_tokens = [...np({ role: 'patient', contents: [noun('letter')] }), ...np({ role: 'agent', contents: [noun('Paul')] })]
 
-			expect(order_entities(entities)).toEqual(entities)
+			expect(order_main_clause(sub_tokens)).toEqual(sub_tokens)
 		})
 	})
 
 	describe('gaps', () => {
-		const word = ({ stem, part_of_speech, tag = {} }: { stem: string; part_of_speech: PartOfSpeech; tag?: Tag }) => create_token({
-			token: stem,
-			type: TOKEN_TYPE.LOOKUP_WORD,
-			lookup_results: [create_lookup_result({ stem, part_of_speech, sense: 'A' })],
-			tag,
-		})
-		const phrase = ({ type, tag = {}, contents }: { type: string; tag?: Tag; contents: Token[] }) => [
-			create_token({ token: `{${type}`, type: TOKEN_TYPE.PHRASE, tag }),
-			...contents,
-			create_token({ token: '}', type: TOKEN_TYPE.PHRASE }),
-		]
-		const np = ({ role, contents }: { role?: string; contents: Token[] }) => phrase({ type: 'NP', tag: role ? { role } : {}, contents })
-		const vp = (stem: string) => phrase({ type: 'VP', contents: [word({ stem, part_of_speech: 'Verb' })] })
 		const gap = (label: string) => create_gap_token({ rule_id: 'test', label })
-		const clause = ({ clause_type, sub_tokens }: { clause_type: string; sub_tokens: Token[] }) => create_token({ token: '[', type: TOKEN_TYPE.CLAUSE, tag: { clause_type }, sub_tokens })
 		const john = () => word({ stem: 'John', part_of_speech: 'Noun' })
-		const texts = (tokens: Token[]) => tokens.map(token => token.token)
 		const replace_in_main_clause = (sub_tokens: Token[]) => replace_gaps([{ clause: clause({ clause_type: 'main_clause', sub_tokens }) }])[0].clause.sub_tokens
 
 		test('GAP_REL is replaced with the modified NP, without its relative clause', () => {
