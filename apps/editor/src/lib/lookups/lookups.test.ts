@@ -135,6 +135,22 @@ describe('words that differ only by capitalization', () => {
 		expect(stems_and_parts_of_speech(person_token)).toEqual(['Mark Noun'])
 	})
 
+	test('a capitalized first word uses the proper noun, since it has no capitalization to go by: Lot looked at all of the places. (cf. Gen 13:10)', async () => {
+		const person_token = create_lookup_token_for_test({ token: 'Lot', lookup_terms: ['Lot'], tag: { 'position': 'first_word' } })
+
+		await perform_ontology_lookups([create_sentence_for_test([person_token])])
+
+		expect(stems_and_parts_of_speech(person_token)).toEqual(['Lot Noun'])
+	})
+
+	test('a capitalized first word keeps lowercase concepts of other parts of speech: Mark the place where Mark stood.', async () => {
+		const first_token = create_lookup_token_for_test({ token: 'Mark', lookup_terms: ['Mark'], tag: { 'position': 'first_word' } })
+
+		await perform_ontology_lookups([create_sentence_for_test([first_token])])
+
+		expect(stems_and_parts_of_speech(first_token)).toEqual(['Mark Noun', 'mark Verb'])
+	})
+
 	test('both capitalizations are searched once, as the lowercase term', async () => {
 		const tokens = ['Lot', 'lot', 'Mark', 'mark', 'mark'].map(token => create_lookup_token_for_test({ token, lookup_terms: [token] }))
 

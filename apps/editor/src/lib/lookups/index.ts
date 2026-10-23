@@ -58,6 +58,20 @@ const result_filter_rules: BuiltInRule[] = [
 		},
 	},
 	{
+		name: 'Prefer the capitalized concept over a lowercase one of the same part of speech for the first word of a sentence.',
+		comment: "The first word is capitalized whatever it is, so its capitalization says nothing. Where the Ontology has both Lot (a person) and lot (a share), the first word is taken as the proper noun. Lowercase concepts of other parts of speech are kept, eg. 'Mark the place' can still be the verb.",
+		rule: {
+			trigger: token => token.type === TOKEN_TYPE.LOOKUP_WORD && token_has_tag({ token, tag_to_check: { 'position': 'first_word' } }),
+			context: create_context_filter({}),
+			action: simple_rule_action(({ trigger_token: token }) => {
+				prefer_capitalized_concepts(token)
+				if (token.pairing) {
+					prefer_capitalized_concepts(token.pairing)
+				}
+			}),
+		},
+	},
+	{
 		name: 'Remove lookup results that are only in the English lexicon if the word has results from the Ontology',
 		comment: "eg. 'life' is an Adjective in the English lexicon only for 'life boat' (Acts 27:16), but only a Noun in the Ontology. Words with no Ontology results at all keep their lexicon results, so they are still flagged as not recognized with their part of speech.",
 		rule: {
@@ -80,6 +94,15 @@ const result_filter_rules: BuiltInRule[] = [
 		},
 	},
 ]
+
+function prefer_capitalized_concepts(token: Token) {
+	if (starts_lowercase(token.token)) {
+		return
+	}
+
+	const capitalized_parts_of_speech = new Set(token.lookup_results.filter(result => !starts_lowercase(result.stem)).map(result => result.part_of_speech))
+	token.lookup_results = token.lookup_results.filter(result => !starts_lowercase(result.stem) || !capitalized_parts_of_speech.has(result.part_of_speech))
+}
 
 function is_from_ontology(result: LookupResult): boolean {
 	return result.ontology_status !== 'unknown'
