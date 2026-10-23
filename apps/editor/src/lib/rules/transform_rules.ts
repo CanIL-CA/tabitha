@@ -696,7 +696,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		},
 		'transform': { 'tag': { 'vocabulary_alternate': 'simple' } },
 	},
- ]
+]
 
 export function parse_transform_rule({ rule_json, index }: {
 	rule_json: TransformRuleJson

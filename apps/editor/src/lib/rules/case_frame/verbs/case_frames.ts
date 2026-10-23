@@ -172,7 +172,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'state': {
 				...directly_after_verb(),
 				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
-				'comment': 'the state of be-C is always Not Applicable Specificity because it is a general class (eg. human)'
+				'comment': 'the state of be-C is always Not Applicable Specificity because it is a general class (eg. human)',
 			},
 		}],
 		['be-D', {
@@ -228,7 +228,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'state': {
 				...directly_after_verb(),
 				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
-				'comment': 'the state of be-L is always Not Applicable Specificity because it is a social role (eg. doctor)'
+				'comment': 'the state of be-L is always Not Applicable Specificity because it is a social role (eg. doctor)',
 			},
 		}],
 		['be-N', {
@@ -292,14 +292,14 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'state': {
 				...directly_after_verb(),
 				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
-				'comment': 'the state of become-B is always Not Applicable Specificity because it is a general class (eg. human)'
+				'comment': 'the state of become-B is always Not Applicable Specificity because it is a general class (eg. human)',
 			},
 		}],
 		['become-C', {
 			'state': {
 				...directly_after_verb(),
 				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
-				'comment': 'the state of become-C is always Not Applicable Specificity because it is a social role (eg. doctor)'
+				'comment': 'the state of become-C is always Not Applicable Specificity because it is a social role (eg. doctor)',
 			},
 		}],
 		['become-F', {

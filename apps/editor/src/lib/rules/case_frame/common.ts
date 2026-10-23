@@ -82,7 +82,7 @@ export function parse_case_frame_rule({ sense, role_tag, rule_json }: { sense: W
 
 	const missing_message = rule_json['missing_message'] ?? missing_argument_message(role_tag)
 	const extra_message = rule_json['extra_message'] ?? extra_argument_message(role_tag)
-	const scope = rule_json['check_self'] ? 'self' : ('argument_context_index' in rule_json ? 'relative_context' : 'clause')
+	const scope = rule_json['check_self'] ? 'self' : 'argument_context_index' in rule_json ? 'relative_context' : 'clause'
 
 	return [{
 		role_tag,
