@@ -14,10 +14,11 @@ import {
 // with nobody holding any permission. This grants your own account access locally, in
 // the same Auth D1 file `db:load`/`vite dev` actually reads from -- resolved the same reliable way
 // db_load.ts does, rather than guessing a file name.
-async function grant_permission({ email, permissions }: {
+async function grant_permission({ email: raw_email, permissions }: {
 	email: string
 	permissions?: string[]
 }) {
+	const email = raw_email.toLowerCase()
 	const config = apps_config.ontology
 	const wrangler = parse_wrangler_jsonc(config.wrangler_path)
 	const auth_db = wrangler?.d1_databases?.find(d1 => d1.binding === 'DB_Auth')

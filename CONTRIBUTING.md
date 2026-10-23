@@ -446,6 +446,14 @@ To change its schema:
    bunx wrangler d1 migrations apply DB_Auth --remote
    ```
 
+To give people Ontology access in production, use the remote counterpart of `db:grant`. It needs Cloudflare access to the account, prints the SQL and stops unless `--apply` is passed, and is safe to re-run:
+
+```bash
+bun run db:grant:remote --apply 'person@example.org=Their Name' 'other@example.org=Other Name'
+```
+
+Each email is its own user (emails are stored lowercase), so someone with two addresses is listed twice. By default it grants only `PROTECTED_ACCESS`. Concept permissions are a special case, so name them explicitly: `--permissions=PROTECTED_ACCESS,ADD_CONCEPT,UPDATE_CONCEPT,DELETE_CONCEPT`.
+
 #### Survey
 
 `DB_Survey` is owned by D1 migrations too, in `apps/survey/migrations/` ([ADR 0024](docs/decisions/0024-survey-app.md)). The same rules apply: add the next numbered file, never edit an applied one, rebuild locally with `bun run db:load:survey`, and run `bunx wrangler d1 migrations apply DB_Survey --remote` from `apps/survey` before the code that needs it merges.
