@@ -10,7 +10,6 @@ export function analyze(sentences: Sentence[]): EditorAnalyzeResult {
 	const punctuated = replace_punctuation(sentences)
 	const phrasified = phrasify(punctuated)
 	const gaps_replaced = replace_gaps(phrasified)
-	// other movement rules,
 	const ordered = order_constituents(gaps_replaced)
 	const entities = entityfy(ordered)
 	const source_data = to_source_data(entities)

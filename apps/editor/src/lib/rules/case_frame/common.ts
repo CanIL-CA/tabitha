@@ -1,6 +1,7 @@
 import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
-import { TOKEN_TYPE, stem_with_sense, create_case_frame, create_token, format_token_message, token_has_tag } from '#lib/token.js'
+import { TOKEN_TYPE, stem_with_sense, create_case_frame, format_token_message, token_has_tag } from '#lib/token.js'
 import { parse_transform_rule } from '../transform_rules'
+import { with_coordinated_arguments } from './coordination'
 import { UNBRACKETED_CLAUSE_MESSAGE, WHERE_RELATIVIZER_HINT, has_where_relativizer_argument, is_missing_brackets_around_clause } from './cascade_sources'
 import type { CheckerMessageLabel } from '@tabitha/types'
 import type { MessageInfo, Token, LookupResult } from '#lib/types.js'
@@ -215,13 +216,13 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 		return create_role_match_result({
 			rule,
 			success: true,
-			argument_context: {
+			argument_contexts: with_coordinated_arguments({
 				tokens,
 				trigger_index: argument_index,
 				trigger_token: tokens[argument_index],
 				rule_id: rule.trigger_rule.id,
 				...context_result,
-			},
+			}),
 		})
 
 	} else {
@@ -240,13 +241,13 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 			return create_role_match_result({
 				rule,
 				success: true,
-				argument_context: {
+				argument_contexts: with_coordinated_arguments({
 					tokens,
 					trigger_index: i,
 					trigger_token: tokens[i],
 					rule_id: rule.trigger_rule.id,
 					...context_result,
-				},
+				}),
 			})
 		}
 
@@ -254,18 +255,11 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 	}
 }
 
-function create_role_match_result({ rule, success, argument_context = null }: { rule: ArgumentRoleRule; success: boolean; argument_context?: RuleTriggerContext | null }): RoleMatchResult {
+function create_role_match_result({ rule, success, argument_contexts = [] }: { rule: ArgumentRoleRule; success: boolean; argument_contexts?: RuleTriggerContext[] }): RoleMatchResult {
 	return {
 		role_tag: rule.role_tag,
 		success,
-		trigger_context: argument_context ?? {
-			tokens: [],
-			trigger_index: -1,
-			trigger_token: create_token({ token: '', type: TOKEN_TYPE.NOTE }),
-			context_indexes: [],
-			subtoken_indexes: [],
-			rule_id: rule.trigger_rule.id,
-		},
+		trigger_contexts: argument_contexts,
 		rule,
 	}
 }
@@ -281,9 +275,9 @@ function check_usage({ lookup, role_matches }: { lookup: LookupResult; role_matc
 	// also matched a valid argument, remove it from the extras.
 
 	const valid_arguments = role_matches.filter(({ role_tag }) => possible_roles.includes(role_tag))
-	const extra_arguments = role_matches.filter(({ role_tag, trigger_context }) => 
-		!possible_roles.includes(role_tag)
-		&& !valid_arguments.some(({ trigger_context: { trigger_index } }) => trigger_context.trigger_index === trigger_index))
+	const extra_arguments = role_matches.filter(match =>
+		!possible_roles.includes(match.role_tag)
+		&& !valid_arguments.some(valid_argument => shares_argument_token({ match, other_match: valid_argument })))
 	const missing_arguments = required_roles.filter(role => !role_matches.some(({ role_tag }) => role_tag === role))
 
 	const is_valid = extra_arguments.length === 0 && missing_arguments.length === 0
@@ -366,7 +360,7 @@ export function* validate_case_frame(trigger_context: RuleTriggerContext): Gener
 		const role_argument = case_frame.valid_arguments.find(({ role_tag: tag }: RoleMatchResult) => tag === role_tag)
 		if (role_argument && !selected_result.categorization.toUpperCase().includes(categorization_letter)) {
 			yield {
-				token_to_flag: role_argument.trigger_context.trigger_token,
+				token_to_flag: role_argument.trigger_contexts[0].trigger_token,
 				warning: `${sense} does not usually take a ${role_tag}. Check to make sure its usage is acceptable.`,
 			}
 		}
@@ -418,6 +412,11 @@ function show_invalid_roles(lookup: LookupResult): MessageInfo {
 	return { info: `${stem_with_sense(lookup)}: ${missing_message}${joiner}${extra_message}` }
 }
 
+function shares_argument_token({ match, other_match }: { match: RoleMatchResult; other_match: RoleMatchResult }): boolean {
+	return match.trigger_contexts.some(({ trigger_index }) =>
+		other_match.trigger_contexts.some(other_context => other_context.trigger_index === trigger_index))
+}
+
 function no_matches_and_ambiguous_sense(token: Token): boolean {
 	return token.lookup_results.every(({ case_frame }) => case_frame.result.status === 'invalid') && token.lookup_results.length > 1 && !token.specified_sense
 }
@@ -430,7 +429,7 @@ function flag_extra_argument({ trigger_context, extra_argument, message, severit
 	// The message is formatted based on the verb trigger token, not the argument token
 	const formatted_message = format_token_message({ trigger_context, message })
 
-	const argument_token = extra_argument.trigger_context.trigger_token
+	const argument_token = extra_argument.trigger_contexts[0].trigger_token
 	const token_to_flag = argument_token.type === TOKEN_TYPE.CLAUSE ? argument_token.sub_tokens[0] : argument_token
 	return { token_to_flag, [severity]: formatted_message, plain: true }
 }

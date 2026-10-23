@@ -49,7 +49,8 @@ export type RoleUsageInfo = {
 export type RoleMatchResult = {
 	role_tag: RoleTag
 	success: boolean
-	trigger_context: RuleTriggerContext
+	// one per argument token, to handle coordinated noun or clause arguments
+	trigger_contexts: RuleTriggerContext[]
 	rule: ArgumentRoleRule
 }
 

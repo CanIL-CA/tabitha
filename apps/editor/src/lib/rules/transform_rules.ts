@@ -613,6 +613,19 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'tag': { 'syntax': 'comma' } },
 	},
 	{
+		'name': 'tag addressee nouns and commas marked with _addressee',
+		'trigger': { 'tag': { 'syntax': 'head_np' } },
+		'context': {
+			'followedby': [
+				{ 'token': '_addressee', 'skip': [{ 'category': 'Conjunction' }, 'np'] },
+				{ 'token': ',' },
+			],
+		},
+		'transform': { 'tag': { 'role': 'addressee' } },
+		'context_transform': [{}, { 'tag': { 'syntax': 'comma_addressee' } }],
+		'comment': "eg 'John _addressee, Mary and Peter went'. Without the note, the comma would be read as part of a list",
+	},
+	{
 		'name': 'tag addressee nouns and commas',
 		'trigger': { 'tag': { 'syntax': 'head_np' } },
 		'context': {
@@ -621,9 +634,15 @@ const transform_rules_json: TransformRuleJson[] = [
 				{ 'tag': { 'syntax': 'head_np' }, 'skip': 'all' },	// the agent
 				{ 'category': 'Verb', 'skip': 'all' },
 			],
+			'notfollowedby': [
+				{ 'token': ',', 'skip': [{ 'category': 'Conjunction' }, 'np'] },
+				{ 'stem': 'and|or', 'skip': 'all' },
+				{ 'category': 'Verb', 'skip': 'all' },
+			],
 		},
 		'transform': { 'tag': { 'role': 'addressee' } },
 		'context_transform': [{ 'tag': { 'syntax': 'comma_addressee' } }],
+		'comment': "an and/or before the Verb means the comma is part of a list, eg 'John, Mary and Peter went'. Use _addressee for 'John, you and Mary go'",
 	},
 	{
 		'name': 'by default, tag all "and/or" as "noun" coordination',
