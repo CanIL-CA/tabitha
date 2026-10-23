@@ -11,6 +11,7 @@ const PRONOUN_MESSAGES = new Map([
 	['ours', `"ours" should be replaced with "our() X", e.g., That book is our(Paul's) book.`],
 	['yours', `"yours" should be replaced with "your() X", e.g., That book is your(Paul's) book.`],
 	['each-other', '"each-other" requires its respective Noun in parentheses, e.g., each-other(people).'],
+	["each-other's", `"each-other's" requires its respective Noun in parentheses, e.g., each-other's(people).`],
 ])
 FIRST_PERSON.forEach(p => PRONOUN_MESSAGES.set(p, 'First person pronouns require their respective Noun in parentheses, e.g., {token}(Paul).'))
 SECOND_PERSON.forEach(p => PRONOUN_MESSAGES.set(p, 'Second person pronouns require their respective Noun in parentheses, e.g., {token}(Paul).'))
@@ -30,6 +31,7 @@ export const PRONOUN_TAGS = new Map([
 	['yourself', 'second_person|singular|reflexive'],
 	['yourselves', 'second_person|plural|reflexive'],
 	['each-other', 'reciprocal'],
+	["each-other's", 'reciprocal'],
 ])
 
 /**
