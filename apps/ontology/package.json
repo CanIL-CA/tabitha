@@ -42,8 +42,8 @@
     "@tabitha/ui": "workspace:*",
     "@tabitha/usage": "workspace:*",
     "@tailwindcss/typography": "^0.5.20",
-    "better-auth": "1.7.7",
-    "daisyui": "^5.7.47",
+    "better-auth": "1.7.10",
+    "daisyui": "^5.7.50",
     "svelte": "^5.57.2",
     "tailwindcss": "^4.3.3"
   },
