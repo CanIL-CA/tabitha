@@ -320,6 +320,13 @@ async function set_version({ db, version }: { db: D1DatabaseSession, version: st
 		SET version = ?
 	`
 	await db.prepare(sql).bind(version).run()
+
+	// TODO remove when the OntologyVersion table gets removed. They must be in sync until then
+	const sql_ontology_version = `
+		UPDATE OntologyVersion
+		SET Version = ?
+	`
+	await db.prepare(sql_ontology_version).bind(version).run()
 }
 
 async function get_next_version(db: D1DatabaseSession): Promise<string> {

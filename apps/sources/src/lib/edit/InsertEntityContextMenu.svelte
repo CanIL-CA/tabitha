@@ -215,11 +215,21 @@
 				condition: !!parent_category,
 			},
 		]],
-		['Other', [
+		['Format/Punctuation', [
 			{
 				label: 'paragraph',
 				action: () => insert_entity(DEFAULTS.PARAGRAPH),
 				condition: !parent_category,
+			},
+			{
+				label: 'poetry-begin',
+				action: () => insert_entity(DEFAULTS.POETRY_BEGIN),
+				condition: parent_category === 'Clause',
+			},
+			{
+				label: 'poetry-end',
+				action: () => insert_entity(DEFAULTS.POETRY_END),
+				condition: parent_category === 'Clause',
 			},
 			{
 				label: 'period',

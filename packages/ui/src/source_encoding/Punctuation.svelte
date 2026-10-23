@@ -1,8 +1,6 @@
 <script lang="ts">
 	type Props = {
-		// Structural rather than @tabitha/types' full SourceEntity, since apps/sources and apps/targets
-		// each maintain their own local SourceEntity type, and this component only ever reads these two fields.
-		source_entity: { category: string, value: string }
+		source_entity: { value: string }
 		size?: 'sm' | 'md' | 'lg'
 		classes?: string
 	}
@@ -13,5 +11,5 @@
 </script>
 
 <span class="inline-flex tracking-widest font-thin {size_class} {classes}">
-	{source_entity.category === 'Paragraph' ? '¶' : source_entity.value}
+	{source_entity.value}
 </span>

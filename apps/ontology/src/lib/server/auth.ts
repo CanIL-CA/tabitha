@@ -6,7 +6,7 @@ export async function get_user_info({ locals, email }: { locals: App.Locals, ema
 		FROM Users u
 		LEFT JOIN User_Permissions up ON up.user_id = u.id
 		LEFT JOIN Permissions p ON p.id = up.permission_id AND p.app = ?
-		WHERE u.email = ?
+		WHERE u.email = ? COLLATE NOCASE
 	`
 	const { results } = await locals.db_auth.prepare(sql).bind('ontology', email).all<{ id: number, permission: string | null }>()
 	const permissions = results.map(({ permission }) => permission)

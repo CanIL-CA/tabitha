@@ -44,7 +44,7 @@ export async function update_concept({ db, data }: { db: D1DatabaseSession, data
 export async function get_next_sense({ db, stem, part_of_speech }: { db: D1DatabaseSession, stem: string, part_of_speech: PartOfSpeech }): Promise<string> {
 	const concepts = await get_concepts(db)({ q: stem, category: part_of_speech, scope: 'stems' })
 	// the search results are not case-sensitive, so filter out concepts that don't exactly match the stem
-	const valid_senses = concepts.filter((c: Concept) => c.stem === stem).map((c: Concept) => c.sense)
+	const valid_senses = concepts.filter(c => c.stem === stem && c.status === 'in ontology').map(c => c.sense)
 	return String.fromCharCode('A'.charCodeAt(0) + valid_senses.length)
 }
 

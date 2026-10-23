@@ -9,7 +9,7 @@ export type PartOfSpeech =
 	| 'Particle'
 	| 'Phrasal'
 
-export type SourceEntityCategory = PartOfSpeech | 'Noun Phrase' | 'Verb Phrase' | 'Adjective Phrase' | 'Adverb Phrase' | 'Clause' | 'Paragraph' | 'Section' | 'period' | ''
+export type SourceEntityCategory = PartOfSpeech | 'Noun Phrase' | 'Verb Phrase' | 'Adjective Phrase' | 'Adverb Phrase' | 'Clause' | 'Format Marker' | 'Section' | 'period' | ''
 
 export type ConceptKey = {
 	stem: string
