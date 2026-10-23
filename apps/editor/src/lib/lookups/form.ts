@@ -7,15 +7,16 @@ import type { TargetFormResult, PartOfSpeech } from '@tabitha/types'
 
 const targets_client = create_targets_client({ base_url: PUBLIC_TARGETS_API_HOST })
 
-// Looks up every token's form in one request, rather than one request per token
+// Looks up every token's form in one request, rather than one request per token.
+// The service matches words case-insensitively, so 'The' and 'the' are fetched once, as 'the'.
 export async function check_forms(lookup_tokens: Token[]) {
 	// At this point there is always just one lookup term
 	// The term is expected to have no sense attached to it
-	const words = [...new Set(lookup_tokens.map(lookup_token => lookup_token.lookup_terms[0]))]
+	const words = [...new Set(lookup_tokens.map(lookup_token => lookup_token.lookup_terms[0].toLowerCase()))]
 	const forms_by_word = words.length ? await targets_client.lookup_forms_batch({ words, project: 'English' }) : {}
 
 	for (const lookup_token of lookup_tokens) {
-		apply_form_results({ lookup_token, form_results: forms_by_word[lookup_token.lookup_terms[0]] ?? [] })
+		apply_form_results({ lookup_token, form_results: forms_by_word[lookup_token.lookup_terms[0].toLowerCase()] ?? [] })
 	}
 }
 

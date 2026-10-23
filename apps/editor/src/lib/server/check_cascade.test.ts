@@ -18,8 +18,8 @@ const ONTOLOGY: Record<string, Concept[]> = {
 	],
 	in: [{ sense: 'A', part_of_speech: 'Adposition', level: 1, categorization: 'A__' }],
 	into: [{ sense: 'A', part_of_speech: 'Adposition', level: 1, categorization: 'A__' }],
-	jesus: [{ sense: 'A', part_of_speech: 'Noun', level: 4, categorization: 'M' }],
-	john: [{ sense: 'A', part_of_speech: 'Noun', level: 4, categorization: 'M' }],
+	Jesus: [{ sense: 'A', part_of_speech: 'Noun', level: 4, categorization: 'M' }],
+	John: [{ sense: 'A', part_of_speech: 'Noun', level: 4, categorization: 'M' }],
 	let: [{ sense: 'A', part_of_speech: 'Verb', level: 1, categorization: 'A______H_' }],
 	man: [{ sense: 'A', part_of_speech: 'Noun', level: 1, categorization: 'o' }],
 	near: [{ sense: 'A', part_of_speech: 'Adposition', level: 1, categorization: 'A__' }],
@@ -42,10 +42,13 @@ const FORMS: Record<string, Pick<TargetFormResult, 'stem' | 'part_of_speech' | '
 	went: { stem: 'go', part_of_speech: 'Verb', form: 'Past' },
 }
 
+// Like the real service, match the requested term case-insensitively and return the stem as stored
 function search_ontology(query: string): OntologyResult[] {
-	const concepts = ONTOLOGY[query.toLowerCase()] ?? []
-	const stem = query.toLowerCase() === query ? query : query[0].toUpperCase() + query.slice(1).toLowerCase()
-	return concepts.map(concept => ({ ...concept, stem, level: String(concept.level), status: 'in ontology', how_to_hints: [] }) as unknown as OntologyResult)
+	const stored_stem = Object.keys(ONTOLOGY).find(stem => stem.toLowerCase() === query.toLowerCase())
+	if (!stored_stem) {
+		return []
+	}
+	return ONTOLOGY[stored_stem].map(concept => ({ ...concept, stem: stored_stem, level: String(concept.level), status: 'in ontology', how_to_hints: [] }) as unknown as OntologyResult)
 }
 
 function lookup_forms(word: string): Partial<TargetFormResult>[] {
