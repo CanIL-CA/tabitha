@@ -73,11 +73,11 @@
     "update:interactive": "bun update --interactive --latest --recursive"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.0",
-    "@vitest/coverage-v8": "^5.0.3",
+    "@playwright/test": "^1.64.1",
+    "@vitest/coverage-v8": "^5.0.5",
     "markdownlint-cli2": "^0.23.3",
     "sharp": "^0.35.5",
     "syncpack": "^15.3.3",
-    "turbo": "^2.11.7"
+    "turbo": "^2.11.9"
   }
 }
