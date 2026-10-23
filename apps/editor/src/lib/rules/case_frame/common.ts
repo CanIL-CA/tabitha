@@ -82,10 +82,12 @@ export function parse_case_frame_rule({ sense, role_tag, rule_json }: { sense: W
 
 	const missing_message = rule_json['missing_message'] ?? missing_argument_message(role_tag)
 	const extra_message = rule_json['extra_message'] ?? extra_argument_message(role_tag)
+	const scope = rule_json['check_self'] ? 'self' : ('argument_context_index' in rule_json ? 'relative_context' : 'clause')
 
 	return [{
 		role_tag,
 		trigger_rule: { ...parse_transform_rule({ rule_json, index: 0 }), id: `case_frame:${sense}:${role_tag}` },
+		scope,
 		relative_context_index: rule_json['argument_context_index'] ?? -1,
 		missing_message: missing_message.replaceAll('{role}', role_tag),
 		extra_message: extra_message.replaceAll('{role}', role_tag),
@@ -203,7 +205,7 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 	const { tokens } = main_trigger_context
 	const { trigger, context } = rule.trigger_rule
 
-	if (rule.relative_context_index >= 0) {
+	if (rule.scope === 'relative_context') {
 		// The rule should be interpreted as relative to the main word
 		const context_result = context(tokens, main_trigger_context.trigger_index)
 
@@ -223,6 +225,13 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 				rule_id: rule.trigger_rule.id,
 				...context_result,
 			}),
+		})
+
+	} else if (rule.scope === 'self') {
+		return create_role_match_result({
+			rule,
+			success: trigger(main_trigger_context.trigger_token),
+			argument_contexts: [],
 		})
 
 	} else {
