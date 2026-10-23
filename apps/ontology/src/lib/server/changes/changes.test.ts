@@ -12,6 +12,8 @@ const SCHEMA = `
 	CREATE TABLE Complex_Terms (stem TEXT, sense TEXT, part_of_speech TEXT, structure TEXT, pairing TEXT, explication TEXT, ontology_status TEXT, level INTEGER, notes TEXT);
 	CREATE TABLE Version (version TEXT);
 	INSERT INTO Version VALUES ('3.0.9500');
+	CREATE TABLE OntologyVersion (Version TEXT);
+	INSERT INTO OntologyVersion VALUES ('3.0.9500');
 	INSERT INTO Concepts VALUES (1, 'faith', 'A', 'Noun', 0, 'trust in God', '', NULL, 'o', '', 1);
 	INSERT INTO Concepts VALUES (2, 'trust', 'A', 'Noun', 0, 'rely on', '', NULL, 'o', '', 1);
 `
@@ -147,6 +149,7 @@ describe('apply_change_directly', () => {
 		expect(change).toMatchObject({ action: 'create', suggested_by_id: null, approved_by_id: user.id, version: '3.0.9501' })
 		expect(change.applied_date).not.toBeNull()
 		expect(query<{ version: string }>('SELECT version FROM Version')).toEqual([{ version: '3.0.9501' }])
+		expect(query<{ Version: string }>('SELECT Version FROM OntologyVersion')).toEqual([{ Version: '3.0.9501' }])
 	})
 })
 
