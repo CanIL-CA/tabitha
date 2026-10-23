@@ -7,13 +7,14 @@ import type { OntologyResult } from '@tabitha/types'
 
 const ontology_client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST })
 
-// Searches every token's terms in one request, rather than one request per term
+// Searches every token's terms in one request, rather than one request per term.
+// The service matches terms case-insensitively, so 'The' and 'the' are fetched once, as 'the'.
 export async function check_ontology(lookup_tokens: Token[]) {
-	const terms = [...new Set(lookup_tokens.flatMap(lookup_token => lookup_token.lookup_terms))]
+	const terms = [...new Set(lookup_tokens.flatMap(lookup_token => lookup_token.lookup_terms.map(term => term.toLowerCase())))]
 	const results_by_term = terms.length ? await ontology_client.search_concepts_batch({ terms }) : {}
 
 	for (const lookup_token of lookup_tokens) {
-		apply_ontology_results({ lookup_token, results: lookup_token.lookup_terms.flatMap(term => results_by_term[term] ?? []) })
+		apply_ontology_results({ lookup_token, results: lookup_token.lookup_terms.flatMap(term => results_by_term[term.toLowerCase()] ?? []) })
 	}
 }
 

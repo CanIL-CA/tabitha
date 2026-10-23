@@ -84,3 +84,62 @@ describe('removing results that are only in the English lexicon', () => {
 		expect(intently_token.lookup_results.map(result => result.part_of_speech)).toEqual(['Adverb'])
 	})
 })
+
+describe('words that differ only by capitalization', () => {
+	// The Ontology holds a different concept for each capitalization, e.g. Lot (a person) and lot (a share)
+	const CONCEPTS = [
+		{ stem: 'Lot', part_of_speech: 'Noun' },
+		{ stem: 'lot', part_of_speech: 'Noun' },
+		{ stem: 'Mark', part_of_speech: 'Noun' },
+		{ stem: 'mark', part_of_speech: 'Noun' },
+		{ stem: 'mark', part_of_speech: 'Verb' },
+	].map(concept => ({ ...concept, sense: 'A', level: '1', gloss: '', categorization: 'A', categories: [], status: 'in ontology', how_to_hints: [] }))
+
+	let requested_term_batches: string[][]
+
+	beforeEach(() => {
+		requested_term_batches = []
+		// Like the real service: terms match case-insensitively, and every capitalization of the stem is returned
+		vi.stubGlobal('fetch', async (_input: string | URL | Request, init?: RequestInit) => {
+			const { terms }: { terms: string[] } = JSON.parse(String(init?.body))
+			requested_term_batches.push(terms)
+			return Response.json(Object.fromEntries(terms.map(term => [term, CONCEPTS.filter(concept => concept.stem.toLowerCase() === term.toLowerCase())])))
+		})
+	})
+
+	afterEach(() => {
+		vi.unstubAllGlobals()
+	})
+
+	function stems_and_parts_of_speech(token: Token): string[] {
+		return token.lookup_results.map(result => `${result.stem} ${result.part_of_speech}`)
+	}
+
+	test('each capitalization keeps only its own concept: Abram took Lot with him, and they cast a lot. (cf. Gen 12:4)', async () => {
+		const person_token = create_lookup_token_for_test({ token: 'Lot', lookup_terms: ['Lot'] })
+		const share_token = create_lookup_token_for_test({ token: 'lot', lookup_terms: ['lot'] })
+
+		await perform_ontology_lookups([create_sentence_for_test([person_token, share_token])])
+
+		expect(stems_and_parts_of_speech(person_token)).toEqual(['Lot Noun'])
+		expect(stems_and_parts_of_speech(share_token)).toEqual(['lot Noun'])
+	})
+
+	test('a lowercase word keeps every lowercase part of speech, and a capitalized one only the proper noun: Mark the place where Mark stood.', async () => {
+		const verb_token = create_lookup_token_for_test({ token: 'mark', lookup_terms: ['mark'] })
+		const person_token = create_lookup_token_for_test({ token: 'Mark', lookup_terms: ['Mark'] })
+
+		await perform_ontology_lookups([create_sentence_for_test([verb_token, person_token])])
+
+		expect(stems_and_parts_of_speech(verb_token)).toEqual(['mark Noun', 'mark Verb'])
+		expect(stems_and_parts_of_speech(person_token)).toEqual(['Mark Noun'])
+	})
+
+	test('both capitalizations are searched once, as the lowercase term', async () => {
+		const tokens = ['Lot', 'lot', 'Mark', 'mark', 'mark'].map(token => create_lookup_token_for_test({ token, lookup_terms: [token] }))
+
+		await perform_ontology_lookups([create_sentence_for_test(tokens)])
+
+		expect(requested_term_batches).toEqual([['lot', 'mark']])
+	})
+})
