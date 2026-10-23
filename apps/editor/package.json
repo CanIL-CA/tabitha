@@ -42,7 +42,7 @@
     "@tabitha/ui": "workspace:*",
     "@tabitha/usage": "workspace:*",
     "@tailwindcss/typography": "^0.5.20",
-    "daisyui": "^5.7.47",
+    "daisyui": "^5.7.50",
     "svelte": "^5.57.2",
     "tailwindcss": "^4.3.3"
   },
