@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test.describe('Editor Page E2E', () => {
 	test('renders editor textarea and action buttons', async ({ page }) => {
@@ -19,6 +20,7 @@ test.describe('Editor Page E2E', () => {
 
 	test('typing into editor and clicking clear empties the textarea', async ({ page }) => {
 		await page.goto('/')
+		await wait_for_hydration({ page })
 
 		const textarea = page.locator('textarea')
 		await textarea.fill('Paul write-01 letter.')

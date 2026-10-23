@@ -19,7 +19,7 @@
 	}
 </script>
 
-<button onclick={copy} class="btn btn-secondary {classes}">
+<button type="button" onclick={copy} class="btn btn-secondary {classes}">
 	{#if children}
 		{@render children()}
 	{:else}
