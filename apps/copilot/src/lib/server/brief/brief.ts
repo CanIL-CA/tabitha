@@ -1,7 +1,7 @@
 import { API_KEY_AQUIFER } from '$app/env/private'
 import { BRIEF_HEADINGS_ENGLISH } from '#lib/lookups.js'
 import { USFM_BOOK_CODES } from '@tabitha/types/patterns'
-import { AiResponseError, check_input_safety, type AiClient } from '@tabitha/ai'
+import { AiResponseError, check_input_safety, type AiCallDefaults, type AiClient } from '@tabitha/ai'
 import translate_prompt from './translate_prompt.md?raw'
 import brief_main_prompt from './brief_main_prompt.md?raw'
 import { json_response_schema } from './json_response_schema'
@@ -23,6 +23,11 @@ const MAX_TNN_TEXT_LENGTH = 50000
 // fully deterministic (fixed model/temperature/seed, JSON-schema output, no per-request-unique
 // data), so a stale cache entry is never a correctness concern, only a cost one.
 const ONE_WEEK_IN_SECONDS = 7 * 24 * 60 * 60
+
+// Vertex's default level (MEDIUM) spent about 73% of the brief's billed output on thinking. In the
+// blind review of 30 verses (eval variant `brief-thinking-low`) reviewers found LOW no worse, with
+// 58% fewer billed output tokens and 35% less model time.
+const BRIEF_THINKING = { thinkingLevel: 'LOW' } as AiCallDefaults['thinkingConfig']
 
 // Aquifer answers a missing api-key header (and a rate-limited request) with 406, not 401.
 const AQUIFER_STATUS_MESSAGES: Record<number, string> = {
@@ -105,6 +110,7 @@ async function get_tnn_based_info({ input, ai, on_step }: BriefOptions): Promise
 			system_instruction: brief_main_prompt,
 			schema: json_response_schema,
 			config: {
+				thinkingConfig: BRIEF_THINKING,
 				httpOptions: { headers: { 'cf-aig-cache-ttl': String(ONE_WEEK_IN_SECONDS) } },
 			},
 		})

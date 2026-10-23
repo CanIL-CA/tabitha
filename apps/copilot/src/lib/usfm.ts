@@ -1,3 +1,4 @@
+import { split_decision_lines } from './decision_text'
 import { BRIEF_HEADINGS_ENGLISH, get_no_notes_text, get_no_tnn_text } from './lookups'
 import type { CopilotBriefHeadingsResult, CopilotBriefResult, CopilotBriefSection, CopilotDiscernResult, CopilotResult } from '@tabitha/types'
 
@@ -54,7 +55,7 @@ function convert_to_usfm_for_brief({ result, lwc, headings }: { result: CopilotB
 		...create_section({ section: 'image_keywords' }),
 		...create_section({
 			section: 'consultant_decisions',
-			transformer: ({ status, text }) => `${status} — ${text}`,
+			transformer: ({ status, text }) => `${status} — ${split_decision_lines(text).join(' ')}`,
 		}),
 	].join('\n')
 }
