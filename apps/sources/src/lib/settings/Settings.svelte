@@ -25,5 +25,9 @@
 			<input type="checkbox" bind:checked={view_settings.show_hover_popups} onchange={store_settings} />
 			Show hover popups
 		</label>
+		<label>
+			<input type="checkbox" bind:checked={view_settings.show_boundary_labels} onchange={store_settings} />
+			Show boundary labels
+		</label>
 	</div>
 </details>
