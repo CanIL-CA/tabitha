@@ -58,15 +58,15 @@ const result_filter_rules: BuiltInRule[] = [
 		},
 	},
 	{
-		name: 'Prefer the capitalized concept over a lowercase one of the same part of speech for the first word of a sentence.',
-		comment: "The first word is capitalized whatever it is, so its capitalization says nothing. Where the Ontology has both Lot (a person) and lot (a share), the first word is taken as the proper noun. Lowercase concepts of other parts of speech are kept, eg. 'Mark the place' can still be the verb.",
+		name: 'Choose between a capitalized and a lowercase concept of the same part of speech for the first word of a sentence.',
+		comment: "The first word is capitalized whatever it is, so its capitalization says nothing. A plural is the common noun, eg. 'Fathers, do not…' (Eph 6:4). A singular is the proper noun only for the stems that Scripture uses that way, eg. 'Lot looked…' (Gen 13:10). Other words stay ambiguous, eg. 'Sin wants to destroy you' (Gen 4:7).",
 		rule: {
 			trigger: token => token.type === TOKEN_TYPE.LOOKUP_WORD && token_has_tag({ token, tag_to_check: { 'position': 'first_word' } }),
 			context: create_context_filter({}),
 			action: simple_rule_action(({ trigger_token: token }) => {
-				prefer_capitalized_concepts(token)
+				resolve_capitalized_first_word(token)
 				if (token.pairing) {
-					prefer_capitalized_concepts(token.pairing)
+					resolve_capitalized_first_word(token.pairing)
 				}
 			}),
 		},
@@ -95,13 +95,34 @@ const result_filter_rules: BuiltInRule[] = [
 	},
 ]
 
-function prefer_capitalized_concepts(token: Token) {
+// Stems whose sentence-initial singular is always the proper noun in the phase 1 text, checked against phase 2.
+// Add a stem only when Scripture shows it, eg. 'Son of Abinoam' (Judg 5:12) is the common noun.
+const PROPER_FIRST_WORDS = new Set(['God', 'Lord', 'Lot', 'Father', 'Ram'])
+
+function resolve_capitalized_first_word(token: Token) {
 	if (starts_lowercase(token.token)) {
 		return
 	}
 
-	const capitalized_parts_of_speech = new Set(token.lookup_results.filter(result => !starts_lowercase(result.stem)).map(result => result.part_of_speech))
-	token.lookup_results = token.lookup_results.filter(result => !starts_lowercase(result.stem) || !capitalized_parts_of_speech.has(result.part_of_speech))
+	const results = token.lookup_results
+	token.lookup_results = results.filter(result => !results.some(preferred => is_preferred_first_word({ preferred, other: result })))
+}
+
+function is_preferred_first_word({ preferred, other }: { preferred: LookupResult, other: LookupResult }): boolean {
+	const is_capitalization_pair = preferred.stem !== other.stem
+		&& preferred.stem.toLowerCase() === other.stem.toLowerCase()
+		&& preferred.part_of_speech === other.part_of_speech
+	if (!is_capitalization_pair) {
+		return false
+	}
+
+	return is_plural(preferred)
+		? starts_lowercase(preferred.stem)
+		: PROPER_FIRST_WORDS.has(preferred.stem)
+}
+
+function is_plural(result: LookupResult): boolean {
+	return result.form.split('|').includes('plural')
 }
 
 function is_from_ontology(result: LookupResult): boolean {
