@@ -48,7 +48,7 @@
 	let fetched_result_count = $derived(fetched_results.length)
 	let error_result_count = $derived(fetched_results.filter(r => r.type === 'error').length)
 
-	let retry_set = $state(new SvelteSet<number>())
+	const retry_set = new SvelteSet<number>()
 	const auto_retries = new SvelteMap<number, AutoRetryStatus>()
 	// Bumped per batch, so a pending auto-retry from an earlier batch never writes into this one.
 	let batch_run = 0
