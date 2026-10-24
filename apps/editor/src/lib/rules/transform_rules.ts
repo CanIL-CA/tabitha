@@ -1,5 +1,6 @@
 import { add_tag_to_token, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_token_filter, create_token_transform, create_token_transforms, from_built_in_rule, simple_rule_action } from './rules_parser'
+import { find_alternate_coordinate_position, find_coordinate_position, is_coordinatable } from './coordination'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 import type { Token, Tag } from '#lib/types.js'
 import type {
@@ -816,36 +817,29 @@ const builtin_transform_rules: BuiltInRule[] = [
 		},
 	},
 	{
+		// TODO support coordinating Verbs as well
+		name: 'Tag the position of coordinated Nouns, Adjectives, Adverbs, and Clauses',
+		comment: 'eg "John, Mary and Peter" become first/coordinate/last. For the case frame rules and the analyzer.',
+		rule: {
+			trigger: is_coordinatable,
+			context: create_context_filter({}),
+			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
+				const position = find_coordinate_position({ tokens, index: trigger_index })
+				if (!position) return
+
+				add_tag_to_token({ token: trigger_token, tag: { 'coordinate': position }, rule_id })
+			}),
+		},
+	},
+	{
 		name: 'Group tags for simple/complex vocabulary alternates',
 		comment: 'The alternates are already tagged with their type, so this assigns "first/last/coordinate" values',
 		rule: {
 			trigger: create_token_filter({ 'type': TOKEN_TYPE.CLAUSE, 'tag': 'vocabulary_alternate' }),
 			context: create_context_filter({ }),
 			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
-				const current = trigger_token.tag['vocabulary_alternate']
-				const previous = tokens[trigger_index - 1]?.tag['vocabulary_alternate']?.split('|')[0]	// the previous clause already has its new tag
-				const next = tokens[trigger_index + 1]?.tag['vocabulary_alternate']
-				const key = `${previous}|${current}|${next}`
-				const new_tag = {
-					'undefined|complex|undefined': 'complex|single',
-					'undefined|complex|simple': 'complex|single',
-					'undefined|complex|complex': 'complex|first',
-					'simple|complex|undefined': 'complex|single',
-					'simple|complex|simple': 'complex|single',
-					'simple|complex|complex': 'complex|first',
-					'complex|complex|undefined': 'complex|last',
-					'complex|complex|simple': 'complex|last',
-					'complex|complex|complex': 'complex|coordinate',
-					'undefined|simple|undefined': 'simple|single',
-					'undefined|simple|simple': 'simple|first',
-					'undefined|simple|complex': 'simple|single',
-					'simple|simple|undefined': 'simple|last',
-					'simple|simple|simple': 'simple|coordinate',
-					'simple|simple|complex': 'simple|last',
-					'complex|simple|undefined': 'simple|single',
-					'complex|simple|simple': 'simple|first',
-					'complex|simple|complex': 'simple|single',
-				}[key]!
+				const position = find_alternate_coordinate_position({ tokens, index: trigger_index })
+				const new_tag = `${trigger_token.tag['vocabulary_alternate']}|${position}`
 				add_tag_to_token({ token: trigger_token, tag: { 'vocabulary_alternate': new_tag }, rule_id })
 			}),
 		},

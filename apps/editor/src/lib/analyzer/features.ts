@@ -235,6 +235,11 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 	],
 	'Noun Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Semantic Role', [
 			['Not Applicable', { }],	// 'Not Applicable' would not be selected as the 'default' value
 			['Most Agent-like', by_tag({ 'role': 'agent' })],
@@ -256,11 +261,21 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 	],
 	'Verb Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Implicit', [
 			['Yes', by_tag('implicit')],
 		]],
 	],
 	'Adjective Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Usage', [
 			['Predicative', { }],
 			['Attributive', by_tag({ 'adj_usage': 'attributive' })],
@@ -270,6 +285,11 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 	],
 	'Adverb Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Implicit', [
 			['Yes', by_tag('implicit')],
 		]],
@@ -341,6 +361,11 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			["Yes-No Question Expects 'No'", by_subtoken('(norhetorical)')],
 			["Persuasive Yes-No Question Expects 'Yes'", by_subtoken('(yesrhetorical)')],
 			['Equivalent Statement', by_subtoken('(statement)')],
+		]],
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
 		]],
 	],
 }

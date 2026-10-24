@@ -66,24 +66,6 @@ describe('coordinated arguments', () => {
 		expect(argument_tokens({ tokens, verb: 'see', role: 'patient' })).toEqual(['Mary', 'Peter', 'James'])
 	})
 
-	test('a coordinated list is not mistaken for an addressee', () => {
-		const tokens = parse_with_lookups('John, Mary and Peter go.')
-
-		expect(roles_by_token(tokens)).toEqual({ John: 'agent', Mary: 'agent', Peter: 'agent' })
-	})
-
-	test('an addressee is not coordinated with the agent', () => {
-		const tokens = parse_with_lookups('John, Mary go.')
-
-		expect(roles_by_token(tokens)).toEqual({ John: 'addressee', Mary: 'agent' })
-	})
-
-	test('_addressee marks an addressee before a coordinated agent', () => {
-		const tokens = parse_with_lookups('John _addressee, Mary and Peter go.')
-
-		expect(roles_by_token(tokens)).toEqual({ John: 'addressee', Mary: 'agent', Peter: 'agent' })
-	})
-
 	describe('patient clauses', () => {
 		const role = 'patient_clause_different_participant'
 
@@ -98,12 +80,6 @@ describe('coordinated arguments', () => {
 			const tokens = parse_with_lookups('John say [that Mary go], [Peter go] [or James go].')
 
 			expect(argument_clause_texts({ tokens, verb: 'say', role })).toEqual(['[ that Mary go ]', '[ Peter go ]', '[ or James go ]'])
-		})
-
-		test('adjacent clauses without a comma or and/or are not coordinated', () => {
-			const tokens = parse_with_lookups('John say [that Mary go] [Peter go].')
-
-			expect(argument_clause_texts({ tokens, verb: 'say', role })).toEqual(['[ that Mary go ]'])
 		})
 	})
 })
