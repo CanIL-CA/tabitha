@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { perform_form_lookups, perform_ontology_lookups } from './index'
-import { TOKEN_TYPE, create_token } from '#lib/token.js'
+import { TOKEN_TYPE, create_lookup_result, create_token } from '#lib/token.js'
 import { create_lookup_token_for_test, create_sentence_for_test, lookup_result_for_test } from '#lib/test_helps.js'
 import type { Sentence, Token } from '#lib/types.js'
 
@@ -93,6 +93,17 @@ describe('words that differ only by capitalization', () => {
 		{ stem: 'Mark', part_of_speech: 'Noun' },
 		{ stem: 'mark', part_of_speech: 'Noun' },
 		{ stem: 'mark', part_of_speech: 'Verb' },
+		{ stem: 'God', part_of_speech: 'Noun' },
+		{ stem: 'god', part_of_speech: 'Noun' },
+		{ stem: 'Sin', part_of_speech: 'Noun' },
+		{ stem: 'sin', part_of_speech: 'Noun' },
+		{ stem: 'sin', part_of_speech: 'Verb' },
+		{ stem: 'Son', part_of_speech: 'Noun' },
+		{ stem: 'son', part_of_speech: 'Noun' },
+		{ stem: 'Father', part_of_speech: 'Noun' },
+		{ stem: 'father', part_of_speech: 'Noun' },
+		{ stem: 'Word', part_of_speech: 'Noun' },
+		{ stem: 'word', part_of_speech: 'Noun' },
 	].map(concept => ({ ...concept, sense: 'A', level: '1', gloss: '', categorization: 'A', categories: [], status: 'in ontology', how_to_hints: [] }))
 
 	let requested_term_batches: string[][]
@@ -143,12 +154,53 @@ describe('words that differ only by capitalization', () => {
 		expect(stems_and_parts_of_speech(person_token)).toEqual(['Lot Noun'])
 	})
 
-	test('a capitalized first word keeps lowercase concepts of other parts of speech: Mark the place where Mark stood.', async () => {
+	test('a capitalized first word uses the proper noun for God: God made the heavens and the earth. (cf. Gen 1:1)', async () => {
+		const god_token = create_lookup_token_for_test({ token: 'God', lookup_terms: ['God'], tag: { 'position': 'first_word' } })
+
+		await perform_ontology_lookups([create_sentence_for_test([god_token])])
+
+		expect(stems_and_parts_of_speech(god_token)).toEqual(['God Noun'])
+	})
+
+	test('a capitalized first word stays ambiguous when Scripture also starts sentences with the common noun: Sin wants to destroy you. (cf. Gen 4:7)', async () => {
+		const sin_token = create_lookup_token_for_test({ token: 'Sin', lookup_terms: ['Sin'], tag: { 'position': 'first_word' } })
+
+		await perform_ontology_lookups([create_sentence_for_test([sin_token])])
+
+		expect(stems_and_parts_of_speech(sin_token)).toEqual(['Sin Noun', 'sin Noun', 'sin Verb'])
+	})
+
+	test('a capitalized first word stays ambiguous when Scripture also starts sentences with the common noun: Son of Abinoam, capture your enemies. (cf. Judg 5:12)', async () => {
+		const son_token = create_lookup_token_for_test({ token: 'Son', lookup_terms: ['Son'], tag: { 'position': 'first_word' } })
+
+		await perform_ontology_lookups([create_sentence_for_test([son_token])])
+
+		expect(stems_and_parts_of_speech(son_token)).toEqual(['Son Noun', 'son Noun'])
+	})
+
+	test('a capitalized first word stays ambiguous when Scripture never starts a sentence with it: Mark the place where Mark stood.', async () => {
 		const first_token = create_lookup_token_for_test({ token: 'Mark', lookup_terms: ['Mark'], tag: { 'position': 'first_word' } })
 
 		await perform_ontology_lookups([create_sentence_for_test([first_token])])
 
-		expect(stems_and_parts_of_speech(first_token)).toEqual(['Mark Noun', 'mark Verb'])
+		expect(stems_and_parts_of_speech(first_token)).toEqual(['Mark Noun', 'mark Noun', 'mark Verb'])
+	})
+
+	test.each([
+		{ token: 'Fathers', stem: 'father', sentence: 'Fathers, do not make your children angry. (cf. Eph 6:4)' },
+		{ token: 'Sons', stem: 'son', sentence: 'Sons of man, how long will you shame me? (cf. Ps 4:2)' },
+		{ token: 'Words', stem: 'word', sentence: 'Words that a person says at the right time are like gold. (cf. Prov 25:11)' },
+	])('a plural first word uses the common noun: $sentence', async ({ token, stem }) => {
+		const proper_stem = stem[0].toUpperCase() + stem.slice(1)
+		// As the form lookup leaves it: the English lexicon has a plural for both capitalizations
+		const plural_token = create_lookup_token_for_test({ token, lookup_terms: [token.toLowerCase(), stem], tag: { 'position': 'first_word' }, lookup_results: [
+			create_lookup_result({ stem: proper_stem, part_of_speech: 'Noun', form: 'Plural' }),
+			create_lookup_result({ stem, part_of_speech: 'Noun', form: 'Plural' }),
+		] })
+
+		await perform_ontology_lookups([create_sentence_for_test([plural_token])])
+
+		expect(stems_and_parts_of_speech(plural_token)).toEqual([`${stem} Noun`])
 	})
 
 	test('both capitalizations are searched once, as the lowercase term', async () => {
