@@ -49,6 +49,11 @@ This document defines mandatory guidelines and code standards for Svelte 5 (Rune
     return items.filter(item => item.startsWith('A'))
   })
   ```
+- **Sets, Maps, URLs and dates that change in place**: Use the `svelte/reactivity` classes (`SvelteSet`, `SvelteMap`, `SvelteURL`, `SvelteDate`) as a plain `const`, and mutate them directly. `$state` only proxies plain objects and arrays, so `$state(new Set())` is not reactive, and the `Svelte` prefix is what marks these as reactive. Browser state such as connectivity comes from `svelte/reactivity/window` (`online`).
+  ```svelte
+  const selected_values = new SvelteSet<string>()
+  selected_values.add(value)
+  ```
 - **NO `$: ` Declarations**: Never use legacy `$: ` reactive labels or statements.
 - **Side Effects (`$effect`)**: Use `$effect()` only for side effects (DOM updates, external library integration, timers with cleanup). Do not use `$effect` to sync values that can be calculated with `$derived`, or to react to a form field a function binding (`bind:value={() => value, set_value}`) or event handler could handle.
 - **NO data loading in `$effect`**: An effect reruns when any state it read synchronously changes, including state read inside the functions it calls, so a fetch there can loop. Page data comes from the route's `load`; data a user action asks for is fetched in that handler. See AGENTS.md Philosophy #14 for the full boundary.

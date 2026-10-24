@@ -17,13 +17,13 @@
 </script>
 
 {#if is_saved}
-	<button class="btn btn-success {classes}" class:btn-warning={!is_saved}>
+	<button type="button" class="btn btn-success {classes}" class:btn-warning={!is_saved}>
 		Saved in this browser
 
 		<Icon icon="mdi:content-save-check" class="h-6 w-6" />
 	</button>
 {:else}
-	<button onclick={ save } class="btn btn-warning {classes}">
+	<button type="button" onclick={ save } class="btn btn-warning {classes}">
 		Save to this browser
 
 		<Icon icon="mdi:content-save" class="h-6 w-6" />

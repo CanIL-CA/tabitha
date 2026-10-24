@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { get_no_notes_text, get_no_tnn_text } from '#lib/lookups.js'
+	import { split_decision_lines } from '#lib/decision_text.js'
 	import { m } from '#lib/paraglide/messages.js'
 	import type { CopilotNote, CopilotResult } from '@tabitha/types'
 	import type { CopilotSettings } from './types'
@@ -116,7 +117,8 @@
 				<div class="prose"><h4>{m.consultant_decisions()}</h4></div>
 				<ul class="list list-disc text-base ms-5">
 					{#each result.consultant_decisions as { status, text }}
-						<li>{status} - {text}</li>
+						{@const [first_line = '', ...other_lines] = split_decision_lines(text)}
+						<li>{status} - {first_line}{#each other_lines as line}<br>{line}{/each}</li>
 					{/each}
 				</ul>
 			</div>

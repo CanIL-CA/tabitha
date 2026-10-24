@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('get feature lookups for English project', async ({ request }) => {
 	const response = await request.get('/English/lookup/features')

@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 import { sign_in_as } from './support/sign_in'
 
 // Signs in a second, lower-privileged identity scoped to just this spec -- the suite's shared

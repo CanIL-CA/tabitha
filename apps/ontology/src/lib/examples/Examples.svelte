@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+	import { SvelteSet } from 'svelte/reactivity'
 	import { fade } from 'svelte/transition'
 	import Icon from '@iconify/svelte'
 	import { ExampleSummary, Filters, get_examples, SourceData, TargetData } from '#lib/examples/index.js'
@@ -42,14 +43,14 @@
 		duration: 700,
 	}
 
-	let retrieval_queue = $state<number[]>([])
+	const retrieval_queue = new SvelteSet<number>()
 
 	function handle_queue({ event, id }: { event: Event, id: number }) {
 		const details = event.currentTarget as HTMLDetailsElement
 		if (details.open) {
-			retrieval_queue = [...retrieval_queue, id]
+			retrieval_queue.add(id)
 		} else {
-			retrieval_queue = retrieval_queue.filter(queued_id => queued_id !== id)
+			retrieval_queue.delete(id)
 		}
 	}
 </script>
@@ -74,7 +75,7 @@
 				</summary>
 
 				<section class="collapse-content">
-					{#if retrieval_queue.includes(i)}
+					{#if retrieval_queue.has(i)}
 						<TargetData {reference} />
 
 						<SourceData {reference} selected_concept={concept_key} />

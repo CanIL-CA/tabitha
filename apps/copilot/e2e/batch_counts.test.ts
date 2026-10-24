@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('the batch form looks up verse and chapter counts as the book and chapter change', async ({ page }) => {
 	// a fresh browser context has no saved reference, so the form starts at Genesis 1

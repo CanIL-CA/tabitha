@@ -1,5 +1,5 @@
 // @ts-check
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('reopening the update page shows a queued, unsynced edit overlaid on the form', async ({ page }) => {
 	const gloss = `unsynced reopen test ${Date.now()}`

@@ -5,6 +5,7 @@
 	import { SaveButton, save_state } from '#lib/save/index.js'
 	import { Tokens } from '#lib/tokens/index.js'
 	import { check_text, remove_auto_fix } from '#lib/check.js'
+	import { is_submit_shortcut } from '#lib/submit_shortcut.js'
 	import { set_remove_auto_fix } from '#lib/tokens/auto_fix_context.js'
 	import Icon from '@iconify/svelte'
 
@@ -26,23 +27,48 @@
 
 	set_remove_auto_fix(auto_fix => show_checked(remove_auto_fix({ text: entered_text, auto_fix })))
 
+	function submit_check(event: SubmitEvent) {
+		event.preventDefault()
+		if (checking) return
+		show_checked(check_text(entered_text))
+	}
+
+	function submit_on_shortcut(event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) {
+		if (!is_submit_shortcut(event)) return
+		event.preventDefault()
+		event.currentTarget.form?.requestSubmit()
+	}
+
 	function clear() {
 		entered_text = ''
 		check_response = { status: 'ok', tokens: [], back_translation: '' }
 	}
 </script>
 
-<form class="grid justify-items-center">
+<form onsubmit={submit_check} class="grid justify-items-center">
 	<!-- svelte-ignore a11y_autofocus -->
 	<textarea
 		bind:value={entered_text}
+		onkeydown={submit_on_shortcut}
 		rows="5"
 		autofocus
 		class="textarea textarea-bordered textarea-lg w-4/5"></textarea>
 
 	<div class="w-4/5 mt-8 grid grid-cols-3">
-		<div class="flex flex-row flex-wrap col-span-2">
-			<button onclick={clear} class="btn btn-secondary">
+		<!-- first in the DOM so Tab reaches Check first; the grid keeps it on the right -->
+		<div class="col-start-3 row-start-1 justify-self-end">
+			<button
+				type="submit"
+				disabled={checking}
+				class="btn btn-primary">
+				Check
+
+				<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
+			</button>
+		</div>
+
+		<div class="flex flex-row flex-wrap col-span-2 col-start-1 row-start-1">
+			<button type="button" onclick={clear} class="btn btn-secondary">
 				Clear
 
 				<Icon icon="mdi:clear-bold" class="h-6 w-6" />
@@ -53,18 +79,6 @@
 			</CopyButton>
 
 			<SaveButton content={entered_text} classes="ms-4" />
-		</div>
-
-		<div class="justify-self-end">
-			<button
-				onclick={() => show_checked(check_text(entered_text))}
-				type="submit"
-				disabled={checking}
-				class="btn btn-primary">
-				Check
-
-				<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
-			</button>
 		</div>
 	</div>
 </form>

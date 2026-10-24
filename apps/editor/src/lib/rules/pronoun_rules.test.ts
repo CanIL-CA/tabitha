@@ -31,6 +31,7 @@ describe('invalid tokens: pronouns', () => {
 			[[create_pronoun_token({ pronoun: 'you', referent: 'Paul' })], PRONOUN_TAGS.get('you')],
 			[[create_pronoun_token({ pronoun: 'we', referent: 'people' })], PRONOUN_TAGS.get('we')],
 			[[create_pronoun_token({ pronoun: 'each-other', referent: 'people' })], PRONOUN_TAGS.get('each-other')],
+			[[create_pronoun_token({ pronoun: "each-other's", referent: 'people' })], 'reciprocal'],
 		])('%s', (test_tokens, exptected_tag) => {
 			const INPUT = [create_sentence(test_tokens)]
 			const EXPECTED_OUTPUT = test_tokens.map(token => ({ ...token, tag: { 'pronoun': exptected_tag } }))
@@ -156,7 +157,7 @@ describe('invalid tokens: pronouns', () => {
 	})
 
 	test('invalid: catches mine, yours, ours, and each-other', () => {
-		const test_tokens = [create_sentence(create_tokens(['mine', 'yours', 'ours', 'each-other']))]
+		const test_tokens = [create_sentence(create_tokens(['mine', 'yours', 'ours', 'each-other', "each-other's"]))]
 		const checked_tokens = apply_rules({ sentences: test_tokens, rules: PRONOUN_RULES }).flatMap(flatten_sentence)
 
 		const test_clause_tokens = test_tokens[0].clause.sub_tokens
@@ -169,5 +170,7 @@ describe('invalid tokens: pronouns', () => {
 		expect_error_to_match({ token: checked_tokens[2], regex: /^"ours" should be/ })
 		expect(checked_tokens[3].token).toEqual(test_clause_tokens[3].token)
 		expect_error_to_match({ token: checked_tokens[3], regex: /^"each-other" requires/ })
+		expect(checked_tokens[4].token).toEqual(test_clause_tokens[4].token)
+		expect_error_to_match({ token: checked_tokens[4], regex: /^"each-other's" requires/ })
 	})
 })

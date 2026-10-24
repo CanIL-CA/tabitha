@@ -2,6 +2,7 @@ import { get_semantic_notes } from '#lib/server/semantic_notes.js'
 import { default_target_audience } from '#lib/lookups.js'
 import { fetch_encoding, fetch_target_text } from '#lib/fetches.js'
 import { extract_flags } from './flag_extraction/flag_extraction'
+import { drop_hidden_alternate_flags } from './flag_extraction/hidden_alternates'
 import { assign_flag_weights } from './flag_weighting/flag_weighting'
 import { collect_triggers, triggers_match } from './triggers'
 import type { AiClient } from '@tabitha/ai'
@@ -35,7 +36,10 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 	}
 	const lwc_text = lwc_text_result.ideal || lwc_text_result.text
 
-	const flags = extract_flags(encoding.encoding)
+	const flags = drop_hidden_alternate_flags({
+		flags: extract_flags(encoding.encoding),
+		displayed_text: `${english_text}\n${lwc_text}`,
+	})
 	const weighted_flags = assign_flag_weights({ flags, settings }).filter(({ weight }) => weight > 0)
 	const all_triggers = collect_triggers({ flags: weighted_flags, language_profile: settings.language_profile })
 	const sorted_triggers = all_triggers.toSorted((t1, t2) => t1.node_id.localeCompare(t2.node_id))

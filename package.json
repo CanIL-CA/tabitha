@@ -64,6 +64,7 @@
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:coverage": "bun scripts/ci/report_coverage.ts",
+    "test:coverage:merge": "bun scripts/ci/merge_coverage.ts",
     "test:e2e": "bun scripts/ci/run_e2e.ts",
     "test:e2e:install": "bunx playwright install --with-deps chromium",
     "clean:svelte": "turbo run clean:svelte",
@@ -73,11 +74,13 @@
     "update:interactive": "bun update --interactive --latest --recursive"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.0",
-    "@vitest/coverage-v8": "^5.0.3",
+    "@playwright/test": "^1.64.1",
+    "@vitest/coverage-v8": "^5.0.5",
     "markdownlint-cli2": "^0.23.3",
+    "monocart-coverage-reports": "^3.0.0",
     "sharp": "^0.35.5",
     "syncpack": "^15.3.3",
-    "turbo": "^2.11.7"
+    "turbo": "^2.11.9",
+    "vitest-monocart-coverage": "^5.0.0"
   }
 }

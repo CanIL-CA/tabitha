@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('generating notes for a verse fetches real encoding/text data, runs it through the flag/trigger pipeline, and renders AI-produced notes', async ({ page }) => {
 	// Genesis 1:1 is the app's default verse. Wait for hydration (the button's click handler
