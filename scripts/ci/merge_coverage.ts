@@ -25,7 +25,9 @@ async function merge_coverage() {
 		process.exit(1)
 	}
 
-	const markdown = layers_markdown({ layers: layers_by_workspace({ root_dir, unit: unit.files, e2e }) })
+	const layers = layers_by_workspace({ root_dir, unit: unit.files, e2e })
+
+	const markdown = layers_markdown({ layers })
 	await writeFile(markdown_path, markdown, 'utf-8')
 	console.log(`\n${markdown}`)
 

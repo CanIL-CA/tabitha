@@ -59,7 +59,7 @@ function format_share({ covered, total }: Counts): string {
 
 export function layers_markdown({ layers }: { layers: WorkspaceLayers[] }): string {
 	const rows = layers.map(({ workspace, total, unit, e2e, union, both }) => {
-		const cells = [`\`${workspace}\``, ...[union, unit, e2e, both].map(covered => format_share({ covered, total }))]
+		const cells = [`\`${workspace}\``, format_share({ covered: union, total }), ...[unit, e2e, both].map(covered => format_share({ covered, total }))]
 		return `| ${cells.join(' | ')} |`
 	})
 	return [
