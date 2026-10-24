@@ -101,6 +101,56 @@ describe('@tabitha/api-client', () => {
 			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search?q=love`)
 		})
 
+		describe('get params', () => {
+			function get_requested_url({ params, path = '/search', cache = false }: {
+				params: Record<string, string | undefined>
+				path?: string
+				cache?: boolean
+			}) {
+				const mock_fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+				const http = create_http_client({
+					base_url: TARGETS_URL,
+					fetch: mock_fetch as unknown as typeof fetch,
+					cache,
+				})
+				return http.get(path, { params }).then(() => new URL(mock_fetch.mock.calls[0][0]))
+			}
+
+			test('sends values with reserved characters intact', async () => {
+				const { searchParams } = await get_requested_url({ params: { q: 'a&b=c+d#e f' } })
+				expect(searchParams.get('q')).toBe('a&b=c+d#e f')
+			})
+
+			test('leaves out undefined values but keeps empty strings', async () => {
+				const { searchParams } = await get_requested_url({ params: { q: 'love', scope: undefined, category: '' } })
+				expect([...searchParams.keys()].sort()).toEqual(['category', 'q'])
+			})
+
+			test('adds no query string when every value is undefined', async () => {
+				const { search } = await get_requested_url({ params: { q: undefined } })
+				expect(search).toBe('')
+			})
+
+			test('keeps a query already in the path', async () => {
+				const { searchParams } = await get_requested_url({ path: '/search?q=love', params: { scope: 'Bible' } })
+				expect(Object.fromEntries(searchParams)).toEqual({ q: 'love', scope: 'Bible' })
+			})
+
+			test('adds the cache version alongside params when cache is true', async () => {
+				const { searchParams } = await get_requested_url({ params: { q: 'love' }, cache: true })
+				expect(Object.fromEntries(searchParams)).toEqual({ q: 'love', v: '1' })
+			})
+
+			test('does not pass params on to fetch as a request option', async () => {
+				const mock_fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+				const http = create_http_client({ base_url: TARGETS_URL, fetch: mock_fetch as unknown as typeof fetch })
+
+				await http.get('/search', { params: { q: 'love' }, headers: { Accept: 'application/json' } })
+
+				expect(mock_fetch.mock.calls[0][1]).toEqual({ headers: { Accept: 'application/json' }, method: 'GET' })
+			})
+		})
+
 		test('does not append version query param to POST requests', async () => {
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
@@ -361,7 +411,9 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const result = await client.analyze_text('Paul writes-A.\nJohn reads-A.')
-			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/analyze?text=Paul%20writes-A.%20John%20reads-A.`)
+			const { pathname, searchParams } = new URL(mock_fetch.mock.calls[0][0])
+			expect(pathname).toBe('/analyze')
+			expect(searchParams.get('text')).toBe('Paul writes-A. John reads-A.')
 			expect(result).toEqual(mock_response)
 		})
 
@@ -456,6 +508,25 @@ describe('@tabitha/api-client', () => {
 			const examples = await client.get_examples({ concept: { stem: 'write', sense: 'A', part_of_speech: 'Verb' }, source: 'Bible' })
 			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/examples?concept=write-A&part_of_speech=Verb&source=Bible`)
 			expect(examples).toEqual(mock_examples)
+		})
+
+		test('get_examples sends values with reserved characters intact', async () => {
+			const mock_fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => [],
+			})
+
+			const client = create_ontology_client({
+				base_url: ONTOLOGY_URL,
+				fetch: mock_fetch as unknown as typeof fetch,
+			})
+
+			await client.get_examples({ concept: { stem: 'a&b+c#d', sense: 'A', part_of_speech: 'Verb' }, source: 'My Bible' })
+
+			const { searchParams } = new URL(mock_fetch.mock.calls[0][0])
+			expect(searchParams.get('concept')).toBe('a&b+c#d-A')
+			expect(searchParams.get('part_of_speech')).toBe('Verb')
+			expect(searchParams.get('source')).toBe('My Bible')
 		})
 	})
 

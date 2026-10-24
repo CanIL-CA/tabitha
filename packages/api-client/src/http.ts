@@ -14,8 +14,13 @@ export type RequestOptions = RequestInit & {
 	untracked?: boolean
 }
 
+export type GetOptions = RequestOptions & {
+	/** Query string values, encoded in one place. Entries that are `undefined` are left out. */
+	params?: Record<string, string | undefined>
+}
+
 export type HttpClient = {
-	get: <T>(path: string, init?: RequestOptions) => Promise<T | null>
+	get: <T>(path: string, init?: GetOptions) => Promise<T | null>
 	post: <T>(path: string, body?: unknown, init?: RequestOptions) => Promise<T | null>
 }
 
@@ -73,13 +78,22 @@ export function create_http_client(options: ClientOptions): HttpClient {
 	// Resolved per call, since an app registers its bindings after its modules create their clients
 	const get_fetch = () => options.fetch ?? find_service_fetch(clean_base) ?? globalThis.fetch
 
-	function build_url({ path, is_get = false }: { path: string, is_get?: boolean }): string {
+	function build_url({ path, params = {}, is_get = false }: {
+		path: string
+		params?: Record<string, string | undefined>
+		is_get?: boolean
+	}): string {
 		const normalized_path = path.startsWith('/') ? path : `/${path}`
 		const full_url = `${clean_base}${normalized_path}`
-		if (!cache || !is_get) return full_url
+		const query = new URLSearchParams()
+		for (const [name, value] of Object.entries(params)) {
+			if (value !== undefined) query.set(name, value)
+		}
+		if (cache && is_get) query.set('v', DEFAULT_CACHE_TAG)
+		if (!query.size) return full_url
 
 		const separator = full_url.includes('?') ? '&' : '?'
-		return `${full_url}${separator}v=${DEFAULT_CACHE_TAG}`
+		return `${full_url}${separator}${query}`
 	}
 
 	async function parse_response<T>(res: Response): Promise<T | null> {
@@ -123,11 +137,11 @@ export function create_http_client(options: ClientOptions): HttpClient {
 	}
 
 	return {
-		async get<T>(path: string, options?: RequestOptions): Promise<T | null> {
-			const url = build_url({ path, is_get: true })
-			const { untracked, ...init } = options ?? {}
+		async get<T>(path: string, options?: GetOptions): Promise<T | null> {
+			const { untracked, params, ...init } = options ?? {}
+			const url = build_url({ path, params, is_get: true })
 			const request = fetch_with_rate_limit_retry(() =>
-				options ? get_fetch()(url, { ...init, method: 'GET' }) : get_fetch()(url),
+				Object.keys(init).length ? get_fetch()(url, { ...init, method: 'GET' }) : get_fetch()(url),
 			)
 			const res = await (untracked ? request : tracked(request))
 			return parse_response<T>(res)

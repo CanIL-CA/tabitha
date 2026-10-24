@@ -27,16 +27,16 @@ export function create_editor_client(options: EditorClientOptions) {
 		 * Check, analyze, and generate backtranslation tokens for a given source text.
 		 */
 		async check_text({ text, auto_fix }: { text: string, auto_fix?: boolean }): Promise<EditorCheckResult | null> {
-			const params = new URLSearchParams({ text: sanitize_input_whitespace(text) })
-			if (auto_fix) params.append('auto_fix', 'on')
-			return http.get<EditorCheckResult>(`/check?${params}`)
+			return http.get<EditorCheckResult>('/check', {
+				params: { text: sanitize_input_whitespace(text), auto_fix: auto_fix ? 'on' : undefined },
+			})
 		},
 
 		/**
 		 * Parse input text into sentences and extract source entities and features.
 		 */
 		async analyze_text(text: string): Promise<EditorAnalyzeResult | null> {
-			return http.get<EditorAnalyzeResult>(`/analyze?text=${encodeURIComponent(sanitize_input_whitespace(text))}`)
+			return http.get<EditorAnalyzeResult>('/analyze', { params: { text: sanitize_input_whitespace(text) } })
 		},
 
 		/**
