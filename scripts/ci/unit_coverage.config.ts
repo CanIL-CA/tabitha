@@ -6,8 +6,12 @@ import { fileURLToPath } from 'node:url'
 import { compile } from 'svelte/compiler'
 import { transformWithOxc } from 'vite'
 
-/** A workspace-relative path to code the report counts: under `src/`, without tests, types or generated messages. */
-export function is_source_code(path: string): boolean {
+/**
+ * A workspace-relative path to code the report counts: under `src/`, without tests, types or generated
+ * messages. Takes either separator, since node:path's `relative()` returns backslashes on Windows.
+ */
+export function is_source_code(native_path: string): boolean {
+	const path = native_path.replaceAll('\\', '/')
 	return path.startsWith('src/')
 		&& /\.(js|ts|svelte)$/.test(path)
 		&& !/\.(test|spec)\.ts$|\.d\.ts$/.test(path)

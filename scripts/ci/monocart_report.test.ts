@@ -1,27 +1,27 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { is_reported_source, read_unit_coverage } from './monocart_report'
 
-const ROOT = '/repo'
+const ROOT = resolve('/repo')
 const WORKSPACES = ['apps/editor', 'packages/ui']
 
 describe('is_reported_source', () => {
 	it("counts a Vitest workspace's own source files", () => {
-		for (const file of ['/repo/apps/editor/src/lib/parser/index.ts', '/repo/apps/editor/src/routes/+page.svelte', '/repo/packages/ui/src/theme.svelte.ts']) {
+		for (const file of [join(ROOT, 'apps/editor/src/lib/parser/index.ts'), join(ROOT, 'apps/editor/src/routes/+page.svelte'), join(ROOT, 'packages/ui/src/theme.svelte.ts')]) {
 			expect(is_reported_source({ root_dir: ROOT, workspaces: WORKSPACES, file })).toBe(true)
 		}
 	})
 
 	it('leaves out tests, type declarations, generated messages and styles', () => {
-		for (const file of ['/repo/apps/editor/src/lib/check.test.ts', '/repo/apps/editor/src/app.d.ts', '/repo/apps/editor/src/lib/paraglide/messages.js', '/repo/apps/editor/src/lib/app.css']) {
+		for (const file of [join(ROOT, 'apps/editor/src/lib/check.test.ts'), join(ROOT, 'apps/editor/src/app.d.ts'), join(ROOT, 'apps/editor/src/lib/paraglide/messages.js'), join(ROOT, 'apps/editor/src/lib/app.css')]) {
 			expect(is_reported_source({ root_dir: ROOT, workspaces: WORKSPACES, file })).toBe(false)
 		}
 	})
 
 	it('leaves out files outside src/ and workspaces that are not Vitest workspaces', () => {
-		for (const file of ['/repo/apps/editor/e2e/editor.spec.ts', '/repo/apps/editor/vite.config.ts', '/repo/apps/www/src/routes/+page.svelte', '/repo/node_modules/svelte/src/index.js']) {
+		for (const file of [join(ROOT, 'apps/editor/e2e/editor.spec.ts'), join(ROOT, 'apps/editor/vite.config.ts'), join(ROOT, 'apps/www/src/routes/+page.svelte'), join(ROOT, 'node_modules/svelte/src/index.js')]) {
 			expect(is_reported_source({ root_dir: ROOT, workspaces: WORKSPACES, file })).toBe(false)
 		}
 	})
