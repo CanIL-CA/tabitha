@@ -262,7 +262,7 @@ jobs:
       # For the coverage_layers job. A tarball keeps the apps/ and packages/ paths, which an
       # artifact of wildcard paths would trim to their common folder.
       - name: Pack Unit Coverage Reports
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         run: |
           shopt -s nullglob
           reports=({apps,packages}/*/coverage/unit/coverage-final.json)
@@ -400,17 +400,6 @@ jobs:
       - name: Setup Workspace
         uses: ./.github/actions/setup-workspace
 
-      # PRs compare against the newest layers summary a push to main saved (caches saved on the
-      # default branch are readable from every PR). Absent on the first run, which just leaves
-      # the delta column out.
-      - name: Restore Main Coverage Baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v6
-        with:
-          path: coverage-baseline
-          key: coverage-layers-main-${{ github.sha }}
-          restore-keys: coverage-layers-main-
-
       - name: Download Coverage Artifacts
         uses: actions/download-artifact@v8
         with:
@@ -438,20 +427,6 @@ jobs:
             cat coverage/layers/report.md
             echo 'LAYERS_REPORT_EOF'
           } >> "$GITHUB_OUTPUT"
-
-      - name: Stage Main Coverage Baseline
-        if: github.event_name == 'push' && steps.layers.outcome == 'success'
-        run: |
-          mkdir -p coverage-baseline
-          cp coverage/layers/layers.json coverage-baseline/
-          echo "main @ ${GITHUB_SHA::7}" > coverage-baseline/label.txt
-
-      - name: Save Main Coverage Baseline
-        if: github.event_name == 'push' && steps.layers.outcome == 'success'
-        uses: actions/cache/save@v6
-        with:
-          path: coverage-baseline
-          key: coverage-layers-main-${{ github.sha }}
 
   windows_dx_smoke:
     name: 🪟 Windows DX Smoke Test
