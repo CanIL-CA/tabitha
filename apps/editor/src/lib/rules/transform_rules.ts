@@ -1,5 +1,6 @@
 import { add_tag_to_token, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_token_filter, create_token_transform, create_token_transforms, from_built_in_rule, simple_rule_action } from './rules_parser'
+import { find_alternate_coordinate_position, find_coordinate_position, is_coordinatable } from './coordination'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 import type { Token, Tag } from '#lib/types.js'
 import type {
@@ -613,6 +614,19 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'tag': { 'syntax': 'comma' } },
 	},
 	{
+		'name': 'tag addressee nouns and commas marked with _addressee',
+		'trigger': { 'tag': { 'syntax': 'head_np' } },
+		'context': {
+			'followedby': [
+				{ 'token': '_addressee', 'skip': [{ 'category': 'Conjunction' }, 'np'] },
+				{ 'token': ',' },
+			],
+		},
+		'transform': { 'tag': { 'role': 'addressee' } },
+		'context_transform': [{}, { 'tag': { 'syntax': 'comma_addressee' } }],
+		'comment': "eg 'John _addressee, Mary and Peter went'. Without the note, the comma would be read as part of a list",
+	},
+	{
 		'name': 'tag addressee nouns and commas',
 		'trigger': { 'tag': { 'syntax': 'head_np' } },
 		'context': {
@@ -621,9 +635,15 @@ const transform_rules_json: TransformRuleJson[] = [
 				{ 'tag': { 'syntax': 'head_np' }, 'skip': 'all' },	// the agent
 				{ 'category': 'Verb', 'skip': 'all' },
 			],
+			'notfollowedby': [
+				{ 'token': ',', 'skip': [{ 'category': 'Conjunction' }, 'np'] },
+				{ 'stem': 'and|or', 'skip': 'all' },
+				{ 'category': 'Verb', 'skip': 'all' },
+			],
 		},
 		'transform': { 'tag': { 'role': 'addressee' } },
 		'context_transform': [{ 'tag': { 'syntax': 'comma_addressee' } }],
+		'comment': "an and/or before the Verb means the comma is part of a list, eg 'John, Mary and Peter went'. Use _addressee for 'John, you and Mary go'",
 	},
 	{
 		'name': 'by default, tag all "and/or" as "noun" coordination',
@@ -653,36 +673,29 @@ const transform_rules_json: TransformRuleJson[] = [
 		'trigger': { 'stem': 'and|or|but', 'tag': { 'position': 'first_word' } },
 		'transform': { 'tag': { 'syntax': 'coord_clause' } },
 	},
-	// Noun List Indexing
+	// Implicit tagging
 	{
-		'name': 'Set tag for nouns indexed with _1',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_1' } },
-		'transform': { 'tag': { 'noun_index': '1' } },
+		'name': 'Tag plain implicit',
+		'trigger': { 'token': '_implicit' },
+		'context': { 'precededby': { 'category': 'Noun|Verb|Adjective|Adverb|Conjunction' } },
+		'context_transform': { 'tag': { 'implicit': 'implicit' } },
+	},
+	// Vocabulary Alternates
+	{
+		'name': 'Tag complex vocabulary alternates',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
+		'context': {
+			'subtokens': { 'token': '(complex)', 'skip': 'all' },
+		},
+		'transform': { 'tag': { 'vocabulary_alternate': 'complex' } },
 	},
 	{
-		'name': 'Set tag for nouns indexed with _2',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_2' } },
-		'transform': { 'tag': { 'noun_index': '2' } },
-	},
-	{
-		'name': 'Set tag for nouns indexed with _3',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_3' } },
-		'transform': { 'tag': { 'noun_index': '3' } },
-	},
-	{
-		'name': 'Set tag for nouns indexed with _4',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_4' } },
-		'transform': { 'tag': { 'noun_index': '4' } },
-	},
-	{
-		'name': 'Set tag for nouns indexed with _5',
-		'trigger': { 'category': 'Noun' },
-		'context': { 'followedby': { 'token': '_5' } },
-		'transform': { 'tag': { 'noun_index': '5' } },
+		'name': 'Tag simple vocabulary alternates',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
+		'context': {
+			'subtokens': { 'token': '(simple)', 'skip': 'all' },
+		},
+		'transform': { 'tag': { 'vocabulary_alternate': 'simple' } },
 	},
 ]
 
@@ -762,6 +775,72 @@ const builtin_transform_rules: BuiltInRule[] = [
 				if (result.gloss.startsWith('(biblical unit)') || IS_CARDINAL_NUMBER.test(result.stem)) {
 					trigger_token.pairing_type = 'metric-biblical'
 				}
+			}),
+		},
+	},
+	{
+		name: 'Set Noun list index based on note',
+		comment: '',
+		rule: {
+			trigger: create_token_filter({ 'category': 'Noun' }),
+			context: create_context_filter({ 'followedby': { 'token': '_1|_2|_3|_4|_5' } }),
+			action: simple_rule_action(({ tokens, trigger_token, context_indexes, rule_id }) => {
+				const tag = { 'noun_index': tokens[context_indexes[0]].token[1] }
+				add_tag_to_token({ token: trigger_token, tag, rule_id })
+			}),
+		},
+	},
+	{
+		name: 'Set Noun-specific "implicit" tags',
+		comment: '',
+		rule: {
+			trigger: create_token_filter({ category: 'Noun' }),
+			context: create_context_filter({
+				'followedby': {
+					'token': '_explainName|_implicitExplainName|_implicitActiveAgent|_literalExpansion|_dynamicExpansion|_metonymy|_implicitNecessary|_necessaryImplicit',
+				},
+			}),
+			action: simple_rule_action(({ tokens, trigger_token, context_indexes, rule_id }) => {
+				const tag_map: Record<string, string> = {
+					'_explainName': 'explain_name',
+					'_implicitExplainName': 'explain_name',
+					'_implicitActiveAgent': 'optional_agent_of_passive',
+					'_literalExpansion': 'literal_expansion',
+					'_dynamicExpansion': 'dynamic_expansion',
+					'_metonymy': 'dynamic_expansion',
+					'_implicitNecessary': 'implicit_necessary',
+					'_necessaryImplicit': 'implicit_necessary',
+				}
+				const tag = { 'implicit': tag_map[tokens[context_indexes[0]].token] }
+				add_tag_to_token({ token: trigger_token, tag, rule_id })
+			}),
+		},
+	},
+	{
+		// TODO support coordinating Verbs as well
+		name: 'Tag the position of coordinated Nouns, Adjectives, Adverbs, and Clauses',
+		comment: 'eg "John, Mary and Peter" become first/coordinate/last. For the case frame rules and the analyzer.',
+		rule: {
+			trigger: is_coordinatable,
+			context: create_context_filter({}),
+			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
+				const position = find_coordinate_position({ tokens, index: trigger_index })
+				if (!position) return
+
+				add_tag_to_token({ token: trigger_token, tag: { 'coordinate': position }, rule_id })
+			}),
+		},
+	},
+	{
+		name: 'Group tags for simple/complex vocabulary alternates',
+		comment: 'The alternates are already tagged with their type, so this assigns "first/last/coordinate" values',
+		rule: {
+			trigger: create_token_filter({ 'type': TOKEN_TYPE.CLAUSE, 'tag': 'vocabulary_alternate' }),
+			context: create_context_filter({ }),
+			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
+				const position = find_alternate_coordinate_position({ tokens, index: trigger_index })
+				const new_tag = `${trigger_token.tag['vocabulary_alternate']}|${position}`
+				add_tag_to_token({ token: trigger_token, tag: { 'vocabulary_alternate': new_tag }, rule_id })
 			}),
 		},
 	},

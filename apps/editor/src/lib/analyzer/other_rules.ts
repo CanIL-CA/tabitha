@@ -12,6 +12,8 @@ const PUNCTUATION_PARTICLES: Array<[string, TokenFilter]> = [
 	['-CommentEnd', create_token_filter({ 'token': '(comment-end)|(end-comment)' })],
 ]
 
+export const PUNCTUATION_PARTICLE_STEMS = new Set(PUNCTUATION_PARTICLES.map(([stem]) => stem))
+
 export function replace_punctuation(sentences: Sentence[]): Sentence[] {
 	return replace_punctuation_tokens(sentences.map(sentence => sentence.clause)).map(clause => ({ clause }))
 

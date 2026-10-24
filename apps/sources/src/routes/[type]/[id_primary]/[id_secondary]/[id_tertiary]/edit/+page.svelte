@@ -13,13 +13,14 @@
 	import { EntityClipboard, set_clipboard } from '#lib/edit/clipboard.svelte.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
+	import { fetch_ontology_data_for_all } from '#lib/data/api_lookups.ts'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })
 
 	let { data }: PageProps = $props()
 
-	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
+	const senses = set_ontology_senses(new OntologySenses(() => data.ontology_senses))
 	set_clipboard(new EntityClipboard())
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
@@ -123,6 +124,9 @@
 
 			const analyzed_entities = result.source_entities.map(entity => ({ ...entity, id: -1, parent_id: -1, boundary_category: '' }))
 			structure_entities(analyzed_entities)
+			
+			const results_by_stem = await fetch_ontology_data_for_all(analyzed_entities)
+			senses.remember(Object.values(results_by_stem).flat())
 
 			edit_history.record()
 			edit_history.current = { source_entities: analyzed_entities, noun_list: result.noun_list }

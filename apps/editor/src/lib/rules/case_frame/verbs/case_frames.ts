@@ -168,6 +168,13 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['attack', []],
 	['avoid', []],
 	['be', [
+		['be-C', {
+			'state': {
+				...directly_after_verb(),
+				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
+				'comment': 'the state of be-C is always Not Applicable Specificity because it is a general class (eg. human)',
+			},
+		}],
 		['be-D', {
 			'other_required': 'predicate_adjective',
 			'other_optional': 'patient_clause_same_participant|patient_clause_different_participant',
@@ -217,6 +224,13 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 				'missing_message': "write 'X's name be Y' or 'The name of X be Y'",
 			},
 		}],
+		['be-L', {
+			'state': {
+				...directly_after_verb(),
+				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
+				'comment': 'the state of be-L is always Not Applicable Specificity because it is a social role (eg. doctor)',
+			},
+		}],
 		['be-N', {
 			'agent': {
 				...directly_before_verb({ 'stem': 'time' }),
@@ -237,6 +251,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'state': {
 				'trigger': { 'tag': { 'syntax': 'head_np' } },
 				'context': { 'precededby': { 'category': 'Verb', 'skip': ['vp_modifiers', 'np_modifiers', { 'token': 'made' }] } },
+				'transform': { 'tag': { 'role': 'state', 'specificity': 'non_specific' } },
 			},
 			'comment': 'there may or may not be "made of" before the np',
 		}],
@@ -273,6 +288,20 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'other_optional': 'patient_clause_same_participant|patient_clause_different_participant',
 			'comment': 'some predicate adjectives take a patient clause, so those should be recognized and accepted',
 		}],
+		['become-B', {
+			'state': {
+				...directly_after_verb(),
+				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
+				'comment': 'the state of become-B is always Not Applicable Specificity because it is a general class (eg. human)',
+			},
+		}],
+		['become-C', {
+			'state': {
+				...directly_after_verb(),
+				'transform': { 'tag': { 'role': 'state', 'specificity': 'not_applicable' } },
+				'comment': 'the state of become-C is always Not Applicable Specificity because it is a social role (eg. doctor)',
+			},
+		}],
 		['become-F', {
 			'agent': {
 				...directly_before_verb({ 'stem': 'weather' }),
@@ -285,6 +314,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'state': {
 				'trigger': { 'tag': { 'syntax': 'head_np' } },
 				'context': { 'precededby': { 'category': 'Verb', 'skip': ['vp_modifiers', 'np_modifiers', { 'token': 'made' }] } },
+				'transform': { 'tag': { 'role': 'state', 'specificity': 'non_specific' } },
 			},
 			'comment': 'there may or may not be "made of" before the np',
 		}],

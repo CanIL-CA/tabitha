@@ -1,7 +1,7 @@
 import { apply_transform_and_sense_rules, check_sentences, parse_for_test } from '.'
 import { clausify, flatten_sentences } from './clausify'
 import { tokenize_input } from './tokenize'
-import { RULES, rules_applier } from '#lib/rules/index.js'
+import { RULES, apply_rules } from '#lib/rules/index.js'
 import { describe, expect, test } from 'vitest'
 import { TOKEN_TYPE, create_lookup_result } from '../token'
 import { ERRORS } from './error_messages'
@@ -335,14 +335,14 @@ describe('parse', () => {
 		// 'like' is also a verb in the Ontology, so an unanalyzed "be like" reads as two verbs
 		function parse_be_like(text: string) {
 			let sentences = clausify(tokenize_input(text))
-			sentences = rules_applier(RULES.SYNTAX)(sentences)
-			sentences = rules_applier(RULES.LOOKUP)(sentences)
+			sentences = apply_rules({ sentences, rules: RULES.SYNTAX })
+			sentences = apply_rules({ sentences, rules: RULES.LOOKUP })
 			for (const token of flatten_sentences(sentences).filter(token => token.type === TOKEN_TYPE.LOOKUP_WORD)) {
 				// stand-in for the ontology lookup
 				const part_of_speech = ['be', 'like'].includes(token.token) ? 'Verb' : 'Noun'
 				token.lookup_results = [create_lookup_result({ stem: token.token, part_of_speech, ontology_status: 'in ontology' })]
 			}
-			return apply_transform_and_sense_rules(rules_applier(RULES.PART_OF_SPEECH)(sentences))
+			return apply_transform_and_sense_rules(apply_rules({ sentences, rules: RULES.PART_OF_SPEECH }))
 		}
 
 		function like_tokens(sentences: Sentence[]) {

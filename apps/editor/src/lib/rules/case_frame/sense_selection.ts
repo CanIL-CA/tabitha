@@ -71,7 +71,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 			'stem': 'man|woman',
 			'context': { 'precededby': [{ 'tag': { 'determiner': 'indefinite_article' }, 'skip': 'adjp_modifiers_attributive' }, { 'category': 'Adjective' }] },
 		} }],	// class membership (eg. John is a wicked man)
-		['be-Q', { 'state': { 'stem': 'bronze|clay|cloth|gold|iron|metal|sackcloth|silver|wood' } } ],	// substance (made of)
+		['be-Q', { 'state': { 'stem': 'bronze|clay|cloth|gold|iron|metal|sackcloth|silver|stone|wood' } } ],	// substance (made of)
 		['be-M', { 'state': { 'stem': 'ancestor|brother|child|daughter|descendant|father|husband|mother|sister|son|wife' } }],	// kinship
 		['be-L', { 'state': { 'stem': 'apostle|captain|emperor|farmer|governor|judge|king|leader|officer|official|priest|prince|prophet|queen|ruler|servant|slave|teacher' } }],	// social role
 		['be-S', { }],	// age
@@ -401,8 +401,8 @@ function parse_sense_rule([sense, sense_rule_json]: PriorityOverrideRule): [Word
 				return false
 			}
 
-			const { tokens, trigger_index, trigger_token } = match_result.trigger_context
-			return trigger(trigger_token) && context(tokens, trigger_index).success
+			return match_result.trigger_contexts.some(({ tokens, trigger_index, trigger_token }) =>
+				trigger(trigger_token) && context(tokens, trigger_index).success)
 		}
 	}
 }
@@ -433,10 +433,12 @@ export function select_sense(trigger_context: RuleTriggerContext) {
 	const selected_result = token.lookup_results[0].case_frame.result
 	const present_arguments = [...selected_result.valid_arguments, ...selected_result.extra_arguments]
 	for (const argument of present_arguments) {
-		argument.rule.trigger_rule.action(argument.trigger_context)
-		argument.trigger_context.trigger_token.applied_rules.push(`transform:argument - ${argument.trigger_context.rule_id}`)
+		for (const argument_context of argument.trigger_contexts) {
+			argument.rule.trigger_rule.action(argument_context)
+			argument_context.trigger_token.applied_rules.push(`transform:argument - ${argument_context.rule_id}`)
+		}
 		if (argument.rule.main_word_tag) {
-			add_tag_to_token({ token, tag: argument.rule.main_word_tag, rule_id: argument.trigger_context.rule_id })
+			add_tag_to_token({ token, tag: argument.rule.main_word_tag, rule_id: argument.rule.trigger_rule.id })
 		}
 	}
 }

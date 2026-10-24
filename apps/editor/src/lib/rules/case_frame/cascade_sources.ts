@@ -25,7 +25,8 @@ function is_where_relativizer_clause(token: Token): boolean {
  */
 export function has_where_relativizer_argument(lookup_results: LookupResult[]): boolean {
 	return lookup_results.some(({ case_frame }) =>
-		case_frame.result.extra_arguments.some(({ trigger_context }) => is_where_relativizer_clause(trigger_context.trigger_token)))
+		case_frame.result.extra_arguments.some(({ trigger_contexts }) =>
+			trigger_contexts.some(({ trigger_token }) => is_where_relativizer_clause(trigger_token))))
 }
 
 /**
