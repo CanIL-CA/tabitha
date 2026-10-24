@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import type { Page } from '@playwright/test'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 import { PORTS } from '@tabitha/vite-config/ports'
 
 const ONTOLOGY_ORIGIN = `http://localhost:${PORTS.ontology.port}`

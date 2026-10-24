@@ -1,6 +1,6 @@
 // @ts-check
-import { expect, test, type Page } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import type { Page } from '@playwright/test'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 async function next_sense({ page, stem, part_of_speech }: { page: Page, stem: string, part_of_speech: string }): Promise<string> {
 	const response = await page.request.get(`/protected/concept/create/next-sense?stem=${stem}&part_of_speech=${part_of_speech}`)

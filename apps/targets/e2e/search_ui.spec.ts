@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test.describe('Search UI Flow', () => {
 	test('renders search input and page structure', async ({ page }) => {

@@ -1,6 +1,5 @@
 // @ts-check
-import { test, expect } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('a queued create shows up as unsynced on the changes page', async ({ page }) => {
 	const stem = `offlinecreate${Date.now()}`

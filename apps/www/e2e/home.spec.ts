@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('home page loads and renders the site header', async ({ page }) => {
 	const response = await page.goto('/')

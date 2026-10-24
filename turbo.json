@@ -138,9 +138,10 @@
     },
     "test:unit": {
       "inputs": [
-        "src/**",
-        "vitest.config.*",
-        "package.json"
+        "$TURBO_DEFAULT$",
+        "!e2e/**",
+        "!playwright.config.*",
+        "!**/*.md"
       ]
     },
     "test:coverage": {
@@ -156,6 +157,12 @@
     "test:e2e": {
       "dependsOn": [
         "prepare"
+      ],
+      "env": [
+        "E2E_COVERAGE"
+      ],
+      "outputs": [
+        "coverage/e2e/**"
       ],
       "inputs": [
         "src/**",

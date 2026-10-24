@@ -1,6 +1,6 @@
 // https://playwright.dev/docs/writing-tests#first-test
 // @ts-check
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 // https://playwright.dev/docs/test-fixtures#built-in-fixtures
 test('get data for Daniel 3:9', async ({ request }) => {

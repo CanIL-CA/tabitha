@@ -1,5 +1,5 @@
 // @ts-check
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('a minted session reaches protected pages without going through Google OAuth', async ({ page }) => {
 	const response = await page.goto('/protected/changes')

@@ -15,6 +15,10 @@
       "types": "./cloudflare_workers.d.ts"
     }
   },
+  "scripts": {
+    "test": "bun run test:unit",
+    "test:unit": "bun test"
+  },
   "dependencies": {
     "@inlang/paraglide-js": "^2.29.0"
   },

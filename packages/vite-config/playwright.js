@@ -1,5 +1,72 @@
 // @ts-check
-import { defineConfig, devices } from '@playwright/test'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { test as base, defineConfig, devices } from '@playwright/test'
+
+export { expect } from '@playwright/test'
+
+/** Set by CI's e2e job to record browser coverage for the unit + e2e report (scripts/ci/merge_coverage.ts). */
+const COLLECT_COVERAGE = Boolean(process.env.E2E_COVERAGE)
+
+/** Playwright runs from the app's own directory, so this is `apps/<app>/coverage/e2e`. */
+const E2E_COVERAGE_DIR = resolve('coverage/e2e')
+
+const INLINE_SOURCE_MAP = /\/\/# sourceMappingURL=data:application\/json;(?:charset=utf-8;)?base64,([\w+/=]+)\s*$/
+
+/**
+ * Ties one script's browser coverage to the files on disk, or returns null for anything that isn't
+ * the app's own code or a workspace file (`/@vite/client`, prebundled deps, the page itself).
+ *
+ * Vite dev serves app files at `/src/…` and everything else at `/@fs/<absolute path>`, and its inline
+ * source maps list `sources` relative to that URL. monocart resolves relative `sources` against the
+ * working directory instead, so they're made absolute here; it then reports the same paths vitest does.
+ *
+ * @template {{ url: string, source?: string }} Entry
+ * @param {Object} options
+ * @param {Entry} options.entry One script from `page.coverage.stopJSCoverage()`
+ * @param {string} options.app_dir The app's directory, which Vite serves `/src/…` from
+ * @returns {(Entry & { sourceMap?: { sources: string[] } }) | null}
+ */
+export function entry_on_disk({ entry, app_dir }) {
+	const { pathname } = new URL(entry.url)
+	// The rest of an /@fs/ URL is already a file URL's path: /repo/…, or /D:/repo/… on Windows, which
+	// resolve() would read as relative to the current drive.
+	const file_url = pathname.startsWith('/@fs/') ? new URL(`file://${pathname.slice('/@fs'.length)}`)
+		: pathname.startsWith('/src/') ? pathToFileURL(resolve(app_dir, decodeURIComponent(pathname.slice(1))))
+			: null
+	if (!file_url) return null
+
+	const url = file_url.href
+	const file_path = fileURLToPath(file_url)
+	const inline_map = entry.source?.match(INLINE_SOURCE_MAP)?.[1]
+	if (!inline_map) return { ...entry, url }
+
+	/** @type {{ sources: string[], sourceRoot?: string }} */
+	const source_map = JSON.parse(Buffer.from(inline_map, 'base64').toString('utf-8'))
+	const map_dir = resolve(dirname(file_path), source_map.sourceRoot ?? '')
+	return { ...entry, url, sourceMap: { ...source_map, sourceRoot: undefined, sources: source_map.sources.map(source => resolve(map_dir, source)) } }
+}
+
+export async function e2e_coverage_report() {
+	const { CoverageReport } = await import('monocart-coverage-reports')
+	return new CoverageReport({ name: 'e2e', outputDir: E2E_COVERAGE_DIR, reports: ['raw'] })
+}
+
+/**
+ * Playwright's `test`, plus browser coverage for every test that uses `page` when `E2E_COVERAGE` is set.
+ * Chromium only; Firefox and WebKit have no coverage API.
+ */
+export const test = COLLECT_COVERAGE
+	? base.extend({
+		page: async ({ page }, use) => {
+			await page.coverage.startJSCoverage({ resetOnNavigation: false })
+			await use(page)
+			const app_dir = process.cwd()
+			const entries = (await page.coverage.stopJSCoverage()).flatMap(entry => entry_on_disk({ entry, app_dir }) ?? [])
+			await (await e2e_coverage_report()).add(entries)
+		},
+	})
+	: base
 
 /**
  * Waits until SvelteKit has hydrated the page, so a click or submit lands on an attached handler
@@ -52,6 +119,7 @@ export function create_app_playwright_config({
 			// the orchestrated multi-app run, where the servers are already started externally.
 			reuseExistingServer: true,
 		},
+		...COLLECT_COVERAGE && { globalTeardown: fileURLToPath(new URL('./playwright_coverage_teardown.js', import.meta.url)) },
 		...overrides,
 	})
 }

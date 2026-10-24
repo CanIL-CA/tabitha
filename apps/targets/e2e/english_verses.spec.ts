@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('get all verses in 1 Samuel:21 (English project)', async ({ request }) => {
 	const response = await request.get('/English/1 Samuel/21')

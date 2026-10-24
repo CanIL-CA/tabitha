@@ -1,5 +1,5 @@
 // @ts-check
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('an edit made while offline is queued locally, then syncs once back online', async ({ page }) => {
 	const gloss = `offline test ${Date.now()}`
