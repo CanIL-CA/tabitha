@@ -29,13 +29,15 @@ const INLINE_SOURCE_MAP = /\/\/# sourceMappingURL=data:application\/json;(?:char
  */
 export function entry_on_disk({ entry, app_dir }) {
 	const { pathname } = new URL(entry.url)
-	const served = decodeURIComponent(pathname)
-	const file_path = served.startsWith('/@fs/') ? served.slice('/@fs'.length)
-		: served.startsWith('/src/') ? resolve(app_dir, served.slice(1))
+	// The rest of an /@fs/ URL is already a file URL's path: /repo/…, or /D:/repo/… on Windows, which
+	// resolve() would read as relative to the current drive.
+	const file_url = pathname.startsWith('/@fs/') ? new URL(`file://${pathname.slice('/@fs'.length)}`)
+		: pathname.startsWith('/src/') ? pathToFileURL(resolve(app_dir, decodeURIComponent(pathname.slice(1))))
 			: null
-	if (!file_path) return null
+	if (!file_url) return null
 
-	const url = pathToFileURL(file_path).href
+	const url = file_url.href
+	const file_path = fileURLToPath(file_url)
 	const inline_map = entry.source?.match(INLINE_SOURCE_MAP)?.[1]
 	if (!inline_map) return { ...entry, url }
 
