@@ -1,0 +1,61 @@
+import { afterEach, describe, expect, it } from 'bun:test'
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { is_reported_source, read_unit_coverage } from './monocart_report'
+
+const ROOT = '/repo'
+const WORKSPACES = ['apps/editor', 'packages/ui']
+
+describe('is_reported_source', () => {
+	it("counts a Vitest workspace's own source files", () => {
+		for (const file of ['/repo/apps/editor/src/lib/parser/index.ts', '/repo/apps/editor/src/routes/+page.svelte', '/repo/packages/ui/src/theme.svelte.ts']) {
+			expect(is_reported_source({ root_dir: ROOT, workspaces: WORKSPACES, file })).toBe(true)
+		}
+	})
+
+	it('leaves out tests, type declarations, generated messages and styles', () => {
+		for (const file of ['/repo/apps/editor/src/lib/check.test.ts', '/repo/apps/editor/src/app.d.ts', '/repo/apps/editor/src/lib/paraglide/messages.js', '/repo/apps/editor/src/lib/app.css']) {
+			expect(is_reported_source({ root_dir: ROOT, workspaces: WORKSPACES, file })).toBe(false)
+		}
+	})
+
+	it('leaves out files outside src/ and workspaces that are not Vitest workspaces', () => {
+		for (const file of ['/repo/apps/editor/e2e/editor.spec.ts', '/repo/apps/editor/vite.config.ts', '/repo/apps/www/src/routes/+page.svelte', '/repo/node_modules/svelte/src/index.js']) {
+			expect(is_reported_source({ root_dir: ROOT, workspaces: WORKSPACES, file })).toBe(false)
+		}
+	})
+})
+
+describe('read_unit_coverage', () => {
+	let root_dir = ''
+	afterEach(async () => {
+		await rm(root_dir, { recursive: true, force: true })
+	})
+
+	async function write_report({ workspace, name, report }: { workspace: string, name: string, report: unknown }) {
+		const dir = join(root_dir, workspace, 'coverage', 'unit')
+		await mkdir(dir, { recursive: true })
+		await writeFile(join(dir, name), JSON.stringify(report))
+	}
+
+	it("joins every workspace's reports, keyed by absolute path, without the totals", async () => {
+		root_dir = await mkdtemp(join(tmpdir(), 'unit-coverage-'))
+		const counts = { total: 2, covered: 1 }
+		const file_summary = { lines: counts, statements: counts, branches: counts, functions: counts }
+		const file_coverage = { statementMap: { 0: { start: { line: 1 } } }, s: { 0: 1 } }
+		await write_report({ workspace: 'apps/editor', name: 'coverage-summary.json', report: { 'total': file_summary, 'src/lib/check.ts': file_summary } })
+		await write_report({ workspace: 'apps/editor', name: 'coverage-final.json', report: { 'src/lib/check.ts': file_coverage } })
+		await write_report({ workspace: 'packages/ui', name: 'coverage-summary.json', report: { 'total': file_summary, 'src/lib/check.ts': file_summary } })
+
+		const { summary, files } = await read_unit_coverage({ root_dir, workspaces: WORKSPACES })
+
+		expect(Object.keys(summary).sort()).toEqual([join(root_dir, 'apps/editor/src/lib/check.ts'), join(root_dir, 'packages/ui/src/lib/check.ts')])
+		expect(files).toEqual({ [join(root_dir, 'apps/editor/src/lib/check.ts')]: file_coverage })
+	})
+
+	it('returns empty reports for workspaces that wrote none', async () => {
+		root_dir = await mkdtemp(join(tmpdir(), 'unit-coverage-'))
+		expect(await read_unit_coverage({ root_dir, workspaces: WORKSPACES })).toEqual({ summary: {}, files: {} })
+	})
+})

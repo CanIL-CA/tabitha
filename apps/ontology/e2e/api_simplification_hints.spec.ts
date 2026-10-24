@@ -1,6 +1,6 @@
 // https://playwright.dev/docs/writing-tests#first-test
 // @ts-check
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 // https://playwright.dev/docs/test-fixtures#built-in-fixtures
 test('check API contract, e.g., /simplification_hints?complex_term=disciple', async ({ request }) => {

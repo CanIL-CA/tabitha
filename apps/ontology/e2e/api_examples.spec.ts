@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 test('check API contract, e.g., /examples?concept=love-A&part_of_speech=Verb', async ({ request }) => {
 	const response = await request.get('/examples?concept=love-A&part_of_speech=Verb')

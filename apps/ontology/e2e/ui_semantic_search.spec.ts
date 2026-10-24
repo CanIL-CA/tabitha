@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@tabitha/vite-config/playwright'
 
 // Related concepts come from a Vectorize index, which has no local simulation (see the "vectorize"
 // note in wrangler.jsonc), so locally the semantic scope can only ever add nothing. What this can

@@ -1,6 +1,5 @@
 // @ts-check
-import { expect, test } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('search bar parses reference and redirects to verse page', async ({ page }) => {
 	await page.goto('/')

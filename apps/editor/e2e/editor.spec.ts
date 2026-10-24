@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test.describe('Editor Page E2E', () => {
 	test('renders editor textarea and action buttons', async ({ page }) => {

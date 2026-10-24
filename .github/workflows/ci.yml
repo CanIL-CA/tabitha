@@ -282,6 +282,24 @@ jobs:
             echo 'COVERAGE_REPORT_EOF'
           } >> "$GITHUB_OUTPUT"
 
+      # For the coverage_layers job. A tarball keeps the apps/ and packages/ paths, which an
+      # artifact of wildcard paths would trim to their common folder.
+      - name: Pack Unit Coverage Reports
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          shopt -s nullglob
+          reports=({apps,packages}/*/coverage/unit/coverage-final.json)
+          [ ${#reports[@]} -gt 0 ] || exit 0
+          tar -cf unit-coverage.tar "${reports[@]}"
+
+      - name: Upload Unit Coverage Artifact
+        if: always() && hashFiles('unit-coverage.tar') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-coverage
+          path: unit-coverage.tar
+          retention-days: 7
+
       - name: Stage Main Coverage Baseline
         if: github.event_name == 'push' && steps.coverage.outcome == 'success'
         run: |
@@ -363,6 +381,25 @@ jobs:
         id: e2e
         run: bun run test:e2e
         continue-on-error: true
+        env:
+          # Records browser coverage (@tabitha/vite-config/playwright) for the coverage_layers job.
+          E2E_COVERAGE: '1'
+
+      - name: Pack E2E Coverage
+        if: always()
+        run: |
+          shopt -s nullglob
+          raw_dirs=(apps/*/coverage/e2e/raw)
+          [ ${#raw_dirs[@]} -gt 0 ] || exit 0
+          tar -cf e2e-coverage.tar "${raw_dirs[@]}"
+
+      - name: Upload E2E Coverage Artifact
+        if: always() && hashFiles('e2e-coverage.tar') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-coverage
+          path: e2e-coverage.tar
+          retention-days: 7
 
       - name: Diagnose D1 State on Failure
         if: steps.e2e.outcome == 'failure'
@@ -383,6 +420,50 @@ jobs:
           # a passing run has nothing to upload, which is expected, not a problem to warn about.
           if-no-files-found: ignore
           retention-days: 7
+
+  coverage_layers:
+    name: 🧩 Unit + E2E Coverage
+    needs: [unit_tests, e2e_tests]
+    # Its own job so neither test job waits on the other. Informational only: no threshold.
+    if: always() && needs.unit_tests.result == 'success' && needs.e2e_tests.result == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      layers: ${{ steps.layers.outcome }}
+      layers_report: ${{ steps.layers_report.outputs.markdown }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: '{unit,e2e}-coverage'
+          merge-multiple: true
+
+      # The e2e raw data holds absolute paths, which match here because every runner checks out
+      # to the same workspace path.
+      - name: Merge Unit & E2E Coverage
+        id: layers
+        run: |
+          for archive in unit-coverage.tar e2e-coverage.tar; do
+            [ -f "$archive" ] && tar -xf "$archive"
+          done
+          bun run test:coverage:merge
+        continue-on-error: true
+
+      - name: Expose Layers Table to PR Summary
+        id: layers_report
+        if: always()
+        run: |
+          [ -f coverage/layers/report.md ] || exit 0
+          {
+            echo 'markdown<<LAYERS_REPORT_EOF'
+            cat coverage/layers/report.md
+            echo 'LAYERS_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
 
   windows_dx_smoke:
     name: 🪟 Windows DX Smoke Test
@@ -483,7 +564,7 @@ jobs:
   pr_summary:
     name: 📝 Post PR Advisory Summary
     if: always() && github.event_name == 'pull_request'
-    needs: [plan, security_compliance, production_build, typecheck, eslint, unit_tests, e2e_tests, windows_dx_smoke]
+    needs: [plan, security_compliance, production_build, typecheck, eslint, unit_tests, e2e_tests, coverage_layers, windows_dx_smoke]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -518,6 +599,7 @@ jobs:
               ['ESLint', needs.eslint.outputs.eslint],
               ['Unit Test Coverage', needs.unit_tests.outputs.coverage],
               ['Playwright E2E', needs.e2e_tests.outputs.e2e],
+              ['Unit + E2E Coverage', needs.coverage_layers.outputs.layers],
               ['Windows DX Smoke (db:load)', needs.windows_dx_smoke.outputs.windows_smoke],
               ['Windows Unit Tests', needs.windows_dx_smoke.outputs.windows_unit_tests],
             ]
@@ -556,6 +638,12 @@ jobs:
             const coverage_report = needs.unit_tests.outputs.coverage_report
             if (coverage_report) {
               body += `\n<details><summary>📊 Unit test coverage</summary>\n\n${coverage_report}\n</details>\n`
+            }
+
+            // Written by scripts/ci/merge_coverage.ts; empty unless both unit and e2e tests ran.
+            const layers_report = needs.coverage_layers.outputs.layers_report
+            if (layers_report) {
+              body += `\n<details><summary>🧩 Unit + E2E line coverage</summary>\n\n${layers_report}\n</details>\n`
             }
 
             try {

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test'
-import { wait_for_hydration } from '@tabitha/vite-config/playwright'
+import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 test('searches for concepts and renders summary cards', async ({ page }) => {
 	await page.goto('/?q=love&category=all&scope=stems')
