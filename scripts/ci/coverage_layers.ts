@@ -57,18 +57,38 @@ function format_share({ covered, total }: Counts): string {
 	return value === null ? 'n/a' : `${value.toFixed(1)}%`
 }
 
-export function layers_markdown({ layers }: { layers: WorkspaceLayers[] }): string {
+/** Change in union coverage against the baseline, in percentage points, or '' with no baseline for it. */
+export function format_delta({ current, baseline }: { current: Counts, baseline?: Counts }): string {
+	if (!baseline) return ''
+	const now = percent(current)
+	const before = percent(baseline)
+	if (now === null || before === null) return ''
+	const points = now - before
+	if (Math.abs(points) < 0.05) return '±0.0'
+	return `${points > 0 ? '▲' : '▼'} ${Math.abs(points).toFixed(1)}`
+}
+
+export function layers_markdown({ layers, baseline, baseline_label }: {
+	layers: WorkspaceLayers[]
+	baseline?: WorkspaceLayers[]
+	baseline_label?: string
+}): string {
+	const baseline_by_workspace = new Map(baseline?.map(entry => [entry.workspace, entry]))
 	const rows = layers.map(({ workspace, total, unit, e2e, union, both }) => {
-		const cells = [`\`${workspace}\``, ...[union, unit, e2e, both].map(covered => format_share({ covered, total }))]
+		const before = baseline_by_workspace.get(workspace)
+		const delta = format_delta({ current: { covered: union, total }, baseline: before && { covered: before.union, total: before.total } })
+		const cells = [`\`${workspace}\``, format_share({ covered: union, total }), ...baseline ? [delta] : [], ...[unit, e2e, both].map(covered => format_share({ covered, total }))]
 		return `| ${cells.join(' | ')} |`
 	})
+	const headers = ['Workspace', 'Union', ...baseline ? ['Δ union'] : [], 'Unit', 'E2E', 'Both']
 	return [
 		'### 🧩 Unit + E2E line coverage',
 		'',
 		'**Union** is lines run by unit tests, e2e tests or both: what neither covers is the real gap. **Both** is lines run by each.',
+		baseline ? `Δ is percentage points against ${baseline_label ?? 'the main baseline'}.` : 'No main baseline was available, so there is no Δ column.',
 		'',
-		'| Workspace | Union | Unit | E2E | Both |',
-		'| --- | --- | --- | --- | --- |',
+		`| ${headers.join(' | ')} |`,
+		`| ${headers.map(() => '---').join(' | ')} |`,
 		...rows,
 		'',
 		'E2E counts browser code only (Chromium); server code that e2e reaches, such as `+server.ts` routes, shows as unit coverage or none.',

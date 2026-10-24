@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { file_layers, layers_by_workspace, layers_markdown, type FileCoverage } from './coverage_layers'
+import { file_layers, format_delta, layers_by_workspace, layers_markdown, type FileCoverage } from './coverage_layers'
 
 const ROOT = '/repo'
 
@@ -74,5 +74,34 @@ describe('layers_markdown', () => {
 	it('shows n/a for a workspace with no lines to cover', () => {
 		const markdown = layers_markdown({ layers: [{ workspace: 'packages/types', total: 0, unit: 0, e2e: 0, union: 0, both: 0 }] })
 		expect(markdown).toContain('| `packages/types` | n/a | n/a | n/a | n/a |')
+	})
+
+	it('adds a union delta column against the baseline, per workspace', () => {
+		const markdown = layers_markdown({
+			layers: [
+				{ workspace: 'apps/editor', total: 8, unit: 4, e2e: 2, union: 5, both: 1 },
+				{ workspace: 'apps/new', total: 2, unit: 1, e2e: 0, union: 1, both: 0 },
+			],
+			baseline: [{ workspace: 'apps/editor', total: 8, unit: 3, e2e: 2, union: 4, both: 1 }],
+			baseline_label: 'main @ abc1234',
+		})
+		expect(markdown).toContain('| Workspace | Union | Δ union | Unit | E2E | Both |')
+		expect(markdown).toContain('| `apps/editor` | 62.5% | ▲ 12.5 | 50.0% | 25.0% | 12.5% |')
+		expect(markdown).toContain('| `apps/new` | 50.0% |  | 50.0% | 0.0% | 0.0% |')
+		expect(markdown).toContain('main @ abc1234')
+	})
+
+	it('leaves the delta column out without a baseline', () => {
+		const markdown = layers_markdown({ layers: [{ workspace: 'apps/editor', total: 8, unit: 4, e2e: 2, union: 5, both: 1 }] })
+		expect(markdown).not.toContain('Δ union')
+	})
+})
+
+describe('format_delta', () => {
+	it('shows the change in percentage points, and nothing without a baseline', () => {
+		expect(format_delta({ current: { covered: 5, total: 10 }, baseline: { covered: 4, total: 10 } })).toBe('▲ 10.0')
+		expect(format_delta({ current: { covered: 3, total: 10 }, baseline: { covered: 4, total: 10 } })).toBe('▼ 10.0')
+		expect(format_delta({ current: { covered: 4, total: 10 }, baseline: { covered: 4, total: 10 } })).toBe('±0.0')
+		expect(format_delta({ current: { covered: 4, total: 10 } })).toBe('')
 	})
 })

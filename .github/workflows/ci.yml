@@ -247,7 +247,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       coverage: ${{ steps.coverage.outcome }}
-      coverage_report: ${{ steps.coverage_report.outputs.markdown }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -255,37 +254,15 @@ jobs:
       - name: Setup Workspace
         uses: ./.github/actions/setup-workspace
 
-      # PRs compare against the newest coverage summary a push to main saved (caches saved on
-      # the default branch are readable from every PR). Absent on the first run, which just
-      # leaves the delta column out.
-      - name: Restore Main Coverage Baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v6
-        with:
-          path: coverage-baseline
-          key: coverage-main-${{ github.sha }}
-          restore-keys: coverage-main-
-
       - name: In-Memory Unit Tests & Coverage Report
         id: coverage
         run: bun run test:coverage
         continue-on-error: true
 
-      - name: Expose Coverage Table to PR Summary
-        id: coverage_report
-        if: always()
-        run: |
-          [ -f coverage/report.md ] || exit 0
-          {
-            echo 'markdown<<COVERAGE_REPORT_EOF'
-            cat coverage/report.md
-            echo 'COVERAGE_REPORT_EOF'
-          } >> "$GITHUB_OUTPUT"
-
       # For the coverage_layers job. A tarball keeps the apps/ and packages/ paths, which an
       # artifact of wildcard paths would trim to their common folder.
       - name: Pack Unit Coverage Reports
-        if: always() && github.event_name == 'pull_request'
+        if: always()
         run: |
           shopt -s nullglob
           reports=({apps,packages}/*/coverage/unit/coverage-final.json)
@@ -299,20 +276,6 @@ jobs:
           name: unit-coverage
           path: unit-coverage.tar
           retention-days: 7
-
-      - name: Stage Main Coverage Baseline
-        if: github.event_name == 'push' && steps.coverage.outcome == 'success'
-        run: |
-          mkdir -p coverage-baseline
-          cp coverage/coverage-summary.json coverage-baseline/
-          echo "main @ ${GITHUB_SHA::7}" > coverage-baseline/label.txt
-
-      - name: Save Main Coverage Baseline
-        if: github.event_name == 'push' && steps.coverage.outcome == 'success'
-        uses: actions/cache/save@v6
-        with:
-          path: coverage-baseline
-          key: coverage-main-${{ github.sha }}
 
   e2e_tests:
     name: 🎭 Playwright E2E Tests
@@ -437,6 +400,17 @@ jobs:
       - name: Setup Workspace
         uses: ./.github/actions/setup-workspace
 
+      # PRs compare against the newest layers summary a push to main saved (caches saved on the
+      # default branch are readable from every PR). Absent on the first run, which just leaves
+      # the delta column out.
+      - name: Restore Main Coverage Baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: coverage-baseline
+          key: coverage-layers-main-${{ github.sha }}
+          restore-keys: coverage-layers-main-
+
       - name: Download Coverage Artifacts
         uses: actions/download-artifact@v8
         with:
@@ -464,6 +438,20 @@ jobs:
             cat coverage/layers/report.md
             echo 'LAYERS_REPORT_EOF'
           } >> "$GITHUB_OUTPUT"
+
+      - name: Stage Main Coverage Baseline
+        if: github.event_name == 'push' && steps.layers.outcome == 'success'
+        run: |
+          mkdir -p coverage-baseline
+          cp coverage/layers/layers.json coverage-baseline/
+          echo "main @ ${GITHUB_SHA::7}" > coverage-baseline/label.txt
+
+      - name: Save Main Coverage Baseline
+        if: github.event_name == 'push' && steps.layers.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: coverage-baseline
+          key: coverage-layers-main-${{ github.sha }}
 
   windows_dx_smoke:
     name: 🪟 Windows DX Smoke Test
@@ -597,7 +585,7 @@ jobs:
               ...audit_checks,
               ['Typecheck & Svelte Diagnostics', needs.typecheck.outputs.typecheck],
               ['ESLint', needs.eslint.outputs.eslint],
-              ['Unit Test Coverage', needs.unit_tests.outputs.coverage],
+              ['Unit Tests', needs.unit_tests.outputs.coverage],
               ['Playwright E2E', needs.e2e_tests.outputs.e2e],
               ['Unit + E2E Coverage', needs.coverage_layers.outputs.layers],
               ['Windows DX Smoke (db:load)', needs.windows_dx_smoke.outputs.windows_smoke],
@@ -632,12 +620,6 @@ jobs:
               }
               const mentions = [...participants].map((login) => `@${login}`).join(' ')
               body += `\n${mentions} — ${failed.length} advisory check(s) need a look: ${failed.map(([name]) => name).join(', ')}.`
-            }
-
-            // Written by scripts/ci/report_coverage.ts; empty when unit tests didn't run.
-            const coverage_report = needs.unit_tests.outputs.coverage_report
-            if (coverage_report) {
-              body += `\n<details><summary>📊 Unit test coverage</summary>\n\n${coverage_report}\n</details>\n`
             }
 
             // Written by scripts/ci/merge_coverage.ts; empty unless both unit and e2e tests ran.
