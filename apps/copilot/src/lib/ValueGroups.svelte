@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import { m } from '#lib/paraglide/messages.js'
+	import { SvelteSet } from 'svelte/reactivity'
 
 	type GroupOption = {
 		value: string
@@ -13,66 +14,62 @@
 	}
 
 	let { options, groups = $bindable() }: Props = $props()
-	let selected_values = $state<string[]>([])
+	const selected_values = new SvelteSet<string>()
 
 	let ungrouped_options = $derived(
 		options.filter(option => groups && !groups.some(group => group.includes(option.value))),
 	)
-	let selected_count = $derived(selected_values.length)
+	let selected_count = $derived(selected_values.size)
 
 	const toggle_selected = ({ value, is_selected }: {
 		value: string
 		is_selected: boolean
 	}): void => {
-		selected_values = is_selected
-			? [...selected_values, value]
-			: selected_values.filter(selected_value => selected_value !== value)
+		if (is_selected) selected_values.add(value)
+		else selected_values.delete(value)
 	}
 
 	const create_group_from_selected = (): void => {
-		if (selected_values.length === 0) return
+		if (selected_values.size === 0) return
 
-		const selected_value_set = new Set(selected_values)
 		const group_values = options
-			.filter(option => selected_value_set.has(option.value))
+			.filter(option => selected_values.has(option.value))
 			.map(option => option.value)
 		const remaining_groups = groups
-			.map(group => group.filter(value => !selected_value_set.has(value)))
+			.map(group => group.filter(value => !selected_values.has(value)))
 			.filter(group => group.length > 0)
 
 		groups = [...remaining_groups, group_values]
-		selected_values = []
+		selected_values.clear()
 	}
 
 	const move_selected_to_group = (target_group_index: number): void => {
-		if (selected_values.length === 0) return
+		if (selected_values.size === 0) return
 
 		const target_group = groups[target_group_index]
 		if (!target_group) return
 
-		const selected_value_set = new Set(selected_values)
 		const group_values = options
-			.filter(option => selected_value_set.has(option.value))
+			.filter(option => selected_values.has(option.value))
 			.map(option => option.value)
 
 		groups = groups
 			.map((group, group_index) =>
 				group_index === target_group_index
-					? [...group.filter(value => !selected_value_set.has(value)), ...group_values]
-					: group.filter(value => !selected_value_set.has(value)),
+					? [...group.filter(value => !selected_values.has(value)), ...group_values]
+					: group.filter(value => !selected_values.has(value)),
 			)
 			.filter(group => group.length > 0)
-		selected_values = []
+		selected_values.clear()
 	}
 
 	const ungroup_selected = (): void => {
-		if (selected_values.length === 0) return
+		if (selected_values.size === 0) return
 
-		const selected_value_set = new Set(selected_values)
 		groups = groups
-			.map(group => group.filter(value => !selected_value_set.has(value)))
+			.map(group => group.filter(value => !selected_values.has(value)))
 			.filter(group => group.length > 0)
-		selected_values = []
+		selected_values.clear()
 	}
 </script>
 
@@ -87,7 +84,7 @@
 					<label class="cursor-pointer justify-start text-xs">
 						<input
 							type="checkbox"
-							checked={selected_values.includes(option.value)}
+							checked={selected_values.has(option.value)}
 							onchange={event =>
 								toggle_selected({ value: option.value, is_selected: event.currentTarget.checked })}
 							class="checkbox checkbox-sm"

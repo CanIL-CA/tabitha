@@ -1,21 +1,15 @@
 import { addIcon } from '@iconify/svelte'
+import { online } from 'svelte/reactivity/window'
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine
+// `online.current` is undefined on the server, so nothing renders as offline there.
 class NetworkState {
-	is_offline = $state(false)
+	get is_offline() {
+		return online.current === false
+	}
 }
 
 export const network_state = new NetworkState()
-
-if (typeof window !== 'undefined') {
-	network_state.is_offline = !navigator.onLine
-	window.addEventListener('offline', () => {
-		network_state.is_offline = true
-	})
-	window.addEventListener('online', () => {
-		network_state.is_offline = false
-	})
-}
 
 // Registered locally, not fetched from Iconify's API on demand: this icon must render
 // even while offline, which is exactly when the default network lookup would fail.
