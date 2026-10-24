@@ -40,15 +40,14 @@ export function create_targets_client(options: TargetsClientOptions) {
 		 * Retrieve full source and lexical features for a target project.
 		 */
 		async lookup_features({ project, category }: { project: string, category?: string }): Promise<TargetFeatureResult | null> {
-			const params = category ? `?${new URLSearchParams({ category }).toString()}` : ''
-			return http.get<TargetFeatureResult>(`/${project}/lookup/features${params}`)
+			return http.get<TargetFeatureResult>(`/${project}/lookup/features`, { params: { category: category || undefined } })
 		},
 
 		/**
 		 * Search lexical forms and inflections for a word token in a target language project.
 		 */
 		async lookup_forms({ word, project }: { word: string, project: string }): Promise<TargetFormResult[]> {
-			return await http.get<TargetFormResult[]>(`/${project}/lookup/forms?word=${encodeURIComponent(word)}`) ?? []
+			return await http.get<TargetFormResult[]>(`/${project}/lookup/forms`, { params: { word } }) ?? []
 		},
 
 		/**
