@@ -9,6 +9,7 @@
 	import { set_remove_auto_fix } from '#lib/tokens/auto_fix_context.js'
 	import Icon from '@iconify/svelte'
 
+	let textarea: HTMLTextAreaElement
 	let entered_text = $state(save_state.value)
 	let checking = $state(false)
 	let check_response = $state<EditorCheckResult>({
@@ -42,12 +43,14 @@
 	function clear() {
 		entered_text = ''
 		check_response = { status: 'ok', tokens: [], back_translation: '' }
+		textarea.focus()
 	}
 </script>
 
 <form onsubmit={submit_check} class="grid justify-items-center">
 	<!-- svelte-ignore a11y_autofocus -->
 	<textarea
+		bind:this={textarea}
 		bind:value={entered_text}
 		onkeydown={submit_on_shortcut}
 		rows="5"
