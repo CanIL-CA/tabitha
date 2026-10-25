@@ -2,7 +2,7 @@
 
 > **This is thinking out loud, not a plan of record.** It is an attempt to find the discrete problems in moving TBTA toward TaBiThA and describe each one clearly enough to discuss. Nothing here is scheduled, assigned, or agreed beyond the few things marked as decided.
 
-Working sketch · September 2026
+Working sketch · September 2026, status refreshed October 24, 2026
 
 ---
 
@@ -266,7 +266,7 @@ flowchart LR
 
 **Done.** `main` renamed to `classic`, then `wip/refactor` renamed to `main`. The default branch is confirmed as the new `main`, and the release workflow is retargeted to it.
 
-*We would know this worked if* a release builds from the new trunk without anyone hand-delivering it. **Not yet proven** — the workflow has five successful runs, but all of them predate the rename, built from the old `wip/refactor` name. Nobody has triggered it since. Worth doing once, deliberately, to confirm nothing about the rename — paths, branch protection, permissions — broke it silently.
+*We would know this worked if* a release builds from the new trunk without anyone hand-delivering it. **Proven as of October 24** — the Release workflow has succeeded on `main` twice since the rename (September 30 and October 14), so the paths, branch protection and permissions held. It has also been run from a `workflow-development` branch (successful on October 16 and 19, after several failures on the 16th), which is where the workflow itself is being changed.
 
 <details>
 <summary>Sweep afterwards</summary>
@@ -280,6 +280,8 @@ flowchart LR
 Regenerate every verse in every target language from desktop TBTA as golden output, run the same corpus through WebAssembly, and diff.
 
 *We would know this worked if* desktop and browser output match across the full corpus, unattended.
+
+**Half exists as of October 24.** The `Test Generation` workflow in the `tbta` repo runs on every pull request to `main`. It builds the desktop application on Windows, regenerates every verse for English, Indonesian and Tagalog, and fails if anything differs from a baseline database kept in R2 (`db-classic/baseline`). Swahili is commented out in the matrix, with a note that it needs upgrading first. What is missing is the WebAssembly side: nothing yet runs the same corpus through the browser build and diffs it against that baseline. Languages without a baseline, Russian among them, have no golden output to compare to at all.
 
 <details>
 <summary>Why this one carries so much weight</summary>
@@ -354,4 +356,4 @@ Wherever it lands, the tree editor over `InputStructures` is the most demanding 
 
 ---
 
-*Notes, not a commitment. Sizes, branch positions and code measurements come from the `tbta` and `tabitha` repositories and will drift — most were checked in early September 2026, branch state on the 11th. Anything not verified against the repos is flagged where it appears.*
+*Notes, not a commitment. Sizes, branch positions and code measurements come from the `tbta` and `tabitha` repositories and will drift — most were checked in early September 2026, branch state on the 11th. Only the release-workflow and parity-harness status above were rechecked on October 24, 2026. Anything not verified against the repos is flagged where it appears.*
