@@ -1,8 +1,8 @@
 import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
 import { create_ontology_client } from '@tabitha/api-client'
-import type { OntologyResult, ConceptKey } from '@tabitha/types'
+import type { OntologyResult, ConceptKey, SourceEntity } from '@tabitha/types'
 
-const client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST, cache: true })
+const client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST })
 
 export function create_fallback_ontology_data(concept: ConceptKey): OntologyResult {
 	return {
@@ -30,5 +30,26 @@ export async function fetch_all_concepts_for_part_of_speech(part_of_speech: stri
 		return filtered
 	} catch {
 		return []
+	}
+}
+
+export function get_page_concepts(entities: SourceEntity[]): ConceptKey[] {
+	return entities
+		.flatMap(({ concept, pairing_concept }) => [concept, pairing_concept])
+		.filter(concept => concept !== null)
+}
+
+/**
+ * Looks up every concept on a page in one batched request, so the page's components only read
+ * the result. A failed lookup degrades to an empty map, and components show fallback data.
+ */
+export async function fetch_ontology_data_for_all(entities: SourceEntity[]): Promise<Record<string, OntologyResult[]>> {
+	const stems = [...new Set(get_page_concepts(entities).map(({ stem }) => stem))]
+	if (!stems.length) return {}
+
+	try {
+		return await client.search_concepts_batch({ terms: stems })
+	} catch {
+		return {}
 	}
 }

@@ -4,6 +4,7 @@ import { select_pairing_sense, select_sense } from './sense_selection'
 import { get_adjective_case_frame_rules } from './adjectives/case_frames'
 import { get_verb_case_frame_rules, get_passive_verb_case_frame_rules } from './verbs/case_frames'
 import { get_adposition_case_frame_rules } from './adpositions/case_frames'
+import { get_conjunction_case_frame_rules } from './conjunctions/case_frames'
 import { initialize_case_frame_rules, check_case_frames, check_pairing_case_frames } from './common'
 import { fill_interrogative_gap, fill_relative_clause_gap, fill_same_subject_gap, handle_be_interrogative, restore_ghost_tokens } from './gap_handling'
 import type { Token } from '#lib/types.js'
@@ -59,6 +60,7 @@ const argument_and_sense_rules: BuiltInRule[] = [
 					['Verb', get_verb_case_frame_rules],
 					['Adjective', get_adjective_case_frame_rules],
 					['Adposition', get_adposition_case_frame_rules],
+					['Conjunction', get_conjunction_case_frame_rules],
 				])
 
 				const part_of_speech = trigger_context.trigger_token.lookup_results[0].part_of_speech
@@ -152,10 +154,10 @@ const argument_and_sense_rules: BuiltInRule[] = [
 		},
 	},
 	{
-		name: 'Adposition case frames',
+		name: 'Adposition/Conjunction case frames',
 		comment: "Need to do this after Adjectives and Verbs so that argument-related adpositions don't get checked.",
 		rule: {
-			trigger: create_token_filter({ 'category': 'Adposition' }),
+			trigger: create_token_filter({ 'category': 'Adposition|Conjunction' }),
 			context: create_context_filter({}),
 			action: simple_rule_action(check_case_frames),
 		},

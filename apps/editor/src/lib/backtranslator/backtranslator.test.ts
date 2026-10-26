@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { MESSAGE_TYPE, TOKEN_TYPE, create_token, create_added_token, create_gap_token, create_clause_token } from '#lib/token.js'
 import { tokenize_input } from '#lib/parser/tokenize.js'
 import { clausify } from '#lib/parser/clausify.js'
-import { RULES, rules_applier } from '#lib/rules/index.js'
+import { RULES, apply_rules } from '#lib/rules/index.js'
 import type { Sentence } from '#lib/types.js'
 
 /**
@@ -42,7 +42,7 @@ describe('textify', () => {
 		const expected = '(poetry-begin) John will take away those things from Mary Jane . (poetry-end) Book 5 : 2 - 3 .'
 
 		// apply the syntax rules so the verse reference gets handled correctly
-		const result = textify(rules_applier(RULES.SYNTAX)(clausify(test_tokens)))
+		const result = textify(apply_rules({ sentences: clausify(test_tokens), rules: RULES.SYNTAX }))
 		expect(result).toBe(expected)
 	})
 

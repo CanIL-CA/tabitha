@@ -10,6 +10,7 @@ export type WordStem = string
 export type ArgumentRoleRule = {
 	role_tag: RoleTag
 	// if the trigger rule is relative to the trigger word, this index tells the rule which context index the argument is at
+	scope: 'clause' | 'relative_context' | 'self'
 	relative_context_index: number
 	trigger_rule: TokenRule
 	missing_message: string
@@ -49,7 +50,8 @@ export type RoleUsageInfo = {
 export type RoleMatchResult = {
 	role_tag: RoleTag
 	success: boolean
-	trigger_context: RuleTriggerContext
+	// one per argument token, to handle coordinated noun or clause arguments
+	trigger_contexts: RuleTriggerContext[]
 	rule: ArgumentRoleRule
 }
 
@@ -63,6 +65,7 @@ export type CaseFrameResult = {
 export type CaseFrameRuleJson = TransformRuleJson & {
 	tag_role?: boolean
 	main_word_tag?: Tag
+	check_self?: boolean
 	argument_context_index?: number
 	missing_message?: string
 	extra_message?: string
@@ -93,6 +96,7 @@ export type AdjectiveRoleTag =
 	| 'patient_clause_same_participant'
 
 export type AdpositionRoleTag = 'opening_subordinate_clause' | 'in_noun_phrase'
+export type ConjunctionRoleTag = 'opening_clause' | 'in_noun_phrase' | 'in_adjective_phrase' | 'in_adverb_phrase'
 export type OtherRoleTag = RoleTag
 
 export type SenseRuleJsonBase = {

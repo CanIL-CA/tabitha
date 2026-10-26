@@ -31,11 +31,8 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 		['Participant Tracking', [
 			['Routine', { }],
-			['First Mention', {
+			['First of Multiple Mentions', {
 				'context': { 'precededby': { 'tag': { 'determiner': 'indefinite_article' }, 'skip': 'np_modifiers' } },
-			}],
-			['Generic', {
-				'context': { 'followedby': { 'token': '_generic' } },
 			}],
 			['Frame Inferable', {
 				'context': { 'followedby': { 'token': '_frameInferable' } },
@@ -57,6 +54,18 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			}],
 			['Contextually Near', {
 				'context': { 'precededby': { 'tag': { 'determiner': 'remote_demonstrative' }, 'skip': 'np_modifiers' } },
+			}],
+		]],
+		['Specificity', [
+			['Specific', { }],
+			['Non-specific', {
+				'trigger': { 'tag': { 'specificity': 'non_specific' } },
+			}],
+			['Not Applicable', {
+				'trigger': { 'tag': { 'specificity': 'not_applicable' } },
+			}],
+			['Generic', {
+				'context': { 'followedby': { 'token': '_generic' } },
 			}],
 		]],
 		['Person', [
@@ -222,203 +231,155 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 	'Adposition': [],
 	'Conjunction': [
 		['Implicit', [
-			['No', { }],
-			['Yes', {
-				'context': { 'followedby': { 'token': '_implicit' } },
-			}],
+			['Yes', by_tag('implicit')],
 		]],
 	],
 	'Noun Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Semantic Role', [
-			['Not Applicable', { }],
-			['Most Agent-like', {
-				'trigger': { 'tag': { 'role': 'agent' } },
-			}],
-			['Most Patient-like', {
-				'trigger': { 'tag': { 'role': 'patient' } },
-			}],
-			['State', {
-				'trigger': { 'tag': { 'role': 'state' } },
-			}],
-			['Source', {
-				'trigger': { 'tag': { 'role': 'source' } },
-			}],
-			['Destination', {
-				'trigger': { 'tag': { 'role': 'destination' } },
-			}],
-			['Instrument', {
-				'trigger': { 'tag': { 'role': 'instrument' } },
-			}],
-			['Beneficiary', {
-				'trigger': { 'tag': { 'role': 'beneficiary' } },
-			}],
-			['Addressee', {
-				'trigger': { 'tag': { 'role': 'addressee' } },
-			}],
+			['Not Applicable', { }],	// 'Not Applicable' would not be selected as the 'default' value
+			['Most Agent-like', by_tag({ 'role': 'agent' })],
+			['Most Patient-like', by_tag({ 'role': 'patient' })],
+			['State', by_tag({ 'role': 'state' })],
+			['Source', by_tag({ 'role': 'source' })],
+			['Destination', by_tag({ 'role': 'destination' })],
+			['Instrument', by_tag({ 'role': 'instrument' })],
+			['Beneficiary', by_tag({ 'role': 'beneficiary' })],
+			['Addressee', by_tag({ 'role': 'addressee' })],
 		]],
 		['Implicit', [
-			// TODO this needs to be handled differently, since we need to know which Noun is the head of this NP
+			['Explanation of Name', by_tag({ 'implicit': 'explain_name' })],
+			['Optional Agent of Passive', by_tag({ 'implicit': 'optional_agent_of_passive' })],
+			['Implicit Phrase', by_tag({ 'implicit': 'implicit' })],
+			['Dynamic Expansion (Metonymy)', by_tag({ 'implicit': 'dynamic_expansion' })],
+			['Literal Expansion (Metonymy)', by_tag({ 'implicit': 'literal_expansion' })],
+			['Implicit but Necessary', by_tag({ 'implicit': 'implicit_necessary' })],
 		]],
 	],
 	'Verb Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Implicit', [
-			['No', { }],
-			['Yes', {
-				'context': {
-					'followedby': [
-						{ 'category': 'Verb', 'skip': 'vp_modifiers' },
-						{ 'token': '_implicit' },
-					],
-				},
-			}],
+			['Yes', by_tag('implicit')],
 		]],
 	],
 	'Adjective Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Usage', [
 			['Predicative', { }],
-			['Attributive', {
-				'trigger': { 'tag': { 'adj_usage': 'attributive' } },
-			}],
+			['Attributive', by_tag({ 'adj_usage': 'attributive' })],
 		]],
 		['Implicit', [
-			// TODO this needs to be handled differently, since we need to know which Adjective is the head of this AdjP
+			['Yes', by_tag('implicit')],
 		]],
 	],
 	'Adverb Phrase': [
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
+		]],
 		['Implicit', [
-			['No', { }],
-			['Yes', {
-				'context': {
-					'followedby': [
-						{ 'category': 'Adverb', 'skip': 'advp_modifiers' },
-						{ 'token': '_implicit' },
-					],
-				},
-			}],
+			['Yes', by_tag('implicit')],
 		]],
 	],
 	'Clause': [
 		['Type', [
-			['Independent', {
-				'trigger': { 'tag': { 'clause_type': 'main_clause' } },
-			}],
-			['Restrictive Thing Modifier (Relative Clause)', {
-				'trigger': { 'tag': { 'relative_clause': 'restrictive' } },
-			}],
-			['Descriptive Thing Modifier (Relative Clause)', {
-				'trigger': { 'tag': { 'relative_clause': 'descriptive' } },
-			}],
-			['Event Modifier (Adverbial Clause)', {
-				'trigger': { 'tag': { 'clause_type': 'adverbial_clause' } },
-			}],
-			['Agent (Subject Complement)', {
-				'trigger': { 'tag': { 'clause_type': 'agent_clause' } },
-			}],
-			['Patient (Object Complement)', {
-				'trigger': { 'tag': { 'clause_type': 'patient_clause_same_participant|patient_clause_different_participant|patient_clause_quote_begin' } },
-			}],
-			['Attributive Patient (Adjectival Object Complement)', {
-				'trigger': { 'tag': { 'role': 'adjective_clausal_argument' } },
-			}],
+			['Independent', by_tag({ 'clause_type': 'main_clause' })],
+			['Restrictive Thing Modifier (Relative Clause)', by_tag({ 'relative_clause': 'restrictive' })],
+			['Descriptive Thing Modifier (Relative Clause)', by_tag({ 'relative_clause': 'descriptive' })],
+			['Event Modifier (Adverbial Clause)', by_tag({ 'clause_type': 'adverbial_clause' })],
+			['Agent (Subject Complement)', by_tag({ 'clause_type': 'agent_clause' })],
+			['Patient (Object Complement)', by_tag({ 'clause_type': 'patient_clause_same_participant|patient_clause_different_participant|patient_clause_quote_begin' })],
+			['Attributive Patient (Adjectival Object Complement)', by_tag({ 'role': 'adjective_clausal_argument' })],
 		]],
 		['Illocutionary Force', [
 			['Declarative', { }],
-			['Imperative', {
-				'context': {
-					'subtokens': { 'token': '(imp)', 'skip': 'all' },
-				},
-			}],
-			['Content Interrogative', {
-				'trigger': { 'tag': { 'interrogative': 'content' } },
-			}],
-			['Yes-No Interrogative', {
-				'trigger': { 'tag': { 'interrogative': 'yes-no' } },
-			}],
-			["Suggestive 'let's'", {
-				'context': {
-					'subtokens': { 'token': '_suggestiveLets|(suggestivelets)', 'skip': 'all' },
-				},
-			}],
-			['Jussive', {
-				'context': {
-					'subtokens': { 'token': '_jussive|(jussive)', 'skip': 'all' },
-				},
-			}],
+			['Imperative', by_subtoken('(imp)')],
+			['Content Interrogative', by_tag({ 'interrogative': 'content' })],
+			['Yes-No Interrogative', by_tag({ 'interrogative': 'yes-no' })],
+			["Suggestive 'let's'", by_subtoken('_suggestiveLets|(suggestivelets)')],
+			['Jussive', by_subtoken('_jussive|(jussive)')],
 		]],
 		['Topic NP', [
 			['Most Agent-like', { }],
-			['Most Patient-like', {
-				'context': {
-					'subtokens': { 'tag': { 'auxiliary': 'passive' }, 'skip': 'all' },
-				},
-			}],
+			['Most Patient-like', by_subtoken_tag({ 'auxiliary': 'passive' })],
 		]],
 		['Salience Band', [
 			['Primary Storyline', { }],
-			['Backgrounded Actions', {
-				'context': {
-					'subtokens': [
-						{ 'tag': { 'time': 'past' }, 'skip': 'all' },
-						{ 'tag': { 'auxiliary': 'imperfective_aspect' }, 'skip': 'all' },
-					],
-				},
-			}],
-			['Flashback', {
-				'context': {
-					'subtokens': { 'tag': { 'auxiliary': 'flashback' }, 'skip': 'all' },
-				},
-			}],
+			['Backgrounded Actions', by_subtoken_tag({ 'time': 'past', 'auxiliary': 'imperfective_aspect' })],
+			['Flashback', by_subtoken_tag({ 'auxiliary': 'flashback' })],
 		]],
 		['Implicit Information', [
-			['Not Applicable', { }],
-			['Implicit Cultural Information', {
-				'context': {
-					'subtokens': { 'token': '(implicit-cultural)', 'skip': 'all' },
-				},
-			}],
-			['Implicit Situational Information', {
-				'context': {
-					'subtokens': { 'token': '(implicit-situational)', 'skip': 'all' },
-				},
-			}],
-			['Implicit Historical Information', {
-				'context': {
-					'subtokens': { 'token': '(implicit-historical)', 'skip': 'all' },
-				},
-			}],
-			['Implicit Background Information', {
-				'context': {
-					'subtokens': { 'token': '(implicit-background)', 'skip': 'all' },
-				},
-			}],
-			['Implicit Subactions', {
-				'context': {
-					'subtokens': { 'token': '(implicit-subaction)', 'skip': 'all' },
-				},
-			}],
-			['Implicit Argument', {
-				'context': {
-					'subtokens': { 'token': '(implicit-argument)', 'skip': 'all' },
-				},
-			}],
+			['Implicit Cultural Information', by_subtoken('(implicit-cultural)')],
+			['Implicit Situational Information', by_subtoken('(implicit-situational)')],
+			['Implicit Historical Information', by_subtoken('(implicit-historical)')],
+			['Implicit Background Information', by_subtoken('(implicit-background)')],
+			['Implicit Subactions', by_subtoken('(implicit-subaction)')],
+			['Implicit Argument', by_subtoken('(implicit-argument)')],
 		]],
 		['Location', [
-			// TODO
-			['Not Applicable', { }],
+			['Discourse Title', by_subtoken('(title)')],
+			['General Footnote', by_subtoken('(footnote)')],
 		]],
 		['Alternative Analysis', [
-			// TODO
-			['Not Applicable', { }],
+			['Primary Analysis', by_subtoken('(primary)')],
+			['First Alternative Analysis', by_subtoken('(alternate-1)')],
+			['Second Alternative Analysis', by_subtoken('(alternate-2)')],
+			['Third Alternative Analysis', by_subtoken('(alternate-3)')],
+			['Fourth Alternative Analysis', by_subtoken('(alternate-4)')],
+			['Fifth Alternative Analysis', by_subtoken('(alternate-5)')],
+			['Literal Alternate', by_subtoken('(literal)')],
+			['Dynamic Alternate', by_subtoken('(dynamic)')],
+			['Biblical Units', by_subtoken('(literalunits)')],
+			['Contemporary Units', by_subtoken('(modernunits)')],
 		]],
 		['Vocabulary Alternate', [
-			// TODO
-			['Not Applicable', { }],
+			['Single Sentence - Complex Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'complex&single' })],
+			['First Sentence - Complex Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'complex&first' })],
+			['Last Sentence - Complex Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'complex&last' })],
+			['Coordinate Sentence - Complex Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'complex&coordinate' })],
+			['Single Sentence - Simple Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'simple&single' })],
+			['First Sentence - Simple Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'simple&first' })],
+			['Last Sentence - Simple Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'simple&last' })],
+			['Coordinate Sentence - Simple Vocabulary Alternate', by_tag({ 'vocabulary_alternate': 'simple&coordinate' })],
 		]],
 		['Rhetorical Question', [
-			// TODO
 			['Not Applicable', { }],
+			['Content Rhetorical Question', by_subtoken('(rhetorical)')],
+			["Yes-No Question Expects 'No'", by_subtoken('(norhetorical)')],
+			["Persuasive Yes-No Question Expects 'Yes'", by_subtoken('(yesrhetorical)')],
+			['Equivalent Statement', by_subtoken('(statement)')],
+		]],
+		['Sequence', [
+			['First Coordinate', by_tag({ 'coordinate': 'first' })],
+			['Last Coordinate', by_tag({ 'coordinate': 'last' })],
+			['Coordinate', by_tag({ 'coordinate': 'coordinate' })],
 		]],
 	],
+}
+
+function by_subtoken(token: string): FeatureRuleJson {
+	return { 'context': { 'subtokens': { token, 'skip': 'all' } } }
+}
+
+function by_subtoken_tag(tag: Record<string, string>): FeatureRuleJson {
+	return { 'context': { 'subtokens': { tag, 'skip': 'all' } } }
+}
+
+function by_tag(tag: Record<string, string> | string): FeatureRuleJson {
+	return { 'trigger': { tag } }
 }
 
 const FEATURE_RULES_BY_CATEGORY: FeatureRulesByCategory = parse_all_feature_rules()

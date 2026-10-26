@@ -122,10 +122,10 @@ function simplify_tokens(sentences: Sentence[]): CheckerToken[] {
 		}
 
 		function simplify_argument_result(result: Record<RoleTag, string>, match: RoleMatchResult) {
-			const { trigger_token } = match.trigger_context
+			const argument_stems = match.trigger_contexts.map(({ trigger_token }) => trigger_token.lookup_results.at(0)?.stem ?? trigger_token.token)
 			return {
 				...result,
-				[match.role_tag]: trigger_token.lookup_results.at(0)?.stem ?? trigger_token.token,
+				[match.role_tag]: argument_stems.join(', '),
 			}
 		}
 	}

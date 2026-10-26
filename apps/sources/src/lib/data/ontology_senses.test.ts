@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConceptKey, OntologyResult } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
-import { find_sense, find_senses, get_page_concepts, group_senses_by_concept, load_ontology_senses } from './ontology_senses'
+import { find_sense, find_senses, group_senses_by_concept, load_ontology_senses } from './ontology_senses'
 
 function sense({ stem, sense = 'A', part_of_speech = 'Verb', gloss = '', status = 'in ontology' }: Partial<OntologyResult> & { stem: string }): OntologyResult {
 	return { stem, sense, part_of_speech, level: '1', gloss, categorization: '', categories: [], status, how_to_hints: [] }
@@ -54,17 +54,6 @@ describe('find_sense', () => {
 		const result = find_sense({ senses, concept: { stem: 'make', sense: 'Z', part_of_speech: 'Verb' } })
 
 		expect(result).toMatchObject({ stem: 'make', sense: 'Z', gloss: '', level: '' })
-	})
-})
-
-describe('get_page_concepts', () => {
-	it('collects concepts and pairing concepts, skipping entities without one', () => {
-		const make = { stem: 'make', sense: 'A', part_of_speech: 'Verb' } as const
-		const create = { stem: 'create', sense: 'A', part_of_speech: 'Verb' } as const
-
-		const result = get_page_concepts([entity({}), entity({ concept: make, pairing_concept: create }), entity({ concept: make })])
-
-		expect(result).toEqual([make, create, make])
 	})
 })
 

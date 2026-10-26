@@ -48,6 +48,9 @@ export function entityfy(sentences: Sentence[]): EditorAnalyzedEntity[] {
 			const noun_list_index = token.tag['noun_index']
 			return [create_source_entity({ category, features, concept, pairing_concept, pairing_type: token.pairing_type, noun_list_index })]
 
+		} else if (category === 'Format Marker') {
+			return [create_source_entity({ category, value: FORMAT_MARKERS[token.token] })]
+
 		} else {
 			return []
 		}
@@ -79,6 +82,15 @@ const PHRASE_CATEGORY_MAP: Record<string, SourceEntityCategory> = {
 	'AdvP': 'Adverb Phrase',
 }
 
+const FORMAT_MARKERS: Record<string, string> = {
+	'(paragraph)': 'Paragraph',
+	'_paragraph': 'Paragraph',
+	'(poetry-begin)': 'Poetry Begin',
+	'(poetry-end)': 'Poetry End',
+	'(begin-poetry)': 'Poetry Begin',
+	'(end-poetry)': 'Poetry End',
+}
+
 function get_token_category(token: Token): SourceEntityCategory | null {
 	if (token.type === TOKEN_TYPE.CLAUSE) {
 		return 'Clause'
@@ -89,6 +101,8 @@ function get_token_category(token: Token): SourceEntityCategory | null {
 		return ''
 	} else if (token.lookup_results.length) {
 		return token.lookup_results[0].part_of_speech
+	} else if (token.token in FORMAT_MARKERS) {
+		return 'Format Marker'
 	} else {
 		return null
 	}
