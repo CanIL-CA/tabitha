@@ -20,7 +20,7 @@
     "test:unit": "bun test"
   },
   "dependencies": {
-    "@inlang/paraglide-js": "^2.29.0"
+    "@inlang/paraglide-js": "^2.29.1"
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "^5.20261010.1",
