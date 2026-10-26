@@ -1,6 +1,6 @@
 import { create_context_filter, create_token_filter } from '#lib/rules/rules_parser.js'
 import type { Token } from '#lib/types.js'
-import type { SkipJson, TokenFilter, TokenFilterJsonBase } from '#lib/rules/types.js'
+import type { SkipJsonSingle, TokenFilter, TokenFilterJsonBase } from '#lib/rules/types.js'
 
 export type CoordinatePosition = 'first' | 'coordinate' | 'last'
 export type AlternateCoordinatePosition = CoordinatePosition | 'single'
@@ -19,7 +19,7 @@ type ConjunctKind = {
 type AdjacentConjunctFilters = {
 	is_conjunct: TokenFilterJsonBase
 	is_coordinator: TokenFilterJsonBase
-	skip: SkipJson
+	skip: SkipJsonSingle
 }
 
 const CONJUNCT_KINDS: ConjunctKind[] = [
@@ -59,11 +59,12 @@ const CONJUNCT_KINDS: ConjunctKind[] = [
  * eg in 'the king of Egypt, John, and many servants', the conjuncts adjacent to 'John' are 'king' and 'servants'
  */
 function create_word_conjunct_kind({ is_conjunct, is_coordinator, skip }: AdjacentConjunctFilters): ConjunctKind {
+	// there may be both a comma and a conjunction, but there has to be at least one of them
 	const following_context = create_context_filter({
-		'followedby': [{ ...is_coordinator, skip }, { ...is_conjunct, skip }],
+		'followedby': [{ ...is_coordinator, skip }, { ...is_conjunct, skip: [skip, is_coordinator] }],
 	})
 	const preceding_context = create_context_filter({
-		'precededby': [{ ...is_conjunct, skip }, { ...is_coordinator, skip }],
+		'precededby': [{ ...is_conjunct, skip: [skip, is_coordinator] }, { ...is_coordinator, skip }],
 	})
 	return {
 		is_conjunct: create_token_filter(is_conjunct),
