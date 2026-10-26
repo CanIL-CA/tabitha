@@ -100,6 +100,13 @@
 {/if}
 
 <div class="pt-5 w-full">
+	<section>
+		<a href="/protected/concept/create" class="btn">
+			<Icon icon="material-symbols:add" class="w-5 h-5" />
+			Add Concept
+		</a>
+	</section>
+
 	<div class="prose">
 		<h3>Changes</h3>
 	</div>

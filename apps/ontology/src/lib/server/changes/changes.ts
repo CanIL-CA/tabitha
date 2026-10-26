@@ -21,7 +21,7 @@ export async function get_all_changes(db: D1DatabaseSession): Promise<OntologyCh
 	const sql = `
 		SELECT *
 		FROM Changes
-		ORDER BY applied_date DESC NULLS FIRST, approved_date DESC NULLS FIRST
+		ORDER BY applied_date DESC NULLS FIRST, approved_date DESC NULLS FIRST, suggested_date DESC
 	`
 	const { results } = await db.prepare(sql).all<DbOntologyChange>()
 	return results.map(transform)
@@ -32,7 +32,7 @@ export async function get_pending_changes(db: D1DatabaseSession): Promise<Ontolo
 		SELECT *
 		FROM Changes
 		WHERE applied_date IS NULL
-		ORDER BY approved_date DESC NULLS FIRST
+		ORDER BY approved_date DESC NULLS FIRST, suggested_date DESC
 	`
 	const { results } = await db.prepare(sql).all<DbOntologyChange>()
 	return results.map(transform)
