@@ -17,7 +17,7 @@
     "test:unit:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@google/genai": "^2.30.0",
+    "@google/genai": "^2.31.0",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
     "@vitest/coverage-v8": "^5.0.5",

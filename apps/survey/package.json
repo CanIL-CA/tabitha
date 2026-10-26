@@ -36,7 +36,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261019.1",
+    "@cloudflare/workers-types": "^5.20261022.1",
     "@eslint/compat": "^2.1.1",
     "@iconify/svelte": "^5.2.2",
     "@sveltejs/adapter-cloudflare": "^8.0.1",
@@ -52,8 +52,8 @@
     "postcss": "^8.5.31",
     "svelte-check": "^4.7.7",
     "typescript": "^6.0.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "^5.0.5",
-    "wrangler": "^4.151.3"
+    "wrangler": "^4.152.0"
   }
 }

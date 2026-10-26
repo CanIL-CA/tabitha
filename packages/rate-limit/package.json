@@ -16,7 +16,7 @@
     "test:unit": "vitest run src"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261019.1",
+    "@cloudflare/workers-types": "^5.20261022.1",
     "@sveltejs/kit": "^3.1.0",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
