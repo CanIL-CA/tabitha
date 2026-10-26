@@ -13,7 +13,7 @@
 	let usages = $derived(usage_info[part_of_speech] || [])
 </script>
 
-<fieldset class="fieldset border border-base-300 rounded-box p-4">
+<fieldset class="fieldset border border-base-300 rounded-box p-4 gap-0">
 	<legend class="fieldset-legend font-semibold">Usage Info</legend>
 
 	{#each usages as usage, i}

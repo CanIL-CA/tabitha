@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 	import { Category } from '#lib/card/categorization/edit/index.js'
-	import { default_categories, levels, parts_of_speech } from '#lib/lookups.js'
+	import { default_categories, levels, parts_of_speech, level_gloss_labels } from '#lib/lookups.js'
 	import { create_fallback_concept } from '#lib/transformers.js'
 	import { get_next_sense } from '#lib/changes.js'
 	import Header from '#lib/card/Header.svelte'
@@ -19,6 +19,8 @@
 	// svelte-ignore state_referenced_locally
 	let concept_data = $state(data.concept_data)
 	let can_save = $derived(concept_data.stem && concept_data.sense && concept_data.part_of_speech)
+
+	let gloss_labels = $derived(level_gloss_labels[concept_data.level] ?? [])
 
 	let fetching_sense = $state(false)
 	let sense_lookup_timer: ReturnType<typeof setTimeout> | undefined
@@ -129,7 +131,7 @@
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Level</legend>
 					<select name="level" bind:value={concept_data.level} class="select select-bordered w-24">
-						{#each levels.keys() as level}
+						{#each levels.keys().filter(k => k !== '0') as level}
 							<option value={level}>{level}</option>
 						{/each}
 					</select>
@@ -146,13 +148,23 @@
 			<section class="flex flex-col gap-4">
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Gloss</legend>
-					<textarea name="gloss" bind:value={concept_data.gloss} class="textarea textarea-bordered field-sizing-content w-full" rows="2"></textarea>
+					{#if gloss_labels.length > 0}
+						<p class="label text-xs">
+							<span class="text-accent">Should start with a label appropriate for a level {concept_data.level} concept:</span>
+							<span class="font-semibold">{gloss_labels.join(', ')}</span>
+						</p>
+					{/if}
+					<textarea
+						name="gloss"
+						bind:value={concept_data.gloss}
+						placeholder="{gloss_labels.join('/')} ..."
+						class="textarea textarea-bordered field-sizing-content w-full" rows="2"></textarea>
 				</fieldset>
 
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Brief gloss</legend>
 					<input name="brief_gloss" bind:value={concept_data.brief_gloss} class="input input-bordered w-full max-w-md" />
-					<p class="label text-xs text-accent">optional - for stems with lots of senses</p>
+					<p class="label text-xs text-accent">optional - a one or two word description for stems with lots of senses</p>
 				</fieldset>
 			</section>
 
