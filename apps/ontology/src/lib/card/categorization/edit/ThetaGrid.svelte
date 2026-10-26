@@ -13,14 +13,14 @@
 <fieldset class="fieldset border border-base-300 rounded-box p-4">
 	<legend class="fieldset-legend font-semibold">Theta Grid</legend>
 
-	<table>
+	<table class="table">
 		<tbody>
 			{#each theta_grid_arguments as argument, i}
 				<tr>
-					<td>
+					<td class="w-45 py-1">
 						{argument}
 					</td>
-					<td class="pl-4">
+					<td class="pl-4 py-1">
 						<select bind:value={categories[i]} name="categories[]" class="select w-35">
 							<option value="">---</option>
 							<option value={argument}>Required</option>

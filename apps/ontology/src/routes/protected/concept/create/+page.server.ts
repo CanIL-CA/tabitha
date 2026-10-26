@@ -9,7 +9,7 @@ export async function load() {
 		stem: '',
 		sense: '',
 		part_of_speech: 'Noun',
-		level: '0',
+		level: '1',
 		gloss: '',
 		brief_gloss: '',
 		categories: default_categories.Noun?.slice() ?? [],

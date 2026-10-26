@@ -204,6 +204,14 @@ export const levels = new Map<string, string>([
 	['4', 'Inexplicable'],
 ])
 
+export const level_gloss_labels: Record<string, string[]> = {
+	'0': ['(universal primitive)'],
+	'1': ['(simple)', '(LDV)'],
+	'2': ['(complex)'],
+	'3': ['(complex alternate)'],
+	'4': ['(proper name)', '(inexplicable)', '(key term)', '(biblical unit)'],
+}
+
 export const parts_of_speech: PartOfSpeech[] = ['Noun', 'Verb', 'Adjective', 'Adverb', 'Adposition', 'Conjunction', 'Particle', 'Phrasal']
 
 export const curated_example_category_codes: Record<string, string> = {
