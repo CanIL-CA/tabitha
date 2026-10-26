@@ -5,6 +5,7 @@
 	import { testament } from '@tabitha/types/patterns'
 	import BibleFilter from './BibleFilter.svelte'
 	import Filter from './Filter.svelte'
+	import { filter_description } from './filter_descriptions'
 	import type { Concept, FilterMap, Option } from '#lib/types.js'
 	import type { ContextArgumentName, ConceptExample } from '@tabitha/types'
 
@@ -49,7 +50,7 @@
 </script>
 
 <section class="flex flex-col">
-	<form class="flex gap-4 bg-info text-info-content px-4 pt-2 pb-3.5 overflow-x-auto rounded-box">
+	<form class="flex flex-wrap gap-x-4 bg-info text-info-content px-4 pt-2 pb-3.5 rounded-box">
 		{#each filters as [name, options]}
 			{#if name === 'Book'}
 				<BibleFilter
@@ -60,6 +61,7 @@
 			{:else}
 				<Filter
 					{name}
+					description={filter_description({ part_of_speech: concept.part_of_speech, name })}
 					{options}
 					selected={selected_filters.get(name)}
 					onselect={option => selected_filters.set(name, option)}
