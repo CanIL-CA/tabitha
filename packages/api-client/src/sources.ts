@@ -49,8 +49,9 @@ export function create_sources_client(options: SourcesClientOptions) {
 		 * Retrieve simplified JSON encoding for a verse, optionally including glosses.
 		 */
 		async get_simplified_json({ ref, include_glosses } : { ref: Reference, include_glosses?: boolean }): Promise<SourceSimpleJsonResult | null> {
-			const query = include_glosses ? '?glosses=true' : ''
-			return http.get<SourceSimpleJsonResult>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}/simple-json${query}`)
+			return http.get<SourceSimpleJsonResult>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}/simple-json`, {
+				params: { glosses: include_glosses ? 'true' : undefined },
+			})
 		},
 
 		/**
@@ -117,7 +118,7 @@ export function create_sources_client(options: SourcesClientOptions) {
 		 * Parse phase 1 text into source entities.
 		 */
 		async analyze_text(text: string): Promise<AnalysisResult | null> {
-			return await http.get<AnalysisResult>(`/analyze?${new URLSearchParams({ text: sanitize_input_whitespace(text) })}`)
+			return await http.get<AnalysisResult>('/analyze', { params: { text: sanitize_input_whitespace(text) } })
 		},
 	}
 }

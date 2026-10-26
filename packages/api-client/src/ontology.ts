@@ -28,12 +28,10 @@ export function create_ontology_client(options: OntologyClientOptions) {
 		 * Search ontology concepts by text query, part-of-speech category, or scope.
 		 */
 		async search_concepts(filter: Partial<ConceptSearchFilter>): Promise<OntologyResult[]> {
-			const params = new URLSearchParams()
-			if (filter.q) params.set('q', filter.q)
-			if (filter.category) params.set('category', filter.category)
-			if (filter.scope) params.set('scope', filter.scope)
-
-			return await http.get<OntologyResult[]>(`/search?${params.toString()}`) ?? []
+			const { q, category, scope } = filter
+			return await http.get<OntologyResult[]>('/search', {
+				params: { q: q || undefined, category: category || undefined, scope: scope || undefined },
+			}) ?? []
 		},
 
 		/**
@@ -64,7 +62,9 @@ export function create_ontology_client(options: OntologyClientOptions) {
 		 * Retrieve the source-text examples where a concept is used.
 		 */
 		async get_examples({ concept: { stem, sense, part_of_speech }, source }: { concept: ConceptKey, source: string }): Promise<ConceptExample[] | null> {
-			return await http.get<ConceptExample[]>(`/examples?concept=${stem}-${sense}&part_of_speech=${part_of_speech}&source=${source}`)
+			return await http.get<ConceptExample[]>('/examples', {
+				params: { concept: `${stem}-${sense}`, part_of_speech, source },
+			})
 		},
 	}
 }
