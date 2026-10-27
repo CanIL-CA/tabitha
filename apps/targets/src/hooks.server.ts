@@ -1,6 +1,7 @@
 import { building } from '$app/env'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED } from '$app/env/public'
 import { create_cors_handle } from '@tabitha/cors'
+import { with_timeout } from '@tabitha/d1'
 import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import type { TargetProject } from '@tabitha/types/target'
@@ -21,7 +22,7 @@ const db_config_handle: Handle = async function db_config_handle({ event, resolv
 			throw new Error(`database missing from env for project "${project}" (expected binding "${binding}")`)
 		}
 
-		event.locals.db = db?.withSession()
+		event.locals.db = db && with_timeout({ db: db.withSession() })
 	}
 
 	return resolve(event)
