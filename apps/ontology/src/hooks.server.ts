@@ -1,8 +1,9 @@
 import { BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$app/env/private'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE_BINDINGS_DISABLED, PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
-import { building } from '$app/env'
+import { building, version } from '$app/env'
 import { get_user_info } from '#lib/server/auth.js'
 import { create_auth, type Auth } from '#lib/server/better_auth.js'
+import { bookmark_cookie, read_bookmark } from '#lib/server/d1_bookmark.js'
 import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
 import { with_timeout } from '@tabitha/d1'
@@ -31,16 +32,38 @@ const rate_limit_handle = create_rate_limit_handle({
 	disabled: Boolean(PUBLIC_RATE_LIMIT_DISABLED),
 })
 
+// With D1 read replication, each request starts from the browser's last bookmark, so it reads a
+// replica at least as new as anything that browser saw or saved before, such as an editor's own edit.
+// https://developers.cloudflare.com/d1/best-practices/read-replication/#start-a-session-from-previous-context-bookmark
+const D1_BOOKMARK_COOKIE = 'd1_bookmark'
+
 const db_config_handle: Handle = async function db_config_handle({ event, resolve }) {
 	if (!env.DB_Ontology) {
 		console.error('Database binding DB_Ontology is missing from env.')
 		throw error(500, 'Database configuration error: DB_Ontology binding is missing.')
 	}
 
-	event.locals.db_ontology = with_timeout({ db: env.DB_Ontology.withSession() })
+	const saved_bookmark = read_bookmark({ cookie: event.cookies.get(D1_BOOKMARK_COOKIE), build: version })
+	const ontology_session = env.DB_Ontology.withSession(saved_bookmark)
+	event.locals.db_ontology = with_timeout({ db: ontology_session })
 	event.locals.db_auth = with_timeout({ db: env.DB_Auth.withSession() })
 
-	return resolve(event)
+	const response = await resolve(event)
+
+	// cookies.set() is closed once resolve() has built the response, and the bookmark is only final now.
+	// A failed request drops the bookmark, in case D1 rejected it (e.g. after a Time Travel restore),
+	// so the next request starts fresh instead of failing the same way.
+	if (saved_bookmark && response.status >= 500) {
+		response.headers.append('set-cookie', event.cookies.serialize(D1_BOOKMARK_COOKIE, '', { path: '/', maxAge: 0 }))
+		return response
+	}
+
+	const bookmark = ontology_session.getBookmark()
+	if (bookmark && bookmark !== saved_bookmark) {
+		response.headers.append('set-cookie', event.cookies.serialize(D1_BOOKMARK_COOKIE, bookmark_cookie({ bookmark, build: version }), { path: '/' }))
+	}
+
+	return response
 }
 
 // Bindings and secrets only exist per request, so the instance is built on the first one and reused
