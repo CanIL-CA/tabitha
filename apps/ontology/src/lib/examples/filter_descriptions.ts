@@ -57,8 +57,8 @@ const DESCRIPTIONS_BY_PART_OF_SPEECH: Record<string, Descriptions> = {
 		'Noun': 'The head noun of the phrase this adposition is directly in.',
 		'Verb': 'The verb of the clause this adposition is in.',
 		'Adjective': 'The head adjective of the phrase this adposition is in.',
-		'Outer Noun': `The head noun of the noun phrase that directly contains the phrase that the adposition is in. Mostly for genitives, e.g. "king" in "the king of Israel".`,
-		'Outer Adjective': "The head adjective of the adjective phrase that directly contains the phrase that the adposition is in.",
+		'Outer Noun': 'The head noun of the noun phrase that directly contains the phrase that the adposition is in. Mostly for genitives, e.g. "king" in "the king of Israel".',
+		'Outer Adjective': 'The head adjective of the adjective phrase that directly contains the phrase that the adposition is in.',
 	},
 }
 
