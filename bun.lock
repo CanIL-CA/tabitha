@@ -104,6 +104,7 @@
         "@tabitha/api-client": "workspace:*",
         "@tabitha/complex-terms": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/d1": "workspace:*",
         "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/service-worker": "workspace:*",
@@ -158,6 +159,7 @@
       "dependencies": {
         "@tabitha/api-client": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/d1": "workspace:*",
         "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/service-worker": "workspace:*",
@@ -195,6 +197,7 @@
       "name": "@tabitha/survey",
       "version": "1.0.0",
       "dependencies": {
+        "@tabitha/d1": "workspace:*",
         "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/types": "workspace:*",
@@ -232,6 +235,7 @@
       "dependencies": {
         "@tabitha/api-client": "workspace:*",
         "@tabitha/cors": "workspace:*",
+        "@tabitha/d1": "workspace:*",
         "@tabitha/noindex": "workspace:*",
         "@tabitha/rate-limit": "workspace:*",
         "@tabitha/service-worker": "workspace:*",
@@ -342,6 +346,18 @@
       "version": "1.0.0",
       "devDependencies": {
         "@sveltejs/kit": "^3.1.0",
+        "@tabitha/eslint-config": "workspace:*",
+        "@tabitha/tsconfig": "workspace:*",
+        "eslint": "^10.13.0",
+        "typescript": "^6.0.3",
+        "vitest": "^5.0.5",
+      },
+    },
+    "packages/d1": {
+      "name": "@tabitha/d1",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20261019.1",
         "@tabitha/eslint-config": "workspace:*",
         "@tabitha/tsconfig": "workspace:*",
         "eslint": "^10.13.0",
@@ -998,6 +1014,8 @@
     "@tabitha/copilot": ["@tabitha/copilot@workspace:apps/copilot"],
 
     "@tabitha/cors": ["@tabitha/cors@workspace:packages/cors"],
+
+    "@tabitha/d1": ["@tabitha/d1@workspace:packages/d1"],
 
     "@tabitha/databases": ["@tabitha/databases@workspace:tools/databases"],
 

@@ -1,6 +1,7 @@
 import { sync_complex_terms } from './complex_terms'
 import { create_concept_embedder, sync_concept_embeddings, type ConceptIndex, type GatewayEnv } from './concept_embeddings'
 import { get_all_concepts } from './ontology'
+import { with_timeout } from '@tabitha/d1'
 import type { D1Database } from '@cloudflare/workers-types'
 
 type ScheduledSyncEnv = GatewayEnv & {
@@ -26,7 +27,8 @@ type SchedulerAuthorizationOptions = {
  * ontology -- but still run if that sync fails, since approved concept edits need embedding either way.
  */
 export async function run_scheduled_sync(env: ScheduledSyncEnv): Promise<ScheduledSyncSummary> {
-	const db = env.DB_Ontology.withSession()
+	// Longer than a page request's: D1 lets one query or batch run 30 s and retries failed reads
+	const db = with_timeout({ db: env.DB_Ontology.withSession(), timeout_ms: 60_000 })
 	const complex_terms = await sync_complex_terms(db).catch((error: unknown) => error)
 
 	const embeddings = await sync_concept_embeddings({

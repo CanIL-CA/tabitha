@@ -37,11 +37,20 @@ Guidelines for developing, deploying, and maintaining Cloudflare Workers, D1 SQL
 ### Session Consistency & Bookmarking (`withSession`)
 When performing sequential read-after-write operations across distributed edge nodes, use D1 Sessions to guarantee monotonic read consistency:
 ```typescript
-const session = db.withSession(token)
+const session = db.withSession(bookmark ?? 'first-unconstrained')
 const result = await session.prepare('SELECT ...').all()
-const next_token = session.latestCommitToken
+const next_bookmark = session.getBookmark()
 ```
-Ensure `"placement": { "mode": "off" }` in `wrangler.jsonc` when utilizing session tokens.
+Sessions work whether or not the database has read replication enabled, and with any Worker `placement` mode.
+
+### Timeouts on every D1 handle (`@tabitha/d1`)
+D1 calls take no `AbortSignal`, and a request waiting on one can hang for minutes. Wrap every binding or session before handing it to app code, so a stuck query fails with an error instead:
+```typescript
+import { with_timeout } from '@tabitha/d1'
+
+event.locals.db = with_timeout({ db: env.DB_Sources.withSession() })
+```
+The default is `DEFAULT_D1_TIMEOUT_MS` (15 s). Pass `timeout_ms` only for background work such as a scheduled sync.
 
 ---
 

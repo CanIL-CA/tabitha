@@ -26,6 +26,7 @@
     "clean:powerwash": "(bun run clean:svelte & bun run clean:deps) && bun install"
   },
   "dependencies": {
+    "@tabitha/d1": "workspace:*",
     "@tabitha/noindex": "workspace:*",
     "@tabitha/rate-limit": "workspace:*",
     "@tabitha/types": "workspace:*",

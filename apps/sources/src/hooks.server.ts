@@ -2,6 +2,7 @@ import { building } from '$app/env'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_ONTOLOGY_API_HOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE_BINDINGS_DISABLED, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
+import { with_timeout } from '@tabitha/d1'
 import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import { sequence, type Handle } from '@sveltejs/kit/hooks'
@@ -26,7 +27,7 @@ const db_config_handle: Handle = async function db_config_handle({ event, resolv
 	}
 
 	// putting it on `locals` to clean up usage in routes
-	event.locals.db = env.DB_Sources?.withSession()
+	event.locals.db = env.DB_Sources && with_timeout({ db: env.DB_Sources.withSession() })
 
 	return resolve(event)
 }
