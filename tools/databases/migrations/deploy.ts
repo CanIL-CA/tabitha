@@ -19,6 +19,14 @@ const APP_BY_FAMILY: Record<TaskFamily, string> = {
  */
 const PREVIEW_COPY_BINDINGS = new Set(['DB_Ontology'])
 
+/**
+ * Bindings whose apps only read, so D1 read replicas near each visitor can't show anyone a stale
+ * view of their own write. Ontology stays off until its writes carry a bookmark into the next
+ * request. A new database starts with replication disabled, so every deploy has to turn it on.
+ * https://developers.cloudflare.com/d1/best-practices/read-replication/
+ */
+const READ_REPLICATED_BINDINGS = new Set(['DB_Sources'])
+
 type D1Database = {
 	readonly uuid: string
 	readonly name: string
@@ -48,6 +56,10 @@ export async function deploy_to_d1({ task, dump_file, date }: DeployOptions): Pr
 	// known status immediately so a new deploy never regresses to stale/no status.
 	if (task.family === 'Sources') {
 		await apply_status_to_d1({ d1_database_name: database_name, csv_dir: join(import.meta.dir, '../data/status'), date })
+	}
+
+	if (READ_REPLICATED_BINDINGS.has(binding)) {
+		await enable_read_replication(database)
 	}
 
 	const preview_database = PREVIEW_COPY_BINDINGS.has(binding)
@@ -89,6 +101,34 @@ export function preview_database_name(database_name: string): string {
 	const dated = database_name.match(/^(.*)(_\d{4}-\d{2}-\d{2})$/)
 	if (!dated) throw new Error(`Expected a date-stamped database name, got "${database_name}".`)
 	return `${dated[1]}_preview${dated[2]}`
+}
+
+type CloudflareResponse = {
+	success: boolean
+	errors: { message: string }[]
+}
+
+/**
+ * wrangler has no command for this setting, so it goes through the REST API, with whichever token
+ * wrangler itself is using (`wrangler login` or CLOUDFLARE_API_TOKEN).
+ */
+async function enable_read_replication(database: D1Database): Promise<void> {
+	const { CLOUDFLARE_ACCOUNT_ID } = process.env
+	if (!CLOUDFLARE_ACCOUNT_ID) {
+		throw new Error('CLOUDFLARE_ACCOUNT_ID must be set (tools/databases/.env) to enable D1 read replication.')
+	}
+
+	log.step(`Enabling read replication on ${database.name}...`)
+	const { token } = await $`bun wrangler auth token --json`.quiet().json() as { token: string }
+	const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database/${database.uuid}`, {
+		method: 'PUT',
+		headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+		body: JSON.stringify({ read_replication: { mode: 'auto' } }),
+	})
+	const body = await response.json() as CloudflareResponse
+	if (!body.success) {
+		throw new Error(`Enabling read replication on ${database.name} failed: ${body.errors.map(error => error.message).join('; ')}`)
+	}
 }
 
 async function find_d1_database(name: string): Promise<D1Database | undefined> {
