@@ -3,7 +3,8 @@
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 	import { Category } from '#lib/card/categorization/edit/index.js'
-	import { levels, level_gloss_labels } from '#lib/lookups.js'
+	import { levels } from '#lib/lookups.js'
+	import { level_gloss_labels, apply_gloss_label, relabel_gloss_for_level } from '#lib/gloss_labels.js'
 	import { create_fallback_concept } from '#lib/transformers.js'
 	import Header from '#lib/card/Header.svelte'
 	import { Toast } from '@tabitha/ui'
@@ -37,6 +38,15 @@
 
 	function deep_equal({ obj1, obj2 }: { obj1: ConceptUpdateData, obj2: ConceptUpdateData }): boolean {
 		return JSON.stringify(obj1) === JSON.stringify(obj2)
+	}
+
+	function set_level(level: string) {
+		concept_data.level = level
+		concept_data.gloss = relabel_gloss_for_level({ gloss: concept_data.gloss, level })
+	}
+
+	function set_gloss_label(label: string) {
+		concept_data.gloss = apply_gloss_label({ gloss: concept_data.gloss, label })
 	}
 
 	function dismiss_toast() {
@@ -89,8 +99,8 @@
 			<section class="flex flex-col gap-4">
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Level</legend>
-					<select name="level" bind:value={concept_data.level} class="select select-bordered w-24">
-						{#each levels.keys() as level}
+					<select name="level" bind:value={() => concept_data.level, set_level} class="select select-bordered w-24">
+						{#each levels.keys().filter(k => k !== '0') as level}
 							<option value={level}>{level}</option>
 						{/each}
 					</select>
@@ -99,10 +109,18 @@
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Gloss</legend>
 					{#if gloss_labels.length > 0}
-						<p class="label text-xs">
-							<span class="text-accent">Should start with a label appropriate for a level {concept_data.level} concept:</span>
-							<span class="font-semibold">{gloss_labels.join(', ')}</span>
-						</p>
+						<div class="flex flex-wrap items-center gap-2">
+							<span class="label text-xs text-accent">Should start with a label appropriate for a level {concept_data.level} concept:</span>
+							{#each gloss_labels as label}
+								<button
+									type="button"
+									onclick={() => set_gloss_label(label)}
+									class={['btn btn-xs', concept_data.gloss.startsWith(label) ? 'btn-accent' : 'btn-outline']}
+								>
+									{label}
+								</button>
+							{/each}
+						</div>
 					{/if}
 					<textarea name="gloss" bind:value={concept_data.gloss} class="textarea textarea-bordered field-sizing-content w-full" rows="2"></textarea>
 				</fieldset>
