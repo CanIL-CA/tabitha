@@ -92,10 +92,12 @@
 			"dataset": "tabitha_usage"
 		}
 	],
+	// Lets Cloudflare run the Worker near its D1 primaries (ENAM) instead of at the visitor's edge.
+	// D1 read replication is disabled, so every query goes to the primary anyway, and withSession()
+	// works without replicas.
+	// https://developers.cloudflare.com/workers/configuration/placement/
 	"placement": {
-		// Necessary to support D1 withSession() bookmarking and edge proximity routing
-		// https://developers.cloudflare.com/d1/concepts/sessions/
-		"mode": "off"
+		"mode": "smart"
 	},
 	// Per-PR Worker Previews, served at `pr-<N>.ontology.tabitha.bible`. CI's preview_deploy job creates
 	// them with `wrangler preview --name pr-<N>` (docs/decisions/0020-per-pr-worker-previews.md).
