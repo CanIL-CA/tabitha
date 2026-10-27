@@ -20,12 +20,13 @@ const APP_BY_FAMILY: Record<TaskFamily, string> = {
 const PREVIEW_COPY_BINDINGS = new Set(['DB_Ontology'])
 
 /**
- * Bindings whose apps only read, so D1 read replicas near each visitor can't show anyone a stale
- * view of their own write. Ontology stays off until its writes carry a bookmark into the next
+ * Families whose apps only read, so D1 read replicas near each visitor can't show anyone a stale
+ * view of their own write. By family rather than binding, so a new target language is covered
+ * without being listed here. Ontology stays off until its writes carry a bookmark into the next
  * request. A new database starts with replication disabled, so every deploy has to turn it on.
  * https://developers.cloudflare.com/d1/best-practices/read-replication/
  */
-const READ_REPLICATED_BINDINGS = new Set(['DB_Sources'])
+const READ_REPLICATED_FAMILIES = new Set<TaskFamily>(['Sources', 'Targets'])
 
 type D1Database = {
 	readonly uuid: string
@@ -58,7 +59,7 @@ export async function deploy_to_d1({ task, dump_file, date }: DeployOptions): Pr
 		await apply_status_to_d1({ d1_database_name: database_name, csv_dir: join(import.meta.dir, '../data/status'), date })
 	}
 
-	if (READ_REPLICATED_BINDINGS.has(binding)) {
+	if (READ_REPLICATED_FAMILIES.has(task.family)) {
 		await enable_read_replication(database)
 	}
 
