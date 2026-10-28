@@ -21,6 +21,8 @@ test('a queued create shows up as unsynced on the changes page', async ({ page }
 	await expect(page.getByText(/saved on this device and will sync/i)).toBeVisible()
 
 	await page.goto('/protected/changes')
-	await expect(page.getByText(stem)).toBeVisible()
-	await expect(page.getByText('Unsynced')).toBeVisible()
+	// the stem also appears in the concept filter's options, so look in the change's own row
+	const change_row = page.getByRole('row').filter({ hasText: stem })
+	await expect(change_row).toBeVisible()
+	await expect(change_row.getByText('Unsynced')).toBeVisible()
 })
