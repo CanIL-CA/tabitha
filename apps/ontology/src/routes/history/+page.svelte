@@ -3,46 +3,18 @@
 	import Icon from '@iconify/svelte'
 	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
 	import { format_datetime } from '#lib/format.js'
-	import { concepts_match } from '@tabitha/types/patterns'
+	import ChangeFilters from '#lib/ChangeFilters.svelte'
 	import MoreLink from '#lib/MoreLink.svelte'
-	import { CHANGES_BATCH_SIZE, change_made_between_versions } from '#lib/changes.js'
-	import type { OntologyChangeAction, OntologyChange } from '#lib/types.js'
-	import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
-
+	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/change_filters.js'
+	import { CHANGES_BATCH_SIZE } from '#lib/changes.js'
+	
 	let { data }: PageProps = $props()
 
 	let changes = $derived(data.changes)
 
-	let since = $derived(data.since ?? 'all')
-	let before = $derived(data.before ?? 'all')
-	let all_versions = $derived(new Set(changes.map(change => change.version).filter(v => v !== 'Failed')))
-
-	let action_type = $state<OntologyChangeAction | 'all'>('all')
-
-	let concept_key = $state<string | null>(null)
-	let concept = $derived<ConceptKey | null>(concept_key ? parse_concept_key(concept_key) : null)
-	let all_concepts = $derived([...new Set(changes.map(to_concept_key))].toSorted())
-
-	function to_concept_key({ concept: { stem, sense, part_of_speech } }: OntologyChange) {
-		return `${stem}|${sense}|${part_of_speech}`
-	}
-	function parse_concept_key(key: string): ConceptKey {
-		const [stem, sense, part_of_speech] = key.split('|')
-		return { stem, sense, part_of_speech: part_of_speech as PartOfSpeech }
-	}
-
-	let filtered_changes = $derived.by(() => {
-		const filters: ((change: OntologyChange) => boolean)[] = [
-			change_made_between_versions({ since, before }),
-			change => action_type === 'all' || change.action === action_type,
-			change => concept === null || concepts_match({ a: change.concept, b: concept }),
-		]
-		return changes.filter(is_a_match)
-
-		function is_a_match(change: OntologyChange): boolean {
-			return filters.every(filter => filter(change))
-		}
-	})
+	// svelte-ignore state_referenced_locally
+	let filters = $state({ ...NO_CHANGE_FILTERS, since: data.since ?? 'all', before: data.before ?? 'all' })
+	let filtered_changes = $derived(filter_changes({ changes, ...filters }))
 
 	let visible_count = $state(CHANGES_BATCH_SIZE)
 	let visible_changes = $derived(filtered_changes.slice(0, visible_count))
@@ -52,58 +24,12 @@
 	}
 </script>
 
-<div class="pt-5 w-full">
+<div class="pt-2 w-full">
 	<div class="prose">
 		<h3>Changes</h3>
 	</div>
 
-	<section class="flex flex-col py-2">
-		<form onchange={reset_visible_count} class="flex gap-4 bg-info text-info-content px-4 pt-2 pb-3.5 overflow-x-auto rounded-box">
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend text-info-content">Since</legend>
-
-				<select bind:value={since} class="select text-base-content">
-					<option value={'all'}>All</option>
-					{#each all_versions as version}
-						<option value={version}>{version}</option>
-					{/each}
-				</select>
-			</fieldset>
-
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend text-info-content">Before</legend>
-
-				<select bind:value={before} class="select text-base-content">
-					<option value={'all'}>All</option>
-					{#each all_versions as version}
-						<option value={version}>{version}</option>
-					{/each}
-				</select>
-			</fieldset>
-
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend text-info-content">Action</legend>
-
-				<select bind:value={action_type} class="select text-base-content">
-					<option value={'all'}>All</option>
-					<option value={'create'}>Add</option>
-					<option value={'update'}>Edit</option>
-				</select>
-			</fieldset>
-
-			<fieldset class="fieldset">
-				<legend class="fieldset-legend text-info-content">Concept</legend>
-
-				<select bind:value={concept_key} class="select text-base-content">
-					<option value={null}>All</option>
-					{#each all_concepts as key}
-						{@const { stem, sense, part_of_speech } = parse_concept_key(key)}
-						<option value={key}>{stem}-{sense} ({part_of_speech})</option>
-					{/each}
-				</select>
-			</fieldset>
-		</form>
-	</section>
+	<ChangeFilters {changes} bind:filters onchange={reset_visible_count} />
 
 	{#if filtered_changes.length > 0}
 		<table class="table w-full">
