@@ -345,14 +345,14 @@ jobs:
         run: bun run test:e2e
         continue-on-error: true
         env:
-          # Records browser coverage (@tabitha/vite-config/playwright) for the coverage_layers job.
+          # Records browser and dev-server coverage (@tabitha/vite-config) for the coverage_layers job.
           E2E_COVERAGE: '1'
 
       - name: Pack E2E Coverage
         if: always()
         run: |
           shopt -s nullglob
-          raw_dirs=(apps/*/coverage/e2e/raw)
+          raw_dirs=(apps/*/coverage/e2e/raw apps/*/coverage/e2e-server)
           [ ${#raw_dirs[@]} -gt 0 ] || exit 0
           tar -cf e2e-coverage.tar "${raw_dirs[@]}"
 

@@ -71,7 +71,7 @@ export function layers_markdown({ layers }: { layers: WorkspaceLayers[] }): stri
 		'| --- | --- | --- | --- | --- |',
 		...rows,
 		'',
-		'E2E counts browser code only (Chromium); server code that e2e reaches, such as `+server.ts` routes, shows as unit coverage or none.',
+		"E2E counts the code the browser ran (Chromium) and the code each app's dev server ran, such as `+server.ts` routes.",
 		'',
 	].join('\n')
 }

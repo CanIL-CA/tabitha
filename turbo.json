@@ -162,7 +162,8 @@
         "E2E_COVERAGE"
       ],
       "outputs": [
-        "coverage/e2e/**"
+        "coverage/e2e/**",
+        "coverage/e2e-server/**"
       ],
       "inputs": [
         "src/**",
@@ -177,7 +178,10 @@
     },
     "dev:e2e": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "E2E_COVERAGE"
+      ]
     },
     "clean:svelte": {
       "cache": false

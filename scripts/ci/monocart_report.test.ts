@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it } from 'bun:test'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { is_reported_source, read_unit_coverage } from './monocart_report'
+import { pathToFileURL } from 'node:url'
+import { file_layers } from './coverage_layers'
+import { generate_e2e_coverage, is_reported_source, read_unit_coverage } from './monocart_report'
 
 const ROOT = resolve('/repo')
 const WORKSPACES = ['apps/editor', 'packages/ui']
@@ -57,5 +59,41 @@ describe('read_unit_coverage', () => {
 	it('returns empty reports for workspaces that wrote none', async () => {
 		root_dir = await mkdtemp(join(tmpdir(), 'unit-coverage-'))
 		expect(await read_unit_coverage({ root_dir, workspaces: WORKSPACES })).toEqual({ summary: {}, files: {} })
+	})
+})
+
+describe('generate_e2e_coverage', () => {
+	let root_dir = ''
+	afterEach(async () => {
+		await rm(root_dir, { recursive: true, force: true })
+	})
+
+	it("counts the lines an app's dev server ran, which the browser can't see", async () => {
+		root_dir = await mkdtemp(join(tmpdir(), 'e2e-coverage-'))
+		const source = 'export function ran() {\n\treturn 1\n}\n\nexport function skipped() {\n\treturn 2\n}\n'
+		const file = join(root_dir, 'apps/editor/src/lib/server/check.ts')
+		await mkdir(join(root_dir, 'apps/editor/src/lib/server'), { recursive: true })
+		await writeFile(file, source)
+		const server_dir = join(root_dir, 'apps/editor/coverage/e2e-server')
+		await mkdir(server_dir, { recursive: true })
+		const ranges = ({ count, text }: { count: number, text: string }) => [{ startOffset: source.indexOf(text), endOffset: source.indexOf(text) + text.length, count }]
+		const functions = [
+			{ functionName: '', isBlockCoverage: true, ranges: [{ startOffset: 0, endOffset: source.length, count: 1 }] },
+			{ functionName: 'ran', isBlockCoverage: true, ranges: ranges({ count: 1, text: 'function ran() {\n\treturn 1\n}' }) },
+			{ functionName: 'skipped', isBlockCoverage: true, ranges: ranges({ count: 0, text: 'function skipped() {\n\treturn 2\n}' }) },
+		]
+		await writeFile(join(server_dir, '123.json'), JSON.stringify([{ url: pathToFileURL(file).href, source, functions }]))
+
+		const report = await generate_e2e_coverage({ root_dir, workspaces: ['apps/editor'], output_dir: join(root_dir, 'layers/e2e') })
+
+		const { total, e2e } = file_layers({ e2e: report[file] })
+		expect(report[file]).toBeDefined()
+		expect(e2e).toBeGreaterThan(0)
+		expect(e2e).toBeLessThan(total)
+	})
+
+	it('returns an empty report when no app recorded anything', async () => {
+		root_dir = await mkdtemp(join(tmpdir(), 'e2e-coverage-'))
+		expect(await generate_e2e_coverage({ root_dir, workspaces: ['apps/editor'], output_dir: join(root_dir, 'layers/e2e') })).toEqual({})
 	})
 })

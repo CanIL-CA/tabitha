@@ -77,10 +77,17 @@ if (extra_args.length > 0) {
 console.log("🚀 Starting every app's e2e dev server...")
 const dev_server_process = spawn('bunx', ['turbo', 'run', 'dev:e2e'], { stdio: 'inherit', detached: true })
 
-function shut_down_dev_servers(): void {
-	if (dev_server_process.pid) {
-		process.kill(-dev_server_process.pid, 'SIGTERM')
-	}
+const dev_servers_exited = new Promise<void>(resolve => dev_server_process.on('exit', () => resolve()))
+
+const SHUT_DOWN_TIMEOUT_MS = 15_000
+
+// Turborepo gets the SIGTERM alone, not its whole process group: it stops each server gracefully, which
+// lets the server write the coverage it recorded under `E2E_COVERAGE` (packages/vite-config/server_coverage.js),
+// whereas a group-wide signal has it force-kill them mid-write. Then wait for it to finish.
+async function shut_down_dev_servers(): Promise<void> {
+	if (!dev_server_process.pid) return
+	process.kill(dev_server_process.pid, 'SIGTERM')
+	await Promise.race([dev_servers_exited, new Promise(resolve => setTimeout(resolve, SHUT_DOWN_TIMEOUT_MS))])
 }
 
 let exit_code: number
@@ -91,7 +98,7 @@ try {
 	console.log('🎭 All dev servers are healthy -- running the Playwright e2e suite...')
 	exit_code = await run({ command: 'bunx', args: ['turbo', 'run', 'test:e2e', '--continue=dependencies-successful'] })
 } finally {
-	shut_down_dev_servers()
+	await shut_down_dev_servers()
 }
 
 process.exit(exit_code)
