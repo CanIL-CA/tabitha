@@ -1,4 +1,4 @@
-import { get_stem_senses } from '#lib/changes.js'
+import { get_stem_senses } from '#lib/changes/changes.js'
 import { check_for_unsynced_senses } from '#lib/offline/pending.js'
 import type { StemSense, StemSensesResult } from '#lib/types.js'
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { levels } from './lookups'
+	import { levels } from '#lib/lookups.js'
 
 	type Props = {
 		level: string

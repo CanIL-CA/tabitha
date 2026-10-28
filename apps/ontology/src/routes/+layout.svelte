@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte'
 	import { page } from '$app/state'
 	import { goto } from '$app/navigation'
-	import { Search } from '#lib/index.js'
+	import { Search } from '#lib/search/index.js'
 	import { Header, Footer, theme_state } from '@tabitha/ui'
 	import { auth_client } from '#lib/auth_client.js'
 	import Icon from '@iconify/svelte'

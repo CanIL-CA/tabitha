@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Concept } from './types'
+	import type { Concept } from '#lib/types.js'
 
 	type Props = {
 		// Normally would use ConceptKey, but the part_of_speech of a search Concept might also be 'Function Word'

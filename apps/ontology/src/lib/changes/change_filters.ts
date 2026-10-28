@@ -1,5 +1,5 @@
 import { concepts_match } from '@tabitha/types/patterns'
-import { change_made_between_versions } from '#lib/changes.js'
+import { change_made_between_versions } from '#lib/changes/changes.js'
 import type { OntologyChange, OntologyChangeAction, OntologyChangeDataFields } from '#lib/types.js'
 import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 

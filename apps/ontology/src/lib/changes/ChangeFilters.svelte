@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AFFECTED_FIELD_LABELS, parse_concept_key, to_concept_key, type ChangeFilterValues } from '#lib/change_filters.js'
+	import { AFFECTED_FIELD_LABELS, parse_concept_key, to_concept_key, type ChangeFilterValues } from '#lib/changes/change_filters.js'
 	import { parts_of_speech } from '#lib/lookups.js'
 	import type { OntologyChange } from '#lib/types.js'
 

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import { page } from '$app/state'
-	import { DisplayPreference, SummaryCard, Table } from '#lib/index.js'
+	import { SummaryCard } from '#lib/card/index.js'
+	import { DisplayPreference, Table } from '#lib/search/index.js'
 	import type { PageProps } from './$types'
 
 	let { data }: PageProps = $props()
