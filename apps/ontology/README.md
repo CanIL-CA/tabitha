@@ -91,7 +91,7 @@ Complex terms and simplification hints are synchronized from Google Sheets every
 - **Testing the scheduled sync locally**: with `SCHEDULER_TOKEN` set in `apps/ontology/.env.local` and `bun run dev:ontology` running:
 
   ```bash
-  curl -X POST -H "Authorization: Bearer $SCHEDULER_TOKEN" http://localhost:3056/scheduled/sync
+  curl -X POST -H "Authorization: Bearer $SCHEDULER_TOKEN" -H "Content-Type: application/json" http://localhost:3056/scheduled/sync
   ```
 
   Locally, the complex-terms half runs for real, but the embedding half can't reach Vectorize (see section 5).

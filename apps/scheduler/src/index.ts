@@ -40,7 +40,10 @@ export default {
 }
 
 async function call_app_endpoint({ app, url, token }: CallAppEndpointOptions): Promise<void> {
-	const response = await app.fetch(url, { method: 'POST', headers: { authorization: `Bearer ${token}` } })
+	// SvelteKit's CSRF guard refuses a POST with no content-type and no same-site Origin as a cross-site
+	// form submission, before the endpoint's own token check ever runs.
+	const headers = { 'authorization': `Bearer ${token}`, 'content-type': 'application/json' }
+	const response = await app.fetch(url, { method: 'POST', headers })
 	const body = await response.text()
 	if (!response.ok) throw new Error(`scheduler: ${url} failed with ${response.status}: ${body}`)
 
