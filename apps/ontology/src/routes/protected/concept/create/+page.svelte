@@ -26,7 +26,6 @@
 	let fetching_sense = $state(false)
 	let sense_lookup_timer: ReturnType<typeof setTimeout> | undefined
 	let stem_senses = $state<StemSensesResult>(EMPTY_STEM_SENSES)
-	let has_no_other_senses = $derived(stem_senses.senses.length === 0 && stem_senses.stem.length > 0)
 
 	let saving = $state(false)
 	let error_message = $state('')
