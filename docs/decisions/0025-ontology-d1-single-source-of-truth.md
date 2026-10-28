@@ -33,7 +33,7 @@ Classic TBTA now reads tabitha's data rather than producing it. Since TBTA 5.2.0
 ## Consequences
 
 - A Sources update leaves production's examples one step behind until `examples:rebuild production` runs after the merge. The orchestrator prints the command.
-- The examples swap writes about 96 MB to the target database. Whether D1 keeps serving reads normally during a load that size is still to be measured on the Previews copy.
+- The examples swap writes about 96 MB to the target database, and D1 handles one batch at a time per database. Measured on the Previews copy: loaded as a single import, 14 of 16 reads made during the 28 s load failed; loaded in 24 batches of about 4 MB (152 s), 23 of 122 failed with transient `7500` errors, and the swap itself takes about 8 s. Those reads came through `wrangler`, which doesn't retry, while D1 retries read-only queries from a Worker binding, so the app sees less. Run `examples:rebuild production` at a quiet time anyway, and expect a short burst of errors.
 - The Previews copy drifts from production between refreshes, and a refresh discards whatever was written on Previews.
 - Classic TBTA reads only `OntologyVersion`, needs a 3.x version, and remaps targets by `Concepts.ID` order. So `set_version` keeps writing both version tables, and a version bump is what tells TBTA there's an update.
 - Pinned snapshots stay on R2 forever, since `r2:prune` only prunes dated families. That's one file per pin move.

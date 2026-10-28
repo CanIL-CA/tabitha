@@ -117,7 +117,7 @@ bun run examples:rebuild <production|preview> \
   raw/Sources_Complex_YYYY-MM-DD.tabitha.sqlite
 ```
 
-It refuses to write when the rebuild has more than 20% fewer examples than the live table, which usually means Sources failed to load.
+It refuses to write when the rebuild has more than 20% fewer examples than the live table, which usually means Sources failed to load. The load goes in batches of about 4 MB, because D1 handles one batch at a time and a single 96 MB import made most reads fail. It takes a few minutes, and a few reads may still fail with transient errors, so run it against production at a quiet time.
 
 #### Previews Ontology Copy
 

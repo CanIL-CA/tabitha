@@ -64,16 +64,50 @@ export async function rebuild_examples({ target, sources_file, sources_complex_f
 	db_ontology.close(true)
 
 	const dump = await $`sqlite3 --escape off ${sqlite_path} ${'.dump Exhaustive_Examples_next'}`.text()
-	const load_file = `${work_path}.load.sql`
 	const swap_file = `${work_path}.swap.sql`
-	await Bun.write(load_file, `DROP TABLE IF EXISTS Exhaustive_Examples_next;\n${to_d1_importable(dump)}`)
 	await Bun.write(swap_file, SWAP_SQL)
 
-	log.step(`Loading ${rebuilt_count.toLocaleString()} examples (live: ${live_count.toLocaleString()}) into Exhaustive_Examples_next on ${database_name}...`)
-	await execute_file({ database_name, file: load_file })
+	// D1 runs one batch at a time per database, so one 90 MB import would leave every query waiting
+	// (and most of them failing) for its whole length; short batches let the app's queries in between.
+	const chunks = split_into_chunks({ sql: `DROP TABLE IF EXISTS Exhaustive_Examples_next;\n${to_d1_importable(dump)}`, max_bytes: LOAD_CHUNK_BYTES })
+	log.step(`Loading ${rebuilt_count.toLocaleString()} examples (live: ${live_count.toLocaleString()}) into Exhaustive_Examples_next on ${database_name} in ${chunks.length} batches...`)
+	for (const [index, chunk] of chunks.entries()) {
+		const chunk_file = `${work_path}.load-${index}.sql`
+		await Bun.write(chunk_file, chunk)
+		await execute_file({ database_name, file: chunk_file })
+		log.progress(`batch ${index + 1}`, index + 1, chunks.length)
+	}
+	log.finish_progress()
 
 	log.step(`Swapping the new examples into ${database_name} and recounting occurrences...`)
 	await execute_file({ database_name, file: swap_file })
+}
+
+const LOAD_CHUNK_BYTES = 4_000_000
+
+/**
+ * Cuts a dump into pieces of about `max_bytes`, only ever between INSERT statements so every piece
+ * is valid SQL on its own. The leading CREATE TABLE stays with the first piece.
+ */
+export function split_into_chunks({ sql, max_bytes }: {
+	sql: string
+	max_bytes: number
+}): string[] {
+	const chunks: string[] = []
+	let current: string[] = []
+	let current_bytes = 0
+
+	for (const line of sql.split('\n')) {
+		if (current_bytes >= max_bytes && line.startsWith('INSERT INTO ')) {
+			chunks.push(current.join('\n'))
+			current = []
+			current_bytes = 0
+		}
+		current.push(line)
+		current_bytes += line.length + 1
+	}
+	chunks.push(current.join('\n'))
+	return chunks
 }
 
 export function examples_drop_problem({ live_count, rebuilt_count }: {
