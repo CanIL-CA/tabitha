@@ -171,7 +171,7 @@ It appears in three forms, each with a different remedy.
 | Variant | Mechanism | Evidence | Remedy |
 | --- | --- | --- | --- |
 | **Feature encoding** | Row order in `Features_Source` = character offset | 64 / 128 slots are `Spare` | Large. Touches rules, corpus and engine together. |
-| **Lexical form slots** | Position maps to a name *per category*; storage holds empty slots open | `Form 1–4`<br>`…^\|\|4,50…` | Smaller. Also kills a dual-addressing bug class. |
+| **Lexical form slots** | Position maps to a name *per category*; storage holds empty slots open | `…^\|\|4,50…` | Smaller. Also kills a dual-addressing bug class. |
 | **Offset writes** | `Concepts` updates target a row by its offset in a sorted list | a few call sites | Small, local, independent of the other two. |
 
 None of these need linguistic judgement to repair. Every one has its stable identity **already present in the data** — `Features_Source` stores each feature's real name; `LexicalFormNames` stores each form's name and category. The mapping from position to name exists today; it simply isn't what the data uses.
@@ -179,13 +179,11 @@ None of these need linguistic judgement to repair. Every one has its stable iden
 That makes de-positionalisation mechanical, with a hard correctness test: re-encode into named keys, decode back, assert byte-identical round trips, then confirm generation output is unchanged.
 
 <details>
-<summary>The lexical form variant, and why it is worse than it looks</summary>
+<summary>The lexical form variant</summary>
 
-`LexicalFormNames` maps position to name *per syntactic category* through a `FieldName` column holding `Form 1`–`Form 4`. "Form 2" means *Perfect* for a verb and *Superlative* for an adjective — there is no global form identity at all.
+Storage keeps empty positions open to preserve alignment. A verb's `FormReferences` reads `…^|4,7,13,23^||4,50,4,18^…`, where the doubled separator is a form slot with no data that cannot be removed. The `RelatedLanguageStems` column is similarly delimited based on form positions. NOTE: The lexicon tables do carry literal `Spare 2`–`Spare 5` columns, and the `LexicalFormNames` table has a `FieldName` column with entries `Form 1`, `Form 2`, etc., but TBTA does not use these to determine positional identity.
 
-Storage keeps empty positions open to preserve alignment. A verb's `FormReferences` reads `…^|4,7,13,23^||4,50,4,18^…`, where the doubled separator is a form slot with no data that cannot be removed. The lexicon tables carry literal `Spare 2`–`Spare 5` columns for the same reason.
-
-What makes it worse than the feature case is that **two addressing schemes coexist**. Storage addresses forms positionally; the spellout rules address them by name through a `BaseForm` text column. Nothing enforces agreement, so renaming a form silently desynchronises them — the bug behind the commit reading *"when the user changes the name of a lexical form, the spellout rules… must be updated with the new form name."*
+As with the feature case (cf. `Rules_FeatureCopying.SourceFeature`), **two addressing schemes coexist**. Storage addresses forms positionally; the spellout rules address them by name through a `BaseForm` text column. Nothing enforces agreement, so renaming a form silently desynchronises them — the bug behind the commit reading *"when the user changes the name of a lexical form, the spellout rules… must be updated with the new form name."*
 
 </details>
 
