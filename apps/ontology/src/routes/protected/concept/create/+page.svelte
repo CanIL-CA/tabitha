@@ -34,6 +34,10 @@
 		error_message = ''
 	}
 
+	function autofocus(node: HTMLInputElement) {
+		node.focus()
+	}
+
 	async function handle_submit(event: SubmitEvent) {
 		event.preventDefault()
 		saving = true
@@ -118,22 +122,16 @@
 			<h2>Add a new concept</h2>
 		</div>
 
-		{#if concept_data.sense}
-			{@const concept_for_header = create_fallback_concept(concept_data)}
-			<section class="card-title justify-between">
-				<Header concept={concept_for_header} />
-			</section>
-		{:else if fetching_sense}
-			<div>
-				<Icon icon="line-md:loading-twotone-loop" class="h-5 w-5 text-warning" />
-			</div>
-		{/if}
-
 		<form onsubmit={handle_submit} class="flex flex-col gap-6">
 			<section class="flex flex-wrap gap-4 items-end">
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Stem</legend>
-					<input name="stem" bind:value={() => concept_data.stem, set_stem} class="input input-bordered" required />
+					<input
+						name="stem"
+						bind:value={() => concept_data.stem, set_stem}
+						use:autofocus
+						autocomplete="off"
+						class="input input-bordered" required />
 				</fieldset>
 
 				<fieldset class="fieldset">
@@ -157,8 +155,17 @@
 				</fieldset>
 			</section>
 
-			{#if stem_senses.stem.length > 0}
+			{#if fetching_sense}
+				<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6 text-warning" />
+
+			{:else if concept_data.sense}
+				{@const concept_for_header = create_fallback_concept(concept_data)}
+
 				<section class="flex flex-col gap-2">
+					<section class="card-title justify-between ml-2">
+						<Header concept={concept_for_header} />
+					</section>
+
 					{#if stem_senses.has_pending_create}
 						<div role="alert" class="alert alert-warning alert-soft">
 							<Icon icon="mdi:alert-outline" class="h-5 w-5" />
@@ -166,24 +173,22 @@
 						</div>
 					{/if}
 
-					<details open class="collapse collapse-arrow bg-base-100">
-						<summary class="collapse-title min-h-0 py-2 text-xs font-semibold">Existing Senses</summary>
-						<ul class="collapse-content list pb-2 text-xs">
-							{#each stem_senses.senses as { sense, gloss, status }}
-								<li class="list-row items-center p-2">
-									<span class="font-semibold">{stem_senses.stem}-{sense}</span>
-									<span class="list-col-grow">{gloss}</span>
-									{#if status !== 'in ontology'}
-										<span class="badge badge-warning badge-sm">{status}</span>
-									{/if}
-								</li>
-							{:else}
-								<li class="list-row items-center p-2">
-									<span>There are no existing senses for this concept.</span>
-								</li>
-							{/each}
-						</ul>
-					</details>
+					{#if stem_senses.senses.length > 0}
+						<details open class="collapse collapse-arrow bg-base-100">
+							<summary class="collapse-title min-h-0 py-2 text-xs font-semibold">Existing Senses</summary>
+							<ul class="collapse-content list pb-2 text-xs">
+								{#each stem_senses.senses as { sense, gloss, status }}
+									<li class="list-row items-center p-2">
+										<span class="font-semibold">{stem_senses.stem}-{sense}</span>
+										<span class="list-col-grow">{gloss}</span>
+										{#if status !== 'in ontology'}
+											<span class="badge badge-warning badge-sm">{status}</span>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						</details>
+					{/if}
 				</section>
 			{/if}
 
