@@ -6,7 +6,7 @@ This tool is deliberately narrow, like its `tools/dns`/`tools/workers` siblings:
 
 ## What's out of scope here
 
-- **Object-level operations** (uploading/downloading/pruning the actual files inside a bucket) are not this tool's job. See `tools/databases/migrations/backup/index.ts` (writes `db-backups`), `tools/databases/migrations/cleanup_old_backups.ts` (prunes `db-backups` to the newest two after each backup run), `tools/databases/migrations/r2_sync.ts` (syncs `db-migration-data`), and `scripts/dx/r2_load.ts` (seeds local R2 emulation for dev).
+- **Object-level operations** (uploading/downloading/pruning the actual files inside a bucket) are not this tool's job. See `tools/databases/migrations/backup/index.ts` (writes `db-backups`, keeping every version, and the Ontology snapshots in `db-migration-data`), `tools/databases/migrations/r2_sync.ts` (syncs `db-migration-data`), and `scripts/dx/r2_load.ts` (seeds local R2 emulation for dev).
 - **Worker bindings** (`r2_buckets` in an app's `wrangler.jsonc`) aren't created or edited here -- `config.ts`'s `bound_in` field is documentation only, cross-referencing which app's binding (if any) consumes a bucket at runtime. Add or change an actual binding by hand-editing that app's `wrangler.jsonc`.
 - **Storage class, CORS rules, and lifecycle rules** aren't modeled in `config.ts` -- every bucket in this account is still on Cloudflare's defaults (Standard storage class, the default 7-day multipart-abort lifecycle rule, no CORS) as of this writing. Add a field here if a bucket ever needs one of these set deliberately, rather than building it out speculatively now.
 

@@ -1,4 +1,7 @@
 {
+	"pinned_snapshots": {
+		"DB_Ontology": "Ontology_9494_2026-09-29.tabitha.sqlite.sql"
+	},
 	"raw": [
 		"Bible_2026-06-25.tbta.sqlite",
 		"Bible_2026-07-27.tbta.sqlite",

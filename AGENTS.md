@@ -434,7 +434,7 @@ import system_instruction from './review_prompt.md?raw'
    - `@tabitha/api-client` — Typed HTTP client for inter-service communication. Server-side calls to a sibling app go through a service binding that the app registers in `hooks.server.ts` with `use_service_bindings` ([ADR 0023](docs/decisions/0023-cross-app-calls-via-service-bindings.md)).
    - `@tabitha/cors` — Shared CORS middleware for Worker request handlers.
    - `@tabitha/noindex` — `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps; `apps/www` stays indexable.
-   - `@tabitha/complex-terms` — Reads the how-to Google Sheet into `Complex_Terms` rows (sheet parsing plus the table's SQL), shared by `apps/ontology`'s scheduled sync and `tools/databases`' Ontology migration. It has two consumers, not three, for the same reason API/DB contract types get a two-party bar: both write a table the app reads, so two copies would drift silently.
+   - `@tabitha/complex-terms` — Reads the how-to Google Sheet into `Complex_Terms` rows (sheet parsing plus the table's SQL), used by `apps/ontology`'s scheduled sync. It was extracted for two writers of the same table; the second, `tools/databases`' Ontology migration, went away when the live Ontology D1 became the source of truth ([ADR 0025](docs/decisions/0025-ontology-d1-single-source-of-truth.md)), so it now has one consumer.
    - `@tabitha/rate-limit` — Workers-native rate limiting for public read APIs, as a SvelteKit handle.
    - `@tabitha/usage` — Anonymous feature-usage events written to Workers Analytics Engine.
    - `@tabitha/ai` — Shared LLM client (`generate_json`, `generate_text`) routing every app's AI calls through the Cloudflare AI Gateway to Vertex AI.

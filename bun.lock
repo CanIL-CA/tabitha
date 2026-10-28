@@ -521,7 +521,6 @@
       "name": "@tabitha/databases",
       "version": "1.0.0",
       "dependencies": {
-        "@tabitha/complex-terms": "workspace:*",
         "adm-zip": "^0.6.1",
         "officeparser": "^8.2.0",
       },

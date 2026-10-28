@@ -16,13 +16,14 @@ import { create_logger } from './log'
 
 const log = create_logger('R2 Sync')
 
-const BUCKET = 'db-migration-data'
-const PUBLIC_BASE_URL = 'https://pub-afe6c9d3b41840dda7672f3ddbae010c.r2.dev'
+export const BUCKET = 'db-migration-data'
+export const PUBLIC_BASE_URL = 'https://pub-afe6c9d3b41840dda7672f3ddbae010c.r2.dev'
 const DIRS = ['raw', 'snapshots'] as const
 type Dir = typeof DIRS[number]
 
 const MANIFEST_PATH = join(import.meta.dir, '../manifest.json')
-type Manifest = Record<Dir, string[]>
+// pinned_snapshots (read by scripts/dx/db_load.ts) rides along untouched.
+type Manifest = Record<Dir, string[]> & { pinned_snapshots?: Record<string, string> }
 
 function read_manifest(): Manifest {
 	if (!existsSync(MANIFEST_PATH)) return { raw: [], snapshots: [] }

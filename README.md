@@ -86,7 +86,7 @@ tabitha/
 ├── packages/
 │   ├── ai/             # Shared LLM plumbing: AI Gateway routing, retries, credentials (@tabitha/ai)
 │   ├── api-client/     # Typed HTTP clients for calling one app's API from another (@tabitha/api-client)
-│   ├── complex-terms/  # How-to sheet -> Complex_Terms rows, for sync and migration (@tabitha/complex-terms)
+│   ├── complex-terms/  # How-to sheet -> Complex_Terms rows, for ontology's sync (@tabitha/complex-terms)
 │   ├── cors/           # Shared CORS allowed-origin handling for app APIs (@tabitha/cors)
 │   ├── eslint-config/  # Shared ESLint 9 configuration (@tabitha/eslint-config)
 │   ├── noindex/        # X-Robots-Tag noindex handle for the tool and API apps (@tabitha/noindex)

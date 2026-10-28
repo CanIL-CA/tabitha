@@ -1,8 +1,8 @@
 import type { OntologyStatus, PartOfSpeech, SimplificationHint } from '@tabitha/types'
 
-// The how-to sheet is the one source of truth for Complex_Terms. Both apps/ontology's scheduled sync
-// and tools/databases' Ontology migration rebuild the table from it through this module, so the two
-// writers can't drift apart (the 2026-09-29 TBTA export shipped its own stale copy of the table).
+// The how-to sheet is the one source of truth for Complex_Terms. apps/ontology's scheduled sync
+// rebuilds the table from it through this module (the 2026-09-29 TBTA export shipped its own stale
+// copy of the table).
 const COMPLEX_TERMS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/16_U4MqhwHNd9fR9Ai5ZeAI4AzBFGEAi3KhNyMQbEHlM/export?format=tsv&gid=0'
 const HEADER_ROW_COUNT = 3
 

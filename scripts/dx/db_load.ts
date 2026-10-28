@@ -11,6 +11,7 @@ import { resolve_workerd_hashes as resolve_workerd_hashes_impl } from './resolve
 const script_dir = dirname(fileURLToPath(import.meta.url))
 const root_dir = resolve(script_dir, '../..')
 const snapshots_dir = join(root_dir, 'tools/databases/snapshots')
+const manifest_path = join(root_dir, 'tools/databases/manifest.json')
 const workerd_hash_cache_path = join(root_dir, 'tools/databases/.d1-workerd-hash-cache.json')
 
 export type D1DatabaseEntry = {
@@ -49,6 +50,16 @@ export function parse_wrangler_jsonc(file_path: string): { d1_databases?: D1Data
 	const content = readFileSync(file_path, 'utf-8')
 	const cleaned = strip_jsonc_comments(content)
 	return JSON.parse(cleaned)
+}
+
+/**
+ * Snapshot files chosen by binding rather than by database name, for a long-lived database whose
+ * name never changes (DB_Ontology): moving the pin is how local dev and CI get newer data.
+ */
+export function read_pinned_snapshots(): Record<string, string> {
+	if (!existsSync(manifest_path)) return {}
+	const manifest = JSON.parse(readFileSync(manifest_path, 'utf-8')) as { pinned_snapshots?: Record<string, string> }
+	return manifest.pinned_snapshots ?? {}
 }
 
 async function find_latest_snapshot(prefix: string): Promise<string | null> {
@@ -94,9 +105,9 @@ export async function resolve_workerd_hashes({ config, entries, d1_state_dir }: 
 	return JSON.parse(json_output)
 }
 
-// A database with a `migrations_dir` (DB_Auth) is owned by its D1 migrations, not a snapshot: it's
-// emptied and rebuilt by applying them through wrangler, so that its d1_migrations bookkeeping
-// matches production's. stdin is closed so wrangler applies without asking.
+// A database with a `migrations_dir` and no pinned snapshot (DB_Auth) is owned by its D1 migrations
+// alone: it's emptied and rebuilt by applying them through wrangler, so that its d1_migrations
+// bookkeeping matches production's.
 function build_from_migrations({ app_dir, binding, database_files }: {
 	app_dir: string
 	binding: string
@@ -107,6 +118,15 @@ function build_from_migrations({ app_dir, binding, database_files }: {
 			if (existsSync(path)) unlinkSync(path)
 		}
 	}
+	apply_pending_migrations({ app_dir, binding })
+}
+
+// stdin is closed so wrangler applies without asking. A snapshot exported from production carries
+// its d1_migrations table, so only migrations newer than the snapshot run.
+function apply_pending_migrations({ app_dir, binding }: {
+	app_dir: string
+	binding: string
+}) {
 	execFileSync('bun', ['x', 'wrangler', 'd1', 'migrations', 'apply', binding, '--local'], { cwd: app_dir, stdio: ['ignore', 'inherit', 'inherit'] })
 }
 
@@ -175,6 +195,7 @@ export async function load_database(target_app: string = 'all') {
 			], { stdio: 'ignore' })
 		}
 
+		const pinned_snapshots = read_pinned_snapshots()
 		const workerd_hash_cache = read_workerd_hash_cache()
 		const needs_resolution = wrangler.d1_databases.filter(d1 => {
 			const cached = workerd_hash_cache[d1.database_id]
@@ -193,7 +214,9 @@ export async function load_database(target_app: string = 'all') {
 			const db_id = d1.database_id
 			console.log(`⏳ Loading database "${db_name}" (${db_id}) for ${app_key}...`)
 
-			if (d1.binding && d1.migrations_dir) {
+			const pinned_snapshot = d1.binding ? pinned_snapshots[d1.binding] : undefined
+
+			if (d1.binding && d1.migrations_dir && !pinned_snapshot) {
 				console.log(`   🧱 Building from D1 migrations: ${relative(root_dir, join(config.app_dir, d1.migrations_dir))}`)
 				try {
 					build_from_migrations({
@@ -209,8 +232,8 @@ export async function load_database(target_app: string = 'all') {
 				continue
 			}
 
-			let snapshot_file = join(snapshots_dir, `${db_name}.tabitha.sqlite.sql`)
-			if (!existsSync(snapshot_file)) {
+			let snapshot_file = join(snapshots_dir, pinned_snapshot ?? `${db_name}.tabitha.sqlite.sql`)
+			if (!pinned_snapshot && !existsSync(snapshot_file)) {
 				const prefix = db_name.split('_')[0]
 				const found = await find_latest_snapshot(prefix)
 				if (found) snapshot_file = found
@@ -266,6 +289,11 @@ export async function load_database(target_app: string = 'all') {
 				const table_count = parseInt(table_count_str, 10) || 0
 				if (table_count === 0) {
 					throw new Error(`Database "${db_name}" imported with 0 tables: ${target_db}`)
+				}
+
+				if (d1.binding && d1.migrations_dir) {
+					console.log(`   🧱 Applying D1 migrations newer than the snapshot: ${relative(root_dir, join(config.app_dir, d1.migrations_dir))}`)
+					apply_pending_migrations({ app_dir: config.app_dir, binding: d1.binding })
 				}
 
 				const duration = ((Date.now() - start_time) / 1000).toFixed(2)

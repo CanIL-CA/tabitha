@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { Database } from 'bun:sqlite'
 import { strip_jsonc_comments } from '@tabitha/types/patterns'
+import { read_pinned_snapshots } from './db_load'
 
 const script_dir = dirname(fileURLToPath(import.meta.url))
 const root_dir = resolve(script_dir, '../..')
@@ -84,10 +85,20 @@ function find_sqlite_files(base_dir: string): string[] {
 	return files
 }
 
-function find_snapshot_file(db_name: string): { path: string; size: number } | null {
+function find_snapshot_file({ db_name, binding }: {
+	db_name: string
+	binding: string
+}): { path: string; size: number } | null {
 	if (!existsSync(snapshots_dir)) return null
 	try {
 		const files = readdirSync(snapshots_dir)
+		// 0. The pin db_load uses for a long-lived database (manifest.json's pinned_snapshots)
+		const pinned = read_pinned_snapshots()[binding]
+		if (pinned) {
+			const full = join(snapshots_dir, pinned)
+			return existsSync(full) ? { path: full, size: statSync(full).size } : null
+		}
+
 		// 1. Exact match (e.g. Targets_English_2026-07-31.tabitha.sqlite.sql)
 		const exact = files.find(f => f.startsWith(`${db_name}.`) && (f.endsWith('.sql') || f.endsWith('.sqlite')))
 		if (exact) {
@@ -122,7 +133,7 @@ export async function inspect_databases(): Promise<DbStatus[]> {
 		const sqlite_files = find_sqlite_files(d1_dir)
 
 		for (const d1 of d1_configs) {
-			const snapshot = find_snapshot_file(d1.database_name)
+			const snapshot = find_snapshot_file({ db_name: d1.database_name, binding: d1.binding })
 			let matched_file: string | null = null
 			let file_size = 0
 			let last_mod: Date | null = null

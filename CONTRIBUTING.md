@@ -422,7 +422,7 @@ The `PATCH` bumps are handled automatically through the changes tracking system.
 
 ### Making local changes to Database schemas
 
-Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`). Apart from Auth and Survey (below), there are no Wrangler migration files. Each schema is built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
+Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`), or using the pin in `tools/databases/manifest.json`'s `pinned_snapshots` (Ontology). Auth, Survey and Ontology (below) are owned by Wrangler migration files. Sources and Targets are built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change to those has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
 
 The process for the Auth db is a bit different and described below.
 
@@ -458,7 +458,13 @@ Each email is its own user (emails are stored lowercase), so someone with two ad
 
 `DB_Survey` is owned by D1 migrations too, in `apps/survey/migrations/` ([ADR 0024](docs/decisions/0024-survey-app.md)). The same rules apply: add the next numbered file, never edit an applied one, rebuild locally with `bun run db:load:survey`, and run `bunx wrangler d1 migrations apply DB_Survey --remote` from `apps/survey` before the code that needs it merges.
 
-#### Ontology/Sources/Targets
+#### Ontology
+
+The live `DB_Ontology` is the single source of truth and is never replaced ([ADR 0025](docs/decisions/0025-ontology-d1-single-source-of-truth.md)), so its schema changes are D1 migrations in `apps/ontology/migrations/ontology/`, applied in place. Locally, `bun run db:load:ontology` loads the pinned snapshot and then applies any newer migrations. The steps are in that folder's [README](apps/ontology/migrations/ontology/README.md). Classic TBTA downloads this database every night through the backups, so check with the TBTA maintainers before changing a table it reads.
+
+To get newer Ontology data locally and in CI, move the pin: the nightly backup uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` to R2, and a PR adds that file to `manifest.json`'s `snapshots` list and points `pinned_snapshots.DB_Ontology` at it.
+
+#### Sources/Targets
 
 At this point, there are two options for locally testing a schema change to these databases:
 

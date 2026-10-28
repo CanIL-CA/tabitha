@@ -36,8 +36,8 @@
 	],
 	// One D1 database per target-language project (docs/decisions/0012-per-project-targets-databases.md).
 	// Binding names must match TARGET_PROJECTS in @tabitha/types/target. database_name follows the
-	// same "<Task>_<date>" convention as Sources/Ontology (each migration run mints a fresh dated
-	// database rather than updating in place).
+	// same "<Task>_<date>" convention as Sources (each migration run mints a fresh dated database
+	// rather than updating in place).
 	"d1_databases": [
 		{
 			"binding": "DB_Targets_English",

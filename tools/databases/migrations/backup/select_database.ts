@@ -14,7 +14,7 @@ type SelectOptions = {
 /**
  * Picks which D1 database the nightly backup exports: the one production binds, read from the top
  * level of the app's wrangler.jsonc. Not "the newest database with this name prefix": that would
- * also match the Previews copy (Ontology_<n>_preview_<date>, created right after production's) and
+ * also match the Previews copy (Ontology_<n>_preview_<date>, which shares production's date) and
  * a newer database a data-update PR created on its branch before merging.
  */
 export function select_backup_database({ config_text, binding, databases }: SelectOptions): string {

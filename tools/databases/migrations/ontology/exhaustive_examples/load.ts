@@ -199,20 +199,23 @@ function record_occurrence({ db_ontology, concept, reference, context }: {
 async function update_occurrences(db_ontology: Database) {
 	log.step('Updating occurrences count for each concept...')
 
-	db_ontology.run(`
-		UPDATE Concepts
-		SET occurrences = Examples.occurrences
-		FROM (
-			SELECT	concept_stem AS stem,
-						concept_sense AS sense,
-						concept_part_of_speech AS part_of_speech,
-						COUNT(context_json) AS occurrences
-			FROM Exhaustive_Examples
-			GROUP BY stem, sense, part_of_speech
-		) AS Examples
-		WHERE Concepts.stem = Examples.stem AND Concepts.sense = Examples.sense AND Concepts.part_of_speech = Examples.part_of_speech
-	`)
+	db_ontology.run(UPDATE_OCCURRENCES_SQL)
 }
+
+// Concepts without examples keep whatever occurrences they had, so callers zero it first.
+export const UPDATE_OCCURRENCES_SQL = `
+	UPDATE Concepts
+	SET occurrences = Examples.occurrences
+	FROM (
+		SELECT	concept_stem AS stem,
+					concept_sense AS sense,
+					concept_part_of_speech AS part_of_speech,
+					COUNT(context_json) AS occurrences
+		FROM Exhaustive_Examples
+		GROUP BY stem, sense, part_of_speech
+	) AS Examples
+	WHERE Concepts.stem = Examples.stem AND Concepts.sense = Examples.sense AND Concepts.part_of_speech = Examples.part_of_speech
+`
 
 function load_book_map(db_ontology: Database): Map<number, string> {
 	// load book names into a map for easy lookup
