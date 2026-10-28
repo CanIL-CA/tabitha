@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { QueuedMutation } from './queue'
-import { check_for_pending_change, check_for_pending_creates, merge_pending_changes } from './pending'
+import { check_for_pending_change, check_for_pending_creates, check_for_unsynced_senses, merge_pending_changes } from './pending'
 import type { Concept, ConceptUpdateData } from '#lib/types.js'
 
 // IndexedDB is the storage boundary, so the queue's contents are faked in memory
@@ -172,5 +172,29 @@ describe('check_for_pending_creates', () => {
 		queue_holds(mutation({ client_id: 'b', action: 'update' }))
 
 		expect(await check_for_pending_creates()).toEqual([])
+	})
+})
+
+describe('check_for_unsynced_senses', () => {
+	it('lists the queued creates for the same stem and part of speech as unsynced senses', async () => {
+		queue_holds(
+			mutation({ client_id: 'a', action: 'create' }),
+			mutation({ client_id: 'b', action: 'create', body: { ...NOUN_BODY, sense: 'B', gloss: 'a newborn animal' } }),
+		)
+
+		expect(await check_for_unsynced_senses({ stem: 'baby', part_of_speech: 'Noun' })).toEqual([
+			{ sense: 'A', gloss: 'a very young child', status: 'unsynced' },
+			{ sense: 'B', gloss: 'a newborn animal', status: 'unsynced' },
+		])
+	})
+
+	it('ignores updates and creates for a different stem or part of speech', async () => {
+		queue_holds(
+			mutation({ client_id: 'a', action: 'update' }),
+			mutation({ client_id: 'b', action: 'create', body: { ...NOUN_BODY, stem: 'child' } }),
+			mutation({ client_id: 'c', action: 'create', body: { ...NOUN_BODY, part_of_speech: 'Verb' } }),
+		)
+
+		expect(await check_for_unsynced_senses({ stem: 'baby', part_of_speech: 'Noun' })).toEqual([])
 	})
 })

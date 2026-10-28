@@ -1,7 +1,7 @@
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { get_concepts } from '#lib/server/ontology.js'
 import { decode_categorization_for_update, encode_categorization } from '#lib/transformers.js'
-import type { Concept, DbRowConcept, ConceptCreateData, ConceptUpdateData } from '#lib/types.js'
+import type { Concept, DbRowConcept, ConceptCreateData, ConceptUpdateData, StemSense } from '#lib/types.js'
 import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 
 export async function get_concept_for_update({ db, concept_key }: { db: D1DatabaseSession, concept_key: ConceptKey }): Promise<ConceptUpdateData | null> {
@@ -41,11 +41,21 @@ export async function update_concept({ db, data }: { db: D1DatabaseSession, data
 	await db.prepare(sql).bind(level, gloss, brief_gloss, categorization, curated_examples, stem, sense, part_of_speech).run()
 }
 
-export async function get_next_sense({ db, stem, part_of_speech }: { db: D1DatabaseSession, stem: string, part_of_speech: PartOfSpeech }): Promise<string> {
-	const concepts = await get_concepts(db)({ q: stem, category: part_of_speech, scope: 'stems' })
-	// the search results are not case-sensitive, so filter out concepts that don't exactly match the stem
-	const valid_senses = concepts.filter(c => c.stem === stem && c.status === 'in ontology').map(c => c.sense)
-	return String.fromCharCode('A'.charCodeAt(0) + valid_senses.length)
+// Includes creates that are suggested or approved but not yet applied, since they have no Concepts row yet
+export async function get_stem_senses({ db, stem, part_of_speech }: { db: D1DatabaseSession, stem: string, part_of_speech: PartOfSpeech }): Promise<StemSense[]> {
+	const sql = `
+		SELECT sense, gloss, 'in ontology' AS status
+		FROM Concepts
+		WHERE stem = ? AND part_of_speech = ?
+		UNION ALL
+		SELECT concept_sense, COALESCE(json_extract(data, '$.gloss.value'), ''), CASE WHEN approved_date IS NULL THEN 'suggested' ELSE 'approved' END
+		FROM Changes
+		WHERE action = 'create' AND applied_date IS NULL AND concept_stem = ? AND concept_part_of_speech = ?
+		ORDER BY sense
+	`
+
+	const { results } = await db.prepare(sql).bind(stem, part_of_speech, stem, part_of_speech).all<StemSense>()
+	return results
 }
 
 export async function create_concept({ db, data }: { db: D1DatabaseSession, data: ConceptCreateData }) {

@@ -5,7 +5,7 @@ export const level_gloss_labels: Record<string, string[]> = {
 	'2': ['(complex)'],
 	'3': ['(complex alternate)'],
 	'4': ['(proper name)', '(inexplicable)', '(key term)', '(biblical unit)'],
-}
+} as const
 
 const all_gloss_labels = Object.values(level_gloss_labels).flat()
 

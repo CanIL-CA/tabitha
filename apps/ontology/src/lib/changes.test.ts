@@ -5,7 +5,7 @@ import {
 	change_made_between_versions,
 	create_change_fields,
 	diff_change_fields,
-	get_next_sense,
+	get_stem_senses,
 } from './changes'
 import type { ConceptCreateData, ConceptUpdateData, OntologyChange } from '#lib/types.js'
 
@@ -128,14 +128,13 @@ describe('server round trips', () => {
 		})
 	})
 
-	describe('get_next_sense', () => {
-		it('asks the server for the next sense of a stem and part of speech', async () => {
-			const requests = fake_server([json_response({ body: { next_sense: 'C' } })])
+	describe('get_stem_senses', () => {
+		it('asks the server for the senses of a stem and part of speech', async () => {
+			const senses = [{ sense: 'A', gloss: '(simple) to care deeply', status: 'in ontology' }]
+			const requests = fake_server([json_response({ body: { senses } })])
 
-			const next_sense = await get_next_sense({ stem: 'love', part_of_speech: 'Verb' })
-
-			expect(next_sense).toBe('C')
-			expect(requests[0].url).toBe('/protected/concept/create/next-sense?stem=love&part_of_speech=Verb')
+			expect(await get_stem_senses({ stem: 'love', part_of_speech: 'Verb' })).toEqual(senses)
+			expect(requests[0].url).toBe('/protected/concept/create/senses?stem=love&part_of_speech=Verb')
 		})
 	})
 })

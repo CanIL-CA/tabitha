@@ -1,5 +1,7 @@
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
-import { compare_stems } from './concepts'
+import type { D1DatabaseSession } from '@cloudflare/workers-types'
+import { compare_stems, get_stem_senses } from './concepts'
 
 describe('compare_stems', () => {
 	it("orders characters by TBTA's custom sequence, not standard alphabetical order", () => {
@@ -35,5 +37,50 @@ describe('compare_stems', () => {
 		stems.sort((a, b) => compare_stems({ a, b }))
 
 		expect(stems).toEqual(['-hyphen', '9lives', 'apple', 'zebra'])
+	})
+})
+
+// The columns get_stem_senses reads, as they're defined in the Ontology snapshots (tools/databases/snapshots)
+const SCHEMA = `
+	CREATE TABLE Concepts (id INTEGER, stem TEXT, sense TEXT, part_of_speech TEXT, gloss TEXT, level INTEGER);
+	CREATE TABLE Changes (id INTEGER PRIMARY KEY, concept_stem TEXT, concept_sense TEXT, concept_part_of_speech TEXT, action TEXT, data TEXT, approved_date TEXT, applied_date TEXT);
+	INSERT INTO Concepts VALUES (1, 'run', 'A', 'Verb', '(simple) to move fast', 1);
+	INSERT INTO Concepts VALUES (2, 'run', 'B', 'Verb', '(complex) to manage', 2);
+	INSERT INTO Concepts VALUES (3, 'run', 'A', 'Noun', '(simple) a fast race', 1);
+	INSERT INTO Concepts VALUES (4, 'Run', 'A', 'Verb', '(proper name) a place', 4);
+	INSERT INTO Changes VALUES (1, 'run', 'C', 'Verb', 'create', '{"gloss":{"value":"(simple) to flow"}}', NULL, NULL);
+	INSERT INTO Changes VALUES (2, 'run', 'D', 'Verb', 'create', '{"gloss":{"value":"(complex) to campaign"}}', '2026-10-01', NULL);
+	INSERT INTO Changes VALUES (3, 'run', 'E', 'Verb', 'create', '{"gloss":{"value":"already applied"}}', '2026-10-01', '2026-10-02');
+	INSERT INTO Changes VALUES (4, 'run', 'A', 'Verb', 'update', '{"gloss":{"value":"an edit"}}', NULL, NULL);
+`
+
+// Wraps an in-memory SQLite database in the slice of D1's session API that get_stem_senses uses
+function create_test_db(): D1DatabaseSession {
+	const sqlite = new DatabaseSync(':memory:')
+	sqlite.exec(SCHEMA)
+
+	return {
+		prepare: (sql: string) => ({
+			bind: (...params: SQLInputValue[]) => ({
+				all: async () => ({ results: sqlite.prepare(sql).all(...params) }),
+			}),
+		}),
+	} as unknown as D1DatabaseSession
+}
+
+describe('get_stem_senses', () => {
+	it('lists the senses in the Ontology and the unapplied creates for the exact stem and part of speech', async () => {
+		const senses = await get_stem_senses({ db: create_test_db(), stem: 'run', part_of_speech: 'Verb' })
+
+		expect(senses).toEqual([
+			{ sense: 'A', gloss: '(simple) to move fast', status: 'in ontology' },
+			{ sense: 'B', gloss: '(complex) to manage', status: 'in ontology' },
+			{ sense: 'C', gloss: '(simple) to flow', status: 'suggested' },
+			{ sense: 'D', gloss: '(complex) to campaign', status: 'approved' },
+		])
+	})
+
+	it('returns nothing for a stem with no senses', async () => {
+		expect(await get_stem_senses({ db: create_test_db(), stem: 'walk', part_of_speech: 'Verb' })).toEqual([])
 	})
 })
