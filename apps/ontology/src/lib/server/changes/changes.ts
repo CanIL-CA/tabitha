@@ -4,7 +4,7 @@ import { get_version } from '#lib/server/ontology.js'
 import { default_categories } from '#lib/lookups.js'
 import { create_change_fields, diff_change_fields } from '#lib/changes.js'
 import type { DbOntologyChange } from '#lib/server/types.js'
-import type { PartOfSpeech } from '@tabitha/types'
+import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 import type {
 	OntologyChange,
 	OntologyChangeAction,
@@ -35,6 +35,18 @@ export async function get_pending_changes(db: D1DatabaseSession): Promise<Ontolo
 		ORDER BY approved_date DESC NULLS FIRST, suggested_date DESC
 	`
 	const { results } = await db.prepare(sql).all<DbOntologyChange>()
+	return results.map(transform)
+}
+
+export async function get_pending_changes_for_concept({ db, concept_key }: { db: D1DatabaseSession, concept_key: ConceptKey }): Promise<OntologyChange[]> {
+	const sql = `
+		SELECT *
+		FROM Changes
+		WHERE applied_date IS NULL AND concept_stem = ? AND concept_sense = ? AND concept_part_of_speech = ?
+		ORDER BY approved_date DESC NULLS FIRST, suggested_date DESC
+	`
+	const { stem, sense, part_of_speech } = concept_key
+	const { results } = await db.prepare(sql).bind(stem, sense, part_of_speech).all<DbOntologyChange>()
 	return results.map(transform)
 }
 

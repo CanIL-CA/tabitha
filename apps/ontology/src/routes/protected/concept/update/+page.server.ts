@@ -1,4 +1,5 @@
 import { get_concept_for_update } from '#lib/server/changes/concepts.js'
+import { get_pending_changes_for_concept } from '#lib/server/changes/changes.js'
 import { error } from '@sveltejs/kit'
 import { parse_concept_key } from '@tabitha/types/patterns'
 import type { ConceptKey } from '@tabitha/types'
@@ -17,6 +18,7 @@ export async function load({ url: { searchParams }, locals }: Parameters<PageSer
 
 	return {
 		concept_data,
+		pending_changes: await get_pending_changes_for_concept({ db: locals.db_ontology, concept_key }),
 	}
 }
 

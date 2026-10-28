@@ -6,7 +6,10 @@
 	import { levels } from '#lib/lookups.js'
 	import { level_gloss_labels, apply_gloss_label, relabel_gloss_for_level } from '#lib/gloss_labels.js'
 	import { create_fallback_concept } from '#lib/transformers.js'
+	import Icon from '@iconify/svelte'
 	import Header from '#lib/card/Header.svelte'
+	import PendingChange from '#lib/PendingChange.svelte'
+	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
 	import { Toast } from '@tabitha/ui'
 	import { enqueue } from '#lib/offline/sync.js'
 	import { check_for_pending_change } from '#lib/offline/pending.js'
@@ -94,6 +97,20 @@
 		<section class="card-title justify-between">
 			<Header concept={concept_for_header} />
 		</section>
+
+		{#if data.pending_changes.length > 0}
+			<section role="alert" class="alert alert-warning alert-soft flex flex-col items-start gap-2">
+				<div class="flex items-center gap-2">
+					<Icon icon="mdi:alert-outline" class="h-5 w-5" />
+					<span>This concept already has changes waiting to be applied. Check your edit doesn't conflict with them.</span>
+				</div>
+				{#each data.pending_changes as change}
+					<PendingChange {change}>
+						<ChangeDiffData {change} />
+					</PendingChange>
+				{/each}
+			</section>
+		{/if}
 
 		<form onsubmit={handle_submit} class="flex flex-col gap-6">
 			<section class="flex flex-col gap-4">

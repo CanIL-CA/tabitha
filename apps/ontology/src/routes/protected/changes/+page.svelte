@@ -174,9 +174,16 @@
 				<tr class="transition-color duration-3000 {do_highlight && was_recent_change(change) ? 'bg-info/30' : ''}">
 					<td>{change.action === 'create' ? 'Add' : 'Edit'}</td>
 					<td>
-						<a href={`/?q=${change.concept.stem}&category=${change.concept.part_of_speech}`} target="_blank" class="link link-hover">
-							{change.concept.stem}-{change.concept.sense} ({change.concept.part_of_speech})
-						</a>
+						<div class="flex items-center gap-1">
+							<a href={`/?q=${change.concept.stem}&category=${change.concept.part_of_speech}`} target="_blank" class="link link-hover">
+								{change.concept.stem}-{change.concept.sense} ({change.concept.part_of_speech})
+							</a>
+							{#if change.action === 'update' || change.applied_date}
+								<a title="Edit concept" href="/protected/concept/update?concept={change.concept.stem}-{change.concept.sense}-{change.concept.part_of_speech}" class="btn btn-xs btn-ghost btn-square">
+									<Icon icon="mdi:edit-outline" class="h-4 w-4" />
+								</a>
+							{/if}
+						</div>
 					</td>
 					<td>
 						<ChangeDiffData {change}/>
