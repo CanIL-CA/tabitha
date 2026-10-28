@@ -41,7 +41,7 @@ const session = db.withSession(bookmark ?? 'first-unconstrained')
 const result = await session.prepare('SELECT ...').all()
 const next_bookmark = session.getBookmark()
 ```
-Sessions work whether or not the database has read replication enabled, and with any Worker `placement` mode.
+Sessions work whether or not the database has read replication enabled, and with any Worker `placement` mode. But read replication is a separate per-database setting that starts off, and until it is on, a session reads the primary, so global users gain nothing. Wrangler has no flag for it; `tools/databases` turns it on through the REST API for new Sources and Targets databases (`READ_REPLICATED_FAMILIES` in `migrations/deploy.ts`).
 
 ### Timeouts on every D1 handle (`@tabitha/d1`)
 D1 calls take no `AbortSignal`, and a request waiting on one can hang for minutes. Wrap every binding or session before handing it to app code, so a stuck query fails with an error instead:
