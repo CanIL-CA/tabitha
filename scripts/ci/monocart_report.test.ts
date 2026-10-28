@@ -76,11 +76,11 @@ describe('generate_e2e_coverage', () => {
 		await writeFile(file, source)
 		const server_dir = join(root_dir, 'apps/editor/coverage/e2e-server')
 		await mkdir(server_dir, { recursive: true })
-		const ranges = (count: number, text: string) => [{ startOffset: source.indexOf(text), endOffset: source.indexOf(text) + text.length, count }]
+		const ranges = ({ count, text }: { count: number, text: string }) => [{ startOffset: source.indexOf(text), endOffset: source.indexOf(text) + text.length, count }]
 		const functions = [
 			{ functionName: '', isBlockCoverage: true, ranges: [{ startOffset: 0, endOffset: source.length, count: 1 }] },
-			{ functionName: 'ran', isBlockCoverage: true, ranges: ranges(1, 'function ran() {\n\treturn 1\n}') },
-			{ functionName: 'skipped', isBlockCoverage: true, ranges: ranges(0, 'function skipped() {\n\treturn 2\n}') },
+			{ functionName: 'ran', isBlockCoverage: true, ranges: ranges({ count: 1, text: 'function ran() {\n\treturn 1\n}' }) },
+			{ functionName: 'skipped', isBlockCoverage: true, ranges: ranges({ count: 0, text: 'function skipped() {\n\treturn 2\n}' }) },
 		]
 		await writeFile(join(server_dir, '123.json'), JSON.stringify([{ url: pathToFileURL(file).href, source, functions }]))
 
