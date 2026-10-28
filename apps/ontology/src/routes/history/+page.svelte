@@ -4,7 +4,8 @@
 	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
 	import { format_datetime } from '#lib/format.js'
 	import { concepts_match } from '@tabitha/types/patterns'
-	import { change_made_between_versions } from '#lib/changes.js'
+	import MoreLink from '#lib/MoreLink.svelte'
+	import { CHANGES_BATCH_SIZE, change_made_between_versions } from '#lib/changes.js'
 	import type { OntologyChangeAction, OntologyChange } from '#lib/types.js'
 	import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 
@@ -42,6 +43,13 @@
 			return filters.every(filter => filter(change))
 		}
 	})
+
+	let visible_count = $state(CHANGES_BATCH_SIZE)
+	let visible_changes = $derived(filtered_changes.slice(0, visible_count))
+
+	function reset_visible_count() {
+		visible_count = CHANGES_BATCH_SIZE
+	}
 </script>
 
 <div class="pt-5 w-full">
@@ -50,7 +58,7 @@
 	</div>
 
 	<section class="flex flex-col py-2">
-		<form class="flex gap-4 bg-info text-info-content px-4 pt-2 pb-3.5 overflow-x-auto rounded-box">
+		<form onchange={reset_visible_count} class="flex gap-4 bg-info text-info-content px-4 pt-2 pb-3.5 overflow-x-auto rounded-box">
 			<fieldset class="fieldset">
 				<legend class="fieldset-legend text-info-content">Since</legend>
 
@@ -109,7 +117,7 @@
 				</tr>
 			</thead>
 			<tbody>
-			{#each filtered_changes as change}
+			{#each visible_changes as change}
 				<tr>
 					<td class="py-1">{change.action === 'create' ? 'Add' : 'Edit'}</td>
 					<td class="py-1">
@@ -150,6 +158,10 @@
 			{/each}
 			</tbody>
 		</table>
+
+		{#if filtered_changes.length > visible_count}
+			<MoreLink remaining={filtered_changes.length - visible_count} onclick={() => visible_count += CHANGES_BATCH_SIZE} />
+		{/if}
 	{:else}
 		No changes to show.
 	{/if}

@@ -4,7 +4,8 @@
 	import Icon from '@iconify/svelte'
 	import { fade } from 'svelte/transition'
 	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
-	import { apply_pending_changes, approve_change } from '#lib/changes.js'
+	import MoreLink from '#lib/MoreLink.svelte'
+	import { CHANGES_BATCH_SIZE, apply_pending_changes, approve_change } from '#lib/changes.js'
 	import { format_datetime, format_time } from '#lib/format.js'
 	import type { OntologyChange } from '#lib/types.js'
 	import { onMount } from 'svelte'
@@ -12,6 +13,9 @@
 	let { data }: PageProps = $props()
 
 	let changes = $derived(data.changes)
+
+	let visible_count = $state(CHANGES_BATCH_SIZE)
+	let visible_changes = $derived(changes.slice(0, visible_count))
 
 	let save_result = $derived(page.state.save_result)
 
@@ -153,7 +157,7 @@
 				</tr>
 			</thead>
 			<tbody>
-			{#each changes as change}
+			{#each visible_changes as change}
 				<tr class="transition-color duration-3000 {do_highlight && was_recent_change(change) ? 'bg-info/30' : ''}">
 					<td>{change.action === 'create' ? 'Add' : 'Edit'}</td>
 					<td>
@@ -216,6 +220,10 @@
 			{/each}
 			</tbody>
 		</table>
+
+		{#if changes.length > visible_count}
+			<MoreLink remaining={changes.length - visible_count} onclick={() => visible_count += CHANGES_BATCH_SIZE} />
+		{/if}
 	{:else}
 		No changes to show.
 	{/if}

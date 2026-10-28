@@ -1,5 +1,7 @@
 import type { OntologyChange, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult, StemSense } from '#lib/types.js'
 
+export const CHANGES_BATCH_SIZE = 12
+
 // fetch()'s res.json() leaves dates as strings, unlike SvelteKit's own load-data serialization, which revives them automatically.
 function revive_dates(raw: OntologyChange): OntologyChange {
 	return {
