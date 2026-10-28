@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { PARAGLIDE_OPTIONS } from './paraglide.js'
+import { record_server_coverage } from './server_coverage.js'
 
 const POLL_EVERY_30_MINS = 30 * 60 * 1000
 
@@ -15,6 +16,9 @@ const POLL_EVERY_30_MINS = 30 * 60 * 1000
 // "log" level on every invocation. Quiet that down unless the developer has opted into
 // their own WRANGLER_LOG level (e.g. "debug" while diagnosing a bindings issue).
 process.env.WRANGLER_LOG ??= 'warn'
+
+// Set by CI's e2e job (and the local equivalent); see ./server_coverage.js.
+if (process.env.E2E_COVERAGE) record_server_coverage()
 
 /**
  * Creates standardized Vite configuration for Tabitha SvelteKit applications, including the

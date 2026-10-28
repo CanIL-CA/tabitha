@@ -5,7 +5,7 @@ import { test as base, defineConfig, devices } from '@playwright/test'
 
 export { expect } from '@playwright/test'
 
-/** Set by CI's e2e job to record browser coverage for the unit + e2e report (scripts/ci/merge_coverage.ts). */
+/** Set by CI's e2e job to record browser coverage (and, in ./server_coverage.js, each dev server's own) for the unit + e2e report (scripts/ci/merge_coverage.ts). */
 const COLLECT_COVERAGE = Boolean(process.env.E2E_COVERAGE)
 
 /** Playwright runs from the app's own directory, so this is `apps/<app>/coverage/e2e`. */
@@ -118,6 +118,8 @@ export function create_app_playwright_config({
 			// would for a standalone single-app run if nothing is running yet), and is required for
 			// the orchestrated multi-app run, where the servers are already started externally.
 			reuseExistingServer: true,
+			// Playwright's default is SIGKILL, which would skip the server's coverage write (./server_coverage.js).
+			...COLLECT_COVERAGE && { gracefulShutdown: { signal: 'SIGTERM', timeout: 5000 } },
 		},
 		...COLLECT_COVERAGE && { globalTeardown: fileURLToPath(new URL('./playwright_coverage_teardown.js', import.meta.url)) },
 		...overrides,

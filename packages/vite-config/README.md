@@ -33,7 +33,7 @@ import { create_app_playwright_config } from '@tabitha/vite-config/playwright'
 export default create_app_playwright_config({ port: 1337 })
 ```
 
-Specs import `test` and `expect` from `@tabitha/vite-config/playwright` rather than `@playwright/test`. With `E2E_COVERAGE=1` set, that `test` records browser coverage for every test that uses `page` (Chromium only) into the app's `coverage/e2e/raw`. CI's `coverage_layers` job joins it with the unit coverage (`bun run test:coverage:merge`). To run it locally:
+Specs import `test` and `expect` from `@tabitha/vite-config/playwright` rather than `@playwright/test`. With `E2E_COVERAGE=1` set, that `test` records browser coverage for every test that uses `page` (Chromium only) into the app's `coverage/e2e/raw`. `create_app_vite_config` also records the dev server's own code (`+server.ts` routes, hooks and what they call) into `coverage/e2e-server` when it gets SIGINT or SIGTERM (`server_coverage.js`); `bun run test:e2e` stops its servers that way. CI's `coverage_layers` job joins it with the unit coverage (`bun run test:coverage:merge`). To run it locally:
 
 ```sh
 bun run test:coverage

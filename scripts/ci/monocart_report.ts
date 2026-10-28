@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
 import { CoverageReport } from 'monocart-coverage-reports'
 import type { CoverageJson } from './coverage_layers'
@@ -14,6 +14,11 @@ export function unit_coverage_dir({ root_dir, workspace }: { root_dir: string, w
 /** Where the Playwright fixture in @tabitha/vite-config/playwright leaves an app's raw e2e coverage. */
 export function e2e_raw_dir({ root_dir, workspace }: { root_dir: string, workspace: string }): string {
 	return join(root_dir, workspace, 'coverage', 'e2e', 'raw')
+}
+
+/** Where `record_server_coverage` in @tabitha/vite-config leaves the coverage of an app's own dev server. */
+export function e2e_server_dir({ root_dir, workspace }: { root_dir: string, workspace: string }): string {
+	return join(root_dir, workspace, 'coverage', 'e2e-server')
 }
 
 /** The files the coverage report counts: a Vitest workspace's own source code. */
@@ -45,20 +50,32 @@ export async function read_unit_coverage({ root_dir, workspaces }: { root_dir: s
 	return { summary, files }
 }
 
+async function read_server_coverage_files({ root_dir, workspaces }: { root_dir: string, workspaces: string[] }): Promise<string[]> {
+	const files = await Promise.all(workspaces.map(async workspace => {
+		const dir = e2e_server_dir({ root_dir, workspace })
+		return existsSync(dir) ? (await readdir(dir)).filter(name => name.endsWith('.json')).map(name => join(dir, name)) : []
+	}))
+	return files.flat()
+}
+
 /**
  * The e2e layer: one istanbul report over every workspace's source from the apps' raw e2e coverage.
  * An app's e2e run can cover a package's code too, so this runs across all workspaces at once.
  * Files no e2e test loaded count as 0% covered, as in the unit layer.
+ *
+ * The browser's raw coverage can't see server code, so each app's dev server also records its own,
+ * which is added to the same report.
  */
 export async function generate_e2e_coverage({ root_dir, workspaces, output_dir }: { root_dir: string, workspaces: string[], output_dir: string }): Promise<CoverageJson> {
 	const input_dirs = workspaces.map(workspace => e2e_raw_dir({ root_dir, workspace })).filter(dir => existsSync(dir))
-	if (input_dirs.length === 0) return {}
+	const server_files = await read_server_coverage_files({ root_dir, workspaces })
+	if (input_dirs.length === 0 && server_files.length === 0) return {}
 
 	const keep = (path: string) => is_reported_source({ root_dir, workspaces, file: resolve(root_dir, path) })
-	await new CoverageReport({
+	const report = new CoverageReport({
 		name: 'e2e',
 		outputDir: output_dir,
-		inputDir: input_dirs,
+		inputDir: input_dirs.length > 0 ? input_dirs : undefined,
 		baseDir: root_dir,
 		reports: ['json'],
 		logging: 'error',
@@ -68,6 +85,8 @@ export async function generate_e2e_coverage({ root_dir, workspaces, output_dir }
 			transformer: compile_untested,
 		},
 		sourceFilter: keep,
-	}).generate()
+	})
+	for (const file of server_files) await report.add(await read_json(file))
+	await report.generate()
 	return absolute_keys({ base_dir: root_dir, report: await read_json<CoverageJson>(join(output_dir, 'coverage-final.json')) })
 }
