@@ -354,6 +354,10 @@ Rule editing has *no* TaBiThA counterpart today. It is not the Editor app, whose
 
 Wherever it lands, the tree editor over `InputStructures` is the most demanding interface design in the migration. The approach will be collaborative — the TaBiThA team exploring alternatives together. Decoding the `InputStructures` grammar into a documented representation is the natural first step, since the editor cannot be designed against a format nobody has written down.
 
+### Table 'de-segregation'
+
+Currently several sets of tables exist which differ only (or nearly so) in what part of speech they represent. For example, `Noun_Mappings_English`, `Verb_Mappings_English`, etc. It is unclear when those should be collapsed into one table per meaningful unit. On the one hand, we ought to be able to insulate TBTA from that segregation using the "seam" concept described above. On the other hand, implementing such a seam in TBTA would be easier if there weren't so many code paths to deal with in the first place.
+
 ---
 
 *Notes, not a commitment. Sizes, branch positions and code measurements come from the `tbta` and `tabitha` repositories and will drift — most were checked in early September 2026, branch state on the 11th. Only the release-workflow and parity-harness status above were rechecked on October 24, 2026. Anything not verified against the repos is flagged where it appears.*
