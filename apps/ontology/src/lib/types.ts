@@ -126,6 +126,26 @@ export type ApplyPendingResult = {
 export type SaveResult = 'applied' | 'pending' | 'queued'
 
 //===============
+// Simple Sense types for the create Concept page
+
+export type SenseStatus = 'in ontology' | 'suggested' | 'approved' | 'unsynced'
+
+// one sense of a stem and part of speech, either already in the Ontology or still waiting to be added
+// the stem and part of speech are already known
+export type StemSense = {
+	sense: string
+	gloss: string
+	status: SenseStatus
+}
+
+export type StemSensesResult = {
+	stem: string
+	senses: StemSense[]
+	next_sense: string
+	has_pending_create: boolean
+}
+
+//===============
 // User types
 
 export type UserEmail = string

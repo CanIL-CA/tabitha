@@ -2,7 +2,7 @@ import { get_all_mutations, type QueuedMutation } from './queue'
 import { concepts_match } from '@tabitha/types/patterns'
 import { create_change_fields, diff_change_fields } from '#lib/changes.js'
 import { decode_categorization_for_update } from '#lib/transformers.js'
-import type { Concept, OntologyChange } from '#lib/types.js'
+import type { Concept, OntologyChange, StemSense } from '#lib/types.js'
 import type { ConceptKey } from '@tabitha/types'
 
 // concept is only needed (and only available) for an update -- a create has nothing on the server yet to diff against.
@@ -48,6 +48,14 @@ export async function merge_pending_changes(concepts: Concept[]): Promise<Concep
 export async function check_for_pending_change(a_concept: ConceptKey): Promise<QueuedMutation | undefined> {
 	const mutations = await get_all_mutations()
 	return mutations.find(mutation => mutation.action === 'update' && concepts_match({ a: mutation.body, b: a_concept }))
+}
+
+// Queued creates for one stem and part of speech, which the server can't count when choosing a new concept's sense.
+export async function check_for_unsynced_senses({ stem, part_of_speech }: { stem: string, part_of_speech: string }): Promise<StemSense[]> {
+	const mutations = await get_all_mutations()
+	return mutations
+		.filter(({ action, body }) => action === 'create' && body.stem === stem && body.part_of_speech === part_of_speech)
+		.map(({ body: { sense, gloss } }) => ({ sense, gloss, status: 'unsynced' }))
 }
 
 // Queued creates for concepts that don't exist on the server yet -- for the /protected/changes

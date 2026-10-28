@@ -4,7 +4,10 @@
 	import Icon from '@iconify/svelte'
 	import { fade } from 'svelte/transition'
 	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
-	import { apply_pending_changes, approve_change } from '#lib/changes.js'
+	import ChangeFilters from '#lib/ChangeFilters.svelte'
+	import MoreLink from '#lib/MoreLink.svelte'
+	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/change_filters.js'
+	import { CHANGES_BATCH_SIZE, apply_pending_changes, approve_change } from '#lib/changes.js'
 	import { format_datetime, format_time } from '#lib/format.js'
 	import type { OntologyChange } from '#lib/types.js'
 	import { onMount } from 'svelte'
@@ -12,6 +15,16 @@
 	let { data }: PageProps = $props()
 
 	let changes = $derived(data.changes)
+
+	let filters = $state({ ...NO_CHANGE_FILTERS })
+	let filtered_changes = $derived(filter_changes({ changes, ...filters }))
+
+	let visible_count = $state(CHANGES_BATCH_SIZE)
+	let visible_changes = $derived(filtered_changes.slice(0, visible_count))
+
+	function reset_visible_count() {
+		visible_count = CHANGES_BATCH_SIZE
+	}
 
 	let save_result = $derived(page.state.save_result)
 
@@ -99,8 +112,8 @@
 	</div>
 {/if}
 
-<div class="pt-5 w-full">
-	<section>
+<div class="pt-2 w-full">
+	<section class="pb-4">
 		<a href="/protected/concept/create" class="btn">
 			<Icon icon="material-symbols:add" class="w-5 h-5" />
 			Add Concept
@@ -139,6 +152,10 @@
 	{/if}
 
 	{#if changes.length > 0}
+		<ChangeFilters {changes} bind:filters onchange={reset_visible_count} />
+	{/if}
+
+	{#if filtered_changes.length > 0}
 		<table class="table w-full">
 			<thead>
 				<tr>
@@ -153,13 +170,20 @@
 				</tr>
 			</thead>
 			<tbody>
-			{#each changes as change}
+			{#each visible_changes as change}
 				<tr class="transition-color duration-3000 {do_highlight && was_recent_change(change) ? 'bg-info/30' : ''}">
 					<td>{change.action === 'create' ? 'Add' : 'Edit'}</td>
 					<td>
-						<a href={`/?q=${change.concept.stem}&category=${change.concept.part_of_speech}`} target="_blank" class="link link-hover">
-							{change.concept.stem}-{change.concept.sense} ({change.concept.part_of_speech})
-						</a>
+						<div class="flex items-center gap-1">
+							<a href={`/?q=${change.concept.stem}&category=${change.concept.part_of_speech}`} target="_blank" class="link link-hover">
+								{change.concept.stem}-{change.concept.sense} ({change.concept.part_of_speech})
+							</a>
+							{#if change.action === 'update' || change.applied_date}
+								<a title="Edit concept" href="/protected/concept/update?concept={change.concept.stem}-{change.concept.sense}-{change.concept.part_of_speech}" class="btn btn-xs btn-ghost btn-square">
+									<Icon icon="mdi:edit-outline" class="h-4 w-4" />
+								</a>
+							{/if}
+						</div>
 					</td>
 					<td>
 						<ChangeDiffData {change}/>
@@ -216,6 +240,10 @@
 			{/each}
 			</tbody>
 		</table>
+
+		{#if filtered_changes.length > visible_count}
+			<MoreLink remaining={filtered_changes.length - visible_count} onclick={() => visible_count += CHANGES_BATCH_SIZE} />
+		{/if}
 	{:else}
 		No changes to show.
 	{/if}

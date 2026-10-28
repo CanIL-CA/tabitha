@@ -2,7 +2,7 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { OntologyChange, ConceptCreateData, OntologyUser } from '#lib/types.js'
-import { apply_change_directly, approve_change, can_approve_change, suggest_change } from './changes'
+import { apply_change_directly, approve_change, can_approve_change, get_pending_changes_for_concept, suggest_change } from './changes'
 
 // The tables changes.ts and the modules it calls read and write, as they're defined in the Ontology
 // snapshots (tools/databases/snapshots), with the Version row set to what that snapshot had.
@@ -176,5 +176,31 @@ describe('approve_change', () => {
 		const updated = await approve_change({ db, id: 1, user: { ...user, id: 7 } })
 
 		expect(updated.approved_by?.id).toBe(user.id)
+	})
+})
+
+describe('get_pending_changes_for_concept', () => {
+	const changes = `INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date, approved_by_id, approved_date, applied_date) VALUES
+		(1, 'faith', 'A', 'Noun', 'update', '{"gloss":{"old":"trust in God","value":"belief"}}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL, NULL),
+		(2, 'faith', 'A', 'Noun', 'update', '{"level":{"old":"1","value":"2"}}', NULL, NULL, 1, '2026-10-02T00:00:00.000Z', NULL),
+		(3, 'faith', 'A', 'Noun', 'update', '{"level":{"old":"2","value":"1"}}', NULL, NULL, 1, '2026-09-01T00:00:00.000Z', '2026-09-01T00:00:00.000Z'),
+		(4, 'faith', 'B', 'Noun', 'update', '{}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL, NULL),
+		(5, 'trust', 'A', 'Noun', 'update', '{}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL, NULL)`
+
+	it('returns only the unapplied changes to that exact concept, unapproved ones first', async () => {
+		const { db, query } = create_test_db()
+		query(changes)
+
+		const pending = await get_pending_changes_for_concept({ db, concept_key: { stem: 'faith', sense: 'A', part_of_speech: 'Noun' } })
+
+		expect(pending.map(({ id }) => id)).toEqual([1, 2])
+		expect(pending[0].data).toEqual({ gloss: { old: 'trust in God', value: 'belief' } })
+	})
+
+	it('returns nothing for a concept with no pending changes', async () => {
+		const { db, query } = create_test_db()
+		query(changes)
+
+		expect(await get_pending_changes_for_concept({ db, concept_key: { stem: 'trust', sense: 'B', part_of_speech: 'Noun' } })).toEqual([])
 	})
 })

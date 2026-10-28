@@ -10,7 +10,7 @@ export async function load() {
 		sense: '',
 		part_of_speech: 'Noun',
 		level: '1',
-		gloss: '',
+		gloss: '(simple) ',
 		brief_gloss: '',
 		categories: default_categories.Noun?.slice() ?? [],
 		curated_examples: '',

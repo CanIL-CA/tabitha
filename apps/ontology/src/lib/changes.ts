@@ -1,4 +1,6 @@
-import type { OntologyChange, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult } from '#lib/types.js'
+import type { OntologyChange, OntologyChangeDataFields, ConceptCreateData, ConceptUpdateData, ApplyPendingResult, StemSense } from '#lib/types.js'
+
+export const CHANGES_BATCH_SIZE = 12
 
 // fetch()'s res.json() leaves dates as strings, unlike SvelteKit's own load-data serialization, which revives them automatically.
 function revive_dates(raw: OntologyChange): OntologyChange {
@@ -86,8 +88,9 @@ export function change_made_between_versions({ since, before }: { since: string,
 	}
 }
 
-export async function get_next_sense({ stem, part_of_speech }: { stem: string, part_of_speech: string }): Promise<string> {
-	const res = await fetch(`/protected/concept/create/next-sense?stem=${stem}&part_of_speech=${part_of_speech}`)
-	const { next_sense } = await res.json()
-	return next_sense
+export async function get_stem_senses({ stem, part_of_speech }: { stem: string, part_of_speech: string }): Promise<StemSense[]> {
+	const params = new URLSearchParams({ stem, part_of_speech })
+	const res = await fetch(`/protected/concept/create/senses?${params}`)
+	const { senses } = await res.json()
+	return senses
 }

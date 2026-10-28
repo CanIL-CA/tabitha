@@ -3,9 +3,10 @@ import type { Page } from '@playwright/test'
 import { expect, test, wait_for_hydration } from '@tabitha/vite-config/playwright'
 
 async function next_sense({ page, stem, part_of_speech }: { page: Page, stem: string, part_of_speech: string }): Promise<string> {
-	const response = await page.request.get(`/protected/concept/create/next-sense?stem=${stem}&part_of_speech=${part_of_speech}`)
-	const { next_sense } = await response.json()
-	return next_sense
+	const response = await page.request.get(`/protected/concept/create/senses?stem=${stem}&part_of_speech=${part_of_speech}`)
+	const { senses }: { senses: { sense: string }[] } = await response.json()
+	const highest_code = Math.max('A'.charCodeAt(0) - 1, ...senses.map(({ sense }) => sense.charCodeAt(0)))
+	return String.fromCharCode(highest_code + 1)
 }
 
 test('changing the part of speech looks up its next sense and resets its categories', async ({ page }) => {
