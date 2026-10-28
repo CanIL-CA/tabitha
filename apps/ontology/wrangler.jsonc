@@ -13,7 +13,12 @@
 	"workers_dev": false,
 	"observability": {
 		"enabled": true,
-		"head_sampling_rate": 1
+		"head_sampling_rate": 1,
+		// Spans for every D1, Vectorize, rate-limit and service-binding call, so a hung request
+		// shows which call it is waiting on
+		"traces": {
+			"enabled": true
+		}
 	},
 	"vars": {
 		"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // Ontology (prod)

@@ -5,6 +5,7 @@ import { get_user_info } from '#lib/server/auth.js'
 import { create_auth, type Auth } from '#lib/server/better_auth.js'
 import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
+import { with_timeout } from '@tabitha/d1'
 import { noindex_handle } from '@tabitha/noindex'
 import { create_rate_limit_handle } from '@tabitha/rate-limit'
 import { error } from '@sveltejs/kit'
@@ -36,8 +37,8 @@ const db_config_handle: Handle = async function db_config_handle({ event, resolv
 		throw error(500, 'Database configuration error: DB_Ontology binding is missing.')
 	}
 
-	event.locals.db_ontology = env.DB_Ontology.withSession()
-	event.locals.db_auth = env.DB_Auth.withSession()
+	event.locals.db_ontology = with_timeout({ db: env.DB_Ontology.withSession() })
+	event.locals.db_auth = with_timeout({ db: env.DB_Auth.withSession() })
 
 	return resolve(event)
 }
@@ -48,7 +49,7 @@ let auth: Auth | undefined
 
 function get_auth(): Auth {
 	auth ??= create_auth({
-		db_auth: env.DB_Auth,
+		db_auth: with_timeout({ db: env.DB_Auth }),
 		secret: env.BETTER_AUTH_SECRET || BETTER_AUTH_SECRET,
 		google_client_id: env.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID,
 		google_client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT_SECRET,
