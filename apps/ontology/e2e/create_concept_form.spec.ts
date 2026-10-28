@@ -27,12 +27,12 @@ test('changing the part of speech looks up its next sense and resets its categor
 	await part_of_speech.selectOption('Verb')
 	await expect(sense).toHaveValue(verb_sense)
 
-	const agent = page.locator('select[name="categories[]"]').first()
-	await expect(agent).toHaveValue('Agent-like')
+	const agent = page.getByRole('radiogroup', { name: 'Agent-like', exact: true })
+	await expect(agent.getByRole('radio', { name: 'Required' })).toBeChecked()
 
-	await agent.selectOption('(Agent-like)')
+	await agent.getByRole('radio', { name: 'Optional' }).check()
 	await part_of_speech.selectOption('Adjective')
 	await part_of_speech.selectOption('Verb')
 
-	await expect(page.locator('select[name="categories[]"]').first()).toHaveValue('Agent-like')
+	await expect(agent.getByRole('radio', { name: 'Required' })).toBeChecked()
 })

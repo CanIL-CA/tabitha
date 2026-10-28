@@ -143,7 +143,7 @@ export const default_categories: Partial<Record<PartOfSpeech, string[]>> = {
 		...usage_info.Adjective?.map(v => `never ${v}`) ?? [],
 	],
 	Adposition: usage_info.Adposition?.map(v => `never ${v}`) ?? [],
-	Adverb: usage_info.Adverb?.map(v => `never ${v}`) ?? [],
+	Adverb: usage_info.Adverb?.map((v, i) => i === 0 ? `always ${v}` : `never ${v}`) ?? [],
 	Conjunction: usage_info.Conjunction?.map(v => `never ${v}`) ?? [],
 }
 
