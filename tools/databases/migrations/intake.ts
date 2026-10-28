@@ -52,8 +52,7 @@ async function resolve_extracted_root(extract_dir: string): Promise<string> {
 
 	throw new Error(`No .sqlite or .new files found directly in the extracted zip contents (or a single wrapping folder) at ${extract_dir}. Check the zip's internal structure.`)
 
-	// A TBTA delivery may be nothing but .new upgrade files (e.g. an ontology-only "Ontology.new"),
-	// which staging renames to .sqlite later.
+	// A TBTA delivery may be nothing but .new upgrade files, which staging renames to .sqlite later.
 	function has_tbta_files(dir: string): boolean {
 		return Array.from(new Glob('*.{sqlite,new}').scanSync(dir)).length > 0
 	}

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Supersedes [0015](./0015-cross-app-preview-custom-domains.md). Ontology's Preview sign-in is amended by [0021](./0021-better-auth-sessions-in-d1.md): Better Auth's OAuth proxy replaces Auth.js's, and Previews now write sign-in rows to `DB_Auth`. Server-side calls to production siblings go through service bindings since [0023](./0023-cross-app-calls-via-service-bindings.md).
+Accepted. Supersedes [0015](./0015-cross-app-preview-custom-domains.md). Ontology's Preview sign-in is amended by [0021](./0021-better-auth-sessions-in-d1.md): Better Auth's OAuth proxy replaces Auth.js's, and Previews now write sign-in rows to `DB_Auth`. Server-side calls to production siblings go through service bindings since [0023](./0023-cross-app-calls-via-service-bindings.md). The `DB_Ontology` Previews copy is amended by [0025](./0025-ontology-d1-single-source-of-truth.md): there are no more Ontology data deploys, so the copy keeps its name and is reset to production's data on demand by `refresh:preview`.
 
 ## Context
 

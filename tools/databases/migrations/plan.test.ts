@@ -23,17 +23,12 @@ function touch(name: string) {
 	writeFileSync(join(temp_dir, 'raw', name), 'fixture content')
 }
 
-function stage_ontology(date: string) {
-	touch(`Ontology_9494_${date}.tabitha.sqlite`)
-}
-
 describe('plan_migration', () => {
 	it('does a full build for every task on a first run (no prior outputs)', async () => {
 		const date = '2026-08-29'
 		touch(`Bible_${date}.tbta.sqlite`)
 		touch(`English_${date}.tbta.sqlite`)
 		touch(`Sources_Complex_${date}.tabitha.sqlite`)
-		stage_ontology(date)
 
 		const plan = await plan_migration(date)
 
@@ -54,10 +49,6 @@ describe('plan_migration', () => {
 			expect(task.changed).toBe(false)
 			expect(task.reason).toBe('no raw input has ever been staged for this task')
 		}
-
-		const ontology = plan.tasks.find(t => t.id === 'Ontology')!
-		expect(ontology.changed).toBe(true)
-		expect(ontology.migrate_args).toEqual([sources.output_file, `raw/Sources_Complex_${date}.tabitha.sqlite`])
 	})
 
 	it('skips a task entirely when none of its inputs changed', async () => {
@@ -68,7 +59,6 @@ describe('plan_migration', () => {
 		const date = '2026-08-29'
 		touch(`English_${date}.tbta.sqlite`) // Targets still needs to build; Sources has nothing new
 		touch(`Sources_Complex_${date}.tabitha.sqlite`)
-		stage_ontology(date)
 
 		const plan = await plan_migration(date)
 
@@ -89,7 +79,6 @@ describe('plan_migration', () => {
 		touch(`Bible_${date}.tbta.sqlite`) // only Bible changed this run
 		touch(`English_${date}.tbta.sqlite`)
 		touch(`Sources_Complex_${date}.tabitha.sqlite`)
-		stage_ontology(date)
 
 		const plan = await plan_migration(date)
 
@@ -111,7 +100,6 @@ describe('plan_migration', () => {
 		touch(`Bible_${date}.tbta.sqlite`) // only Bible changed this run
 		touch(`English_${date}.tbta.sqlite`)
 		touch(`Sources_Complex_${date}.tabitha.sqlite`)
-		stage_ontology(date)
 
 		const plan = await plan_migration(date)
 
@@ -125,9 +113,8 @@ describe('plan_migration', () => {
 		const date = '2026-08-29'
 		touch(`Bible_${date}.tbta.sqlite`)
 		touch(`Sources_Complex_${date}.tabitha.sqlite`)
-		stage_ontology(date)
 		// No English (or any other target-language) raw file staged at all -- unlike the old shared
-		// Targets database, this must not fail Sources/Ontology or the other projects' migrations.
+		// Targets database, this must not fail Sources or the other projects' migrations.
 
 		const plan = await plan_migration(date)
 
@@ -141,65 +128,31 @@ describe('plan_migration', () => {
 		expect(sources.changed).toBe(true)
 	})
 
-	it('resolves Sources_Complex independently of Sources, even at a different date', async () => {
-		const date = '2026-08-29'
-		touch(`Bible_${date}.tbta.sqlite`)
-		touch(`English_${date}.tbta.sqlite`)
-		stage_ontology(date)
-		// Sources_Complex wasn't regenerated this run (English/Bible/Sample all unchanged at staging) --
-		// only an older one exists.
-		touch('Sources_Complex_2026-08-01.tabitha.sqlite')
-
-		const plan = await plan_migration(date)
-
-		const ontology = plan.tasks.find(t => t.id === 'Ontology')!
-		const sources = plan.tasks.find(t => t.id === 'Sources')!
-		expect(ontology.migrate_args).toEqual([sources.output_file, 'raw/Sources_Complex_2026-08-01.tabitha.sqlite'])
-	})
-
 	it('never mistakes Sources_Complex for a prior Sources output, even though it sorts after it', async () => {
 		const date = '2026-09-29'
 		touch('Bible_2026-07-27.tbta.sqlite')
 		touch('Sources_2026-07-27.tabitha.sqlite')
 		touch('Sources_Complex_2026-06-25.tabitha.sqlite')
-		stage_ontology(date)
 
 		const plan = await plan_migration(date)
 
 		const sources = plan.tasks.find(t => t.id === 'Sources')!
 		expect(sources.changed).toBe(false)
 		expect(sources.output_file).toBe('raw/Sources_2026-07-27.tabitha.sqlite')
-
-		const ontology = plan.tasks.find(t => t.id === 'Ontology')!
-		expect(ontology.migrate_args).toEqual(['raw/Sources_2026-07-27.tabitha.sqlite', 'raw/Sources_Complex_2026-06-25.tabitha.sqlite'])
 	})
 
-	it('throws when Sources changed but no Ontology database was staged for the run date', async () => {
-		const date = '2026-08-29'
-		touch(`Bible_${date}.tbta.sqlite`)
-		touch(`English_${date}.tbta.sqlite`)
-		touch(`Sources_Complex_${date}.tabitha.sqlite`)
-
-		await expect(plan_migration(date)).rejects.toThrow(/No staged Ontology database/)
-	})
-
-	it('skips the Ontology when none was delivered and Sources is unchanged, so a target-language-only delivery can run', async () => {
+	it('runs a target-language-only delivery, leaving Sources as it is', async () => {
 		const prior_date = '2026-07-31'
 		touch(`Bible_${prior_date}.tbta.sqlite`)
 		touch(`Sources_${prior_date}.tabitha.sqlite`)
 		touch(`Sources_Complex_${prior_date}.tabitha.sqlite`)
 		touch(`Indonesian_${prior_date}.tbta.sqlite`)
 		touch(`Targets_Indonesian_${prior_date}.tabitha.sqlite`)
-		stage_ontology('2026-09-29')
 
 		const date = '2026-10-06'
 		touch(`Indonesian_${date}.tbta.sqlite`)
 
 		const plan = await plan_migration(date)
-
-		const ontology = plan.tasks.find(t => t.id === 'Ontology')!
-		expect(ontology.changed).toBe(false)
-		expect(ontology.output_file).toBe('raw/Ontology_9494_2026-09-29.tabitha.sqlite')
 
 		const sources = plan.tasks.find(t => t.id === 'Sources')!
 		expect(sources.changed).toBe(false)

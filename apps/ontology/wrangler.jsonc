@@ -62,7 +62,10 @@
 		{
 			"binding": "DB_Ontology",
 			"database_name": "Ontology_9494_2026-09-29",
-			"database_id": "a2f52867-bcbd-4477-af7e-ff702de3c5ef"
+			"database_id": "a2f52867-bcbd-4477-af7e-ff702de3c5ef",
+			// The live database is the source of truth and is never replaced; its name keeps the date it
+			// was created. Schema changes are migrations applied in place (migrations/ontology/README.md).
+			"migrations_dir": "migrations/ontology"
 		},
 		{
 			"binding": "DB_Auth",
@@ -142,10 +145,10 @@
 				}
 			}
 		],
-		// DB_Ontology is a Previews-only copy loaded from the same dump as production's, because
-		// suggest/approve write to it; tools/databases creates and repoints it with each new Ontology
-		// database. DB_Auth stays shared with production: Previews read its permissions, and a
-		// Preview sign-in writes its Better Auth user and session rows there.
+		// DB_Ontology is a Previews-only copy of production's, because suggest/approve write to it;
+		// `bun run refresh:preview` in tools/databases resets it to production's data. DB_Auth stays
+		// shared with production: Previews read its permissions, and a Preview sign-in writes its
+		// Better Auth user and session rows there.
 		"d1_databases": [
 			{
 				"binding": "DB_Ontology",
@@ -164,8 +167,8 @@
 				"bucket_name": "db-backups"
 			}
 		],
-		// Shares production's index, the same way it shares production's DB_Ontology -- the
-		// embeddings describe that same data.
+		// Shares production's index: the embeddings describe production's concepts, which the
+		// Previews copy of DB_Ontology starts from.
 		"vectorize": [
 			{
 				"binding": "VECTORIZE_Concepts",

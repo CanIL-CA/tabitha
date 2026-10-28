@@ -346,7 +346,7 @@ Who owns hosting the 227-table databases, and where do they live? The critical p
 
 ### Adopting D1's migration process
 
-The current approach scripts a migration into a newly-named ontology database. Moving to Cloudflare's D1 migration process — versioned migrations applied in place — is worth investigating instead. The download path is unaffected either way, since it already serves from R2 independently of how the schema evolves.
+Decided for the Ontology in [ADR 0025](decisions/0025-ontology-d1-single-source-of-truth.md): the live Ontology D1 is the source of truth, and its schema changes are D1 migrations applied in place, no longer a migration into a newly-named database. The download path is unchanged, since it already serves from R2 independently of how the schema evolves. Sources and Targets still go through dated migrations; whether they follow is open.
 
 ### Where rule editing lands, and who designs it
 

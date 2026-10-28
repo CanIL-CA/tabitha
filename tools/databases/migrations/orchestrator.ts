@@ -1,11 +1,12 @@
 import { $, Glob } from 'bun'
-import Database from 'bun:sqlite'
 import { cp, mkdir, rename } from 'fs/promises'
 import { existsSync } from 'fs'
 import { basename, join } from 'path'
 import { create_logger } from './log'
 import { deploy_to_d1 } from './deploy'
 import { intake } from './intake'
+import { rebuild_examples } from './ontology/examples'
+import { to_d1_importable } from './ontology/live'
 import { plan_migration, type TaskFamily } from './plan'
 import { resolve_dated_file } from './resolve_dated_file'
 import { load_state, mark_done, clear_state } from './state'
@@ -14,10 +15,13 @@ import { validate_migration_output, type ValidationConfig } from './validate'
 const log = create_logger('Orchestrator')
 
 const AUDIENCE_NAME = 'Unchurched Adults'
-// Ontology and Sources_Complex are per-run generated artifacts tightly date-locked to this run's
-// other outputs, not independently-versioned raw inputs -- so they're always staged fresh and
-// excluded from the unchanged-content check.
-const DEDUP_EXEMPT = new Set(['Ontology', 'Sources_Complex'])
+// Sources_Complex is a per-run generated artifact tightly date-locked to this run's other outputs,
+// not an independently-versioned raw input -- so it's always staged fresh and excluded from the
+// unchanged-content check.
+const DEDUP_EXEMPT = new Set(['Sources_Complex'])
+// tbta_utils reads Ontology.sqlite where the delivery put it, but the delivered copy is never staged:
+// the live Ontology D1 is the source of truth (docs/decisions/0025-ontology-d1-single-source-of-truth.md).
+const NOT_STAGED = new Set(['Ontology'])
 const USAGE = 'Usage: bun migrate.ts "<directory or zip containing all necessary TBTA dbs>" YYYY-MM-DD'
 
 if (!Bun.which('sqlite3')) {
@@ -71,16 +75,6 @@ try {
 			duplicate_check: { table: 'Sources', columns: ['type', 'id_primary', 'id_secondary', 'id_tertiary'] },
 			row_count_table: 'Sources',
 		},
-		Ontology: {
-			// Complex_Terms is the one table this migration step actually populates, so it's the
-			// meaningful signal for row-count sanity here (the rest of Ontology.sqlite is the TBTA
-			// export, with only NULL text columns normalized).
-			row_count_table: 'Complex_Terms',
-			not_null_checks: [
-				{ table: 'Concepts', columns: ['gloss', 'brief_gloss', 'categorization', 'curated_examples'] },
-				{ table: 'Complex_Terms', columns: ['level', 'notes'] },
-			],
-		},
 		Targets: {
 			// Per-language translation output is expected to only partially cover the canon while
 			// in progress, so only unexpected/misspelled book names fail this check, not missing ones.
@@ -123,14 +117,8 @@ try {
 			log.step(`Skipping ${task.id} dump (already completed for this run).`)
 		} else {
 			log.step(`Creating dump of ${task.id} database...`)
-			// BEGIN TRANSACTION/COMMIT must be stripped before a `wrangler d1 execute --file` import --
-			// https://developers.cloudflare.com/d1/best-practices/import-export-data/
 			const raw_dump = await $`sqlite3 --escape off ${task.output_file} .dump`.text()
-			const d1_importable_dump = raw_dump
-				.split('\n')
-				.filter(line => !/^(PRAGMA|BEGIN TRANSACTION|COMMIT)/.test(line))
-				.join('\n')
-			await Bun.write(dump_file, d1_importable_dump)
+			await Bun.write(dump_file, to_d1_importable(raw_dump))
 			await mark_done({ date, step: dumped_step, completed_steps })
 		}
 
@@ -144,6 +132,27 @@ try {
 			await deploy_to_d1({ task, dump_file, date })
 			await mark_done({ date, step: deployed_step, completed_steps })
 		}
+	}
+
+	// The Ontology's Exhaustive_Examples are built from Sources, so a new Sources build rebuilds them
+	// in the live Ontology D1. Only the Previews copy here: like the new Sources database, production
+	// moves once the branch merges, by running the printed command.
+	const sources_task = plan.tasks.find(task => task.id === 'Sources')
+	if (sources_task?.changed) {
+		const sources_complex_file = await resolve_dated_file({ dir: 'raw', prefix: 'Sources_Complex', date, ext: 'tabitha.sqlite' })
+		if (!sources_complex_file) {
+			throw new Error(`No Sources_Complex database found for ${date} (or any prior date). This is normally generated automatically via "tbta_utils export-generated-cci" during staging.`)
+		}
+
+		const examples_step = 'Ontology_examples:preview'
+		if (completed_steps.has(examples_step)) {
+			log.step('Skipping the Previews Ontology examples rebuild (already completed for this run).')
+		} else {
+			await rebuild_examples({ target: 'preview', sources_file: sources_task.output_file, sources_complex_file })
+			await mark_done({ date, step: examples_step, completed_steps })
+		}
+
+		log.warn(`After this branch merges, rebuild production's Ontology examples: bun run examples:rebuild production ${sources_task.output_file} ${sources_complex_file}`)
 	}
 
 	await clear_state(date)
@@ -170,6 +179,7 @@ async function stage_tbta_files(working_dir: string) {
 		return db_names
 			.map(db_name => basename(db_name, '.sqlite')) // e.g., ~/Downloads/2025-09-25/Bible.sqlite => Bible
 			.filter(Boolean) // remove empty strings
+			.filter(name => !NOT_STAGED.has(name))
 			.map(normalize_name)
 			.map(stage_one)
 	}
@@ -187,33 +197,11 @@ async function stage_tbta_files(working_dir: string) {
 		const src = `${working_dir}/${name}.sqlite`
 
 		let dest = `./raw/${name}_${date}.tbta.sqlite`
-		if (name === 'Ontology') {
-			dest = derive_ontology_name()
-		}
 		if (name === 'Sources_Complex') {
 			dest = `./raw/Sources_Complex_${date}.tabitha.sqlite`
 		}
 
 		return { name, src, dest }
-
-		function derive_ontology_name() {
-			const ontology = new Database(src, { readwrite: true, create: false })
-
-			const row = ontology.query('SELECT version FROM Version').get() as { version: string } | null
-			if (!row?.version) {
-				throw new Error('Version table query returned no row or an empty version.')
-			}
-
-			const minor_version = row.version.split('.').at(-1) // 3.0.9493 => 9493
-			if (!minor_version) {
-				throw new Error(`Could not derive minor version from "${row.version}".`)
-			}
-
-			// close(true) releases immediately; plain close() defers until statements are finalized
-			// or GC'd, which on Windows can keep a file lock alive (see migrate_source_texts.ts).
-			ontology.close(true)
-			return `./raw/Ontology_${minor_version}_${date}.tabitha.sqlite`
-		}
 	}
 }
 

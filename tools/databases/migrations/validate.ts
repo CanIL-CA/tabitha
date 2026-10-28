@@ -163,8 +163,7 @@ async function load_prior_snapshot_row_count({ key, date, table }: {
 	date: string
 	table: string
 }): Promise<number | null> {
-	const pattern = key === 'Ontology' ? 'Ontology_*_*.tabitha.sqlite.sql' : `${key}_*.tabitha.sqlite.sql`
-	const files = Array.from(new Glob(pattern).scanSync('snapshots'))
+	const files = Array.from(new Glob(`${key}_*.tabitha.sqlite.sql`).scanSync('snapshots'))
 		.filter(file => !file.includes(date)) // exclude the snapshot this run just wrote
 		.sort() // lexicographical sort works for YYYY-MM-DD-stamped filenames
 

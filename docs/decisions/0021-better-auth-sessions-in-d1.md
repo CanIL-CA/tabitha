@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Supersedes [0006](./0006-e2e-auth-bypass-via-signed-session-cookie.md), and replaces the Auth.js redirect proxy described in [0020](./0020-per-pr-worker-previews.md).
+Accepted. Supersedes [0006](./0006-e2e-auth-bypass-via-signed-session-cookie.md), and replaces the Auth.js redirect proxy described in [0020](./0020-per-pr-worker-previews.md). Auth is no longer the only long-lived D1: since [0025](./0025-ontology-d1-single-source-of-truth.md), `DB_Ontology` is never replaced either, and its schema is owned by D1 migrations the same way.
 
 ## Context
 

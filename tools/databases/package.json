@@ -11,18 +11,17 @@
     "test": "bun run test:unit",
     "test:unit": "LOG_LEVEL=quiet bun test migrations",
     "migrate": "bun migrations/orchestrator.ts",
-    "migrate:ontology": "bun migrations/ontology/migrate.ts",
+    "examples:rebuild": "bun migrations/ontology/examples.ts",
+    "refresh:preview": "bun migrations/ontology/refresh_preview.ts",
     "migrate:sources": "bun migrations/sources/migrate.ts",
     "migrate:targets": "bun migrations/targets/migrate.ts",
     "migrate:status": "bun migrations/sources/update_status.ts",
     "r2:pull": "bun migrations/r2_sync.ts pull",
     "r2:push": "bun migrations/r2_sync.ts push",
     "r2:prune": "bun migrations/r2_sync.ts prune",
-    "cleanup:d1": "bun migrations/cleanup_unused_d1.ts",
-    "cleanup:backups": "bun migrations/cleanup_old_backups.ts"
+    "cleanup:d1": "bun migrations/cleanup_unused_d1.ts"
   },
   "dependencies": {
-    "@tabitha/complex-terms": "workspace:*",
     "adm-zip": "^0.6.1",
     "officeparser": "^8.2.0"
   },

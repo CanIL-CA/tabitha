@@ -2,6 +2,7 @@ import { $ } from 'bun'
 import { Database } from 'bun:sqlite'
 import { join } from 'node:path'
 import { create_logger } from '../log'
+import { BUCKET, PUBLIC_BASE_URL } from '../r2_sync'
 import { select_backup_database, type ListedDatabase } from './select_database'
 
 const log = create_logger('DB Backup')
@@ -21,14 +22,34 @@ const db_from_dump = await create_db(dump_filename)
 const backup_name = get_backup_name(db_from_dump)
 
 log.step(`Uploading ${db_from_dump.filename} to R2...`)
-// content-disposition filename ends in ".new" so that a downloaded backup, dropped into the legacy
-// TBTA app's directory, triggers that app's upgrade cycle (see downloads/+page.svelte for the
-// download-side half of this: the link is cross-origin, so this header controls the saved filename)
+// Every version is kept: classic TBTA's updater downloads db-backups/Ontology_<version>.tabitha.sqlite
+// by version, and its target upgrade asks for the exact older version a target was built against.
+// content-disposition names a browser download "Ontology.sqlite", the file name the TBTA app loads
+// (the link on /downloads is cross-origin, so this header controls the saved filename).
 await $`wrangler r2 object put db-backups/${backup_name} --file ${db_from_dump.filename} --content-disposition 'attachment; filename="${DB_NAME}.sqlite"' --remote`
 
 db_from_dump.close()
 
+await upload_snapshot({ dump_filename, backup_name })
+
 log.summary()
+
+// Local dev and CI load a pinned version of this dump (manifest.json's pinned_snapshots). A version's
+// snapshot is written once, like every other snapshot, so a pin always means the same data.
+async function upload_snapshot({ dump_filename, backup_name }: {
+	dump_filename: string
+	backup_name: string
+}) {
+	const snapshot_name = `${backup_name}.sql`
+	const existing = await fetch(`${PUBLIC_BASE_URL}/snapshots/${snapshot_name}`, { method: 'HEAD' })
+	if (existing.ok) {
+		log.step(`Snapshot ${snapshot_name} already exists; leaving it as is.`)
+		return
+	}
+
+	log.step(`Uploading snapshot ${snapshot_name} to ${BUCKET}...`)
+	await $`wrangler r2 object put ${BUCKET}/snapshots/${snapshot_name} --file ${dump_filename} --remote`
+}
 
 async function get_production_database_name(): Promise<string> {
 	const config_text = await Bun.file(join(import.meta.dir, '../../../../apps/ontology/wrangler.jsonc')).text()

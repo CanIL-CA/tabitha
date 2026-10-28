@@ -5,8 +5,8 @@ import { resolve_dated_file } from './resolve_dated_file'
 // One task per target-language project (docs/decisions/0012-per-project-targets-databases.md), each
 // independently plannable/rebuildable/deployable -- `family` groups them back for validation config
 // and script-directory lookup, since only `id` (not `family`) is granular enough for state tracking.
-export type TaskFamily = 'Sources' | 'Ontology' | 'Targets'
-export type TaskId = 'Sources' | 'Ontology' | `Targets_${typeof TARGET_PROJECTS[number]}`
+export type TaskFamily = 'Sources' | 'Targets'
+export type TaskId = 'Sources' | `Targets_${typeof TARGET_PROJECTS[number]}`
 
 export type PlannedTask = {
 	id: TaskId
@@ -38,7 +38,6 @@ const SOURCES_INPUTS = ['Bible', 'CommunityDevelopmentTexts', 'GrammarIntroducti
  */
 export async function plan_migration(date: string): Promise<MigrationPlan> {
 	const sources_task = await plan_rebuild_task({ id: 'Sources', family: 'Sources', input_names: SOURCES_INPUTS, date, hard_required: [] })
-	const ontology_task = await plan_ontology_task({ date, sources_task })
 	// Each target-language project is its own independent task: unlike the old single shared
 	// Targets database, one project's migration no longer requires any other project (including
 	// English) to be present or unchanged -- that's the isolation the per-project split is for.
@@ -48,7 +47,7 @@ export async function plan_migration(date: string): Promise<MigrationPlan> {
 		TARGET_PROJECTS.map(project => plan_rebuild_task({ id: `Targets_${project}`, family: 'Targets', input_names: [project], date, hard_required: [] })),
 	)
 
-	return { date, tasks: [sources_task, ontology_task, ...targets_tasks] }
+	return { date, tasks: [sources_task, ...targets_tasks] }
 }
 
 async function plan_rebuild_task({ id, family, input_names, date, hard_required }: {
@@ -95,58 +94,6 @@ async function plan_rebuild_task({ id, family, input_names, date, hard_required 
 		if (previous_output_file) return `${changed_inputs.length}/${all_inputs.length} input(s) changed`
 		return 'no prior output exists -- full build'
 	}
-}
-
-async function plan_ontology_task({ date, sources_task }: {
-	date: string
-	sources_task: PlannedTask
-}): Promise<PlannedTask> {
-	// See latest_previous_output_file's comment: scan from 'raw' rather than baking it into the
-	// pattern, so the match stays a bare filename regardless of OS-native separator handling.
-	const matched_file = Array.from(new Glob(`Ontology_*_${date}.tabitha.sqlite`).scanSync('raw'))[0]
-	if (!matched_file) {
-		// The Ontology's Exhaustive_Examples are built from Sources, so a Sources change still needs a
-		// fresh Ontology delivered alongside it. Without one, a delivery holding only target-language
-		// databases leaves the deployed Ontology as it is.
-		const previous_file = latest_previous_ontology_file(date)
-		if (sources_task.changed || !previous_file) {
-			throw new Error(`No staged Ontology database found for ${date}. An Ontology.sqlite (or .new) file must be delivered whenever Sources changes.`)
-		}
-
-		return {
-			id: 'Ontology',
-			family: 'Ontology',
-			changed: false,
-			reason: 'no Ontology delivered and Sources unchanged',
-			migrate_args: [],
-			output_file: `raw/${previous_file}`,
-		}
-	}
-
-	// Sources_Complex is generated during staging (via tbta_utils) and may itself have been left
-	// unchanged there -- resolve whichever one actually exists, which may be an older date than
-	// today's Ontology/Sources files.
-	const sources_complex_file = await resolve_dated_file({ dir: 'raw', prefix: 'Sources_Complex', date, ext: 'tabitha.sqlite' })
-	if (!sources_complex_file) {
-		throw new Error(`No Sources_Complex database found for ${date} (or any prior date). This is normally generated automatically via "tbta_utils export-generated-cci" during staging.`)
-	}
-
-	return {
-		id: 'Ontology',
-		family: 'Ontology',
-		changed: true,
-		reason: 'Ontology is exempt from staging dedup and always regenerated fresh.',
-		migrate_args: [sources_task.output_file, sources_complex_file],
-		output_file: `raw/${matched_file}`,
-	}
-}
-
-// Sorted by the date suffix rather than the whole name, since the Ontology version sits in front of it.
-function latest_previous_ontology_file(date: string): string | undefined {
-	return Array.from(new Glob('Ontology_*_????-??-??.tabitha.sqlite').scanSync('raw'))
-		.filter(file => extract_date(file) !== date)
-		.toSorted((a, b) => extract_date(a)!.localeCompare(extract_date(b)!))
-		.at(-1)
 }
 
 // A raw input's resolved path carries the date it was actually staged under (see staging's
