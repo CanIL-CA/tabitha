@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { PageProps } from './$types'
 	import Icon from '@iconify/svelte'
-	import ChangeDiffData from '#lib/ChangeDiffData.svelte'
+	import ChangeDiffData from '#lib/changes/ChangeDiffData.svelte'
 	import { format_datetime } from '#lib/format.js'
-	import ChangeFilters from '#lib/ChangeFilters.svelte'
-	import MoreLink from '#lib/MoreLink.svelte'
-	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/change_filters.js'
-	import { CHANGES_BATCH_SIZE } from '#lib/changes.js'
+	import ChangeFilters from '#lib/changes/ChangeFilters.svelte'
+	import MoreLink from '#lib/changes/MoreLink.svelte'
+	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/changes/change_filters.js'
+	import { CHANGES_BATCH_SIZE } from '#lib/changes/changes.js'
 	
 	let { data }: PageProps = $props()
 

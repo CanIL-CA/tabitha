@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CONCEPT_FILTERS } from './filters'
+	import { CONCEPT_FILTERS } from '#lib/search/filters.js'
 	import type { Concept } from '#lib/types.js'
 
 	type Props = {

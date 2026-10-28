@@ -2,7 +2,7 @@ import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
 import { get_version } from '#lib/server/ontology.js'
 import { default_categories } from '#lib/lookups.js'
-import { create_change_fields, diff_change_fields } from '#lib/changes.js'
+import { create_change_fields, diff_change_fields } from '#lib/changes/changes.js'
 import type { DbOntologyChange } from '#lib/server/types.js'
 import type { ConceptKey, PartOfSpeech } from '@tabitha/types'
 import type {

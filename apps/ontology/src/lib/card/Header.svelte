@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { Level, Occurrences, ConceptKey } from '#lib/index.js'
-	import PendingChange from '#lib/PendingChange.svelte'
+	import ConceptKey from './ConceptKey.svelte'
+	import Level from './Level.svelte'
+	import Occurrences from './Occurrences.svelte'
+	import PendingChange from '#lib/changes/PendingChange.svelte'
 	import type { Concept } from '#lib/types.js'
 
 	let { concept }: { concept: Concept } = $props()
