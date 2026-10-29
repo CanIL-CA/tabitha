@@ -18,6 +18,8 @@
 
 	let { data }: PageProps = $props()
 
+	let add_or_suggest = $derived<'Add' | 'Suggest'>(data.user?.permissions.can_add ? 'Add' : 'Suggest')
+
 	// svelte-ignore state_referenced_locally
 	let concept_data = $state(data.concept_data)
 
@@ -122,7 +124,7 @@
 <article class="card bg-base-200 mx-auto w-[80%]">
 	<div class="card-body">
 		<div class="prose pb-4">
-			<h2>Add a new concept</h2>
+			<h2>{add_or_suggest} a new concept</h2>
 		</div>
 
 		<form onsubmit={handle_submit} class="flex flex-col gap-6">

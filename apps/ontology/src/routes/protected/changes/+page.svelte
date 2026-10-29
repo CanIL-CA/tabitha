@@ -6,6 +6,7 @@
 	import ChangeDiffData from '#lib/changes/ChangeDiffData.svelte'
 	import ChangeFilters from '#lib/changes/ChangeFilters.svelte'
 	import MoreLink from '#lib/changes/MoreLink.svelte'
+	import AddConceptButton from '#lib/AddConceptButton.svelte'
 	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/changes/change_filters.js'
 	import { CHANGES_BATCH_SIZE, apply_pending_changes, approve_change } from '#lib/changes/changes.js'
 	import { format_datetime, format_time } from '#lib/format.js'
@@ -114,10 +115,7 @@
 
 <div class="pt-2 w-full">
 	<section class="pb-4">
-		<a href="/protected/concept/create" class="btn">
-			<Icon icon="material-symbols:add" class="w-5 h-5" />
-			Add Concept
-		</a>
+		<AddConceptButton user={data.user!} />
 	</section>
 
 	<div class="prose">

@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte'
 	import { format_time } from '#lib/format.js'
 	import { sync_complex_terms } from '#lib/complex_terms.js'
+	import AddConceptButton from '#lib/AddConceptButton.svelte'
 
 	let { data } = $props()
 
@@ -78,10 +79,7 @@
 				Create and manage ontology concepts.
 			</p>
 			<div>
-				<a href="/protected/concept/create" class="btn btn-accent">
-					<Icon icon="material-symbols:add" class="w-4 h-4" />
-					Add Concept
-				</a>
+				<AddConceptButton user={data.user!} />
 			</div>
 		</div>
 
