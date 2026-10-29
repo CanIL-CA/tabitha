@@ -22,17 +22,17 @@
 		<strong>{matches.length}</strong> results
 	</em>
 
-	<DisplayPreference bind:preference={display_preference} />
-</header>
+	<div class="flex items-center gap-4">
+		{#if data.user?.permissions.has_protected_access}
+			<a href="/protected/concept/create" class="btn btn-accent">
+				<Icon icon="material-symbols:add" class="w-5 h-5" />
+				Add Concept
+			</a>
+		{/if}
 
-{#if data.user?.permissions.has_protected_access}
-	<section>
-		<a href="/protected/concept/create" class="btn">
-			<Icon icon="material-symbols:add" class="w-5 h-5" />
-			Add Concept
-		</a>
-	</section>
-{/if}
+		<DisplayPreference bind:preference={display_preference} />
+	</div>
+</header>
 
 {#if display_preference === 'grid'}
 	<section class="mt-8 flex flex-row flex-wrap gap-10">
