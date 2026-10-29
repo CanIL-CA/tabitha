@@ -126,7 +126,7 @@ export type ApplyPendingResult = {
 export type SaveResult = 'applied' | 'pending' | 'queued'
 
 //===============
-// Simple Sense types for the create Concept page
+// for the create/update Concept pages
 
 export type SenseStatus = 'in ontology' | 'suggested' | 'approved' | 'unsynced'
 
@@ -143,6 +143,11 @@ export type StemSensesResult = {
 	senses: StemSense[]
 	next_sense: string
 	has_pending_create: boolean
+}
+
+export type ValidationResult = {
+	errors: Partial<Record<keyof ConceptUpdateData, string[]>>
+	warnings: Partial<Record<keyof ConceptUpdateData, string[]>>
 }
 
 //===============

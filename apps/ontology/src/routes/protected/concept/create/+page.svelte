@@ -7,6 +7,7 @@
 	import { level_gloss_labels, apply_gloss_label, relabel_gloss_for_level } from '#lib/concept_form/gloss_labels.js'
 	import { create_fallback_concept } from '#lib/transformers.js'
 	import { EMPTY_STEM_SENSES, look_up_stem_senses } from '#lib/concept_form/stem_senses.js'
+	import { validate_concept } from '#lib/concept_form/validation.js'
 	import Header from '#lib/card/Header.svelte'
 	import { Toast } from '@tabitha/ui'
 	import { enqueue } from '#lib/offline/sync.js'
@@ -19,7 +20,9 @@
 
 	// svelte-ignore state_referenced_locally
 	let concept_data = $state(data.concept_data)
-	let can_save = $derived(concept_data.stem && concept_data.sense && concept_data.part_of_speech)
+
+	let validation = $derived(validate_concept(concept_data))
+	let can_save = $derived(concept_data.stem && concept_data.sense && concept_data.part_of_speech && Object.keys(validation.errors).length === 0)
 
 	let gloss_labels = $derived(level_gloss_labels[concept_data.level] ?? [])
 
@@ -123,7 +126,7 @@
 		</div>
 
 		<form onsubmit={handle_submit} class="flex flex-col gap-6">
-			<section class="flex flex-wrap gap-4 items-end">
+			<section class="flex flex-wrap gap-4 items-start">
 				<fieldset class="fieldset">
 					<legend class="fieldset-legend font-semibold">Stem</legend>
 					<input
@@ -131,7 +134,14 @@
 						bind:value={() => concept_data.stem, set_stem}
 						use:autofocus
 						autocomplete="off"
-						class="input input-bordered" required />
+						required
+						aria-invalid={Boolean(validation.errors.stem)}
+						class={['input input-bordered', validation.errors.stem && 'input-error']} />
+					{#if validation.errors.stem}
+						<p class="label text-xs text-error">{validation.errors.stem[0]}</p>
+					{:else if validation.warnings.stem}
+						<p class="label text-xs text-warning">{validation.warnings.stem[0]}</p>
+					{/if}
 				</fieldset>
 
 				<fieldset class="fieldset">
@@ -225,6 +235,9 @@
 
 			<section>
 				<Category part_of_speech={concept_data.part_of_speech} bind:categories={concept_data.categories} />
+				{#if validation.errors.categories}
+					<p class="label text-xs text-error">{validation.errors.categories[0]}</p>
+				{/if}
 			</section>
 
 			<div class="flex gap-2">
