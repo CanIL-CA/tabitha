@@ -6,6 +6,8 @@ type CombineStemSensesOptions = {
 	readonly stem: string
 	readonly server_senses: StemSense[]
 	readonly unsynced_senses: StemSense[]
+	// a suggested create being edited, so it isn't counted as a sense competing with itself
+	readonly excluded_change_id?: number
 }
 
 const FIRST_SENSE_CODE = 'A'.charCodeAt(0)
@@ -18,8 +20,10 @@ export const next_sense_after = (senses: StemSense[]): string => {
 	return String.fromCharCode(highest_code + 1)
 }
 
-export const combine_stem_senses = ({ stem, server_senses, unsynced_senses }: CombineStemSensesOptions): StemSensesResult => {
-	const senses = [...server_senses, ...unsynced_senses].toSorted((a, b) => a.sense.localeCompare(b.sense))
+export const combine_stem_senses = ({ stem, server_senses, unsynced_senses, excluded_change_id }: CombineStemSensesOptions): StemSensesResult => {
+	const senses = [...server_senses, ...unsynced_senses]
+		.filter(({ change_id }) => change_id === undefined || change_id !== excluded_change_id)
+		.toSorted((a, b) => a.sense.localeCompare(b.sense))
 	return {
 		stem, 
 		senses,
@@ -28,10 +32,16 @@ export const combine_stem_senses = ({ stem, server_senses, unsynced_senses }: Co
 	}
 }
 
-export async function look_up_stem_senses({ stem, part_of_speech }: { stem: string, part_of_speech: string }): Promise<StemSensesResult> {
+type LookUpStemSensesOptions = {
+	readonly stem: string
+	readonly part_of_speech: string
+	readonly excluded_change_id?: number
+}
+
+export async function look_up_stem_senses({ stem, part_of_speech, excluded_change_id }: LookUpStemSensesOptions): Promise<StemSensesResult> {
 	const [server_senses, unsynced_senses] = await Promise.all([
 		get_stem_senses({ stem, part_of_speech }),
 		check_for_unsynced_senses({ stem, part_of_speech }),
 	])
-	return combine_stem_senses({ stem, server_senses, unsynced_senses })
+	return combine_stem_senses({ stem, server_senses, unsynced_senses, excluded_change_id })
 }

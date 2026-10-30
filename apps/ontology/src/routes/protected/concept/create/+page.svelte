@@ -29,7 +29,8 @@
 
 	let fetching_sense = $state(false)
 	let sense_lookup_timer: ReturnType<typeof setTimeout> | undefined
-	let stem_senses = $state<StemSensesResult>(EMPTY_STEM_SENSES)
+	// svelte-ignore state_referenced_locally
+	let stem_senses = $state<StemSensesResult>(data.stem_senses)
 
 	let saving = $state(false)
 	let error_message = $state('')
@@ -101,7 +102,7 @@
 
 		sense_lookup_timer = setTimeout(async () => {
 			try {
-				const found_senses = await look_up_stem_senses({ stem, part_of_speech })
+				const found_senses = await look_up_stem_senses({ stem, part_of_speech, excluded_change_id: data.change_id })
 				// a slow response for a stem that has since been edited would otherwise overwrite the newer one
 				if (stem !== concept_data.stem || part_of_speech !== concept_data.part_of_speech) return
 

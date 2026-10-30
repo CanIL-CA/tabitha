@@ -11,7 +11,7 @@ export async function POST({ request, locals }: Parameters<RequestHandler>[0]) {
 	if (is_editing_suggestion) {
 		const change = await get_and_validate_change({ id: change_id, locals, action: 'update' })
 		if (!concepts_match({ a: change.concept, b: data })) {
-			throw error(400, `The specified change does not apply to the concept in the data.`)
+			throw error(400, 'The specified change does not apply to the concept in the data.')
 		}
 	}
 

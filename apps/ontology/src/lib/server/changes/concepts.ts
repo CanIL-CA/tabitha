@@ -42,20 +42,30 @@ export async function update_concept({ db, data }: { db: D1DatabaseSession, data
 }
 
 // Includes creates that are suggested or approved but not yet applied, since they have no Concepts row yet
-export async function get_stem_senses({ db, stem, part_of_speech }: { db: D1DatabaseSession, stem: string, part_of_speech: PartOfSpeech }): Promise<StemSense[]> {
+type GetStemSensesOptions = {
+	readonly db: D1DatabaseSession
+	readonly stem: string
+	readonly part_of_speech: PartOfSpeech
+}
+
+type DbStemSense = Omit<StemSense, 'change_id'> & {
+	change_id: number | null
+}
+
+export async function get_stem_senses({ db, stem, part_of_speech }: GetStemSensesOptions): Promise<StemSense[]> {
 	const sql = `
-		SELECT sense, gloss, 'in ontology' AS status
+		SELECT sense, gloss, 'in ontology' AS status, NULL AS change_id
 		FROM Concepts
 		WHERE stem = ? AND part_of_speech = ?
 		UNION ALL
-		SELECT concept_sense, COALESCE(json_extract(data, '$.gloss.value'), ''), CASE WHEN approved_date IS NULL THEN 'suggested' ELSE 'approved' END
+		SELECT concept_sense, COALESCE(json_extract(data, '$.gloss.value'), ''), CASE WHEN approved_date IS NULL THEN 'suggested' ELSE 'approved' END, id
 		FROM Changes
 		WHERE action = 'create' AND applied_date IS NULL AND concept_stem = ? AND concept_part_of_speech = ?
 		ORDER BY sense
 	`
 
-	const { results } = await db.prepare(sql).bind(stem, part_of_speech, stem, part_of_speech).all<StemSense>()
-	return results
+	const { results } = await db.prepare(sql).bind(stem, part_of_speech, stem, part_of_speech).all<DbStemSense>()
+	return results.map(({ change_id, ...stem_sense }) => change_id === null ? stem_sense : { ...stem_sense, change_id })
 }
 
 export async function create_concept({ db, data }: { db: D1DatabaseSession, data: ConceptCreateData }) {

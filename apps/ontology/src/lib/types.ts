@@ -144,6 +144,7 @@ export type StemSense = {
 	sense: string
 	gloss: string
 	status: SenseStatus
+	change_id?: number
 }
 
 export type StemSensesResult = {

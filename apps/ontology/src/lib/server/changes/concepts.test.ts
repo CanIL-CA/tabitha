@@ -75,8 +75,8 @@ describe('get_stem_senses', () => {
 		expect(senses).toEqual([
 			{ sense: 'A', gloss: '(simple) to move fast', status: 'in ontology' },
 			{ sense: 'B', gloss: '(complex) to manage', status: 'in ontology' },
-			{ sense: 'C', gloss: '(simple) to flow', status: 'suggested' },
-			{ sense: 'D', gloss: '(complex) to campaign', status: 'approved' },
+			{ sense: 'C', gloss: '(simple) to flow', status: 'suggested', change_id: 1 },
+			{ sense: 'D', gloss: '(complex) to campaign', status: 'approved', change_id: 2 },
 		])
 	})
 
