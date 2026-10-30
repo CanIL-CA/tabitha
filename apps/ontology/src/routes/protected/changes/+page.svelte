@@ -17,7 +17,8 @@
 
 	let changes = $derived(data.changes)
 
-	let filters = $state({ ...NO_CHANGE_FILTERS })
+	// svelte-ignore state_referenced_locally
+	let filters = $state({ ...data.filters })
 	let filtered_changes = $derived(filter_changes({ changes, ...filters }))
 
 	let visible_count = $state(CHANGES_BATCH_SIZE)
@@ -150,7 +151,7 @@
 	{/if}
 
 	{#if changes.length > 0}
-		<ChangeFilters {changes} bind:filters onchange={reset_visible_count} />
+		<ChangeFilters {changes} bind:filters defaults={NO_CHANGE_FILTERS} onchange={reset_visible_count} />
 	{/if}
 
 	{#if filtered_changes.length > 0}

@@ -1,15 +1,26 @@
 <script lang="ts">
-	import { AFFECTED_FIELD_LABELS, parse_concept_key, to_concept_key, type ChangeFilterValues } from '#lib/changes/change_filters.js'
+	import { page } from '$app/state'
+	import { goto } from '$app/navigation'
+	import { AFFECTED_FIELD_LABELS, STATUS_LABELS, parse_concept_key, to_change_filter_params, to_concept_key, type ChangeFilterValues } from '#lib/changes/change_filters.js'
 	import { parts_of_speech } from '#lib/lookups.js'
 	import type { OntologyChange } from '#lib/types.js'
 
 	type Props = {
 		changes: OntologyChange[]
 		filters: ChangeFilterValues
+		defaults: ChangeFilterValues
 		onchange: () => void
 	}
 
-	let { changes, filters = $bindable(), onchange }: Props = $props()
+	let { changes, filters = $bindable(), defaults, onchange }: Props = $props()
+
+	// Shallow routing: updates the address bar without rerunning the page's load
+	function handle_change() {
+		const url = new URL(page.url.href)
+		url.search = to_change_filter_params({ filters, defaults }).toString()
+		goto(url, { state: page.state, shallow: true, replace: true })
+		onchange()
+	}
 
 	let all_versions = $derived(new Set(changes.map(change => change.version).filter(version => version && version !== 'Failed')))
 	let all_concepts = $derived([...new Set(changes.map(to_concept_key))].toSorted())
@@ -17,7 +28,18 @@
 </script>
 
 <section class="flex flex-col py-2">
-	<form {onchange} class="flex gap-4 bg-info text-info-content px-4 pt-2 pb-3.5 flex-wrap rounded-box">
+	<form onchange={handle_change} class="flex gap-4 bg-info text-info-content px-4 pt-2 pb-3.5 flex-wrap rounded-box">
+		<fieldset class="fieldset">
+			<legend class="fieldset-legend text-info-content">Status</legend>
+
+			<select bind:value={filters.status} class="select text-base-content">
+				<option value="all">All</option>
+				{#each Object.entries(STATUS_LABELS) as [status, label]}
+					<option value={status}>{label}</option>
+				{/each}
+			</select>
+		</fieldset>
+
 		<fieldset class="fieldset">
 			<legend class="fieldset-legend text-info-content">Since</legend>
 

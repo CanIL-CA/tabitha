@@ -1,13 +1,9 @@
-import { can_approve_change, can_edit_change, get_all_changes, get_pending_changes, transform_with_users } from '#lib/server/changes/changes.js'
+import { can_approve_change, can_edit_change, get_all_changes, transform_with_users } from '#lib/server/changes/changes.js'
 import type { OntologyChange } from '#lib/types.js'
 import type { PageServerLoad } from './$types'
 
-export async function load({ locals, url: { searchParams } }: Parameters<PageServerLoad>[0]) {
-	const status = searchParams.get('status') ?? 'all'
-
-	const changes = status === 'pending'
-		? await get_pending_changes(locals.db_ontology)
-		: await get_all_changes(locals.db_ontology)
+export async function load({ locals }: Parameters<PageServerLoad>[0]) {
+	const changes = await get_all_changes(locals.db_ontology)
 
 	// before transform_with_users, which drops the user ids can_edit_change compares against
 	const changes_with_permissions = changes.map<OntologyChange>(change => ({
