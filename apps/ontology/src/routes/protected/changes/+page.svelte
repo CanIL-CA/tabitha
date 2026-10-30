@@ -220,19 +220,27 @@
 						{change.version || ''}
 					</td>
 					<td>
-						{#if change.can_approve}
-							<button
-								onclick={() => approve(change)}
-								disabled={approving_id === change.id}
-								class="btn btn-sm btn-primary"
-							>
-								{#if approving_id === change.id}
-									<span class="loading loading-spinner loading-xs"></span>
-								{:else}
-									Approve
-								{/if}
-							</button>
-						{/if}
+						<div class="flex gap-1">
+							{#if change.can_edit && !change.is_unsynced}
+								<a href="/protected/concept/{change.action}?change={change.id}" class="btn btn-sm">
+									<Icon icon="mdi:edit-outline" class="h-4 w-4" />
+									Edit
+								</a>
+							{/if}
+							{#if change.can_approve}
+								<button
+									onclick={() => approve(change)}
+									disabled={!!approving_id}
+									class="btn btn-sm btn-primary"
+								>
+									{#if approving_id === change.id}
+										<span class="loading loading-spinner loading-xs"></span>
+									{:else}
+										Approve
+									{/if}
+								</button>
+							{/if}
+						</div>
 					</td>
 				</tr>
 			{/each}

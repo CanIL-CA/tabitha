@@ -30,6 +30,9 @@
 	let unsynced_loaded = $state(false)
 
 	onMount(() => {
+		// the form already holds the suggestion being edited, which an unrelated unsynced edit shouldn't replace
+		if (data.change_id) return
+
 		check_for_pending_change(concept_data).then(mutation => {
 			if (!mutation) return
 
@@ -63,7 +66,7 @@
 		dismiss_toast()
 
 		try {
-			const outcome = await enqueue({ action: 'update', body: $state.snapshot(concept_data) })
+			const outcome = await enqueue({ action: 'update', body: { ...$state.snapshot(concept_data), change_id: data.change_id } })
 
 			if (outcome.type === 'failed') {
 				error_message = outcome.message
@@ -97,6 +100,13 @@
 		<section class="card-title justify-between">
 			<Header concept={concept_for_header} />
 		</section>
+
+		{#if data.change_id}
+			<section role="alert" class="alert alert-info alert-soft">
+				<Icon icon="mdi:information-outline" class="h-5 w-5" />
+				<span>You're editing a suggested change. Saving updates the suggestion, which still needs approval.</span>
+			</section>
+		{/if}
 
 		{#if data.pending_changes.length > 0}
 			<section role="alert" class="alert alert-warning alert-soft flex flex-col items-start gap-2">
@@ -165,7 +175,7 @@
 					{/if}
 					Save
 				</button>
-				<a href="/?q={concept_data.stem}" class="btn btn-ghost">Cancel</a>
+				<a href={data.change_id ? '/protected/changes' : `/?q=${concept_data.stem}`} class="btn btn-ghost">Cancel</a>
 			</div>
 		</form>
 

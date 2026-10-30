@@ -18,7 +18,6 @@
 
 	let { data }: PageProps = $props()
 
-	let add_or_suggest = $derived<'Add' | 'Suggest'>(data.user?.permissions.can_add ? 'Add' : 'Suggest')
 
 	// svelte-ignore state_referenced_locally
 	let concept_data = $state(data.concept_data)
@@ -49,7 +48,7 @@
 		dismiss_toast()
 
 		try {
-			const outcome = await enqueue({ action: 'create', body: $state.snapshot(concept_data) })
+			const outcome = await enqueue({ action: 'create', body: { ...$state.snapshot(concept_data), change_id: data.change_id } })
 
 			if (outcome.type === 'failed') {
 				error_message = outcome.message
@@ -124,7 +123,13 @@
 <article class="card bg-base-200 mx-auto w-[80%]">
 	<div class="card-body">
 		<div class="prose pb-4">
-			<h2>{add_or_suggest} a new concept</h2>
+			{#if data.change_id}
+				<h2>Edit a suggested concept</h2>
+			{:else if data.user?.permissions.can_add}
+				<h2>Add a new concept</h2>
+			{:else}
+				<h2>Suggest a new concept</h2>
+			{/if}
 		</div>
 
 		<form onsubmit={handle_submit} class="flex flex-col gap-6">
@@ -249,7 +254,7 @@
 					{/if}
 					Save
 				</button>
-				<a href="/" class="btn btn-ghost">Cancel</a>
+				<a href={data.change_id ? '/protected/changes' : '/'} class="btn btn-ghost">Cancel</a>
 			</div>
 		</form>
 

@@ -1,8 +1,20 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
+import { get_concept_for_update } from './concepts'
 import type { OntologyChange, ConceptCreateData, OntologyUser } from '#lib/types.js'
-import { apply_change_directly, approve_change, can_approve_change, get_pending_changes_for_concept, suggest_change } from './changes'
+import {
+	apply_change_directly,
+	approve_change,
+	can_approve_change,
+	can_edit_change,
+	edit_suggested_change,
+	get_and_validate_change,
+	get_change,
+	get_change_from_url,
+	get_pending_changes_for_concept,
+	suggest_change,
+} from './changes'
 
 // The tables changes.ts and the modules it calls read and write, as they're defined in the Ontology
 // snapshots (tools/databases/snapshots), with the Version row set to what that snapshot had.
@@ -75,6 +87,11 @@ const user: OntologyUser = {
 		can_add: false,
 		can_update: false,
 	},
+}
+
+// The slice of App.Locals the change-editing functions read
+function create_locals(db: D1DatabaseSession): App.Locals {
+	return { db_ontology: db, user } as App.Locals
 }
 
 describe('can_approve_change', () => {
@@ -202,5 +219,123 @@ describe('get_pending_changes_for_concept', () => {
 		query(changes)
 
 		expect(await get_pending_changes_for_concept({ db, concept_key: { stem: 'trust', sense: 'B', part_of_speech: 'Noun' } })).toEqual([])
+	})
+})
+
+describe('can_edit_change', () => {
+	const suggestion = make_change({ suggested_by: { id: 2, name: 'suggester', date: new Date() } })
+
+	it('lets the suggester edit their own suggestion', () => {
+		expect(can_edit_change({ change: suggestion, user: { ...user, id: 2 } })).toBe(true)
+	})
+
+	it('lets anyone who could approve the suggestion edit it', () => {
+		expect(can_edit_change({ change: suggestion, user: { ...user, permissions: { ...user.permissions, can_add: true } } })).toBe(true)
+	})
+
+	it('refuses anyone else', () => {
+		expect(can_edit_change({ change: suggestion, user })).toBe(false)
+	})
+
+	it('refuses once the suggestion is approved, even for the suggester', () => {
+		const change = { ...suggestion, approved_by: { name: 'approver', date: new Date() } }
+		expect(can_edit_change({ change, user: { ...user, id: 2 } })).toBe(false)
+	})
+
+	it('refuses a change that was never suggested', () => {
+		expect(can_edit_change({ change: make_change(), user: { ...user, permissions: { ...user.permissions, can_add: true } } })).toBe(false)
+	})
+})
+
+describe('get_and_validate_change', () => {
+	const changes = `INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date, approved_by_id, approved_date) VALUES
+		(1, 'peace', 'A', 'Noun', 'create', '{}', 1, '2026-10-01T00:00:00.000Z', NULL, NULL),
+		(2, 'peace', 'A', 'Noun', 'create', '{}', 1, '2026-10-01T00:00:00.000Z', 3, '2026-10-02T00:00:00.000Z'),
+		(3, 'peace', 'A', 'Noun', 'create', '{}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL)`
+
+	it("returns the user's own unapproved suggestion", async () => {
+		const { db, query } = create_test_db()
+		query(changes)
+
+		expect(await get_and_validate_change({ id: 1, action: 'create', locals: create_locals(db) })).toMatchObject({ id: 1 })
+	})
+
+	it.each([
+		{ reason: 'an id that is not an integer', id: 1.5, action: 'create', status: 400 },
+		{ reason: 'a change that does not exist', id: 99, action: 'create', status: 404 },
+		{ reason: 'the wrong action', id: 1, action: 'update', status: 400 },
+		{ reason: 'an approved change', id: 2, action: 'create', status: 409 },
+		{ reason: "someone else's suggestion", id: 3, action: 'create', status: 403 },
+	] as const)('fails with $status for $reason', async ({ id, action, status }) => {
+		const { db, query } = create_test_db()
+		query(changes)
+
+		await expect(get_and_validate_change({ id, action, locals: create_locals(db) })).rejects.toMatchObject({ status })
+	})
+})
+
+describe('get_change_from_url', () => {
+	const suggestion = `INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date)
+		VALUES (1, 'peace', 'A', 'Noun', 'create', '{}', 1, '2026-10-01T00:00:00.000Z')`
+
+	it("returns null when there's no 'change' parameter", async () => {
+		const { db } = create_test_db()
+
+		expect(await get_change_from_url({ searchParams: new URLSearchParams(), action: 'create', locals: create_locals(db) })).toBeNull()
+	})
+
+	it("returns the editable change the 'change' parameter names", async () => {
+		const { db, query } = create_test_db()
+		query(suggestion)
+
+		const change = await get_change_from_url({ searchParams: new URLSearchParams('change=1'), action: 'create', locals: create_locals(db) })
+
+		expect(change).toMatchObject({ id: 1 })
+	})
+
+	it("fails with 400 for a 'change' parameter that is not a number", async () => {
+		const { db } = create_test_db()
+
+		await expect(get_change_from_url({ searchParams: new URLSearchParams('change=abc'), action: 'create', locals: create_locals(db) }))
+			.rejects.toMatchObject({ status: 400 })
+	})
+})
+
+describe('edit_suggested_change', () => {
+	it('rewrites a suggested update in place, re-diffed against the current concept', async () => {
+		const { db, query } = create_test_db()
+		query(`INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date)
+			VALUES (1, 'faith', 'A', 'Noun', 'update', '{"gloss":{"old":"stale","value":"belief"}}', 2, '2026-10-01T00:00:00.000Z')`)
+		const current = (await get_concept_for_update({ db, concept_key: { stem: 'faith', sense: 'A', part_of_speech: 'Noun' } }))!
+
+		const applied = await edit_suggested_change({ db, id: 1, action: 'update', data: { ...current, level: '2' } })
+
+		expect(applied).toBe(false)
+		const change = await get_change({ db, id: 1 })
+		expect(change).toMatchObject({ data: { level: { old: '1', value: '2' } }, suggested_by: { id: 2 }, approved_by: null })
+		expect(query<{ count: number }>('SELECT COUNT(*) AS count FROM Changes')).toEqual([{ count: 1 }])
+	})
+
+	it('moves a suggested create to its edited concept key', async () => {
+		const { db, query } = create_test_db()
+		query(`INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date)
+			VALUES (1, 'peace', 'A', 'Noun', 'create', '{}', 2, '2026-10-01T00:00:00.000Z')`)
+
+		await edit_suggested_change({ db, id: 1, action: 'create', data: { ...create_data, stem: 'calm' } })
+
+		expect(await get_change({ db, id: 1 })).toMatchObject({
+			concept: { stem: 'calm', sense: 'A', part_of_speech: 'Noun' },
+			data: { gloss: { value: 'a state of calm' } },
+		})
+	})
+
+	it('leaves an approved change alone', async () => {
+		const { db, query } = create_test_db()
+		query(`INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date, approved_by_id, approved_date)
+			VALUES (1, 'peace', 'A', 'Noun', 'create', '{}', 2, '2026-10-01T00:00:00.000Z', 1, '2026-10-02T00:00:00.000Z')`)
+
+		await edit_suggested_change({ db, id: 1, action: 'create', data: create_data })
+
+		expect((await get_change({ db, id: 1 }))!.data).toEqual({})
 	})
 })

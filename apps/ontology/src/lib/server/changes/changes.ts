@@ -1,4 +1,5 @@
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
+import { error } from '@sveltejs/kit'
 import { create_concept, get_concept_for_update, update_concept } from './concepts'
 import { get_version } from '#lib/server/ontology.js'
 import { default_categories } from '#lib/lookups.js'
@@ -163,6 +164,82 @@ export function can_approve_change({ change, permissions }: CanApproveChangeOpti
 		return false
 	}
 	return change.action === 'create' ? permissions.can_add : permissions.can_update
+}
+
+type CanEditChangeOptions = {
+	readonly change: OntologyChange
+	readonly user: Pick<OntologyUser, 'id' | 'permissions'>
+}
+
+// A suggestion stays editable until it's approved, by whoever suggested it or anyone who could approve it.
+export function can_edit_change({ change, user }: CanEditChangeOptions): boolean {
+	if (!change.suggested_by || change.approved_by) {
+		return false
+	}
+	return change.suggested_by.id === user.id || can_approve_change({ change, permissions: user.permissions })
+}
+
+type GetChangeFromUrlOptions = {
+	readonly searchParams: URLSearchParams
+	readonly action: OntologyChangeAction
+	readonly locals: App.Locals
+}
+
+export async function get_change_from_url({ searchParams, action, locals }: GetChangeFromUrlOptions): Promise<OntologyChange | null> {
+	const change_param = searchParams.get('change')
+	if (!change_param) return null
+
+	const id = Number(change_param)
+	return get_and_validate_change({ id, action, locals })
+}
+
+type GetAndValidateChangeOptions = {
+	readonly id: number
+	readonly action: OntologyChangeAction
+	readonly locals: App.Locals
+}
+
+// Throws an HTTP error explaining why the change can't be edited by this user as this action; otherwise
+// returns it, now known to exist.
+export async function get_and_validate_change({ id, action, locals }: GetAndValidateChangeOptions): Promise<OntologyChange> {
+	if (!Number.isInteger(id)) {
+		throw error(400, `Invalid 'change' id '${id}'.`)
+	}
+
+	const change = await get_change({ db: locals.db_ontology, id })
+	if (!change) {
+		throw error(404, 'Change not found.')
+	}
+	if (change.action !== action) {
+		throw error(400, `Change ${change.id} is not a suggested ${action}.`)
+	}
+	if (change.approved_by) {
+		throw error(409, `Change ${change.id} has already been approved and can no longer be edited.`)
+	}
+	if (!can_edit_change({ change, user: locals.user! })) {
+		throw error(403, `You don't have permission to edit change ${change.id}.`)
+	}
+	return change
+}
+
+type EditSuggestedChangeOptions = Pick<ChangeSubmission, 'db' | 'action' | 'data'> & {
+	readonly id: number
+}
+
+// Rewrites a still-unapproved suggestion in place, re-diffing it against the concept's current data.
+// It stays a suggestion awaiting approval, so it's never applied here.
+export async function edit_suggested_change({ db, action, data, id }: EditSuggestedChangeOptions): Promise<boolean> {
+	const { stem, sense, part_of_speech, change_data } = await prepare_change_data({ db, action, data })
+
+	const sql = `
+		UPDATE Changes
+		SET concept_stem = ?, concept_sense = ?, concept_part_of_speech = ?, data = ?
+		WHERE id = ? AND approved_date IS NULL
+	`
+	await db.prepare(sql)
+		.bind(stem, sense, part_of_speech, JSON.stringify(change_data), id)
+		.run()
+	return false
 }
 
 type ApproveChangeOptions = {

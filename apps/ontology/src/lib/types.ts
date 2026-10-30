@@ -107,6 +107,8 @@ export type OntologyChange = {
 	// whether the viewing user is allowed to approve this specific change -- computed server-side (see
 	// can_approve_change in changes.ts) since it depends on the viewer's permissions, not just the change itself
 	can_approve?: boolean
+	// whether the viewing user may edit this suggestion -- computed server-side (see can_edit_change in changes.ts)
+	can_edit?: boolean
 }
 
 export type WorkflowInfo = {
@@ -127,6 +129,12 @@ export type SaveResult = 'applied' | 'pending' | 'queued'
 
 //===============
 // for the create/update Concept pages
+
+// What the create/update pages submit: change_id is set when the save edits an existing, still-unapproved
+// suggestion in place instead of recording a new change.
+export type ConceptSubmission = ConceptUpdateData & {
+	change_id?: number
+}
 
 export type SenseStatus = 'in ontology' | 'suggested' | 'approved' | 'unsynced'
 

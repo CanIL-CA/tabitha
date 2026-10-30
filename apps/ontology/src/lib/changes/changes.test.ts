@@ -6,6 +6,7 @@ import {
 	create_change_fields,
 	diff_change_fields,
 	get_stem_senses,
+	merge_change_values,
 } from './changes'
 import type { ConceptCreateData, ConceptUpdateData, OntologyChange } from '#lib/types.js'
 
@@ -184,6 +185,28 @@ describe('create_change_fields', () => {
 
 	it('leaves out a blank brief gloss', () => {
 		expect(create_change_fields({ ...create_data, brief_gloss: '' })).not.toHaveProperty('brief_gloss')
+	})
+})
+
+describe('merge_change_values', () => {
+	it("overlays the change's new values and concept key, keeping the fields it didn't change", () => {
+		const change: OntologyChange = {
+			...SERIALIZED_CHANGE,
+			concept: { stem: 'adore', sense: 'B', part_of_speech: 'Verb' },
+			data: { gloss: { old: 'to feel affection', value: 'to care deeply' }, categories: { value: ['', '', ''] } },
+			action: 'update',
+			suggested_by: null,
+			approved_by: null,
+			applied_date: null,
+		}
+
+		expect(merge_change_values({ concept_data: CONCEPT_DATA, change })).toEqual({
+			...CONCEPT_DATA,
+			stem: 'adore',
+			sense: 'B',
+			gloss: 'to care deeply',
+			categories: ['', '', ''],
+		})
 	})
 })
 

@@ -1,5 +1,5 @@
 import { add_mutation, delete_mutation, get_pending_mutations, update_mutation, type QueuedMutation } from './queue'
-import type { OntologyChangeAction, ConceptCreateData, ConceptUpdateData } from '#lib/types.js'
+import type { OntologyChangeAction, ConceptSubmission } from '#lib/types.js'
 
 export type MutationOutcome =
 	| { type: 'synced', applied: boolean }
@@ -68,7 +68,7 @@ async function sync_mutation(mutation: QueuedMutation): Promise<MutationOutcome>
 // code path the caller has to think about.
 type EnqueueOptions = {
 	readonly action: OntologyChangeAction
-	readonly body: ConceptCreateData | ConceptUpdateData
+	readonly body: ConceptSubmission
 }
 
 export async function enqueue({ action, body }: EnqueueOptions): Promise<MutationOutcome> {
