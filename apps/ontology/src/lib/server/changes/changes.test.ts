@@ -8,6 +8,7 @@ import {
 	approve_change,
 	can_approve_change,
 	can_edit_change,
+	count_changes_awaiting_approval,
 	edit_suggested_change,
 	get_and_validate_change,
 	get_change,
@@ -118,6 +119,31 @@ describe('can_approve_change', () => {
 		const change = make_change({ action: 'update', suggested_by: { name: 'a', date: new Date() } })
 		expect(can_approve_change({ change, permissions: { can_add: false, can_update: true } })).toBe(true)
 		expect(can_approve_change({ change, permissions: { can_add: true, can_update: false } })).toBe(false)
+	})
+})
+
+describe('count_changes_awaiting_approval', () => {
+	const changes = `INSERT INTO Changes (id, concept_stem, concept_sense, concept_part_of_speech, action, data, suggested_by_id, suggested_date, approved_by_id, approved_date, applied_date) VALUES
+		(1, 'peace', 'A', 'Noun', 'create', '{}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL, NULL),
+		(2, 'faith', 'A', 'Noun', 'update', '{}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL, NULL),
+		(3, 'trust', 'A', 'Noun', 'update', '{}', 2, '2026-10-01T00:00:00.000Z', NULL, NULL, NULL),
+		(4, 'faith', 'A', 'Noun', 'update', '{}', 2, '2026-10-01T00:00:00.000Z', 1, '2026-10-02T00:00:00.000Z', NULL),
+		(5, 'faith', 'A', 'Noun', 'update', '{}', NULL, NULL, 1, '2026-10-02T00:00:00.000Z', '2026-10-02T00:00:00.000Z')`
+
+	it('counts only the unapproved suggestions the user has permission to approve', async () => {
+		const { db, query } = create_test_db()
+		query(changes)
+
+		expect(await count_changes_awaiting_approval({ db, permissions: { can_add: true, can_update: false } })).toBe(1)
+		expect(await count_changes_awaiting_approval({ db, permissions: { can_add: false, can_update: true } })).toBe(2)
+		expect(await count_changes_awaiting_approval({ db, permissions: { can_add: true, can_update: true } })).toBe(3)
+	})
+
+	it("returns null for a user who can't approve any kind of change", async () => {
+		const { db } = create_test_db()
+
+		expect(await count_changes_awaiting_approval({ db, permissions: { can_add: false, can_update: false } })).toBeNull()
+		expect(await count_changes_awaiting_approval({ db, permissions: undefined })).toBeNull()
 	})
 })
 

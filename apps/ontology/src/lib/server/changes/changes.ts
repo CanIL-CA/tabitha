@@ -166,6 +166,24 @@ export function can_approve_change({ change, permissions }: CanApproveChangeOpti
 	return change.action === 'create' ? permissions.can_add : permissions.can_update
 }
 
+type CountChangesAwaitingApprovalOptions = {
+	readonly db: D1DatabaseSession
+	readonly permissions: CanApproveChangeOptions['permissions'] | undefined
+}
+
+// How many suggestions this user could approve right now, or null when they can't approve any kind of change.
+export async function count_changes_awaiting_approval({ db, permissions }: CountChangesAwaitingApprovalOptions): Promise<number | null> {
+	if (!permissions?.can_add && !permissions?.can_update) return null
+
+	const sql = `
+		SELECT *
+		FROM Changes
+		WHERE suggested_by_id IS NOT NULL AND approved_date IS NULL
+	`
+	const { results } = await db.prepare(sql).all<DbOntologyChange>()
+	return results.map(transform).filter(change => can_approve_change({ change, permissions })).length
+}
+
 type CanEditChangeOptions = {
 	readonly change: OntologyChange
 	readonly user: Pick<OntologyUser, 'id' | 'permissions'>

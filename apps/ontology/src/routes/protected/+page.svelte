@@ -3,6 +3,7 @@
 	import { format_time } from '#lib/format.js'
 	import { sync_complex_terms } from '#lib/complex_terms.js'
 	import AddConceptButton from '#lib/AddConceptButton.svelte'
+	import ReviewSuggestedButton from '#lib/ReviewSuggestedButton.svelte'
 
 	let { data } = $props()
 
@@ -95,11 +96,10 @@
 					View previous and pending changes to the Ontology.
 				{/if}
 			</p>
-			<div>
-				<a href="/protected/changes?status=pending" title="Pending Changes" class="btn btn-primary">
-					<Icon icon="material-symbols:published-with-changes" class="w-5 h-5" />
-					View Pending Changes
-				</a>
+			<div class="flex flex-wrap gap-4">
+				{#if data.awaiting_approval_count !== null}
+					<ReviewSuggestedButton count={data.awaiting_approval_count} />
+				{/if}
 				<a href="/protected/changes" title="All Changes" class="btn btn-secondary">
 					<Icon icon="material-symbols:published-with-changes" class="w-5 h-5" />
 					View All Changes
