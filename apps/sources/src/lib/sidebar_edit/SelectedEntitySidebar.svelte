@@ -21,8 +21,11 @@
 {#if entity}
 	<Sidebar heading='Constituent Inspector' onclose={() => selected_entity.clear()}>
 		<!--Entity Display-->
-		<section class="my-5">
+		<section class="my-5 flex items-center gap-2">
 			<SidebarEntityDisplay {entity} />
+			{#if selected_entity.count > 1}
+				<span class="badge badge-neutral">+{selected_entity.count - 1}</span>
+			{/if}
 		</section>
 
 		<section>
