@@ -26,6 +26,8 @@ export async function load({ url: { searchParams }, locals }: Parameters<PageSer
 		concept_data: change ? merge_change_values({ concept_data, change }) : concept_data,
 		pending_changes: pending_changes.filter(pending => pending.id !== change?.id),
 		change_id: change?.id,
+		// the concept as it is now, for showing what the suggestion being edited changes
+		original_data: change ? concept_data : undefined,
 	}
 }
 

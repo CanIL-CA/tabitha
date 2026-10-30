@@ -13,6 +13,7 @@
 	import { Toast } from '@tabitha/ui'
 	import { enqueue } from '#lib/offline/sync.js'
 	import { check_for_pending_change } from '#lib/offline/pending.js'
+	import { diff_change_fields } from '#lib/changes/changes.js'
 	import type { ConceptUpdateData, SaveResult } from '#lib/types.js'
 
 	let { data }: PageProps = $props()
@@ -22,6 +23,7 @@
 	let initial_data = $state.snapshot(concept_data)
 	let is_dirty = $derived(!deep_equal({ obj1: concept_data, obj2: initial_data }))
 	let concept_for_header = $derived(create_fallback_concept(concept_data))
+	let suggested_changes = $derived(data.original_data && diff_change_fields({ change_data: concept_data, current_data: data.original_data }))
 
 	let gloss_labels = $derived(level_gloss_labels[concept_data.level] ?? [])
 
@@ -102,9 +104,21 @@
 		</section>
 
 		{#if data.change_id}
-			<section role="alert" class="alert alert-info alert-soft">
-				<Icon icon="mdi:information-outline" class="h-5 w-5" />
-				<span>You're editing a suggested change. Saving updates the suggestion, which still needs approval.</span>
+			<section role="alert" class="alert alert-info alert-soft flex flex-col items-start gap-2">
+				<div class="flex items-center gap-2">
+					<Icon icon="mdi:information-outline" class="h-5 w-5" />
+					<span>You're editing a suggested change. Saving updates the suggestion, which still needs approval.</span>
+				</div>
+				{#if suggested_changes && Object.keys(suggested_changes).length > 0}
+					<div class="pl-8 text-sm">
+						<span class="font-semibold">Changes from the current concept:</span>
+						<div class="pl-5">
+							<ChangeDiffData change={{ data: suggested_changes, concept: concept_data }} />
+						</div>
+					</div>
+				{:else}
+					<span class="pl-7 text-sm">This suggestion no longer changes anything from the current concept.</span>
+				{/if}
 			</section>
 		{/if}
 
