@@ -4,8 +4,7 @@
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { apply_feature_value, do_feature_values_differ } from '#lib/edit/bulk_edit.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import type { EntityFeature } from '@tabitha/types'
-	import type { PageSourceEntity, FeatureMap, FeatureInfo, FeatureValueInfo } from '#lib/types.js'
+	import type { PageSourceEntity, FeatureMap, FeatureInfo } from '#lib/types.js'
 
 	const { data }: { data: PageSourceEntity } = $props()
 
@@ -14,26 +13,11 @@
 
 	function set_feature_value({ feature_name, value }: { feature_name: string, value: string }) {
 		edit_history().record()
-		apply_feature_value({ entities: selected_entity.all, feature_name, value })
+		apply_feature_value({ entities: selected_entity.all, feature_name, value, feature_map: page.data.features })
 	}
 
 	let filtered_features = $derived(data.features.filter(is_used_in_source(data.category)))
 	let category_features = $derived<FeatureInfo[]>((page.data.features as FeatureMap).get(data.category) ?? [])
-
-	$effect(() => {
-		if (data.category === 'Noun Phrase') {
-			// Update the semantic role feature code.
-			// We only care about the semantic role code because it's the only one that is currently displayed.
-			// If we end up displaying more, we can use the feature_structure_to_codes() function in encoding/features.ts
-			const semantic_role_value = data.features.find((f: EntityFeature) => f.name === 'Semantic Role')?.value
-			const semantic_role_code = category_features
-				.find((f: FeatureInfo) => f.name === 'Semantic Role')
-				?.values.find((v: FeatureValueInfo) => v.value === semantic_role_value)?.code
-			if (semantic_role_code) {
-				data.feature_codes = data.feature_codes.slice(0, 1) + semantic_role_code + data.feature_codes.slice(2)
-			}
-		}
-	})
 </script>
 
 {#if filtered_features.length === 0}

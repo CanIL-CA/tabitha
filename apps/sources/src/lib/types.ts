@@ -7,6 +7,7 @@ import type { SensesByConcept } from '#lib/data/ontology_senses.js'
 export type ViewSettings = {
 	show_hover_popups: boolean
 	show_boundary_labels: boolean
+	show_feature_codes: boolean
 }
 
 export type NavData = {

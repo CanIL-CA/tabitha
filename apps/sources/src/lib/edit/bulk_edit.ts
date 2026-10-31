@@ -1,5 +1,6 @@
 import type { ConceptKey, PairingType } from '@tabitha/types'
-import type { PageSourceEntity } from '#lib/types.js'
+import type { FeatureMap, PageSourceEntity } from '#lib/types.js'
+import { feature_structure_to_codes } from '#lib/encoding/features.js'
 
 type FeatureOptions = {
 	readonly entities: readonly PageSourceEntity[]
@@ -15,10 +16,13 @@ const concept_key = (concept: ConceptKey | null) =>
 const find_feature_value = ({ entity, feature_name }: { entity: PageSourceEntity, feature_name: string }) =>
 	entity.features.find(feature => feature.name === feature_name)?.value
 
-export const apply_feature_value = ({ entities, feature_name, value }: FeatureOptions & { readonly value: string }) => {
+export const apply_feature_value = ({ entities, feature_name, value, feature_map }: FeatureOptions & { readonly value: string, feature_map: FeatureMap }) => {
 	for (const entity of entities) {
 		const feature = entity.features.find(({ name }) => name === feature_name)
-		if (feature) feature.value = value
+		if (feature) {
+			feature.value = value
+			entity.feature_codes = feature_structure_to_codes({ category: entity.category, features: entity.features, feature_map })
+		}
 	}
 }
 

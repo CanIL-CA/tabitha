@@ -13,7 +13,7 @@ import {
 } from './bulk_edit'
 import { DEFAULTS } from './default_entities'
 import type { ConceptKey } from '@tabitha/types'
-import type { PageSourceEntity } from '#lib/types.js'
+import type { FeatureMap, PageSourceEntity } from '#lib/types.js'
 
 const make_noun = ({ id, features }: { id: number, features: Record<string, string> }): PageSourceEntity => ({
 	...DEFAULTS.EMPTY,
@@ -21,6 +21,13 @@ const make_noun = ({ id, features }: { id: number, features: Record<string, stri
 	category: 'Noun',
 	features: Object.entries(features).map(([name, value]) => ({ name, value })),
 })
+
+const NOUN_FEATURE_MAP: FeatureMap = new Map([
+	['Noun', [
+		{ name: 'Number', values: [{ code: 's', value: 'Singular' }, { code: 'p', value: 'Plural' }, { code: 'd', value: 'Dual' }] },
+		{ name: 'Person', values: [{ code: '.', value: 'Not Applicable' }, { code: 't', value: 'Third' }] },
+	]],
+])
 
 const feature_value = ({ entity, name }: { entity: PageSourceEntity, name: string }) =>
 	entity.features.find(feature => feature.name === name)?.value
@@ -32,7 +39,7 @@ describe('apply_feature_value', () => {
 			make_noun({ id: 1, features: { Number: 'Plural', Person: 'Third' } }),
 		]
 
-		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual' })
+		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual', feature_map: NOUN_FEATURE_MAP })
 
 		expect(entities.map(entity => feature_value({ entity, name: 'Number' }))).toEqual(['Dual', 'Dual'])
 	})
@@ -40,7 +47,7 @@ describe('apply_feature_value', () => {
 	test('leaves the other features alone', () => {
 		const entities = [make_noun({ id: 0, features: { Number: 'Singular', Person: 'Third' } })]
 
-		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual' })
+		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual', feature_map: NOUN_FEATURE_MAP })
 
 		expect(feature_value({ entity: entities[0], name: 'Person' })).toBe('Third')
 	})
@@ -51,9 +58,31 @@ describe('apply_feature_value', () => {
 			make_noun({ id: 1, features: { Person: 'Third' } }),
 		]
 
-		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual' })
+		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual', feature_map: NOUN_FEATURE_MAP })
 
 		expect(entities[1].features).toEqual([{ name: 'Person', value: 'Third' }])
+	})
+})
+
+describe('apply_feature_value feature codes', () => {
+	test('recomputes feature_codes from the updated features', () => {
+		const entities = [
+			make_noun({ id: 0, features: { Number: 'Singular', Person: 'Third' } }),
+			make_noun({ id: 1, features: { Number: 'Plural', Person: 'Third' } }),
+		]
+
+		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual', feature_map: NOUN_FEATURE_MAP })
+
+		expect(entities.map(({ feature_codes }) => feature_codes)).toEqual(['dt', 'dt'])
+	})
+
+	test('leaves feature_codes alone for an entity that lacks the feature', () => {
+		const entities = [make_noun({ id: 0, features: { Person: 'Third' } })]
+		entities[0].feature_codes = 'x'
+
+		apply_feature_value({ entities, feature_name: 'Number', value: 'Dual', feature_map: NOUN_FEATURE_MAP })
+
+		expect(entities[0].feature_codes).toBe('x')
 	})
 })
 
