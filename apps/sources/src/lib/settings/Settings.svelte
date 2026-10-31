@@ -29,5 +29,9 @@
 			<input type="checkbox" bind:checked={view_settings.show_boundary_labels} onchange={store_settings} />
 			Show boundary labels
 		</label>
+		<label>
+			<input type="checkbox" bind:checked={view_settings.show_feature_codes} onchange={store_settings} />
+			Show feature codes
+		</label>
 	</div>
 </details>

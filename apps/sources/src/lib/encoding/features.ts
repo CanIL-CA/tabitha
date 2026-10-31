@@ -102,7 +102,7 @@ export function encode_features(entity: SourceEntity): string {
 	return entity.feature_codes
 }
 
-function feature_codes_to_structure({ category, feature_codes, feature_map }: { category: EncodingEntityCategory, feature_codes: string, feature_map: FeatureMap }): EntityFeature[] {
+export function feature_codes_to_structure({ category, feature_codes, feature_map }: { category: EncodingEntityCategory, feature_codes: string, feature_map: FeatureMap }): EntityFeature[] {
 	const category_features = feature_map.get(category) || []
 	const feature_code_array = [...feature_codes]
 
@@ -117,7 +117,7 @@ function feature_codes_to_structure({ category, feature_codes, feature_map }: { 
 	})
 }
 
-function feature_structure_to_codes({ category, features, feature_map }: { category: EncodingEntityCategory, features: EntityFeature[], feature_map: FeatureMap }): string {
+export function feature_structure_to_codes({ category, features, feature_map }: { category: EncodingEntityCategory, features: EntityFeature[], feature_map: FeatureMap }): string {
 	const category_features = feature_map.get(category) || []
 	
 	const codes = category_features.map(feature_info => {
@@ -152,4 +152,9 @@ export async function transform_features_to_codes({ db, source_entities }: { db:
 
 export function is_used_in_source(category: SourceEntityCategory): (feature: { name: FeatureName }) => boolean {
 	return feature => !feature.name.startsWith('Spare') && !GRAMMAR_ONLY_FEATURES.includes(`${category}-${feature.name}`)
+}
+
+export function trim_feature_codes(codes: string) {
+	const end_index = [...codes].findLastIndex(c => !['.', 'N'].includes(c))
+	return end_index >= 0 ? codes.slice(0, end_index + 1) : ''
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decode_features, encode_features, is_used_in_source } from './features'
+import { decode_features, encode_features, feature_structure_to_codes, is_used_in_source, trim_feature_codes } from './features'
 import type { SourceEntity } from '@tabitha/types'
 
 describe('decode_features', () => {
@@ -97,5 +97,37 @@ describe('is_used_in_source', () => {
 		const filter = is_used_in_source('Noun')
 		expect(filter({ name: 'Spare 1' })).toBe(false)
 		expect(filter({ name: 'Number' })).toBe(true)
+	})
+})
+
+describe('trim_feature_codes', () => {
+	it.each([
+		['keeps codes that end in a real value', 'ab.c', 'ab.c'],
+		['trims trailing placeholder dots', 'ab..', 'ab'],
+		['trims trailing N codes', 'abN.N', 'ab'],
+		['keeps interior placeholders', '.N.x..', '.N.x'],
+		['is empty when every code is a placeholder', '.N..', ''],
+		['is empty for no codes', '', ''],
+	])('%s', (_name, codes, expected) => {
+		expect(trim_feature_codes(codes)).toBe(expected)
+	})
+})
+
+describe('feature_structure_to_codes', () => {
+	const feature_map = new Map([
+		['Noun', [
+			{ name: 'Number', values: [{ code: 's', value: 'Singular' }, { code: 'p', value: 'Plural' }] },
+			{ name: 'Person', values: [{ code: '.', value: 'Not Applicable' }, { code: 't', value: 'Third' }] },
+		]],
+	]) as Parameters<typeof feature_structure_to_codes>[0]['feature_map']
+
+	it('maps each feature value to its code, ignoring case', () => {
+		const features = [{ name: 'number', value: 'plural' }, { name: 'Person', value: 'Third' }]
+
+		expect(feature_structure_to_codes({ category: 'Noun', features, feature_map })).toBe('pt')
+	})
+
+	it('defaults a missing feature to "." when it is a code, otherwise to the first value', () => {
+		expect(feature_structure_to_codes({ category: 'Noun', features: [], feature_map })).toBe('s.')
 	})
 })

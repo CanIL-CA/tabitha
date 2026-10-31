@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '#lib/types.js'
+	import { view_settings } from '#lib/settings/settings.svelte.ts'
+	import FeatureCodes from './FeatureCodes.svelte'
 	import Features from './Features.svelte'
 	import HoverPopup from './HoverPopup.svelte'
 	import OntologyResult from './OntologyResult.svelte'
@@ -12,8 +14,8 @@
 	<HoverPopup>
 		{#snippet button_content()}
 			<span class="pe-2 my-4">
-				{source_entity.category_abbr}
-				{#if source_entity.noun_list_index}
+				{source_entity.category_abbr}<FeatureCodes {source_entity} />
+				{#if !view_settings.show_feature_codes && source_entity.noun_list_index}
 					<sub class="-bottom-1.5 -left-1 italic">{source_entity.noun_list_index}</sub>
 				{/if}
 			</span>
