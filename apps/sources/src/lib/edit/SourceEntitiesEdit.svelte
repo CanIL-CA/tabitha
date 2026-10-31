@@ -56,8 +56,10 @@
 			: get_action_range({ entities: source_entities, id: entity_drag.dragged_id }),
 	)
 
-	let select_range = $derived(
-		selected_entity.current && get_action_range({ entities: source_entities, id: selected_entity.current.id }),
+	let select_ranges = $derived(
+		selected_entity.all
+			.map(({ id }) => get_action_range({ entities: source_entities, id }))
+			.filter(range => range !== null),
 	)
 
 	let hover_target = $state<HoverTarget | null>(null)
@@ -120,7 +122,7 @@
 	function get_entity_state({ id, range_check }: { id: number, range_check: RangeCheck }): keyof typeof ENTITY_STATE_BG_CLASSES {
 		if (range_check({ id, range: drag_range })) return 'dragging'
 		if (range_check({ id, range: hover_range })) return 'hover'
-		if (range_check({ id, range: select_range })) return 'selected'
+		if (select_ranges.some(range => range_check({ id, range }))) return 'selected'
 		return 'idle'
 	}
 
@@ -163,6 +165,23 @@
 		if (selected_entity.current) {
 			toolbar_entity_id = selected_entity.current.id
 		}
+	}
+
+	const is_multi_select_click = (event: MouseEvent): boolean => event.ctrlKey || event.metaKey
+
+	function entity_click({ event, id }: { event: MouseEvent, id: number }) {
+		if (is_multi_select_click(event)) {
+			selected_entity.toggle(source_entities[id])
+			return
+		}
+		entity_focus(id)
+	}
+
+	// A mouse press also focuses the entity; clicks are handled by entity_click, so only keyboard focus selects.
+	function entity_keyboard_focus({ event, id }: { event: FocusEvent & { currentTarget: HTMLElement }, id: number }) {
+		if (!event.currentTarget.matches(':focus-visible')) return
+		if (selected_entity.is_selected(source_entities[id])) return
+		entity_focus(id)
 	}
 
 	//---------------
@@ -279,20 +298,20 @@
 				role="button"
 				tabindex="0"
 				data-entity-index={i}
-				onclick={() => entity_focus(i)}
+				onclick={event => entity_click({ event, id: i })}
 				onkeydown={e => (e.key === 'Enter' || e.key === ' ') && entity_focus(i)}
 				onmouseenter={() => entity_mouseover(i)}
-				onfocus={() => entity_focus(i)}
+				onfocus={event => entity_keyboard_focus({ event, id: i })}
 				onmouseleave={entity_mouseout}
 				onblur={() => {}}
-				onpointerdown={event => entity_drag.press({ event, id: i })}
+				onpointerdown={event => !is_multi_select_click(event) && entity_drag.press({ event, id: i })}
 				ondragstart={e => e.preventDefault()}
 				class="id-{i} cursor-pointer content-center h-20 {ENTITY_STATE_BG_CLASSES[get_entity_state({ id: i, range_check: is_entity_in_range })]} transition-opacity"
 			>
 				{@render entity_component(entity)}
 			</div>
 
-			{#if toolbar_entity_id === i && !entity_drag.is_dragging}
+			{#if toolbar_entity_id === i && !entity_drag.is_dragging && selected_entity.count === 1}
 				{#snippet toolbar_item(action: () => void, icon: string, color: string = '')}
 					<li>
 						<button onclick={action} class="p-0">
