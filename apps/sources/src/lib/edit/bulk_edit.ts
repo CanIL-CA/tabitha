@@ -35,9 +35,6 @@ export const apply_concept = ({ entities, concept }: { entities: readonly PageSo
 export const do_concepts_differ = ({ concepts }: { concepts: readonly ConceptKey[] }): boolean =>
 	count_distinct(concepts.map(concept_key)) > 1
 
-export const do_stems_differ = ({ concepts }: { concepts: readonly ConceptKey[] }): boolean =>
-	count_distinct(concepts.map(({ stem }) => stem)) > 1
-
 export const apply_sense = ({ concepts, sense }: { concepts: readonly ConceptKey[], sense: string }) => {
 	for (const concept of concepts) {
 		concept.sense = sense

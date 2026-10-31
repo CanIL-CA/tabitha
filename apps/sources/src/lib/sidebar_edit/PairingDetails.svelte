@@ -4,7 +4,7 @@
 	import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import { apply_pairing, do_pairings_differ, do_stems_differ } from '#lib/edit/bulk_edit.js'
+	import { apply_pairing, do_pairings_differ, do_concepts_differ } from '#lib/edit/bulk_edit.js'
 	import Icon from '@iconify/svelte'
 	import type { OntologyResult, SourceEntity, PairingType, ConceptKey } from '@tabitha/types'
 
@@ -13,7 +13,7 @@
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
 
-	let are_stems_different = $derived(do_stems_differ({
+	let are_concepts_different = $derived(do_concepts_differ({
 		concepts: selected_entity.all.flatMap(({ concept }) => concept ?? []),
 	}))
 	let is_mixed = $derived(do_pairings_differ({ entities: selected_entity.all }))
@@ -74,9 +74,9 @@
 	{/if}
 {/snippet}
 
-{#if are_stems_different}
+{#if are_concepts_different}
 	<p class="text-xs text-base-content/60 mb-2">
-		The selected entities have different stems, so a pairing can't be set for them together.
+		The selected concepts are different, so a pairing can't be set for them together.
 	</p>
 {/if}
 
@@ -91,7 +91,7 @@
 		<ConceptDetails data={data.pairing_concept}>
 			{#snippet actions()}
 				<button
-					disabled={are_stems_different}
+					disabled={are_concepts_different}
 					onclick={() => open_dialog(pairing_type)}
 					class="btn btn-xs"
 				>
@@ -104,14 +104,14 @@
 		</ConceptDetails>
 	{:else}
 		<button
-			disabled={are_stems_different}
+			disabled={are_concepts_different}
 			onclick={() => open_dialog('simple-complex')}
 			class="btn btn-sm"
 		>
 			{@render display_pairing_type('simple-complex')}
 		</button>
 		<button
-			disabled={are_stems_different}
+			disabled={are_concepts_different}
 			onclick={() => open_dialog('dynamic-literal')}
 			class="btn btn-sm"
 		>
@@ -119,7 +119,7 @@
 		</button>
 		{#if ['Noun', 'Adjective'].includes(pairing_concept.part_of_speech)}
 			<button
-				disabled={are_stems_different}
+				disabled={are_concepts_different}
 				onclick={() => open_dialog('metric-biblical')}
 				class="btn btn-sm"
 			>

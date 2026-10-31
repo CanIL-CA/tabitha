@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import { apply_noun_list_index, do_noun_list_indexes_differ, do_stems_differ } from '#lib/edit/bulk_edit.js'
+	import { apply_noun_list_index, do_noun_list_indexes_differ, do_concepts_differ } from '#lib/edit/bulk_edit.js'
 	import type { PageSourceEntity } from '#lib/types.js'
 
 	let { data }: { data: PageSourceEntity } = $props()
@@ -13,7 +13,7 @@
 
 	let next_index = $derived(calculate_next_index())
 
-	let are_stems_different = $derived(do_stems_differ({
+	let are_concepts_different = $derived(do_concepts_differ({
 		concepts: selected_entity.all.flatMap(({ concept }) => concept ?? []),
 	}))
 	let is_mixed = $derived(do_noun_list_indexes_differ({ entities: selected_entity.all }))
@@ -40,9 +40,9 @@
 	}
 </script>
 
-{#if are_stems_different}
+{#if are_concepts_different}
 	<p class="text-xs text-base-content/60 mb-2">
-		The selected nouns have different stems, so a noun list index can't be set for them together.
+		The selected concepts are different, so a noun list index can't be set for them together.
 	</p>
 {/if}
 
@@ -61,7 +61,7 @@
 						{#if !is_selected}
 							<div class="invisible group-hover:visible transition-opacity opacity-0 group-hover:opacity-100">
 								<button
-									disabled={are_stems_different}
+									disabled={are_concepts_different}
 									onclick={() => set_index(noun_list_entry.index)}
 									class="btn btn-xs"
 								>
@@ -78,7 +78,7 @@
 				<td>
 					<div class="invisible group-hover:visible transition-opacity opacity-0 group-hover:opacity-100">
 						<button
-							disabled={are_stems_different}
+							disabled={are_concepts_different}
 							onclick={add_and_set_index}
 							class="btn btn-xs"
 						>

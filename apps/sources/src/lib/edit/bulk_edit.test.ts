@@ -9,7 +9,6 @@ import {
 	do_feature_values_differ,
 	do_noun_list_indexes_differ,
 	do_pairings_differ,
-	do_stems_differ,
 } from './bulk_edit'
 import { DEFAULTS } from './default_entities'
 import type { ConceptKey } from '@tabitha/types'
@@ -128,20 +127,6 @@ describe('do_concepts_differ', () => {
 	test('is false for a single concept and for none', () => {
 		expect(do_concepts_differ({ concepts: [make_concept({ stem: 'love' })] })).toBe(false)
 		expect(do_concepts_differ({ concepts: [] })).toBe(false)
-	})
-})
-
-describe('do_stems_differ', () => {
-	test('ignores differing senses of the same stem', () => {
-		const concepts = [make_concept({ stem: 'love', sense: 'A' }), make_concept({ stem: 'love', sense: 'B' })]
-
-		expect(do_stems_differ({ concepts })).toBe(false)
-	})
-
-	test('is true when any stem differs', () => {
-		const concepts = [make_concept({ stem: 'love' }), make_concept({ stem: 'love' }), make_concept({ stem: 'hate' })]
-
-		expect(do_stems_differ({ concepts })).toBe(true)
 	})
 })
 
