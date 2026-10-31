@@ -18,6 +18,7 @@
 
 	let { data }: PageProps = $props()
 
+
 	// svelte-ignore state_referenced_locally
 	let concept_data = $state(data.concept_data)
 
@@ -28,7 +29,8 @@
 
 	let fetching_sense = $state(false)
 	let sense_lookup_timer: ReturnType<typeof setTimeout> | undefined
-	let stem_senses = $state<StemSensesResult>(EMPTY_STEM_SENSES)
+	// svelte-ignore state_referenced_locally
+	let stem_senses = $state<StemSensesResult>(data.stem_senses)
 
 	let saving = $state(false)
 	let error_message = $state('')
@@ -47,7 +49,7 @@
 		dismiss_toast()
 
 		try {
-			const outcome = await enqueue({ action: 'create', body: $state.snapshot(concept_data) })
+			const outcome = await enqueue({ action: 'create', body: { ...$state.snapshot(concept_data), change_id: data.change_id } })
 
 			if (outcome.type === 'failed') {
 				error_message = outcome.message
@@ -100,7 +102,7 @@
 
 		sense_lookup_timer = setTimeout(async () => {
 			try {
-				const found_senses = await look_up_stem_senses({ stem, part_of_speech })
+				const found_senses = await look_up_stem_senses({ stem, part_of_speech, excluded_change_id: data.change_id })
 				// a slow response for a stem that has since been edited would otherwise overwrite the newer one
 				if (stem !== concept_data.stem || part_of_speech !== concept_data.part_of_speech) return
 
@@ -122,7 +124,13 @@
 <article class="card bg-base-200 mx-auto w-[80%]">
 	<div class="card-body">
 		<div class="prose pb-4">
-			<h2>Add a new concept</h2>
+			{#if data.change_id}
+				<h2>Edit a suggested concept</h2>
+			{:else if data.user?.permissions.can_add}
+				<h2>Add a new concept</h2>
+			{:else}
+				<h2>Suggest a new concept</h2>
+			{/if}
 		</div>
 
 		<form onsubmit={handle_submit} class="flex flex-col gap-6">
@@ -247,7 +255,7 @@
 					{/if}
 					Save
 				</button>
-				<a href="/" class="btn btn-ghost">Cancel</a>
+				<a href={data.change_id ? '/protected/changes' : '/'} class="btn btn-ghost">Cancel</a>
 			</div>
 		</form>
 

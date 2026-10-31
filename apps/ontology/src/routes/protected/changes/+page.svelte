@@ -6,6 +6,7 @@
 	import ChangeDiffData from '#lib/changes/ChangeDiffData.svelte'
 	import ChangeFilters from '#lib/changes/ChangeFilters.svelte'
 	import MoreLink from '#lib/changes/MoreLink.svelte'
+	import AddConceptButton from '#lib/AddConceptButton.svelte'
 	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/changes/change_filters.js'
 	import { CHANGES_BATCH_SIZE, apply_pending_changes, approve_change } from '#lib/changes/changes.js'
 	import { format_datetime, format_time } from '#lib/format.js'
@@ -16,7 +17,8 @@
 
 	let changes = $derived(data.changes)
 
-	let filters = $state({ ...NO_CHANGE_FILTERS })
+	// svelte-ignore state_referenced_locally
+	let filters = $state({ ...data.filters })
 	let filtered_changes = $derived(filter_changes({ changes, ...filters }))
 
 	let visible_count = $state(CHANGES_BATCH_SIZE)
@@ -114,10 +116,7 @@
 
 <div class="pt-2 w-full">
 	<section class="pb-4">
-		<a href="/protected/concept/create" class="btn">
-			<Icon icon="material-symbols:add" class="w-5 h-5" />
-			Add Concept
-		</a>
+		<AddConceptButton user={data.user!} />
 	</section>
 
 	<div class="prose">
@@ -152,7 +151,7 @@
 	{/if}
 
 	{#if changes.length > 0}
-		<ChangeFilters {changes} bind:filters onchange={reset_visible_count} />
+		<ChangeFilters {changes} bind:filters defaults={NO_CHANGE_FILTERS} onchange={reset_visible_count} />
 	{/if}
 
 	{#if filtered_changes.length > 0}
@@ -222,19 +221,27 @@
 						{change.version || ''}
 					</td>
 					<td>
-						{#if change.can_approve}
-							<button
-								onclick={() => approve(change)}
-								disabled={approving_id === change.id}
-								class="btn btn-sm btn-primary"
-							>
-								{#if approving_id === change.id}
-									<span class="loading loading-spinner loading-xs"></span>
-								{:else}
-									Approve
-								{/if}
-							</button>
-						{/if}
+						<div class="flex gap-1">
+							{#if change.can_edit && !change.is_unsynced}
+								<a href="/protected/concept/{change.action}?change={change.id}" class="btn btn-sm">
+									<Icon icon="mdi:edit-outline" class="h-4 w-4" />
+									Edit
+								</a>
+							{/if}
+							{#if change.can_approve}
+								<button
+									onclick={() => approve(change)}
+									disabled={!!approving_id}
+									class="btn btn-sm btn-primary"
+								>
+									{#if approving_id === change.id}
+										<span class="loading loading-spinner loading-xs"></span>
+									{:else}
+										Approve
+									{/if}
+								</button>
+							{/if}
+						</div>
 					</td>
 				</tr>
 			{/each}

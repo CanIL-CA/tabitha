@@ -5,7 +5,7 @@
 	import { format_datetime } from '#lib/format.js'
 	import ChangeFilters from '#lib/changes/ChangeFilters.svelte'
 	import MoreLink from '#lib/changes/MoreLink.svelte'
-	import { NO_CHANGE_FILTERS, filter_changes } from '#lib/changes/change_filters.js'
+	import { APPLIED_CHANGE_FILTERS, filter_changes } from '#lib/changes/change_filters.js'
 	import { CHANGES_BATCH_SIZE } from '#lib/changes/changes.js'
 	
 	let { data }: PageProps = $props()
@@ -13,7 +13,7 @@
 	let changes = $derived(data.changes)
 
 	// svelte-ignore state_referenced_locally
-	let filters = $state({ ...NO_CHANGE_FILTERS, since: data.since ?? 'all', before: data.before ?? 'all' })
+	let filters = $state({ ...data.filters })
 	let filtered_changes = $derived(filter_changes({ changes, ...filters }))
 
 	let visible_count = $state(CHANGES_BATCH_SIZE)
@@ -29,7 +29,7 @@
 		<h3>Changes</h3>
 	</div>
 
-	<ChangeFilters {changes} bind:filters onchange={reset_visible_count} />
+	<ChangeFilters {changes} bind:filters defaults={APPLIED_CHANGE_FILTERS} onchange={reset_visible_count} />
 
 	{#if filtered_changes.length > 0}
 		<table class="table w-full">

@@ -1,4 +1,4 @@
-import type { OntologyChangeAction, ConceptCreateData, ConceptUpdateData } from '#lib/types.js'
+import type { OntologyChangeAction, ConceptSubmission } from '#lib/types.js'
 
 const DB_NAME = 'tabitha-ontology-offline-queue'
 const DB_VERSION = 1
@@ -14,7 +14,7 @@ export type QueuedMutationStatus = 'pending' | 'syncing' | 'failed'
 export type QueuedMutation = {
 	client_id: string
 	action: OntologyChangeAction
-	body: ConceptCreateData | ConceptUpdateData
+	body: ConceptSubmission
 	status: QueuedMutationStatus
 	failure_reason?: string
 	retry_count: number
@@ -56,7 +56,7 @@ function generate_client_id(): string {
 
 type AddMutationOptions = {
 	readonly action: OntologyChangeAction
-	readonly body: ConceptCreateData | ConceptUpdateData
+	readonly body: ConceptSubmission
 }
 
 export async function add_mutation({ action, body }: AddMutationOptions): Promise<QueuedMutation> {

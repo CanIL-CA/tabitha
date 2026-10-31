@@ -64,6 +64,12 @@ export function create_change_fields(change_data: ConceptCreateData): OntologyCh
 	}
 }
 
+// Overlays a change's new values (and concept key) onto a concept's data, e.g. to prefill a form for editing that change.
+export function merge_change_values({ concept_data, change }: { concept_data: ConceptUpdateData, change: OntologyChange }): ConceptUpdateData {
+	const new_values = Object.fromEntries(Object.entries(change.data).map(([field, { value }]) => [field, value]))
+	return { ...concept_data, ...change.concept, ...new_values }
+}
+
 // Create a filter for checking if a change was made between two Ontology versions.
 // 'since' is exclusive and 'before' is inclusive
 export function change_made_between_versions({ since, before }: { since: string, before: string }): (change: OntologyChange) => boolean {

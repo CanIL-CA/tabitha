@@ -3,6 +3,8 @@
 	import { page } from '$app/state'
 	import { SummaryCard } from '#lib/card/index.js'
 	import { DisplayPreference, Table } from '#lib/search/index.js'
+	import AddConceptButton from '#lib/AddConceptButton.svelte'
+	import ReviewSuggestedButton from '#lib/ReviewSuggestedButton.svelte'
 	import type { PageProps } from './$types'
 
 	let { data }: PageProps = $props()
@@ -24,10 +26,11 @@
 
 	<div class="flex items-center gap-4">
 		{#if data.user?.permissions.has_protected_access}
-			<a href="/protected/concept/create" class="btn btn-accent">
-				<Icon icon="material-symbols:add" class="w-5 h-5" />
-				Add Concept
-			</a>
+			{#if data.awaiting_approval_count !== null}
+				<ReviewSuggestedButton count={data.awaiting_approval_count} />
+			{/if}
+
+			<AddConceptButton user={data.user!} />
 		{/if}
 
 		<DisplayPreference bind:preference={display_preference} />

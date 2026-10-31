@@ -3,7 +3,8 @@
 	import type { PartOfSpeech } from '@tabitha/types'
 
 	type Props = {
-		change: OntologyChange
+		// only the diff and the part of speech, so a diff that isn't a saved change yet can be shown too
+		change: Pick<OntologyChange, 'data' | 'concept'>
 	}
 
 	let { change }: Props = $props()

@@ -28,6 +28,29 @@ describe('combine_stem_senses', () => {
 		expect(combined.has_pending_create).toBe(true)
 	})
 
+	it('leaves out the suggested create being edited, so it neither counts as pending nor takes a sense', () => {
+		const combined = combine_stem_senses({
+			stem: 'test',
+			server_senses: [sense({ letter: 'A' }), { ...sense({ letter: 'B', status: 'suggested' }), change_id: 19 }],
+			unsynced_senses: [],
+			excluded_change_id: 19,
+		})
+
+		expect(combined.senses.map(s => s.sense)).toEqual(['A'])
+		expect(combined.has_pending_create).toBe(false)
+		expect(combined.next_sense).toBe('B')
+	})
+
+	it('keeps every sense when nothing is being edited', () => {
+		const combined = combine_stem_senses({
+			stem: 'test',
+			server_senses: [sense({ letter: 'A' }), { ...sense({ letter: 'B', status: 'suggested' }), change_id: 19 }],
+			unsynced_senses: [sense({ letter: 'C', status: 'unsynced' })],
+		})
+
+		expect(combined.senses.map(s => s.sense)).toEqual(['A', 'B', 'C'])
+	})
+
 	it('has no pending create when every sense is in the Ontology', () => {
 		const combined = combine_stem_senses({ stem: 'test', server_senses: [sense({ letter: 'A' })], unsynced_senses: [] })
 

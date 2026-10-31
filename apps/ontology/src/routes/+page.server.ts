@@ -4,11 +4,12 @@ import { redirect } from '@sveltejs/kit'
 import { env } from 'cloudflare:workers'
 import { PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { find_related_concepts } from '#lib/server/semantic_search.js'
+import { count_changes_awaiting_approval } from '#lib/server/changes/changes.js'
 import { record_usage_event } from '@tabitha/usage'
 import type { PageServerLoad } from './$types'
 import type { ConceptSearchFilter } from '@tabitha/types'
 
-export async function load({ url: { searchParams }, locals: { db_ontology } }: Parameters<PageServerLoad>[0]) {
+export async function load({ url: { searchParams }, locals: { db_ontology, user } }: Parameters<PageServerLoad>[0]) {
 	const search_filter: ConceptSearchFilter = {
 		q: '',
 		scope: 'stems',
@@ -43,5 +44,6 @@ export async function load({ url: { searchParams }, locals: { db_ontology } }: P
 
 	return {
 		results,
+		awaiting_approval_count: await count_changes_awaiting_approval({ db: db_ontology, permissions: user?.permissions }),
 	}
 }
