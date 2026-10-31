@@ -9,9 +9,10 @@
 	type Props = {
 		data: ConceptKey
 		title: string
+		notice?: string
 		actions?: Snippet<[OntologyResult]>
 	}
-	const { data, title, actions }: Props = $props()
+	const { data, title, notice, actions }: Props = $props()
 
 	const ontology_senses = get_ontology_senses()
 
@@ -25,6 +26,10 @@
 {#if all_senses.length > 1}
 	<SidebarDetail summary_title={title}>
 		{#snippet details_content()}
+			{#if notice}
+				<p class="text-xs text-base-content/60 mb-2">{notice}</p>
+			{/if}
+
 			<div class="flex justify-end">
 				<a href={get_ontology_url_for_link(data)} target="_blank" class="link link-accent text-xs flex items-end">
 					Compare in Ontology

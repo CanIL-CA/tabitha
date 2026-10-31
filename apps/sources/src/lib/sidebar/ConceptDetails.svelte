@@ -10,7 +10,7 @@
 		actions?: Snippet
 	}
 
-	let { data = $bindable(), actions }: Props = $props()
+	let { data, actions }: Props = $props()
 
 	const ontology_senses = get_ontology_senses()
 

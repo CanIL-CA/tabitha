@@ -33,24 +33,24 @@
 			{#if entity.concept}
 				<SidebarDetail summary_title="Concept Details">
 					{#snippet details_content()}
-						<ConceptDetails bind:data={entity!.concept!} />
+						<ConceptDetails data={entity!} />
 					{/snippet}
 				</SidebarDetail>
-				<AllSenseDetails bind:data={entity.concept!} title="All Senses" />
+				<AllSenseDetails data={entity} field="concept" title="All Senses" />
 			{/if}
 
 			<!--Ontology Details for Pairing (if present)-->
 			{#if entity.pairing_concept}
 				<SidebarDetail summary_title="Pairing Details">
 					{#snippet details_content()}
-						<PairingDetails bind:data={entity!} />
+						<PairingDetails data={entity!} />
 					{/snippet}
 				</SidebarDetail>
-				<AllSenseDetails bind:data={entity.pairing_concept!} title="Pairing - All Senses" />
+				<AllSenseDetails data={entity} field="pairing_concept" title="Pairing - All Senses" />
 			{:else if can_have_pairing(entity)}
 				<SidebarDetail summary_title="Add Pairing">
 					{#snippet details_content()}
-						<PairingDetails bind:data={entity!} />
+						<PairingDetails data={entity!} />
 					{/snippet}
 				</SidebarDetail>
 			{/if}
@@ -59,7 +59,7 @@
 			{#if entity.category === 'Noun'}
 				<SidebarDetail summary_title="Noun List Index">
 					{#snippet details_content()}
-						<NounListDetails bind:data={entity!} />
+						<NounListDetails data={entity!} />
 					{/snippet}
 				</SidebarDetail>
 			{/if}
@@ -68,7 +68,7 @@
 			{#if entity.features.length > 0}
 				<SidebarDetail summary_title="Features" start_open={true}>
 					{#snippet details_content()}
-						<FeaturesDetails bind:data={entity!} />
+						<FeaturesDetails data={entity!} />
 					{/snippet}
 				</SidebarDetail>
 			{/if}
