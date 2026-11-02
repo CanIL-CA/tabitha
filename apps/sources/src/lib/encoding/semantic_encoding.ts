@@ -201,8 +201,17 @@ export function get_noun_list(raw_encoding: string): NounListEntry[] {
 		.slice(noun_list_start + 2).trim()
 		.split('|')
 		.filter(entry => entry.length)
-		.map((entry, index) => ({
-			noun: `${entry.slice(1)}-${entry[0]}`,	// the sense is always the first letter
-			index: index < 9 ? `${index + 1}` : String.fromCharCode('A'.charCodeAt(0) + (index - 9)),
-		}))
+		.map((entry, i) => {
+			const [concept, pairing] = entry.split('/')
+			return {
+				noun: pairing ? `${transform_concept(concept)}/${transform_concept(pairing)}` : transform_concept(concept),
+				index: i < 9 ? `${i + 1}` : String.fromCharCode('A'.charCodeAt(0) + (i - 9)),
+			}
+		})
+
+	function transform_concept(concept: string) {
+		// the sense is always the first letter
+		const [stem, sense] = [concept.slice(1), concept[0]]
+		return `${stem}-${sense}`
+	}
 }
