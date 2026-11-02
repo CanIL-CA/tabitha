@@ -14,6 +14,7 @@ const is_boundary = (entity: PageSourceEntity): boolean =>
 export class SelectedEntity {
 	#ids = $state<number[]>([])
 	all: PageSourceEntity[]
+	ids: number[]
 	current: PageSourceEntity | null
 	count: number
 
@@ -21,6 +22,7 @@ export class SelectedEntity {
 		this.all = $derived(
 			this.#ids.flatMap(id => entities()[id] ?? []),
 		)
+		this.ids = $derived(this.all.map(entity => entity.id))
 		this.current = $derived(this.all[0] ?? null)
 		this.count = $derived(this.all.length)
 	}
@@ -34,6 +36,10 @@ export class SelectedEntity {
 		} else {
 			this.#ids = [entity.id]
 		}
+	}
+
+	select_ids({ ids }: { ids: number[] }) {
+		this.#ids = ids
 	}
 
 	toggle(entity: PageSourceEntity) {

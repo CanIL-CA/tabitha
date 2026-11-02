@@ -201,7 +201,7 @@
 
 		// Where the dragged range starts once it has been removed and re-inserted at `slot`.
 		const insert_position = slot <= range[0] ? slot : slot - range_length
-		edit_history().record()
+		edit_history().record({ ids_before: [range[0]], ids_after: [insert_position] })
 		const moved_entities = source_entities.splice(range[0], range_length)
 		source_entities.splice(insert_position, 0, ...moved_entities)
 
@@ -220,10 +220,10 @@
 		const range = get_action_range({ entities: source_entities, id })
 		if (!range) return
 
-		edit_history().record()
+		edit_history().record({ ids_before: [range[0]], ids_after: [range[0]] })
 		source_entities.splice(range[0], get_range_length(range))
 		structure_entities(source_entities)
-		select_entity(range[0] - 1)
+		select_entity(range[0])
 	}
 
 	//---------------

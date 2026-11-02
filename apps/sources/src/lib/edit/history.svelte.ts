@@ -9,10 +9,19 @@ export type EditState = {
 
 const MAX_UNDO_STEPS = 20
 
+/** The state to restore, plus the ids to select once it is restored by undo (`ids_before`) or redo (`ids_after`). */
+type HistoryEntry = {
+	state: EditState
+	ids_before: number[]
+	ids_after: number[]
+}
+
+type RecordOptions = Pick<HistoryEntry, 'ids_before' | 'ids_after'>
+
 export class EditHistory {
 	current: EditState
-	#past = $state.raw<EditState[]>([])
-	#future = $state.raw<EditState[]>([])
+	#past = $state.raw<HistoryEntry[]>([])
+	#future = $state.raw<HistoryEntry[]>([])
 
 	can_undo = $derived(this.#past.length > 0)
 	can_redo = $derived(this.#future.length > 0)
@@ -21,28 +30,36 @@ export class EditHistory {
 		this.current = $state(initial_state)
 	}
 
-	/** Call immediately *before* mutating `current`, so that undo returns to the pre-edit state. */
-	record() {
-		this.#past = [...this.#past, $state.snapshot(this.current)].slice(-MAX_UNDO_STEPS)
+	/**
+	 * Call immediately *before* mutating `current`, so that undo returns to the pre-edit state.
+	 * `ids_before` are the acted-on entity ids in the pre-edit state and `ids_after` are ids in the post-edit state.
+	 */
+	record({ ids_before, ids_after }: RecordOptions) {
+		const entry: HistoryEntry = { state: $state.snapshot(this.current), ids_before, ids_after }
+		this.#past = [...this.#past, entry].slice(-MAX_UNDO_STEPS)
 		this.#future = []
 	}
 
-	undo() {
-		const previous_state = this.#past.at(-1)
-		if (!previous_state) return
+	/** Returns the ids to select in the restored state. */
+	undo(): number[] {
+		const previous = this.#past.at(-1)
+		if (!previous) return []
 
-		this.#future = [$state.snapshot(this.current), ...this.#future]
+		this.#future = [{ ...previous, state: $state.snapshot(this.current) }, ...this.#future]
 		this.#past = this.#past.slice(0, -1)
-		this.current = previous_state
+		this.current = previous.state
+		return previous.ids_before
 	}
 
-	redo() {
-		const next_state = this.#future.at(0)
-		if (!next_state) return
+	/** Returns the ids to select in the restored state. */
+	redo(): number[] {
+		const next = this.#future.at(0)
+		if (!next) return []
 
-		this.#past = [...this.#past, $state.snapshot(this.current)]
+		this.#past = [...this.#past, { ...next, state: $state.snapshot(this.current) }]
 		this.#future = this.#future.slice(1)
-		this.current = next_state
+		this.current = next.state
+		return next.ids_after
 	}
 }
 

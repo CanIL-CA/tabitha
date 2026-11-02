@@ -33,9 +33,14 @@
 			...fill_in_features({ source_entity: entity, feature_map: page.data.features as FeatureMap }),
 		}))
 
-		edit_history().record()
+		record_insert()
 		source_entities.splice(data.entity_id, 0, ...new_entities)
 		onclose_and_recalculate()
+	}
+
+	function record_insert() {
+		// undo selects the entity that follows the insertion point, redo selects the first inserted entity
+		edit_history().record({ ids_before: [data.entity_id], ids_after: [data.entity_id] })
 	}
 
 	function insert_entity(entity: PageSourceEntity) {
@@ -74,7 +79,7 @@
 	function paste_entities() {
 		const new_entities = entity_clipboard.paste()
 		if (new_entities !== null) {
-			edit_history().record()
+			record_insert()
 			source_entities.splice(data.entity_id, 0, ...new_entities)
 			onclose_and_recalculate()
 		} else {

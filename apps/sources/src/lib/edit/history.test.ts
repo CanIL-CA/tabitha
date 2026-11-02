@@ -7,6 +7,8 @@ const make_state = (values: string[]): EditState => ({
 	noun_list: [],
 })
 
+const NO_IDS = { ids_before: [], ids_after: [] }
+
 const entity_values = (history: EditHistory): string[] =>
 	history.current.source_entities.map(entity => entity.value)
 
@@ -31,7 +33,7 @@ describe('EditHistory', () => {
 	test('undo restores the state captured by record', () => {
 		const history = new EditHistory(make_state(['a', 'b']))
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities.splice(0, 1)
 		expect(history.can_undo).toBe(true)
 
@@ -43,7 +45,7 @@ describe('EditHistory', () => {
 	test('redo reapplies an undone edit', () => {
 		const history = new EditHistory(make_state(['a', 'b']))
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities.push({ ...DEFAULTS.EMPTY, id: 2, value: 'c' })
 		history.undo()
 		expect(history.can_redo).toBe(true)
@@ -57,9 +59,9 @@ describe('EditHistory', () => {
 	test('walks back and forward through several edits in order', () => {
 		const history = new EditHistory(make_state(['a']))
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities.push({ ...DEFAULTS.EMPTY, id: 1, value: 'b' })
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities.push({ ...DEFAULTS.EMPTY, id: 2, value: 'c' })
 
 		history.undo()
@@ -75,12 +77,12 @@ describe('EditHistory', () => {
 	test('a new edit after undo discards the redo branch', () => {
 		const history = new EditHistory(make_state(['a']))
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities[0].value = 'b'
 		history.undo()
 		expect(history.can_redo).toBe(true)
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities[0].value = 'z'
 		expect(history.can_redo).toBe(false)
 	})
@@ -90,7 +92,7 @@ describe('EditHistory', () => {
 		initial_state.source_entities[0].features = [{ name: 'Type', value: 'Independent' }]
 		const history = new EditHistory(initial_state)
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.source_entities[0].features[0].value = 'Dependent'
 		history.undo()
 
@@ -100,7 +102,7 @@ describe('EditHistory', () => {
 	test('undo and redo restore noun_list along with source_entities', () => {
 		const history = new EditHistory(make_state(['a']))
 
-		history.record()
+		history.record(NO_IDS)
 		history.current.noun_list.push({ index: '1', noun: 'God-A' })
 		history.undo()
 		expect(history.current.noun_list).toEqual([])
@@ -120,11 +122,43 @@ describe('EditHistory', () => {
 		expect(history.can_redo).toBe(false)
 	})
 
+	test('undo returns ids_before and redo returns ids_after', () => {
+		const history = new EditHistory(make_state(['a', 'b', 'c']))
+
+		history.record({ ids_before: [0], ids_after: [2] })
+		history.current.source_entities.push({ ...DEFAULTS.EMPTY, id: 3, value: 'd' })
+
+		expect(history.undo()).toEqual([0])
+		expect(history.redo()).toEqual([2])
+	})
+
+	test('each entry keeps its own ids as undo and redo walk through several edits', () => {
+		const history = new EditHistory(make_state(['a']))
+
+		history.record({ ids_before: [1], ids_after: [2] })
+		history.current.source_entities[0].value = 'b'
+		history.record({ ids_before: [3], ids_after: [4] })
+		history.current.source_entities[0].value = 'c'
+
+		expect(history.undo()).toEqual([3])
+		expect(history.undo()).toEqual([1])
+		expect(history.redo()).toEqual([2])
+		expect(history.redo()).toEqual([4])
+		expect(history.undo()).toEqual([3])
+	})
+
+	test('undo and redo return no ids when their stack is empty', () => {
+		const history = new EditHistory(make_state(['a']))
+
+		expect(history.undo()).toEqual([])
+		expect(history.redo()).toEqual([])
+	})
+
 	test('keeps only the most recent 20 undo steps', () => {
 		const history = new EditHistory(make_state(['0']))
 
 		for (let edit = 1; edit <= 25; edit++) {
-			history.record()
+			history.record(NO_IDS)
 			history.current.source_entities[0].value = String(edit)
 		}
 

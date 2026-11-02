@@ -20,7 +20,7 @@
 	}))
 
 	function set_concept(concept: ConceptKey) {
-		edit_history().record()
+		edit_history().record({ ids_before: selected_entity.ids, ids_after: selected_entity.ids })
 		apply_concept({ entities: selected_entity.all, concept })
 	}
 
