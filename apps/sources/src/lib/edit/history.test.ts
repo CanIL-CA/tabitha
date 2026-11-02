@@ -4,7 +4,6 @@ import { DEFAULTS } from './default_entities'
 
 const make_state = (values: string[]): EditState => ({
 	source_entities: values.map((value, id) => ({ ...DEFAULTS.EMPTY, id, value })),
-	noun_list: [],
 })
 
 const NO_IDS = { ids_before: [], ids_after: [] }
@@ -99,18 +98,22 @@ describe('EditHistory', () => {
 		expect(history.current.source_entities[0].features[0].value).toBe('Independent')
 	})
 
-	test('undo and redo restore noun_list along with source_entities', () => {
+
+	test('noun_list_rows follows edits, undo and redo', () => {
 		const history = new EditHistory(make_state(['a']))
+		expect(history.noun_list_rows).toEqual([])
 
 		history.record(NO_IDS)
-		history.current.noun_list.push({ index: '1', noun: 'God-A' })
+		history.current.source_entities[0].concept = { stem: 'God', sense: 'A', part_of_speech: 'Noun' }
+		history.current.source_entities[0].noun_list_index = '2'
+		expect(history.noun_list_rows.map(({ index, noun }) => [index, noun])).toEqual([['1', ''], ['2', 'God-A']])
+
 		history.undo()
-		expect(history.current.noun_list).toEqual([])
+		expect(history.noun_list_rows).toEqual([])
 
 		history.redo()
-		expect(history.current.noun_list).toEqual([{ index: '1', noun: 'God-A' }])
+		expect(history.noun_list_rows).toHaveLength(2)
 	})
-
 	test('undo and redo do nothing when their stack is empty', () => {
 		const history = new EditHistory(make_state(['a']))
 
