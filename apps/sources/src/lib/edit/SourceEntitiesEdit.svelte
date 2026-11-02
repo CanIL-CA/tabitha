@@ -220,7 +220,7 @@
 		const range = get_action_range({ entities: source_entities, id })
 		if (!range) return
 
-		edit_history().record({ ids_before: [range[0]], ids_after: [range[0]] })
+		edit_history().record({ ids_before: [range[0]] })
 		source_entities.splice(range[0], get_range_length(range))
 		structure_entities(source_entities)
 		select_entity(range[0])

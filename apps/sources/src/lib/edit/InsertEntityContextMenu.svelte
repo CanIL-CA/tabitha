@@ -40,7 +40,7 @@
 
 	function record_insert() {
 		// undo selects the entity that follows the insertion point, redo selects the first inserted entity
-		edit_history().record({ ids_before: [data.entity_id], ids_after: [data.entity_id] })
+		edit_history().record({ ids_before: [data.entity_id] })
 	}
 
 	function insert_entity(entity: PageSourceEntity) {

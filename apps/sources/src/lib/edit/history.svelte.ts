@@ -16,7 +16,10 @@ type HistoryEntry = {
 	ids_after: number[]
 }
 
-type RecordOptions = Pick<HistoryEntry, 'ids_before' | 'ids_after'>
+type RecordOptions = {
+	ids_before: number[]
+	ids_after?: number[]
+}
 
 export class EditHistory {
 	current: EditState
@@ -32,9 +35,10 @@ export class EditHistory {
 
 	/**
 	 * Call immediately *before* mutating `current`, so that undo returns to the pre-edit state.
-	 * `ids_before` are the acted-on entity ids in the pre-edit state and `ids_after` are ids in the post-edit state.
+	 * `ids_before` are the acted-on entity ids in the pre-edit state and `ids_after` are ids in the post-edit
+	 * state, which default to `ids_before` for edits that leave the acted-on entities at the same positions.
 	 */
-	record({ ids_before, ids_after }: RecordOptions) {
+	record({ ids_before, ids_after = ids_before }: RecordOptions) {
 		const entry: HistoryEntry = { state: $state.snapshot(this.current), ids_before, ids_after }
 		this.#past = [...this.#past, entry].slice(-MAX_UNDO_STEPS)
 		this.#future = []

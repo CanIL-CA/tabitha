@@ -136,7 +136,7 @@
 			const results_by_stem = await fetch_ontology_data_for_all(analyzed_entities)
 			senses.remember(Object.values(results_by_stem).flat())
 
-			edit_history.record({ ids_before: [], ids_after: [] })
+			edit_history.record({ ids_before: [] })
 			edit_history.current = { source_entities: analyzed_entities, noun_list: result.noun_list }
 		} catch (err) {
 			api_error = err instanceof Error ? err.message : 'Failed to analyze text'

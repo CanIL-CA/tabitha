@@ -132,6 +132,16 @@ describe('EditHistory', () => {
 		expect(history.redo()).toEqual([2])
 	})
 
+	test('ids_after defaults to ids_before', () => {
+		const history = new EditHistory(make_state(['a']))
+
+		history.record({ ids_before: [1] })
+		history.current.source_entities[0].value = 'b'
+
+		expect(history.undo()).toEqual([1])
+		expect(history.redo()).toEqual([1])
+	})
+
 	test('each entry keeps its own ids as undo and redo walk through several edits', () => {
 		const history = new EditHistory(make_state(['a']))
 
