@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.6.1",
-    "officeparser": "^8.2.0"
+    "officeparser": "^8.4.1"
   },
   "devDependencies": {
     "@tabitha/eslint-config": "workspace:*",
