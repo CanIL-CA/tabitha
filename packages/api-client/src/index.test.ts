@@ -399,7 +399,7 @@ describe('@tabitha/api-client', () => {
 		})
 
 		test('analyze_text replaces line breaks with spaces and queries /analyze', async () => {
-			const mock_response = { source_entities: [], noun_list: [] }
+			const mock_response = { source_entities: [], notes: [] }
 			const mock_fetch = vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => mock_response,

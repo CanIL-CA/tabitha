@@ -20,7 +20,6 @@ export async function GET({ locals: { db }, url: { searchParams } }: Parameters<
 
 	const result: AnalysisResult = {
 		source_entities: source_entities_with_features,
-		noun_list: api_result.noun_list,
 	}
 	return Response.json(result)
 }

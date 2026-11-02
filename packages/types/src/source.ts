@@ -114,7 +114,6 @@ export type AnalysisResult = {
 	// status: AnalyzerStatus
 	// notes: AnalysisNote[]
 	source_entities: SourceEntity[]
-	noun_list: NounList
 }
 
 //===============
