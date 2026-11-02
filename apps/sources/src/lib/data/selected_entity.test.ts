@@ -22,6 +22,18 @@ describe('SelectedEntity', () => {
 		expect(selection.count).toBe(0)
 	})
 
+	test('ids lists the selected entity ids in selection order', () => {
+		const entities = make_entities([NOUN, NOUN, NOUN])
+		const selection = new SelectedEntity(() => entities)
+
+		expect(selection.ids).toEqual([])
+
+		selection.select(entities[2])
+		selection.toggle(entities[0])
+
+		expect(selection.ids).toEqual([2, 0])
+	})
+
 	test('select replaces the whole selection', () => {
 		const entities = make_entities([NOUN, NOUN, NOUN])
 		const selection = new SelectedEntity(() => entities)
@@ -44,6 +56,36 @@ describe('SelectedEntity', () => {
 		selection.select(entities[2])
 
 		expect(selection.current?.id).toBe(0)
+	})
+
+	test('select_ids replaces the whole selection in the given order', () => {
+		const entities = make_entities([NOUN, NOUN, NOUN])
+		const selection = new SelectedEntity(() => entities)
+
+		selection.select(entities[0])
+		selection.select_ids({ ids: [2, 1] })
+
+		expect(selected_ids(selection)).toEqual([2, 1])
+		expect(selection.current?.id).toBe(2)
+	})
+
+	test('select_ids with no ids clears the selection', () => {
+		const entities = make_entities([NOUN])
+		const selection = new SelectedEntity(() => entities)
+
+		selection.select(entities[0])
+		selection.select_ids({ ids: [] })
+
+		expect(selection.count).toBe(0)
+	})
+
+	test('select_ids drops ids that do not exist in the entities', () => {
+		const entities = make_entities([NOUN, NOUN])
+		const selection = new SelectedEntity(() => entities)
+
+		selection.select_ids({ ids: [1, 2, -1] })
+
+		expect(selected_ids(selection)).toEqual([1])
 	})
 
 	test('toggle on an empty selection selects the entity', () => {

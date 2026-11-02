@@ -34,10 +34,18 @@
 	set_selected_entity(selected_entity)
 	let sidebar_open = $derived(selected_entity.current !== null)
 
+	function undo() {
+		selected_entity.select_ids({ ids: edit_history.undo() })
+	}
+
+	function redo() {
+		selected_entity.select_ids({ ids: edit_history.redo() })
+	}
+
 	const HISTORY_SHORTCUTS: Record<string, () => void> = {
-		'z': () => edit_history.undo(),
-		'shift+z': () => edit_history.redo(),
-		'y': () => edit_history.redo(),
+		'z': undo,
+		'shift+z': redo,
+		'y': redo,
 	}
 
 	function handle_history_shortcut(event: KeyboardEvent) {
@@ -128,7 +136,7 @@
 			const results_by_stem = await fetch_ontology_data_for_all(analyzed_entities)
 			senses.remember(Object.values(results_by_stem).flat())
 
-			edit_history.record()
+			edit_history.record({ ids_before: [] })
 			edit_history.current = { source_entities: analyzed_entities, noun_list: result.noun_list }
 		} catch (err) {
 			api_error = err instanceof Error ? err.message : 'Failed to analyze text'
@@ -164,10 +172,10 @@
 	</button>
 
 	<div class="join ml-4">
-		<button onclick={() => edit_history.undo()} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
+		<button onclick={undo} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
 			<Icon icon="mdi:undo" class="h-6 w-6" />
 		</button>
-		<button onclick={() => edit_history.redo()} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
+		<button onclick={redo} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
 			<Icon icon="mdi:redo" class="h-6 w-6" />
 		</button>
 	</div>
