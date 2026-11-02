@@ -2,6 +2,7 @@
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { apply_noun_list_index, do_noun_list_indexes_differ, do_concepts_differ } from '#lib/edit/bulk_edit.js'
+	import { calculate_noun_list_index } from '#lib/encoding/semantic_encoding.js'
 	import type { PageSourceEntity } from '#lib/types.js'
 
 	let { data }: { data: PageSourceEntity } = $props()
@@ -9,9 +10,9 @@
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
 
-	let noun_list = $derived(edit_history().current.noun_list)
+	let noun_list = $derived(edit_history().noun_list_rows)
 
-	let next_index = $derived(calculate_next_index())
+	let next_index = $derived(calculate_noun_list_index(noun_list.length))
 
 	let are_concepts_different = $derived(do_concepts_differ({
 		concepts: selected_entity.all.flatMap(({ concept }) => concept ?? []),
@@ -23,20 +24,13 @@
 		apply_noun_list_index({ entities: selected_entity.all, index })
 	}
 
-	function calculate_next_index() {
-		const next = noun_list.length + 1
-		if (next >= 10) {
-			// index 10 and up use capital letters starting with A (ascii 65)
-			return String.fromCharCode(65 + next - 10)
-		} else {
-			return next.toString()
-		}
+	function select_entities_with_index(entity_ids: number[]) {
+		selected_entity.select_ids({ ids: entity_ids })
 	}
 
 	function add_and_set_index() {
 		edit_history().record({ ids_before: selected_entity.ids })
 		apply_noun_list_index({ entities: selected_entity.all, index: next_index })
-		noun_list.push({ index: next_index, noun: `${data.concept?.stem}-${data.concept?.sense}` })
 	}
 </script>
 
@@ -54,37 +48,49 @@
 		<tbody>
 			{#each noun_list as noun_list_entry}
 				{@const is_selected = data.noun_list_index === noun_list_entry.index}
-				<tr class="group">
+				{@const has_multiple_nouns = noun_list_entry.noun.split(',').length > 1}
+				{@const has_no_entities = !noun_list_entry.entity_ids.length}
+
+				<tr class="{has_multiple_nouns || has_no_entities ? 'outline-2 outline-warning' : ''}">
 					<td class="{is_selected ? 'font-bold' : ''}">{noun_list_entry.index}</td>
 					<td class="{is_selected ? 'font-bold' : ''}">{noun_list_entry.noun}</td>
-					<td>
+					<td class="flex gap-1">
+						<button
+							type="button"
+							disabled={has_no_entities}
+							title={has_no_entities
+								? 'No nouns currently have this index'
+								: `Select all ${noun_list_entry.entity_ids.length} with this index`}
+							onclick={() => select_entities_with_index(noun_list_entry.entity_ids)}
+							class="btn btn-xs btn-soft"
+						>
+							{noun_list_entry.entity_ids.length}
+						</button>
 						{#if !is_selected}
-							<div class="invisible group-hover:visible transition-opacity opacity-0 group-hover:opacity-100">
-								<button
-									disabled={are_concepts_different}
-									onclick={() => set_index(noun_list_entry.index)}
-									class="btn btn-xs"
-								>
-									Set index
-								</button>
-							</div>
+							<button
+								type="button"
+								disabled={are_concepts_different}
+								onclick={() => set_index(noun_list_entry.index)}
+								class="btn btn-xs"
+							>
+								Set
+							</button>
 						{/if}
 					</td>
 				</tr>
 			{/each}
-			<tr class="group">
+			<tr>
 				<td>{next_index}</td>
 				<td></td>
 				<td>
-					<div class="invisible group-hover:visible transition-opacity opacity-0 group-hover:opacity-100">
-						<button
-							disabled={are_concepts_different}
-							onclick={add_and_set_index}
-							class="btn btn-xs"
-						>
-							Set index
-						</button>
-					</div>
+					<button
+						type="button"
+						disabled={are_concepts_different}
+						onclick={add_and_set_index}
+						class="btn btn-xs"
+					>
+						Set
+					</button>
 				</td>
 			</tr>
 		</tbody>

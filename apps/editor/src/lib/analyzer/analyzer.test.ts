@@ -4,7 +4,7 @@ import { entityfy } from './entityfy'
 import { get_features_for_token } from './features'
 import { replace_gaps } from './gaps'
 import { order_constituents } from './ordering'
-import { populate_noun_list, replace_punctuation } from './other_rules'
+import { assign_noun_list_indexes, replace_punctuation } from './other_rules'
 import { TOKEN_TYPE, create_gap_token, create_token, create_lookup_result } from '#lib/token.js'
 import type { EditorAnalyzedEntity, PartOfSpeech } from '@tabitha/types'
 import type { Sentence, Tag, Token } from '#lib/types.js'
@@ -30,7 +30,6 @@ describe('analyzer', () => {
 		test('handles empty sentence list', () => {
 			const result = analyze([])
 			expect(result.source_entities).toEqual([])
-			expect(result.noun_list).toEqual([])
 			expect(result.notes).toEqual([])
 		})
 
@@ -49,7 +48,6 @@ describe('analyzer', () => {
 
 			const result = analyze([sentence])
 			expect(result.source_entities.length).toBeGreaterThan(0)
-			expect(Array.isArray(result.noun_list)).toBe(true)
 			expect(Array.isArray(result.notes)).toBe(true)
 		})
 	})
@@ -93,7 +91,7 @@ describe('analyzer', () => {
 	})
 
 	describe('other_rules', () => {
-		test('populate_noun_list extracts unique nouns and formats noun identifier', () => {
+		test('assign_noun_list_indexes gives each distinct noun its own index', () => {
 			const entity1: EditorAnalyzedEntity = {
 				category: 'Noun',
 				value: 'Paul',
@@ -113,10 +111,25 @@ describe('analyzer', () => {
 				noun_list_index: '2',
 			}
 
-			const noun_list = populate_noun_list([entity1, entity2])
-			expect(noun_list.length).toBe(2)
-			expect(noun_list[0].noun).toBe('Paul-A')
-			expect(noun_list[1].noun).toBe('letter-A')
+			assign_noun_list_indexes([entity1, entity2])
+			expect(entity1.noun_list_index).toBe('1')
+			expect(entity2.noun_list_index).toBe('2')
+		})
+
+		test('assign_noun_list_indexes reuses the index of a repeated noun', () => {
+			const make_paul = (): EditorAnalyzedEntity => ({
+				category: 'Noun',
+				value: 'Paul',
+				features: [],
+				concept: { stem: 'Paul', sense: 'A', part_of_speech: 'Noun' },
+				pairing_concept: null,
+				pairing_type: null,
+				noun_list_index: null,
+			})
+			const [first, second] = [make_paul(), make_paul()]
+
+			assign_noun_list_indexes([first, second])
+			expect([first.noun_list_index, second.noun_list_index]).toEqual(['1', '1'])
 		})
 
 		test('replace_punctuation replaces sentence terminal punctuation', () => {

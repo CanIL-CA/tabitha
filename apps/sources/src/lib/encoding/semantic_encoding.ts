@@ -201,8 +201,35 @@ export function get_noun_list(raw_encoding: string): NounListEntry[] {
 		.slice(noun_list_start + 2).trim()
 		.split('|')
 		.filter(entry => entry.length)
-		.map((entry, index) => ({
-			noun: `${entry.slice(1)}-${entry[0]}`,	// the sense is always the first letter
-			index: index < 9 ? `${index + 1}` : String.fromCharCode('A'.charCodeAt(0) + (index - 9)),
-		}))
+		.map((entry, i) => {
+			const [concept, pairing] = entry.split('/')
+			return {
+				noun: pairing ? `${transform_concept(concept)}/${transform_concept(pairing)}` : transform_concept(concept),
+				index: calculate_noun_list_index(i),
+			}
+		})
+
+	function transform_concept(concept: string) {
+		// the sense is always the first letter
+		const [stem, sense] = [concept.slice(1), concept[0]]
+		return `${stem}-${sense}`
+	}
+}
+
+const FIRST_LETTER_INDEX_POSITION = 10
+const LETTER_INDEX_START_CODE = 'A'.charCodeAt(0)
+
+export function calculate_noun_list_index(i: number): string {
+	const index = i + 1	// noun list index is 1-based instead of 0-based
+	if (index < FIRST_LETTER_INDEX_POSITION) return index.toString()
+
+	return String.fromCharCode(LETTER_INDEX_START_CODE + index - FIRST_LETTER_INDEX_POSITION)
+}
+
+/** The inverse of `calculate_noun_list_index`: the 0-based position of a noun list index. */
+export function calculate_noun_list_position(index: string): number {
+	const digit_index = Number(index)
+	if (!Number.isNaN(digit_index)) return digit_index - 1
+
+	return index.charCodeAt(0) - LETTER_INDEX_START_CODE + FIRST_LETTER_INDEX_POSITION - 1
 }

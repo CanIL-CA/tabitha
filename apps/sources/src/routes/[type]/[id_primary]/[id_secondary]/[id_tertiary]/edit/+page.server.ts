@@ -2,7 +2,7 @@ import { get_next_reference, get_previous_reference } from '#lib/data/navigation
 import { load_ontology_senses } from '#lib/data/ontology_senses.js'
 import { get_source_data } from '#lib/data/read.js'
 import { load_source_feature_map } from '#lib/encoding/features.js'
-import { get_noun_list, structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
+import { structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
 import { error } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import type { Reference } from '@tabitha/types'
@@ -18,7 +18,6 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 
 	const transformed_semantic_encoding = await transform_semantic_encoding({ db, semantic_encoding: source.semantic_encoding })
 	const parsed_semantic_encoding = structure_semantic_encoding(transformed_semantic_encoding)
-	const noun_list = get_noun_list(source.semantic_encoding)
 	const previous = await get_previous_reference({ db, reference })
 	const next = await get_next_reference({ db, reference })
 
@@ -29,7 +28,6 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 		source: {
 			...source,
 			parsed_semantic_encoding,
-			noun_list,
 		},
 		nav_data: {
 			previous,

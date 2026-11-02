@@ -41,7 +41,7 @@ export function replace_punctuation(sentences: Sentence[]): Sentence[] {
 	}
 }
 
-export function populate_noun_list(entities: EditorAnalyzedEntity[]): NounListEntry[] {
+export function assign_noun_list_indexes(entities: EditorAnalyzedEntity[]) {
 	const noun_list: NounListEntry[] = []
 
 	entities.forEach(entity => {
@@ -70,7 +70,7 @@ export function populate_noun_list(entities: EditorAnalyzedEntity[]): NounListEn
 		entity.noun_list_index = noun_list_index
 	})
 
-	return noun_list
+	return entities
 
 	function next_noun_index(): string {
 		const next = noun_list.length + 1

@@ -1,10 +1,9 @@
 import { createContext } from 'svelte'
-import type { NounListEntry } from '@tabitha/types'
+import { build_noun_list_rows, type NounListRow } from '#lib/edit/noun_list.js'
 import type { PageSourceEntity } from '#lib/types.js'
 
 export type EditState = {
 	source_entities: PageSourceEntity[]
-	noun_list: NounListEntry[]
 }
 
 const MAX_UNDO_STEPS = 20
@@ -23,6 +22,7 @@ type RecordOptions = {
 
 export class EditHistory {
 	current: EditState
+	noun_list_rows: NounListRow[]
 	#past = $state.raw<HistoryEntry[]>([])
 	#future = $state.raw<HistoryEntry[]>([])
 
@@ -31,6 +31,7 @@ export class EditHistory {
 
 	constructor(initial_state: EditState) {
 		this.current = $state(initial_state)
+		this.noun_list_rows = $derived(build_noun_list_rows({ source_entities: this.current.source_entities }))
 	}
 
 	/**

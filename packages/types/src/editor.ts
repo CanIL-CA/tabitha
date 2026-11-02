@@ -1,6 +1,6 @@
 import type { ConceptKey } from './core'
 import type { HowToEntry, OntologyStatus } from './ontology'
-import type { NounList, PairingType, SourceEntity } from './source'
+import type { PairingType, SourceEntity } from './source'
 
 export type CheckerTokenType =
 	| 'Punctuation'
@@ -93,7 +93,6 @@ export type EditorAnalyzedEntity = Omit<SourceEntity, 'category_abbr' | 'feature
 export type EditorAnalyzeResult = {
 	notes: string[]
 	source_entities: EditorAnalyzedEntity[]
-	noun_list: NounList
 }
 
 //===============

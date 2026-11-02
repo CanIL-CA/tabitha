@@ -26,7 +26,6 @@
 	let phase1_text = $derived(data.source.phase_1_encoding)
 	let edit_history = $derived(new EditHistory({
 		source_entities: data.source.parsed_semantic_encoding,
-		noun_list: data.source.noun_list,
 	}))
 	set_edit_history(() => edit_history)
 
@@ -137,7 +136,7 @@
 			senses.remember(Object.values(results_by_stem).flat())
 
 			edit_history.record({ ids_before: [] })
-			edit_history.current = { source_entities: analyzed_entities, noun_list: result.noun_list }
+			edit_history.current = { source_entities: analyzed_entities }
 		} catch (err) {
 			api_error = err instanceof Error ? err.message : 'Failed to analyze text'
 		} finally {

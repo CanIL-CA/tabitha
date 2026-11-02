@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { encode_concept_data, get_noun_list, structure_semantic_encoding } from './semantic_encoding'
+import { calculate_noun_list_index, calculate_noun_list_position, encode_concept_data, get_noun_list, structure_semantic_encoding } from './semantic_encoding'
 import type { SourceEntity } from '@tabitha/types'
 
 describe('encode_concept_data', () => {
@@ -112,5 +112,18 @@ describe('get_noun_list', () => {
 			{ noun: 'earth-B', index: '2' },
 			{ noun: 'light-C', index: '3' },
 		])
+	})
+})
+
+describe('calculate_noun_list_index and calculate_noun_list_position', () => {
+	it.each([
+		[0, '1'],
+		[8, '9'],
+		[9, 'A'],
+		[10, 'B'],
+		[34, 'Z'],
+	])('maps position %i to index %s and back', (position, index) => {
+		expect(calculate_noun_list_index(position)).toBe(index)
+		expect(calculate_noun_list_position(index)).toBe(position)
 	})
 })
