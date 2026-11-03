@@ -1,0 +1,173 @@
+diff --git a/BrowserTest/CMakeLists.txt b/BrowserTest/CMakeLists.txt
+index b6cdd82..8b47ea5 100644
+--- a/BrowserTest/CMakeLists.txt
++++ b/BrowserTest/CMakeLists.txt
+@@ -25,14 +25,20 @@ target_include_directories(BrowserTest
+ target_link_libraries(BrowserTest
+ 	PUBLIC
+ 		idbfs.js
++		$<$<NOT:$<BOOL:${TBTA_CF_WORKER}>>:nodefs.js>
+ 		tbta-base
+ 		TbtaLib
+ )
+ 
+ target_link_options(BrowserTest PRIVATE
+-	-sFETCH=1
+-	-sEXPORTED_FUNCTIONS=['_GenerateVerse','_malloc','_free']
+-	-sEXPORTED_RUNTIME_METHODS=['HEAP32','ccall','UTF8ToString','stringToUTF8','lengthBytesUTF8','setValue','stringToNewUTF8']
++	$<$<NOT:$<BOOL:${TBTA_NO_THREADS}>>:-sFETCH=1>
++	-sEXPORTED_FUNCTIONS=['_GenerateVerse','_malloc','_free'$<$<BOOL:${TBTA_STRING_SOURCE}>:,'_GenerateVerseFromEncoding'>]
++	$<$<BOOL:${TBTA_CF_WORKER}>:-sENVIRONMENT=web>
++	$<$<BOOL:${TBTA_CF_WORKER}>:-sMODULARIZE=1>
++	$<$<BOOL:${TBTA_CF_WORKER}>:-sEXPORT_ES6=1>
++	$<$<BOOL:${TBTA_CF_WORKER}>:-sEXPORT_NAME=create_tbta>
++	$<$<BOOL:${TBTA_CF_WORKER}>:-sDYNAMIC_EXECUTION=0>
++	-sEXPORTED_RUNTIME_METHODS=['HEAP32','ccall','UTF8ToString','stringToUTF8','lengthBytesUTF8','setValue','stringToNewUTF8','FS']
+ )
+ 
+ install(
+diff --git a/BrowserTest/src/main.cpp b/BrowserTest/src/main.cpp
+index 6bdcf72..a387384 100644
+--- a/BrowserTest/src/main.cpp
++++ b/BrowserTest/src/main.cpp
+@@ -10,12 +10,12 @@ const char* Marshal(const std::string& value)
+ 	return result;
+ }
+ 
+-extern "C" {
+-	const char* GenerateVerse(const char* lpszTargetLanguageName, int nAudience, int nSourceText, int nBook, int nChapter, int nVerse, GenerationSegment nLastGenerationSegment)
+-	{
++template <typename F>
++const char* Guarded(F fnGenerate)
++{
+ 		try
+ 		{
+-			return Marshal(GenerateVerse(std::string(lpszTargetLanguageName), nAudience, nSourceText, nBook, nChapter, nVerse, nLastGenerationSegment));
++			return Marshal(fnGenerate());
+ 		}
+ 		catch (const NSSqlite::exception& e)
+ 		{
+@@ -40,5 +40,17 @@ extern "C" {
+ 			std::cerr << "Unknown error" << std::endl;
+ 		}
+ 		return Marshal("");
++}
++
++extern "C" {
++	const char* GenerateVerse(const char* lpszTargetLanguageName, int nAudience, int nSourceText, int nBook, int nChapter, int nVerse, GenerationSegment nLastGenerationSegment)
++	{
++		return Guarded([&] { return GenerateVerse(std::string(lpszTargetLanguageName), nAudience, nSourceText, nBook, nChapter, nVerse, nLastGenerationSegment); });
++	}
++#ifdef TBTA_STRING_SOURCE
++	const char* GenerateVerseFromEncoding(const char* lpszTargetLanguageName, int nAudience, int nSourceText, int nBook, int nChapter, int nVerse, GenerationSegment nLastGenerationSegment, const char* lpszEncoding, const char* lpszPreviousEncoding)
++	{
++		return Guarded([&] { return GenerateVerseFromEncoding(std::string(lpszTargetLanguageName), nAudience, nSourceText, nBook, nChapter, nVerse, nLastGenerationSegment, std::string(lpszEncoding), std::string(lpszPreviousEncoding)); });
+ 	}
++#endif
+ }
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3217cec..bad58e1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -35,7 +35,7 @@ add_library(tbta-base INTERFACE)
+ 
+ target_compile_options(tbta-base
+ 	INTERFACE
+-		$<$<NOT:$<PLATFORM_ID:Windows>>:-pthread>
++		$<$<AND:$<NOT:$<PLATFORM_ID:Windows>>,$<NOT:$<BOOL:${TBTA_NO_THREADS}>>>:-pthread>
+ 		$<$<NOT:$<PLATFORM_ID:Windows>>:-fpermissive>
+ 		$<$<NOT:$<PLATFORM_ID:Windows>>:-fexceptions>
+ )
+@@ -51,6 +51,7 @@ target_compile_definitions(tbta-base
+ 		$<$<NOT:$<PLATFORM_ID:Windows>>:UNICODE>
+ 		$<$<NOT:$<PLATFORM_ID:Windows>>:_FORTIFY_SOURCE=0>
+ 		$<$<BOOL:${EMSCRIPTEN}>:TBTA_BROWSER>
++		$<$<BOOL:${TBTA_STRING_SOURCE}>:TBTA_STRING_SOURCE>
+ )
+ 
+ target_link_options(tbta-base
+@@ -58,8 +59,8 @@ target_link_options(tbta-base
+ 		$<$<NOT:$<PLATFORM_ID:Windows>>:-fexceptions>
+ 		$<$<BOOL:${EMSCRIPTEN}>:-sALLOW_MEMORY_GROWTH=1>
+ 		$<$<BOOL:${EMSCRIPTEN}>:-sSTANDALONE_WASM=0>
+-		$<$<BOOL:${EMSCRIPTEN}>:-sUSE_PTHREADS=1>
+-		$<$<BOOL:${EMSCRIPTEN}>:-sFETCH=1>
++		$<$<AND:$<BOOL:${EMSCRIPTEN}>,$<NOT:$<BOOL:${TBTA_NO_THREADS}>>>:-sUSE_PTHREADS=1>
++		$<$<AND:$<BOOL:${EMSCRIPTEN}>,$<NOT:$<BOOL:${TBTA_NO_THREADS}>>>:-sFETCH=1>
+ )
+ 
+ add_subdirectory(json)
+diff --git a/TbtaLib/src/Api.cpp b/TbtaLib/src/Api.cpp
+index 67aed35..b5f277c 100644
+--- a/TbtaLib/src/Api.cpp
++++ b/TbtaLib/src/Api.cpp
+@@ -13,6 +13,7 @@
+ #include "ConsoleNotificationHandler.h"
+ #include "DbSourceProvider.h"
+ #include "RestSourceProvider.h"
++#include "StringSourceProvider.h"
+ #include "SqliteDb.h"
+ #include "ExecuteRules.h"
+ #include "Api.h"
+@@ -86,7 +87,9 @@ CTA1Doc* GetTargetEngine(const CString& strTargetLanguageName)
+ #else
+ 			std::make_unique<CLogNotificationHandler>(),
+ #endif
+-#ifdef TBTA_BROWSER
++#if defined(TBTA_STRING_SOURCE)
++			std::make_unique<StringSourceProvider>()
++#elif defined(TBTA_BROWSER)
+ 			//std::make_unique<RestSourceProvider>(TEXT("https://sources.tabitha.bible"))
+ 			std::make_unique<RestSourceProvider>(TEXT("http://localhost:8787/api/source"))
+ #else
+@@ -187,3 +190,13 @@ std::string GenerateVerse(const std::string& strTargetLanguageName, int nAudienc
+ 	}
+ 	return static_cast<const char*>(CW2Utf8(pWorkingVerse->m_strTargetVerse));
+ }
++
++#ifdef TBTA_STRING_SOURCE
++std::string GenerateVerseFromEncoding(const std::string& strTargetLanguageName, int nAudience, int nSourceText, int nBook, int nChapter, int nVerse, GenerationSegment nLastGenerationSegment, const std::string& strEncoding, const std::string& strPreviousEncoding)
++{
++	StringSourceProvider::m_oCurrentReference = AbsoluteVerseReference(nSourceText, nBook, nChapter, nVerse);
++	StringSourceProvider::m_strCurrent = static_cast<const wchar_t*>(CUtf82W(strEncoding.c_str()));
++	StringSourceProvider::m_strPrevious = static_cast<const wchar_t*>(CUtf82W(strPreviousEncoding.c_str()));
++	return GenerateVerse(strTargetLanguageName, nAudience, nSourceText, nBook, nChapter, nVerse, nLastGenerationSegment);
++}
++#endif
+diff --git a/TbtaLib/src/Api.h b/TbtaLib/src/Api.h
+index a09c603..d23fc56 100644
+--- a/TbtaLib/src/Api.h
++++ b/TbtaLib/src/Api.h
+@@ -8,4 +8,7 @@ int GetAudienceNoByName(const std::string& strTargetLanguageName, const std::str
+ int GetMruAudienceNo(const std::string& strTargetLanguageName);
+ void ExportLexicalForms(const std::string& strTargetLanguageName, const std::string& strOutputPath);
+ void BulkGenerate(const std::string& strTargetLanguageName, int nAudience, GenerationSegment nLastGenerationSegment, const std::string& strOutputPath);
++#ifdef TBTA_STRING_SOURCE
++std::string GenerateVerseFromEncoding(const std::string& strTargetLanguageName, int nAudience, int nSourceText, int nBook, int nChapter, int nVerse, GenerationSegment nLastGenerationSegment, const std::string& strEncoding, const std::string& strPreviousEncoding);
++#endif
+ std::string GenerateVerse(const std::string& strTargetLanguageName, int nAudience, int nSourceText, int nBook, int nChapter, int nVerse, GenerationSegment nLastGenerationSegment);
+diff --git a/TbtaLib/src/StringSourceProvider.h b/TbtaLib/src/StringSourceProvider.h
+new file mode 100644
+index 0000000..bd804eb
+--- /dev/null
++++ b/TbtaLib/src/StringSourceProvider.h
+@@ -0,0 +1,19 @@
++#pragma once
++
++#include "SourceProvider.h"
++
++// Supplies encodings handed in by the caller instead of reading Bible.sqlite or fetching them.
++// The requested verse gets m_strCurrent; any other verse (the engine asks for the previous one
++// when m_bIncludePreviousVerse is set) gets m_strPrevious.
++class StringSourceProvider final: public SourceProvider
++{
++public:
++	static inline CString m_strCurrent;
++	static inline CString m_strPrevious;
++	static inline AbsoluteVerseReference m_oCurrentReference;
++
++	CString GetEncodedVerse(CTA1Doc* pDoc, const AbsoluteVerseReference& oVerseReference, bool bPristine) override
++	{
++		return oVerseReference == m_oCurrentReference ? m_strCurrent : m_strPrevious;
++	}
++};

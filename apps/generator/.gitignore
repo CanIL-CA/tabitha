@@ -1,0 +1,2 @@
+# Built by tools/tbta-wasm: `bun run engine:build` then `bun run engine:data` there
+engine/

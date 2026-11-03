@@ -1,0 +1,17 @@
+{
+	"extends": "@tabitha/tsconfig/base.json",
+	"compilerOptions": {
+		"types": [
+			"node",
+			"bun"
+		]
+	},
+	"include": [
+		"**/*.ts"
+	],
+	"exclude": [
+		"eslint.config.js",
+		".tbta",
+		".downloads"
+	]
+}

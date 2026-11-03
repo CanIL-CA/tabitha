@@ -1,0 +1,18 @@
+{
+	"version": 3,
+	"configurePresets": [
+		{
+			"name": "Worker-WASM-Release",
+			"inherits": [ "ninja", "release" ],
+			"cacheVariables": {
+				"EMSCRIPTEN": "1",
+				"TBTA_STRING_SOURCE": "ON",
+				"TBTA_NO_THREADS": "ON",
+				"TBTA_CF_WORKER": "ON"
+			}
+		}
+	],
+	"buildPresets": [
+		{ "name": "Worker-WASM-Release", "configurePreset": "Worker-WASM-Release" }
+	]
+}
