@@ -117,7 +117,8 @@ function find_modified_np({ tokens, relative_clause_index }: { tokens: Token[]; 
 	const np_start_index = find_enclosing_np_start({ tokens, index: relative_clause_index })
 	if (np_start_index === -1) return null
 
-	return get_np_contents({ tokens, np_start_index }).filter(token => !is_relative_clause(token))
+	const np_head = get_np_head({ tokens, np_start_index })
+	return np_head ? [np_head] : []
 }
 
 function find_enclosing_np_start({ tokens, index }: { tokens: Token[]; index: number }): number {
@@ -132,6 +133,21 @@ function find_enclosing_np_start({ tokens, index }: { tokens: Token[]; index: nu
 		}
 	}
 	return -1
+}
+
+function get_np_head({ tokens, np_start_index }: { tokens: Token[]; np_start_index: number }): Token | null {
+	let depth = 0
+	for (let i = np_start_index; i < tokens.length; i++) {
+		if (is_phrase_start(tokens[i])) {
+			depth += 1
+		} else if (is_phrase_end(tokens[i])) {
+			depth -= 1
+		}
+		if (depth === 1 && tokens[i].lookup_results[0]?.part_of_speech === 'Noun') {
+			return tokens[i]
+		}
+	}
+	return null
 }
 
 function get_np_contents({ tokens, np_start_index }: { tokens: Token[]; np_start_index: number }): Token[] {
