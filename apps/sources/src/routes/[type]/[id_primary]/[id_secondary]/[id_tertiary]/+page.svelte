@@ -54,7 +54,7 @@
 {/if}
 
 {#if source.parsed_semantic_encoding.length > 0}
-	<GeneratePanel {generate_url} />
+	<GeneratePanel {generate_url} generation={data.generation} />
 	<div class="flex h-screen">
 		<div class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
 			<SourceEntities source_entities={source.parsed_semantic_encoding} />

@@ -34,6 +34,12 @@ export async function generate_verse_text({ generator, book, chapter, verse, enc
 	return { status: response.status, body: await response.json() as { text?: string, error?: string } }
 }
 
+// The engine's files, for browsers that run it themselves (see engine_worker.ts).
+export async function fetch_engine_file({ generator, name, if_none_match }: { generator: GeneratorBinding, name: string, if_none_match: string | null }) {
+	const headers: Record<string, string> = if_none_match ? { 'if-none-match': if_none_match } : {}
+	return await generator.fetch(`${GENERATOR_URL}/files/${encodeURIComponent(name)}`, { headers }) as Response
+}
+
 // The engine's first generation in a fresh Worker takes seconds; warming it when a verse page
 // opens usually hides that wait.
 export async function warm_generator({ generator }: { generator: GeneratorBinding }) {

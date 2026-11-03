@@ -14,6 +14,7 @@ import { Database } from 'bun:sqlite'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { generate_verse, load_engine, read_database, type CreateEngine } from '@tabitha/generator/engine'
+import { write_gzipped_copy } from './gzipped_copy'
 import { BASE_ONTOLOGY_URL, DOWNLOAD_DIR, ENGINE_JS, ENGINE_OUTPUT_DIR, ENGINE_WASM, LANGUAGE, LANGUAGE_DB_URL, ONTOLOGY_DB, ONTOLOGY_DOWNLOADS_URL, SOURCES_URL } from './paths'
 
 const USER_AGENT = 'tabitha-tbta-wasm/0.1 (+https://github.com/CanIL-CA/tabitha)'
@@ -116,5 +117,7 @@ if (sample === '') throw new Error('The trimmed databases generated no text for 
 
 writeFileSync(join(ENGINE_OUTPUT_DIR, ONTOLOGY_DB), ontology)
 writeFileSync(join(ENGINE_OUTPUT_DIR, LANGUAGE_DB), language)
+write_gzipped_copy({ name: ONTOLOGY_DB })
+write_gzipped_copy({ name: LANGUAGE_DB })
 console.log(`Wrote ${ONTOLOGY_DB} (${Math.round(ontology.length / 1024)} KB) and ${LANGUAGE_DB} (${Math.round(language.length / 1024)} KB), mapped to Ontology ${target_version}`)
 console.log(`Genesis 1:1: ${sample}`)

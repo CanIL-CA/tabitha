@@ -4,6 +4,7 @@
 // apps/generator/engine/. Needs git (with access to the private repo), emcmake, cmake and ninja.
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { write_gzipped_copy } from './gzipped_copy'
 import { CMAKE_PRESET, ENGINE_JS, ENGINE_OUTPUT_DIR, ENGINE_WASM, TBTA_CLONE_DIR, TBTA_COMMIT, TBTA_REPO_URL, TOOL_DIR } from './paths'
 
 const REQUIRED_TOOLS = ['git', 'emcmake', 'cmake', 'ninja']
@@ -46,6 +47,7 @@ function copy_engine() {
 	mkdirSync(ENGINE_OUTPUT_DIR, { recursive: true })
 	copyFileSync(join(build_dir, 'BrowserTest.js'), join(ENGINE_OUTPUT_DIR, ENGINE_JS))
 	copyFileSync(join(build_dir, 'BrowserTest.wasm'), join(ENGINE_OUTPUT_DIR, ENGINE_WASM))
+	write_gzipped_copy({ name: ENGINE_WASM })
 	console.log(`Engine written to ${ENGINE_OUTPUT_DIR}`)
 }
 

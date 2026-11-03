@@ -1,6 +1,6 @@
 # TBTA engine as WebAssembly (proof of concept)
 
-Builds TBTA's generation engine from [CanIL-CA/tbta](https://github.com/CanIL-CA/tbta) as a WebAssembly module that runs in a Cloudflare Worker, and prepares the databases it reads. Both land in `apps/generator/engine/` (gitignored).
+Builds TBTA's generation engine from [CanIL-CA/tbta](https://github.com/CanIL-CA/tbta) as a WebAssembly module that runs in a Cloudflare Worker or a browser's Web Worker, and prepares the databases it reads. Both land in `apps/generator/engine/` (gitignored), along with gzipped copies of the binary files for browsers to download.
 
 This is a proof of concept. If it works out, the changes in `tbta.patch` belong in the tbta repo itself.
 

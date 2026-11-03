@@ -50,11 +50,26 @@ async function handle_warm() {
 	return Response.json({ ready: true })
 }
 
+type Env = {
+	ASSETS: { fetch(request: Request): Promise<Response> }
+}
+
+// What a browser needs to run the engine itself. The binary files are gzipped (see tools/tbta-wasm).
+const BROWSER_FILES = new Set(['tbta.js', 'tbta.wasm.gz', 'Ontology.sqlite.gz', `${LANGUAGE}.sqlite.gz`])
+const FILES_PREFIX = '/files/'
+
+function handle_file({ request, env, name }: { request: Request, env: Env, name: string }) {
+	if (!BROWSER_FILES.has(name)) return Response.json({ error: 'Not found' }, { status: 404 })
+	// Passing the request's headers along lets an If-None-Match revalidation come back as a 304.
+	return env.ASSETS.fetch(new Request(new URL(`/${name}`, request.url), { headers: request.headers }))
+}
+
 export default {
-	async fetch(request: Request) {
+	async fetch(request: Request, env: Env) {
 		const { pathname } = new URL(request.url)
 		if (request.method === 'POST' && pathname === '/generate') return handle_generate(request)
 		if (request.method === 'POST' && pathname === '/warm') return handle_warm()
+		if (request.method === 'GET' && pathname.startsWith(FILES_PREFIX)) return handle_file({ request, env, name: pathname.slice(FILES_PREFIX.length) })
 		return Response.json({ error: 'Not found' }, { status: 404 })
 	},
 }

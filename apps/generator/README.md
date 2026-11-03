@@ -17,7 +17,10 @@ Build the engine and its databases first with `tools/tbta-wasm` (see its README)
     - `segment` is where generation stops: `complex_concept_insertion`, `last_structured` or `last` (default).
   - **Response:** `{ text }`, `400 { error }` for a bad request, or `422 { error, log }` when the engine produced nothing.
 - `POST /warm`: loads the engine without generating anything, returns `{ ready: true }`.
+- `GET /files/<name>`: the engine's files, for browsers that run it themselves: `tbta.js`, `tbta.wasm.gz`, `Ontology.sqlite.gz` and `English.sqlite.gz` (about 2.7 MB in all). Served from `engine/` as static assets, with ETags. Sources passes them on at `/generator/<name>`, and its `lib/generation/engine_worker.ts` runs the engine in a Web Worker.
 
 ## Performance (measured 2026-11-03)
 
 The first generation in a fresh Worker instance costs about 5 s of CPU on Cloudflare (about 1 s locally) while the engine loads its lexicons. Later verses take 40 to 120 ms. Calling `/warm` when a user opens a verse hides most of that wait. Memory peaked at 86 MB of the 128 MB limit.
+
+In Chromium on a Mac, the browser engine downloaded and started in about 1 s, then generated verses offline in 30 to 370 ms, with text identical to this Worker's.

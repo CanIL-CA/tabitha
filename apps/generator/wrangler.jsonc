@@ -9,6 +9,12 @@
 		"enabled": true,
 		"head_sampling_rate": 1
 	},
+	// Browsers that run the engine themselves download its files from here, through sources (GET /files/*).
+	"assets": {
+		"directory": "./engine",
+		"binding": "ASSETS",
+		"run_worker_first": true
+	},
 	"rules": [
 		// The engine's databases, prepared by tools/tbta-wasm, are bundled as raw bytes.
 		{ "type": "Data", "globs": ["**/*.sqlite"] }
