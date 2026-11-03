@@ -368,10 +368,17 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'function': { 'relation': 'name', 'pre_np_adposition': 'relation' } },
 	},
 	{
+		'name': "'of' after kind becomes a function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'stem': 'kind' } },
+		'transform': { 'function': { 'relation': 'kind', 'pre_np_adposition': 'relation' } },
+	},
+	{
 		'name': "'of' after group/crowd becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'group|crowd' } },
 		'transform': { 'function': { 'relation': 'group' }, 'remove_tag': 'pre_np_adposition' },
+		'comment': '"group of" is the modifier of the noun that follows, which is unique among the "of" relations, so it is handled a bit differently',
 	},
 	{
 		'name': 'certain Noun-Noun combinations are "made_of"',

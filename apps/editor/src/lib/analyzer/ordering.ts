@@ -1,15 +1,9 @@
 import { create_token_filter } from '#lib/rules/rules_parser.js'
 import { TOKEN_TYPE } from '#lib/token.js'
 import { PUNCTUATION_PARTICLE_STEMS } from './other_rules'
+import { get_phrase_span, type ConstituentSpan } from './phrase_helpers'
 import type { Sentence, Token } from '#lib/types.js'
 import type { TokenFilter } from '#lib/rules/types.js'
-
-/**
- * A constituent is either a single token (eg. a clause, conjunction or particle), or a phrase span
- * of tokens starting with its opening phrase token (eg. '{NP') and ending with its closing '}'.
- */
-type Constituent = Token[]
-// type ConstituentFilter = (constituent: Constituent) => boolean
 
 type OrderingPosition = 'before_verb' | 'after_verb' | 'end_of_clause'
 type OrderingRule = {
@@ -27,7 +21,7 @@ const SKIP_FILTERS: TokenFilter[] = [
 ].map(create_token_filter)
 
 // Each returns the index in the clause's constituents to insert at, or -1 when the position doesn't exist
-const INSERT_INDEX_GETTERS: Record<OrderingPosition, (children: Constituent[]) => number> = {
+const INSERT_INDEX_GETTERS: Record<OrderingPosition, (children: ConstituentSpan[]) => number> = {
 	before_verb: children => children.findIndex(child => is_verb_phrase(child[0])),
 	after_verb: children => {
 		const verb_index = children.findIndex(child => is_verb_phrase(child[0]))
@@ -84,31 +78,19 @@ function order_clause(token: Token): Token {
 	return { ...token, sub_tokens: apply_ordering_rules(children).flat() }
 }
 
-function split_constituents(tokens: Token[]): Constituent[] {
-	const constituents: Constituent[] = []
-	let depth = 0
-
-	for (const token of tokens) {
-		if (depth === 0) {
-			constituents.push([])
-		}
-		constituents[constituents.length - 1].push(token)
-		depth = Math.max(0, depth + get_depth_change(token))
+function split_constituents(tokens: Token[]): ConstituentSpan[] {
+	const constituents: ConstituentSpan[] = []
+	for (let i = 0; i < tokens.length; i += constituents[constituents.length - 1].length) {
+		constituents.push(get_phrase_span({ tokens, start_index: i }))
 	}
-
 	return constituents
 }
 
-function get_depth_change(token: Token): number {
-	if (token.type !== TOKEN_TYPE.PHRASE) return 0
-	return token.token === '}' ? -1 : 1
-}
-
-function apply_ordering_rules(children: Constituent[]): Constituent[] {
+function apply_ordering_rules(children: ConstituentSpan[]): ConstituentSpan[] {
 	return ORDERING_RULES.reduce((ordered_children, rule) => apply_ordering_rule({ children: ordered_children, rule }), children)
 }
 
-function apply_ordering_rule({ children, rule }: { children: Constituent[], rule: OrderingRule }): Constituent[] {
+function apply_ordering_rule({ children, rule }: { children: ConstituentSpan[], rule: OrderingRule }): ConstituentSpan[] {
 	const to_move = children.filter(child => rule.matches(child[0]))
 	if (!to_move.length) return children
 
@@ -127,8 +109,9 @@ function should_skip(token: Token): boolean {
 	return SKIP_FILTERS.some(filter => filter(token))
 }
 
+const is_adposition = create_token_filter({ 'category': 'Adposition' })
+
 function get_clause_adposition_sense(clause: Token): string {
-	const is_adposition = create_token_filter({ 'category': 'Adposition' })
 	const adposition = clause.sub_tokens.find(is_adposition)?.lookup_results[0]
 	return adposition ? `${adposition.stem}-${adposition.sense}` : ''
 }

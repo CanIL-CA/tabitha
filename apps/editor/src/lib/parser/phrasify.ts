@@ -241,7 +241,7 @@ const ORDERED_PHRASE_POST_FILTERS: Array<[phrase_filter: TokenFilter, token_filt
 	[
 		{ 'tag': { 'phrase_type': 'NP' } },
 		[
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name|kind' } },
 			{ 'type': TOKEN_TYPE.FUNCTION_WORD, 'tag': { 'relation': 'group' } },
 			{ 'tag': { 'phrase_type': 'NP', 'role': 'noun_argument_np' } },
 			{ 'tag': { 'clause_type': 'relative_clause' } },

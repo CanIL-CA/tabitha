@@ -1,10 +1,9 @@
 import { create_token, token_has_tag, TOKEN_TYPE } from '#lib/token.js'
+import { find_enclosing_np_start, get_np_head, get_phrase_span, is_np_start, type ConstituentSpan } from './phrase_helpers'
 import type { Sentence, Token } from '#lib/types.js'
 
-/**
- * The tokens inside an NP, without its opening '{NP' and closing '}' phrase tokens.
- */
-type NpContents = Token[]
+// the tokens inside an NP, without its opening '{NP' and closing '}' phrase tokens
+type NpContents = ConstituentSpan
 
 type GapSources = {
 	readonly relative_np: NpContents | null
@@ -94,11 +93,10 @@ function take_interrogative_np(tokens: Token[]): { remaining_tokens: Token[]; in
 		return { remaining_tokens: tokens, interrogative_np: null }
 	}
 
-	const interrogative_np = get_np_contents({ tokens, np_start_index })
-	const np_end_index = np_start_index + interrogative_np.length + 1
+	const np_span = get_phrase_span({ tokens, start_index: np_start_index })
 	return {
-		remaining_tokens: [...tokens.slice(0, np_start_index), ...tokens.slice(np_end_index + 1)],
-		interrogative_np,
+		remaining_tokens: [...tokens.slice(0, np_start_index), ...tokens.slice(np_start_index + np_span.length)],
+		interrogative_np: np_span.slice(1, -1),
 	}
 }
 
@@ -121,60 +119,8 @@ function find_modified_np({ tokens, relative_clause_index }: { tokens: Token[]; 
 	return np_head ? [np_head] : []
 }
 
-function find_enclosing_np_start({ tokens, index }: { tokens: Token[]; index: number }): number {
-	let depth = 0
-	for (let i = index - 1; i >= 0; i--) {
-		if (is_phrase_end(tokens[i])) {
-			depth += 1
-		} else if (is_phrase_start(tokens[i]) && depth > 0) {
-			depth -= 1
-		} else if (is_np_start(tokens[i])) {
-			return i
-		}
-	}
-	return -1
-}
-
-function get_np_head({ tokens, np_start_index }: { tokens: Token[]; np_start_index: number }): Token | null {
-	let depth = 0
-	for (let i = np_start_index; i < tokens.length; i++) {
-		if (is_phrase_start(tokens[i])) {
-			depth += 1
-		} else if (is_phrase_end(tokens[i])) {
-			depth -= 1
-		}
-		if (depth === 1 && tokens[i].lookup_results[0]?.part_of_speech === 'Noun') {
-			return tokens[i]
-		}
-	}
-	return null
-}
-
-function get_np_contents({ tokens, np_start_index }: { tokens: Token[]; np_start_index: number }): Token[] {
-	let depth = 0
-	for (let i = np_start_index; i < tokens.length; i++) {
-		if (is_phrase_start(tokens[i])) {
-			depth += 1
-		} else if (is_phrase_end(tokens[i])) {
-			depth -= 1
-		}
-		if (depth === 0) {
-			return tokens.slice(np_start_index + 1, i)
-		}
-	}
-	return tokens.slice(np_start_index + 1)
-}
-
-function is_phrase_start(token: Token): boolean {
-	return token.type === TOKEN_TYPE.PHRASE && token.token.startsWith('{')
-}
-
-function is_phrase_end(token: Token): boolean {
-	return token.type === TOKEN_TYPE.PHRASE && token.token === '}'
-}
-
-function is_np_start(token: Token): boolean {
-	return token.type === TOKEN_TYPE.PHRASE && token.token === '{NP'
+function get_np_contents({ tokens, np_start_index }: { tokens: Token[]; np_start_index: number }): NpContents {
+	return get_phrase_span({ tokens, start_index: np_start_index }).slice(1, -1)
 }
 
 function is_relative_clause(token: Token): boolean {
