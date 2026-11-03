@@ -33,13 +33,14 @@ export type CaseFrameRuleInfo = {
 	rules_by_sense: ArgumentRulesForSense[]
 	default_rule_getter: DefaultRuleGetter
 	role_info_getter: RoleInfoGetter
-	should_check: boolean
+	should_validate: boolean
 }
 
 export type CaseFrame = {
 	rules: ArgumentRoleRule[]
 	usage: RoleUsageInfo
 	result: CaseFrameResult
+	should_validate: boolean
 }
 
 export type RoleUsageInfo = {

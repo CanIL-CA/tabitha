@@ -133,24 +133,15 @@ export function initialize_case_frame_rules({ trigger_context, rule_info_getter 
 		if (token.lookup_results.length === 0) {
 			return
 		}
-		const { rules_by_sense, default_rule_getter, role_info_getter, should_check } = rule_info_getter(token)
+		const { rules_by_sense, default_rule_getter, role_info_getter, should_validate } = rule_info_getter(token)
 
 		for (const lookup of token.lookup_results.filter(LOOKUP_FILTERS.IS_IN_ONTOLOGY)) {
-			if (should_check) {
-				const rules_for_sense = get_rules_for_sense({ rules_by_sense, default_rule_getter })(lookup)
-				lookup.case_frame = {
-					rules: rules_for_sense.role_rules,
-					usage: role_info_getter(lookup.categorization, rules_for_sense),
-					result: create_case_frame(),
-				}
-			} else {
-				// still initialize the usage even if we won't perform the check
-				const empty_rules = { sense: '', role_rules: [], other_required: [], other_optional: [], patient_clause_type: '' }
-				lookup.case_frame = {
-					rules: [],
-					usage: role_info_getter(lookup.categorization, empty_rules),
-					result: create_case_frame(),
-				}
+			const rules_for_sense = get_rules_for_sense({ rules_by_sense, default_rule_getter })(lookup)
+			lookup.case_frame = {
+				rules: rules_for_sense.role_rules,
+				usage: role_info_getter(lookup.categorization, rules_for_sense),
+				result: create_case_frame(),
+				should_validate,
 			}
 		}
 	}
@@ -302,8 +293,7 @@ function check_usage({ lookup, role_matches }: { lookup: LookupResult; role_matc
 export function* validate_case_frame(trigger_context: RuleTriggerContext): Generator<MessageInfo, void, unknown> {
 	const token = trigger_context.trigger_token
 
-	// If nothing was checked, nothing to validate
-	if (token.lookup_results.every(lookup => lookup.case_frame.result.status === 'unchecked')) {
+	if (token.lookup_results.every(lookup => !lookup.case_frame.should_validate)) {
 		return
 	}
 

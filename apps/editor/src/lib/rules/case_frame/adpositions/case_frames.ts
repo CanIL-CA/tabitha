@@ -122,7 +122,7 @@ export function get_adposition_case_frame_rules(token: Token): CaseFrameRuleInfo
 		rules_by_sense: ADPOSITION_USAGE_RULES.get(stem) ?? [],
 		default_rule_getter: get_default_usage_rules,
 		role_info_getter: (categorization, role_rules) => get_adposition_usage_info({ categorization, role_rules }),
-		should_check: true,
+		should_validate: true,
 	}
 }
 
