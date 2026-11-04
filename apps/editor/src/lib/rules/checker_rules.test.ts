@@ -380,3 +380,178 @@ describe('Adjective used as a Noun after a determiner', () => {
 		expect_no_message(checked_tokens[3])
 	})
 })
+
+describe('Repeat the adposition before a coordinated noun', () => {
+	const REPEAT_ADPOSITION_RULE = CHECKER_RULES.filter(rule => rule.name === 'Repeat the adposition before a coordinated noun')
+
+	const create_noun_token = ({ token, has_adposition, coordinate }: { token: string, has_adposition: 'yes' | 'no', coordinate?: 'first' | 'coordinate' | 'last' | 'no_partner' }) =>
+		create_lookup_token_for_test({ token, tag: { has_adposition, ...coordinate ? { coordinate } : {} }, lookup_results: [lookup_result_for_test({ stem: token, part_of_speech: 'Noun' })] })
+	const create_verb_token = (token: string) => create_lookup_token_for_test({ token, lookup_results: [lookup_result_for_test({ stem: token, part_of_speech: 'Verb' })] })
+	const create_adposition_token = (token: string) => create_token({ token, type: TOKEN_TYPE.FUNCTION_WORD, tag: { 'pre_np_adposition': 'verb_argument' } })
+	const create_conjunction_token = () => create_token({ token: 'and', type: TOKEN_TYPE.LOOKUP_WORD, tag: { 'syntax': 'coord_noun' } })
+	const create_list_comma_token = () => create_token({ token: ',', type: TOKEN_TYPE.PUNCTUATION, tag: { 'syntax': 'comma', 'list_comma': 'np' } })
+	const create_period_token = () => create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION })
+	const check = (tokens: Token[]) => apply_rules({ sentences: [create_sentence_for_test(tokens)], rules: REPEAT_ADPOSITION_RULE }).flatMap(flatten_sentence)
+
+	test('flags a noun that is not coordinated with anything: John went to Jerusalem and Bethlehem.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no' }),
+			create_verb_token('went'),
+			create_adposition_token('to'),
+			create_noun_token({ token: 'Jerusalem', has_adposition: 'yes' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Bethlehem', has_adposition: 'no', coordinate: 'no_partner' }),
+			create_period_token(),
+		])
+
+		expect_error_to_match({ token: checked_tokens[5], regex: /^The adposition must be repeated before 'Bethlehem'/ })
+	})
+	test('flags a noun with a different adposition than the noun before the coordinator: John went to the house of James and in the store.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no', coordinate: 'no_partner' }),
+			create_verb_token('went'),
+			create_adposition_token('to'),
+			create_noun_token({ token: 'house', has_adposition: 'yes', coordinate: 'no_partner' }),
+			create_adposition_token('of'),
+			create_noun_token({ token: 'James', has_adposition: 'yes', coordinate: 'no_partner' }),
+			create_conjunction_token(),
+			create_adposition_token('in'),
+			create_noun_token({ token: 'store', has_adposition: 'yes', coordinate: 'no_partner' }),
+			create_period_token(),
+		])
+
+		expect_error_to_match({ token: checked_tokens[8], regex: /^The adposition must be repeated before 'store'/ })
+	})
+	test('flags the first noun of a coordinated list that is missing the adposition: John went to Jerusalem, Bethlehem and Hebron.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no' }),
+			create_verb_token('went'),
+			create_adposition_token('to'),
+			create_noun_token({ token: 'Jerusalem', has_adposition: 'yes' }),
+			create_list_comma_token(),
+			create_noun_token({ token: 'Bethlehem', has_adposition: 'no', coordinate: 'first' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Hebron', has_adposition: 'no', coordinate: 'last' }),
+			create_period_token(),
+		])
+
+		expect_error_to_match({ token: checked_tokens[5], regex: /^The adposition must be repeated before 'Bethlehem'/ })
+		expect_no_message(checked_tokens[7])
+	})
+	test('does not flag a noun that repeats the adposition: John went to Jerusalem and to Bethlehem.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no' }),
+			create_verb_token('went'),
+			create_adposition_token('to'),
+			create_noun_token({ token: 'Jerusalem', has_adposition: 'yes', coordinate: 'first' }),
+			create_conjunction_token(),
+			create_adposition_token('to'),
+			create_noun_token({ token: 'Bethlehem', has_adposition: 'yes', coordinate: 'last' }),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[6])
+	})
+	test('does not flag a noun coordinated with the noun the adposition phrase belongs to: The brother of James and John went.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'brother', has_adposition: 'no', coordinate: 'first' }),
+			create_adposition_token('of'),
+			create_noun_token({ token: 'James', has_adposition: 'yes' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'John', has_adposition: 'no', coordinate: 'last' }),
+			create_verb_token('went'),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[4])
+	})
+	test('does not flag coordinated nouns without any adposition: John and Mary went.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no', coordinate: 'first' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Mary', has_adposition: 'no', coordinate: 'last' }),
+			create_verb_token('went'),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[2])
+	})
+	test('does not flag a noun that does not follow a coordinator: John saw Mary.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no', coordinate: 'no_partner' }),
+			create_verb_token('saw'),
+			create_noun_token({ token: 'Mary', has_adposition: 'no', coordinate: 'no_partner' }),
+			create_period_token(),
+		])
+
+		expect_no_message(checked_tokens[2])
+	})
+})
+
+describe('Warn about a coordinated noun after an adposition phrase', () => {
+	const COORDINATED_AFTER_ADPOSITION_RULE = CHECKER_RULES.filter(rule => rule.name === 'Warn about a coordinated noun after an adposition phrase')
+
+	const create_noun_token = ({ token, has_adposition, coordinate }: { token: string, has_adposition: 'yes' | 'no', coordinate?: 'first' | 'coordinate' | 'last' | 'no_partner' }) =>
+		create_lookup_token_for_test({ token, tag: { has_adposition, ...coordinate ? { coordinate } : {} }, lookup_results: [lookup_result_for_test({ stem: token, part_of_speech: 'Noun' })] })
+	const create_adposition_token = (token: string) => create_token({ token, type: TOKEN_TYPE.FUNCTION_WORD, tag: { 'pre_np_adposition': 'relation' } })
+	const create_conjunction_token = () => create_token({ token: 'and', type: TOKEN_TYPE.LOOKUP_WORD, tag: { 'syntax': 'coord_noun' } })
+	const create_list_comma_token = () => create_token({ token: ',', type: TOKEN_TYPE.PUNCTUATION, tag: { 'syntax': 'comma', 'list_comma': 'np' } })
+	const check = (tokens: Token[]) => apply_rules({ sentences: [create_sentence_for_test(tokens)], rules: COORDINATED_AFTER_ADPOSITION_RULE }).flatMap(flatten_sentence)
+
+	test('warns about a noun coordinated with the noun the adposition phrase belongs to: The brother of John and Mary.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'brother', has_adposition: 'no', coordinate: 'first' }),
+			create_adposition_token('of'),
+			create_noun_token({ token: 'John', has_adposition: 'yes' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Mary', has_adposition: 'no', coordinate: 'last' }),
+		])
+
+		expect_message_to_match({ token: checked_tokens[4], message_type: 'warning', regex: /^If you intend 'Mary' to coordinate with 'John'/ })
+	})
+	test('warns only about the first noun after the adposition phrase in a list: The brother of John, Mary and Peter.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'brother', has_adposition: 'no', coordinate: 'first' }),
+			create_adposition_token('of'),
+			create_noun_token({ token: 'John', has_adposition: 'yes' }),
+			create_list_comma_token(),
+			create_noun_token({ token: 'Mary', has_adposition: 'no', coordinate: 'coordinate' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Peter', has_adposition: 'no', coordinate: 'last' }),
+		])
+
+		expect_message_to_match({ token: checked_tokens[4], message_type: 'warning', regex: /^If you intend 'Mary' to coordinate with 'John'/ })
+		expect_no_message(checked_tokens[6])
+	})
+	test('does not warn when the adposition is repeated: The brother of John and of Mary.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'brother', has_adposition: 'no' }),
+			create_adposition_token('of'),
+			create_noun_token({ token: 'John', has_adposition: 'yes', coordinate: 'first' }),
+			create_conjunction_token(),
+			create_adposition_token('of'),
+			create_noun_token({ token: 'Mary', has_adposition: 'yes', coordinate: 'last' }),
+		])
+
+		expect_no_message(checked_tokens[5])
+	})
+	test('does not warn about coordinated nouns without any adposition: John and Mary.', () => {
+		const checked_tokens = check([
+			create_noun_token({ token: 'John', has_adposition: 'no', coordinate: 'first' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Mary', has_adposition: 'no', coordinate: 'last' }),
+		])
+
+		expect_no_message(checked_tokens[2])
+	})
+	test('does not warn about a noun that is not coordinated with anything: John went to Jerusalem and Bethlehem.', () => {
+		const checked_tokens = check([
+			create_adposition_token('to'),
+			create_noun_token({ token: 'Jerusalem', has_adposition: 'yes' }),
+			create_conjunction_token(),
+			create_noun_token({ token: 'Bethlehem', has_adposition: 'no' }),
+		])
+
+		expect_no_message(checked_tokens[3])
+	})
+})
