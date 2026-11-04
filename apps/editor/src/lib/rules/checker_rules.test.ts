@@ -404,7 +404,7 @@ describe('Repeat the adposition before a coordinated noun', () => {
 			create_period_token(),
 		])
 
-		expect_error_to_match({ token: checked_tokens[5], regex: /^The adposition must be repeated before 'Bethlehem'/ })
+		expect_message_to_match({ token: checked_tokens[5], message_type: 'warning', regex: /^The adposition must be repeated before 'Bethlehem'/ })
 	})
 	test('flags a noun with a different adposition than the noun before the coordinator: John went to the house of James and in the store.', () => {
 		const checked_tokens = check([
@@ -420,7 +420,7 @@ describe('Repeat the adposition before a coordinated noun', () => {
 			create_period_token(),
 		])
 
-		expect_error_to_match({ token: checked_tokens[8], regex: /^The adposition must be repeated before 'store'/ })
+		expect_message_to_match({ token: checked_tokens[8], message_type: 'warning', regex: /^The adposition should be repeated before 'store'/ })
 	})
 	test('flags the first noun of a coordinated list that is missing the adposition: John went to Jerusalem, Bethlehem and Hebron.', () => {
 		const checked_tokens = check([
@@ -435,7 +435,7 @@ describe('Repeat the adposition before a coordinated noun', () => {
 			create_period_token(),
 		])
 
-		expect_error_to_match({ token: checked_tokens[5], regex: /^The adposition must be repeated before 'Bethlehem'/ })
+		expect_message_to_match({ token: checked_tokens[5], message_type: 'warning', regex: /^The adposition should be repeated before 'Bethlehem'/ })
 		expect_no_message(checked_tokens[7])
 	})
 	test('does not flag a noun that repeats the adposition: John went to Jerusalem and to Bethlehem.', () => {
@@ -488,8 +488,8 @@ describe('Repeat the adposition before a coordinated noun', () => {
 	})
 })
 
-describe('Warn about a coordinated noun after an adposition phrase', () => {
-	const COORDINATED_AFTER_ADPOSITION_RULE = CHECKER_RULES.filter(rule => rule.name === 'Warn about a coordinated noun after an adposition phrase')
+describe('Suggest repeating the adposition before a coordinated noun after an adposition phrase', () => {
+	const COORDINATED_AFTER_ADPOSITION_RULE = CHECKER_RULES.filter(rule => rule.name === 'Suggest repeating the adposition before a coordinated noun after an adposition phrase')
 
 	const create_noun_token = ({ token, has_adposition, coordinate }: { token: string, has_adposition: 'yes' | 'no', coordinate?: 'first' | 'coordinate' | 'last' | 'no_partner' }) =>
 		create_lookup_token_for_test({ token, tag: { has_adposition, ...coordinate ? { coordinate } : {} }, lookup_results: [lookup_result_for_test({ stem: token, part_of_speech: 'Noun' })] })
@@ -507,7 +507,7 @@ describe('Warn about a coordinated noun after an adposition phrase', () => {
 			create_noun_token({ token: 'Mary', has_adposition: 'no', coordinate: 'last' }),
 		])
 
-		expect_message_to_match({ token: checked_tokens[4], message_type: 'warning', regex: /^If you intend 'Mary' to coordinate with 'John'/ })
+		expect_message_to_match({ token: checked_tokens[4], message_type: 'suggest', regex: /^If you intend 'Mary' to coordinate with 'John'/ })
 	})
 	test('warns only about the first noun after the adposition phrase in a list: The brother of John, Mary and Peter.', () => {
 		const checked_tokens = check([
@@ -520,7 +520,7 @@ describe('Warn about a coordinated noun after an adposition phrase', () => {
 			create_noun_token({ token: 'Peter', has_adposition: 'no', coordinate: 'last' }),
 		])
 
-		expect_message_to_match({ token: checked_tokens[4], message_type: 'warning', regex: /^If you intend 'Mary' to coordinate with 'John'/ })
+		expect_message_to_match({ token: checked_tokens[4], message_type: 'suggest', regex: /^If you intend 'Mary' to coordinate with 'John'/ })
 		expect_no_message(checked_tokens[6])
 	})
 	test('does not warn when the adposition is repeated: The brother of John and of Mary.', () => {

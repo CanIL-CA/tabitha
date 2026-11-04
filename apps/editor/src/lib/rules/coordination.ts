@@ -25,14 +25,33 @@ type AdjacentConjunctFilters = {
 	skip: SkipJson
 }
 
+const IS_NOUN_COORDINATOR = create_token_filter({ 'tag': { 'syntax': 'coord_noun|comma' } })
+const SKIPPED_TOKEN_TYPES: string[] = [TOKEN_TYPE.NOTE, TOKEN_TYPE.ADDED, TOKEN_TYPE.PHRASE]
+const HAS_ADPOSITION = create_token_filter({ 'tag': { 'has_adposition': 'yes' } })
+const IS_MODIFIER_OR_ADPOSITION = create_skip_filter('np_modifiers_and_adpositions')
+// saxon genitives, made_of and title nouns are modifiers of the next noun, and are never coordinated
+const IS_COORDINATABLE_NOUN_WITHOUT_ADPOSITION: TokenFilter = token => token.tag['has_adposition'] === 'no' && !token.tag['relation']
+
 const CONJUNCT_KINDS: ConjunctKind[] = [
 	// the repeated adposition is always included, so nouns that have one are coordinated with the nearest noun that has the same one, eg 'of James and of John'
-	create_same_adposition_conjunct_kind(),
-	// without an adposition, the coordination goes to the noun the adposition phrase belongs to, eg 'the brother of James and John'
-	create_word_conjunct_kind({
-		is_conjunct: { 'tag': { 'has_adposition': 'no' } },
-		is_coordinator: { 'tag': { 'syntax': 'coord_noun|comma' } },
-		skip: ['np_modifiers_and_adpositions', { 'tag': { 'has_adposition': 'yes' } }],
+	create_noun_conjunct_kind({
+		is_conjunct: HAS_ADPOSITION,
+		get_search_filters: noun => {
+			const has_same_adposition = (token: Token) => HAS_ADPOSITION(token) && token.tag['adposition'] === noun.tag['adposition']
+			return {
+				is_partner: has_same_adposition,
+				// a noun with a different adposition is part of a nested phrase, eg 'James' in 'to the house of James'
+				is_skipped: token => IS_MODIFIER_OR_ADPOSITION(token) || HAS_ADPOSITION(token) && !has_same_adposition(token),
+			}
+		},
+	}),
+	// without an adposition, the coordination goes to the closest noun without an adposition phrase belongs to, eg 'the brother of James and John'
+	create_noun_conjunct_kind({
+		is_conjunct: IS_COORDINATABLE_NOUN_WITHOUT_ADPOSITION,
+		get_search_filters: () => ({
+			is_partner: IS_COORDINATABLE_NOUN_WITHOUT_ADPOSITION,
+			is_skipped: token => IS_MODIFIER_OR_ADPOSITION(token) || HAS_ADPOSITION(token),
+		}),
 	}),
 	create_word_conjunct_kind({
 		is_conjunct: { 'category': 'Adjective' },
@@ -61,35 +80,29 @@ const CONJUNCT_KINDS: ConjunctKind[] = [
 	},
 ]
 
-
 /**
  * eg in 'John went to the house of James and to the store', the conjunct adjacent to 'house' is 'store'. 'James' is skipped since it is
  * part of the 'of' phrase nested inside 'house', and it is coordinated with another 'of' noun instead.
  */
-function create_same_adposition_conjunct_kind(): ConjunctKind {
-	const IS_NOUN_COORDINATOR = create_token_filter({ 'tag': { 'syntax': 'coord_noun|comma' } })
-	const SKIPPED_TOKEN_TYPES: string[] = [TOKEN_TYPE.NOTE, TOKEN_TYPE.ADDED, TOKEN_TYPE.PHRASE]
-
-	const is_conjunct = create_token_filter({ 'tag': { 'has_adposition': 'yes' } })
-	const is_modifier_or_adposition = create_skip_filter('np_modifiers_and_adpositions')
+function create_noun_conjunct_kind({ is_conjunct, get_search_filters }: {
+	is_conjunct: TokenFilter
+	get_search_filters: (noun: Token) => { is_partner: TokenFilter; is_skipped: TokenFilter }
+}): ConjunctKind {
 	return {
 		is_conjunct,
 		find_adjacent: ({ tokens, index, direction }) => {
-			const adposition = tokens[index].tag['adposition']
-			const has_same_adposition = (token: Token) => is_conjunct(token) && token.tag['adposition'] === adposition
-			const is_skipped = (token: Token) => SKIPPED_TOKEN_TYPES.includes(token.type)
-				|| is_modifier_or_adposition(token)
-				|| is_conjunct(token) && !has_same_adposition(token)
+			const { is_partner, is_skipped } = get_search_filters(tokens[index])
+			const is_skipped_token = (token: Token) => SKIPPED_TOKEN_TYPES.includes(token.type) || is_skipped(token)
 
-			const coordinator_index = find_token_index({ tokens, from: index, direction, is_target: IS_NOUN_COORDINATOR, is_skipped })
+			const coordinator_index = find_token_index({ tokens, from: index, direction, is_target: IS_NOUN_COORDINATOR, is_skipped: is_skipped_token })
 			if (coordinator_index === -1) return -1
 
 			return find_token_index({
 				tokens,
 				from: coordinator_index,
 				direction,
-				is_target: has_same_adposition,
-				is_skipped: token => is_skipped(token) || IS_NOUN_COORDINATOR(token),
+				is_target: is_partner,
+				is_skipped: token => is_skipped_token(token) || IS_NOUN_COORDINATOR(token),
 			})
 		},
 	}

@@ -189,13 +189,13 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'context': {
 			'precededby': { 'tag': [{ 'syntax': 'coord_noun' }, 'list_comma'], 'skip': 'np_modifiers_and_adpositions' },
 		},
-		'error': {
-			'message': "The adposition must be repeated before '{token}' to coordinate with the preceding noun.",
+		'warning': {
+			'message': "The adposition should be repeated before '{token}' to coordinate with the preceding noun.",
 		},
 		'comment': "A noun after a coordinator with no preceding coordinate partner is not coordinated with anything, eg 'John went to Jerusalem and Bethlehem', or 'to the house of James and in the store'.",
 	},
 	{
-		'name': 'Warn about a coordinated noun after an adposition phrase',
+		'name': 'Suggest repeating the adposition before a coordinated noun after an adposition phrase',
 		'trigger': { 'tag': { 'has_adposition': 'no', 'coordinate': 'coordinate|last' } },
 		'context': {
 			'precededby': [
@@ -203,10 +203,10 @@ const checker_rules_json: CheckerRuleJson[] = [
 				{ 'tag': [{ 'syntax': 'coord_noun' }, 'list_comma'], 'skip': 'np_modifiers' },
 			],
 		},
-		'warning': {
+		'suggest': {
 			'message': "If you intend '{token}' to coordinate with '{0:token}', then you must repeat the adposition before '{token}'.",
 		},
-		'comment': "eg 'the brother of John and Mary' is interpreted as 'the brother of John, and Mary', but may not be intended. See the error for a coordinated noun that has nothing to be coordinated with",
+		'comment': "eg 'the brother of John and Mary' is interpreted as 'the brother of John, and Mary', but may not be intended. See the warning for a coordinated noun that has nothing to be coordinated with",
 	},
 	// TODO redo with the new time-long-hours etc concepts in the Ontology
 	// {

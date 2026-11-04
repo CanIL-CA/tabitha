@@ -126,6 +126,37 @@ describe('nouns with an adposition are coordinated with nouns with the same adpo
 	})
 })
 
+describe('saxon genitives, made_of and title nouns are not coordinated', () => {
+	// includes no_partner, so a noun with no entry here has no coordinate tag at all
+	const all_coordinate_tags = (tokens: Token[]) => Object.fromEntries(tokens.filter(token => token.tag['coordinate']).map(token => [token.token, token.tag['coordinate']]))
+
+	const has_adposition_tags = (tokens: Token[]) => Object.fromEntries(tokens.filter(token => token.tag['has_adposition']).map(token => [token.token, token.tag['has_adposition']]))
+
+	test("they are tagged as not having an adposition: John went to Mary's house.", () => {
+		expect(has_adposition_tags(parse_with_lookups("John went to Mary's house."))).toEqual({ John: 'no', "Mary's": 'no', house: 'yes' })
+	})
+
+	test('a made_of noun is tagged as not having an adposition: John saw the gold statue.', () => {
+		expect(has_adposition_tags(parse_with_lookups('John saw the gold statue.'))).toEqual({ John: 'no', gold: 'no', statue: 'no' })
+	})
+
+	test("the nouns they modify are coordinated: John went to the store and to James's house.", () => {
+		expect(all_coordinate_tags(parse_with_lookups("John went to the store and to James's house."))).toEqual({ store: 'first', house: 'last' })
+	})
+
+	test("a saxon genitive is skipped when looking for the partner: John saw the store and James's house.", () => {
+		expect(all_coordinate_tags(parse_with_lookups("John saw the store and James's house."))).toEqual({ store: 'first', house: 'last' })
+	})
+
+	test("nouns with the same adposition are coordinated across saxon genitives: John went to James's house and to Peter's shop.", () => {
+		expect(all_coordinate_tags(parse_with_lookups("John went to James's house and to Peter's shop."))).toEqual({ house: 'first', shop: 'last' })
+	})
+
+	test('a made_of noun is skipped: John saw the gold statue and the silver idol.', () => {
+		expect(all_coordinate_tags(parse_with_lookups('John saw the gold statue and the silver idol.'))).toEqual({ statue: 'first', idol: 'last' })
+	})
+})
+
 describe('no_partner tags', () => {
 	const no_partners = (tokens: Token[]) => tokens.filter(token => token.tag['coordinate'] === 'no_partner').map(token => token.token)
 
