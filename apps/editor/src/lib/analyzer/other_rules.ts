@@ -91,7 +91,7 @@ const NOUN_REALTIONS_CONTEXTUAL: Array<[string, { head: TokenFilter, modified?: 
 	}],
 	['-Realm of Authority', {
 		head: create_token_filter({ 'stem': 'governor|king|leader|prince|ruler' }),
-		modified: create_token_filter({ 'stem': 'Egyptian|Israelite|Philistine' })
+		modified: create_token_filter({ 'stem': 'Egyptian|Israelite|Philistine' }),
 	}],
 	['-Region of Authority', {
 		head: create_token_filter({ 'stem': 'emperor|governor|king|leader|prince|ruler' }),
@@ -119,7 +119,7 @@ export function replace_or_insert_noun_relations(sentences: Sentence[]): Sentenc
 			return [token]
 		}
 
-		const [relation_stem, _, action] = relation_entry
+		const [relation_stem,, action] = relation_entry
 		const stem = relation_stem === GENERIC_GENITIVE
 			? find_contextual_relation({ tokens, index }) ?? relation_stem
 			: relation_stem
