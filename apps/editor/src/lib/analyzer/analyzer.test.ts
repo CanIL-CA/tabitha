@@ -212,6 +212,83 @@ describe('analyzer', () => {
 			expect(stems(tokens)).toEqual(['when', 'arrive', 'write'])
 		})
 
+		describe('within an NP', () => {
+			// eg {NP<genitive_saxon> -Kinship John's}: phrasify puts the relation on the NP, and the relation word and the modifying noun carry it too
+			const relation_np = ({ relation, adposition, modifier }: { relation: string; adposition: string; modifier: string }) => phrase({
+				type: 'NP',
+				tag: { relation },
+				contents: [
+					word({ stem: adposition, part_of_speech: 'Adposition', tag: { relation } }),
+					word({ stem: modifier, part_of_speech: 'Noun', tag: { relation } }),
+				],
+			})
+			const saxon_np = () => relation_np({ relation: 'genitive_saxon', adposition: '-Kinship', modifier: 'John' })
+			const norman_np = () => phrase({ type: 'NP', tag: { relation: 'genitive_norman' }, contents: [word({ stem: '-Kinship', part_of_speech: 'Adposition', tag: { relation: 'genitive_norman' } }), noun('Mary')] })
+
+			test.each([
+				['genitive_saxon', '-Kinship', 'John', 'brother'],
+				['title', '-Title', 'King', 'David'],
+				['made_of', '-Made of', 'gold', 'statue'],
+			])('places a %s NP directly after the noun it modifies', (relation, adposition, modifier, head) => {
+				const tokens = order_main_clause(np({ role: 'patient', contents: [...relation_np({ relation, adposition, modifier }), noun(head)] }))
+
+				expect(stems(tokens)).toEqual([head, adposition, modifier])
+			})
+
+			test('places a group NP directly after the noun it modifies', () => {
+				const group_np = phrase({ type: 'NP', tag: { relation: 'group' }, contents: [noun('group'), word({ stem: '-Group', part_of_speech: 'Adposition', tag: { relation: 'group' } })] })
+				const tokens = order_main_clause(np({ role: 'patient', contents: [...group_np, noun('people')] }))
+
+				expect(stems(tokens)).toEqual(['people', 'group', '-Group'])
+			})
+
+			test('leaves the other modifiers in front of the noun', () => {
+				const adjective = phrase({ type: 'AdjP', contents: [word({ stem: 'big', part_of_speech: 'Adjective' })] })
+				const tokens = order_main_clause(np({ role: 'patient', contents: [...adjective, ...saxon_np(), noun('brother')] }))
+
+				expect(stems(tokens)).toEqual(['big', 'brother', '-Kinship', 'John'])
+			})
+
+			test('keeps several relation NPs in their original order', () => {
+				const made_of_np = relation_np({ relation: 'made_of', adposition: '-Made of', modifier: 'gold' })
+				const tokens = order_main_clause(np({ role: 'patient', contents: [...made_of_np, ...saxon_np(), noun('statue')] }))
+
+				expect(stems(tokens)).toEqual(['statue', '-Made of', 'gold', '-Kinship', 'John'])
+			})
+
+			test('places the relation NP directly after the noun, before the NPs already after it', () => {
+				const tokens = order_main_clause(np({ role: 'patient', contents: [...saxon_np(), noun('brother'), ...norman_np()] }))
+
+				expect(stems(tokens)).toEqual(['brother', '-Kinship', 'John', '-Kinship', 'Mary'])
+			})
+
+			test('does not move a genitive_norman NP', () => {
+				const sub_tokens = np({ role: 'patient', contents: [...norman_np(), noun('brother')] })
+
+				expect(order_main_clause(sub_tokens)).toEqual(sub_tokens)
+			})
+
+			test('does not move an NP because of a relation NP nested inside it', () => {
+				const outer_np = phrase({ type: 'NP', tag: { relation: 'genitive_norman' }, contents: [word({ stem: '-Region', part_of_speech: 'Adposition', tag: { relation: 'genitive_norman' } }), ...saxon_np(), noun('house')] })
+				const tokens = order_main_clause(np({ role: 'patient', contents: [...outer_np, noun('king')] }))
+
+				expect(stems(tokens)).toEqual(['-Region', 'house', '-Kinship', 'John', 'king'])
+			})
+
+			test('orders NPs nested inside other phrases', () => {
+				const inner_np = np({ contents: [...saxon_np(), noun('book')] })
+				const tokens = order_main_clause(phrase({ type: 'AdjP', contents: [word({ stem: 'kind', part_of_speech: 'Adjective' }), ...inner_np] }))
+
+				expect(stems(tokens)).toEqual(['kind', 'book', '-Kinship', 'John'])
+			})
+
+			test('leaves NPs where they are when the NP has no head noun', () => {
+				const sub_tokens = np({ contents: [...np({ contents: [noun('John')] }), ...np({ contents: [noun('Mary')] })] })
+
+				expect(order_main_clause(sub_tokens)).toEqual(sub_tokens)
+			})
+		})
+
 		test('leaves a clause without a verb unchanged', () => {
 			const sub_tokens = [...np({ role: 'patient', contents: [noun('letter')] }), ...np({ role: 'agent', contents: [noun('Paul')] })]
 

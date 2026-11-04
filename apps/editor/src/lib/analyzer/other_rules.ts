@@ -111,6 +111,8 @@ export function replace_or_insert_noun_relations(sentences: Sentence[]): Sentenc
 			token.sub_tokens = replace_relation_tokens(token.sub_tokens)
 			return [token]
 		}
+		// a phrase's relation tag describes the whole phrase, and the relation word inside it is what gets replaced
+		if (token.type === TOKEN_TYPE.PHRASE) return [token]
 
 		const relation_entry = NOUN_REALTIONS_STRUCTURAL.find(([, filter]) => filter(token))
 		if (!relation_entry) {

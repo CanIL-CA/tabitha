@@ -24,6 +24,14 @@ export function is_np_start(token: Token): boolean {
 	return token.type === TOKEN_TYPE.PHRASE && token.token === '{NP'
 }
 
+export function is_vp_start(token: Token): boolean {
+	return token.type === TOKEN_TYPE.PHRASE && token.token === '{VP'
+}
+
+export function is_adjp_start(token: Token): boolean {
+	return token.type === TOKEN_TYPE.PHRASE && token.token === '{AdjP'
+}
+
 export function get_depth_change(token: Token): number {
 	if (is_phrase_start(token)) return 1
 	if (is_phrase_end(token)) return -1
@@ -42,6 +50,11 @@ export function get_phrase_span({ tokens, start_index }: { tokens: Token[]; star
 		}
 	}
 	return tokens.slice(start_index)
+}
+
+// the tokens inside a phrase span, without its opening and closing phrase tokens
+export function get_span_contents(span: ConstituentSpan): Token[] {
+	return span.slice(1, -1)
 }
 
 /**

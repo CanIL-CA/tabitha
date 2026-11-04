@@ -404,7 +404,7 @@ describe('Repeat the adposition before a coordinated noun', () => {
 			create_period_token(),
 		])
 
-		expect_message_to_match({ token: checked_tokens[5], message_type: 'warning', regex: /^The adposition must be repeated before 'Bethlehem'/ })
+		expect_message_to_match({ token: checked_tokens[5], message_type: 'warning', regex: /^The adposition should be repeated before 'Bethlehem'/ })
 	})
 	test('flags a noun with a different adposition than the noun before the coordinator: John went to the house of James and in the store.', () => {
 		const checked_tokens = check([

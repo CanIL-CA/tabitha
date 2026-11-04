@@ -1,5 +1,5 @@
 import { create_token, token_has_tag, TOKEN_TYPE } from '#lib/token.js'
-import { find_enclosing_np_start, get_np_head, get_phrase_span, is_np_start, type ConstituentSpan } from './phrase_helpers'
+import { find_enclosing_np_start, get_np_head, get_phrase_span, get_span_contents, is_np_start, type ConstituentSpan } from './phrase_helpers'
 import type { Sentence, Token } from '#lib/types.js'
 
 // the tokens inside an NP, without its opening '{NP' and closing '}' phrase tokens
@@ -96,7 +96,7 @@ function take_interrogative_np(tokens: Token[]): { remaining_tokens: Token[]; in
 	const np_span = get_phrase_span({ tokens, start_index: np_start_index })
 	return {
 		remaining_tokens: [...tokens.slice(0, np_start_index), ...tokens.slice(np_start_index + np_span.length)],
-		interrogative_np: np_span.slice(1, -1),
+		interrogative_np: get_span_contents(np_span),
 	}
 }
 
@@ -120,7 +120,7 @@ function find_modified_np({ tokens, relative_clause_index }: { tokens: Token[]; 
 }
 
 function get_np_contents({ tokens, np_start_index }: { tokens: Token[]; np_start_index: number }): NpContents {
-	return get_phrase_span({ tokens, start_index: np_start_index }).slice(1, -1)
+	return get_span_contents(get_phrase_span({ tokens, start_index: np_start_index }))
 }
 
 function is_relative_clause(token: Token): boolean {
