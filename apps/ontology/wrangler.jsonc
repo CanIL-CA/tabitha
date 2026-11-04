@@ -95,12 +95,13 @@
 			"dataset": "tabitha_usage"
 		}
 	],
-	// Lets Cloudflare run the Worker near its D1 primaries (ENAM) instead of at the visitor's edge.
-	// D1 read replication is disabled, so every query goes to the primary anyway, and withSession()
-	// works without replicas.
-	// https://developers.cloudflare.com/workers/configuration/placement/
+	// Runs the Worker at the visitor's edge, so withSession() reads come from the nearest D1 read replica
+	// (one per D1 region, APAC included) on DB_Ontology and DB_Auth. Smart Placement could move the
+	// Worker toward the North American primaries and leave the distant replicas unused. Better Auth's
+	// own queries use the plain DB_Auth binding and so always go to the primary.
+	// https://developers.cloudflare.com/d1/best-practices/read-replication/
 	"placement": {
-		"mode": "smart"
+		"mode": "off"
 	},
 	// Per-PR Worker Previews, served at `pr-<N>.ontology.tabitha.bible`. CI's preview_deploy job creates
 	// them with `wrangler preview --name pr-<N>` (docs/decisions/0020-per-pr-worker-previews.md).
