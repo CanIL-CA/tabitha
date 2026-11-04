@@ -63,9 +63,13 @@ function phrasify_tokens(tokens: Token[]): Token[] {
 			// underscore notes always directly follow the word they're associated with
 			post_token_filters.splice(0, 0, token => token.token.startsWith('_'))
 			let post_index = i + 1
+
+			// coordinate NPs are siblings, so a phrase never absorbs its own coordinate partner
+			// eg. {NP the brother {NP of James} {NP and of John}}, not {NP the brother {NP of James {NP and of John}}}
+			const is_own_coordinate_partner = (next_token: Token) => IS_NP_BEFORE_COORDINATE_PARTNER(token) && IS_NP_AFTER_COORDINATE_PARTNER(next_token)
 			for (const token_filter of post_token_filters) {
 				// keep matching the filter until it no longer matches. then move on to the next filter and repeat
-				while (post_index < tokens.length && token_filter(tokens[post_index])) {
+				while (post_index < tokens.length && token_filter(tokens[post_index]) && !is_own_coordinate_partner(tokens[post_index])) {
 					post_index += 1
 				}
 			}
@@ -123,7 +127,7 @@ function phrasify_tokens(tokens: Token[]): Token[] {
 	 */
 	function flatten_phrases(token: Token): Token[] {
 		if (token.type === TOKEN_TYPE.PHRASE) {
-			const tags_to_maintain = ['role', 'adj_usage', 'implicit', 'coordinate']
+			const tags_to_maintain = ['role', 'adj_usage', 'implicit', 'coordinate', 'relation']
 			const tag = Object.fromEntries(Object.entries(token.tag).filter(([key]) => tags_to_maintain.includes(key)))
 			return [
 				create_token({ token: `{${token.tag['phrase_type']}`, type: TOKEN_TYPE.PHRASE, tag }),
@@ -134,6 +138,9 @@ function phrasify_tokens(tokens: Token[]): Token[] {
 		return [token]
 	}
 }
+
+const IS_NP_BEFORE_COORDINATE_PARTNER = create_token_filter({ 'tag': { 'phrase_type': 'NP', 'coordinate': 'first|coordinate' } })
+const IS_NP_AFTER_COORDINATE_PARTNER = create_token_filter({ 'tag': { 'phrase_type': 'NP', 'coordinate': 'coordinate|last' } })
 
 /**
  * Below are filters used to determine the scope/boundary of each phrase within a clause.
@@ -241,11 +248,12 @@ const ORDERED_PHRASE_POST_FILTERS: Array<[phrase_filter: TokenFilter, token_filt
 	[
 		{ 'tag': { 'phrase_type': 'NP' } },
 		[
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name|kind' } },
 			{ 'type': TOKEN_TYPE.FUNCTION_WORD, 'tag': { 'relation': 'group' } },
 			{ 'tag': { 'phrase_type': 'NP', 'role': 'noun_argument_np' } },
 			{ 'tag': { 'clause_type': 'relative_clause' } },
 			{ 'tag': 'post_np_adposition' },	// ((X) years ago)
+			{ 'tag': 'list_comma' },	// ((John,) (Mary) (and Peter))
 		],
 	],
 	[

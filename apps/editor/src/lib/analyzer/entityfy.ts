@@ -1,5 +1,6 @@
 import { token_has_tag, TOKEN_TYPE } from '#lib/token.js'
 import { get_features_for_token } from './features'
+import { is_phrase_end, is_phrase_start } from './phrase_helpers'
 import type { SourceEntityCategory, EditorAnalyzedEntity, ConceptKey } from '@tabitha/types'
 import type { Sentence, Token } from '#lib/types.js'
 
@@ -94,10 +95,10 @@ const FORMAT_MARKERS: Record<string, string> = {
 function get_token_category(token: Token): SourceEntityCategory | null {
 	if (token.type === TOKEN_TYPE.CLAUSE) {
 		return 'Clause'
-	} else if (token.type === TOKEN_TYPE.PHRASE && token.token.startsWith('{')) {
+	} else if (is_phrase_start(token)) {
 		// A phrase start token is in the format like "{NP" or "{AdjP"
 		return PHRASE_CATEGORY_MAP[token.token.substring(1)]
-	} else if (token.type === TOKEN_TYPE.PHRASE && token.token === '}') {
+	} else if (is_phrase_end(token)) {
 		return ''
 	} else if (token.lookup_results.length) {
 		return token.lookup_results[0].part_of_speech

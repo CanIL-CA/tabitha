@@ -5,6 +5,7 @@ import type { Token } from '#lib/types.js'
 import type { RuleTriggerContext, TokenFilter } from '#lib/rules/types.js'
 
 const is_head_noun = create_token_filter({ 'tag': { 'syntax': 'head_np' } })
+const is_coordinated = create_token_filter({ 'tag': { 'coordinate': 'first|coordinate|last' } })
 const is_patient_clause = create_token_filter({
 	'type': TOKEN_TYPE.CLAUSE,
 	'tag': { 'clause_type': 'patient_clause_different_participant|patient_clause_same_participant|patient_clause_simultaneous' },
@@ -31,7 +32,7 @@ type ConjunctSearch = {
 export function with_coordinated_arguments(argument_context: RuleTriggerContext): RuleTriggerContext[] {
 	const { tokens, trigger_index, trigger_token } = argument_context
 	const is_conjunct = COORDINATED_ARGUMENT_FILTERS.find(filter => filter(trigger_token))
-	if (!is_conjunct || !trigger_token.tag['coordinate']) return [argument_context]
+	if (!is_conjunct || !is_coordinated(trigger_token)) return [argument_context]
 
 	const preceding_indexes = find_conjunct_indexes({ tokens, index: trigger_index, direction: -1, is_conjunct }).reverse()
 	const following_indexes = find_conjunct_indexes({ tokens, index: trigger_index, direction: 1, is_conjunct })
@@ -52,7 +53,7 @@ function find_conjunct_indexes(search: ConjunctSearch): number[] {
 
 function find_adjacent_conjunct_index({ tokens, index, direction, is_conjunct }: ConjunctSearch): number {
 	for (let i = index + direction; tokens[i]; i += direction) {
-		if (is_conjunct(tokens[i]) && tokens[i].tag['coordinate']) return i
+		if (is_conjunct(tokens[i]) && is_coordinated(tokens[i])) return i
 	}
 	return -1
 }

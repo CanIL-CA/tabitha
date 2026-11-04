@@ -401,6 +401,12 @@ const SKIP_GROUPS = new Map<SkipGroup, SkipJsonSingle[]>([
 		{ 'tag': ['determiner|relation', { 'clause_type': 'relative_clause' }] },
 		'adjp_attributive',
 	]],
+	// the adposition is optional before a coordinated NP, eg 'went to Jerusalem and (to) Bethlehem'
+	['np_modifiers_and_adpositions', [
+		'np_modifiers',
+		{ 'category': 'Adposition' },
+		{ 'type': TOKEN_TYPE.FUNCTION_WORD },
+	]],
 	['np', [
 		'np_modifiers',
 		{ 'tag': { 'syntax': 'coord_noun|comma' } },

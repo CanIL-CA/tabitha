@@ -219,6 +219,7 @@ const transform_rules_json: TransformRuleJson[] = [
 			},
 		},
 		'transform': { 'tag': { 'clause_type': 'adverbial_clause' } },
+		'subtoken_transform': { 'tag': { 'syntax': 'adverbial_clause_adposition' } },
 	},
 	{
 		'name': 'tag "in-order-to/by/without" clauses as "same subject" adverbial',
@@ -305,6 +306,14 @@ const transform_rules_json: TransformRuleJson[] = [
 		'context_transform': [{ }, { 'function': { 'pre_np_adposition': 'comparative_as' } }],
 		'comment': "eg 'as valuable as X', etc ",
 	},
+	{
+		'name': '"to" before a noun gets tagged as a pre_np_adposition',
+		'trigger': { 'token': 'to' },
+		'context': {
+			'followedby': { 'category': 'Noun', 'skip': 'np_modifiers' },
+		},
+		'transform': { 'function': { 'pre_np_adposition': 'to' } },
+	},
 	// Interrogatives
 	{
 		'name': "'who'/'what' gets tagged as interrogative determiner when in a question",
@@ -368,10 +377,17 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'function': { 'relation': 'name', 'pre_np_adposition': 'relation' } },
 	},
 	{
+		'name': "'of' after kind becomes a function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'stem': 'kind' } },
+		'transform': { 'function': { 'relation': 'kind', 'pre_np_adposition': 'relation' } },
+	},
+	{
 		'name': "'of' after group/crowd becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'group|crowd' } },
 		'transform': { 'function': { 'relation': 'group' }, 'remove_tag': 'pre_np_adposition' },
+		'comment': '"group of" is the modifier of the noun that follows, which is unique among the "of" relations, so it is handled a bit differently',
 	},
 	{
 		'name': 'certain Noun-Noun combinations are "made_of"',
@@ -560,6 +576,15 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'remove_tag': ['syntax', 'role'] },
 	},
 	{
+		'name': 'remove head_np tag from nouns after a repeated "of" in coordinated genitives',
+		'trigger': { 'tag': { 'syntax': 'head_np' } },
+		'context': {
+			'precededby': [{ 'category': 'Noun' }, { 'token': 'and|or|,' }, { 'token': 'of', 'skip': 'np_modifiers' }],
+		},
+		'transform': { 'remove_tag': ['syntax', 'role'] },
+		'comment': "eg 'the brother of James and of John'. John is coordinated with James, not an argument of the Verb",
+	},
+	{
 		'name': 'nouns modified by an interrogative determiner get tagged with noun_tracking of interrogative',
 		'trigger': { 'tag': { 'syntax': 'head_np' } },
 		'context': {
@@ -661,6 +686,19 @@ const transform_rules_json: TransformRuleJson[] = [
 		'trigger': { 'stem': 'and' },
 		'context': { 'precededby': { 'category': 'Adverb', 'skip': { 'token': ',' } } },
 		'transform': { 'tag': { 'syntax': 'coord_adv' } },
+	},
+	{
+		'name': 'tag commas between nouns as list commas',
+		'trigger': { 'tag': { 'syntax': 'comma' } },
+		'context': {
+			'precededby': { 'category': 'Noun' },
+			'followedby': {
+				'category': 'Noun',
+				'skip': ['np_modifiers_and_adpositions', { 'tag': { 'syntax': 'coord_noun' } }],
+			},
+		},
+		'transform': { 'tag': { 'list_comma': 'np' } },
+		'comment': "eg 'John, Mary and Peter', 'went to Jerusalem, to Bethlehem and to Hebron'. The comma ends the NP before it, and addressee commas are excluded since they are tagged comma_addressee",
 	},
 	{
 		'name': 'tag "and/or/but" at start of subordinate clauses',
@@ -817,9 +855,22 @@ const builtin_transform_rules: BuiltInRule[] = [
 		},
 	},
 	{
+		name: 'Tag Nouns with whether they have an adposition, and which one',
+		comment: 'Coordinated Nouns with the same adposition or lack thereof are coordinated with each other. This is for the coordination rules, so it must come before them.',
+		rule: {
+			trigger: create_token_filter({ 'category': 'Noun' }),
+			context: create_context_filter({}),
+			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
+				const adposition = find_adposition_token({ tokens, index: trigger_index })
+				const tag: Tag = adposition ? { 'has_adposition': 'yes', 'adposition': adposition.token.toLowerCase() } : { 'has_adposition': 'no' }
+				add_tag_to_token({ token: trigger_token, tag, rule_id })
+			}),
+		},
+	},
+	{
 		// TODO support coordinating Verbs as well
 		name: 'Tag the position of coordinated Nouns, Adjectives, Adverbs, and Clauses',
-		comment: 'eg "John, Mary and Peter" become first/coordinate/last. For the case frame rules and the analyzer.',
+		comment: 'eg "John, Mary and Peter" become first/coordinate/last, and a Noun next to a coordinator without a partner is no_partner. For the case frame rules and the analyzer.',
 		rule: {
 			trigger: is_coordinatable,
 			context: create_context_filter({}),
@@ -845,6 +896,27 @@ const builtin_transform_rules: BuiltInRule[] = [
 		},
 	},
 ]
+
+/**
+ * The adposition that the Noun at the given index is the object of, if any.
+ * A Noun after an adposition that opens an adverbial clause is the subject of that clause instead, eg "[Before John left]".
+ * Saxon genitives, made_of, and title relations are modifiers of the next Noun, so they don't have an adposition either.
+ */
+function find_adposition_token({ tokens, index }: { tokens: Token[]; index: number }): Token | undefined {
+	const IS_RELATION_WITHOUT_ADPOSITION = create_token_filter({ 'tag': { 'relation': 'genitive_saxon|made_of|title' } })
+	const IS_ADVERBIAL_CLAUSE_ADPOSITION = create_token_filter({ 'tag': { 'syntax': 'adverbial_clause_adposition' } })
+	const FIND_PRECEDING_LOOKUP_ADPOSITION = create_context_filter({ 'precededby': { 'category': 'Adposition', 'skip': 'np_modifiers' } })
+	const FIND_PRECEDING_FUNCTION_ADPOSITION = create_context_filter({ 'precededby': { 'tag': 'pre_np_adposition', 'skip': 'np_modifiers' } })
+
+	if (IS_RELATION_WITHOUT_ADPOSITION(tokens[index])) return undefined
+
+	const lookup_adposition = FIND_PRECEDING_LOOKUP_ADPOSITION(tokens, index)
+	const adposition_match = lookup_adposition.success ? lookup_adposition : FIND_PRECEDING_FUNCTION_ADPOSITION(tokens, index)
+	if (!adposition_match.success) return undefined
+
+	const adposition = tokens[adposition_match.context_indexes[0]]
+	return IS_ADVERBIAL_CLAUSE_ADPOSITION(adposition) ? undefined : adposition
+}
 
 function tag_nested_clauses({ clause_token, tag_to_set, rule_id }: { clause_token: Token; tag_to_set: Tag, rule_id: string }) {
 	const quote_begin_filter = create_token_filter({ 'tag': { 'clause_type': 'patient_clause_quote_begin' } })

@@ -1187,21 +1187,13 @@ export function get_verb_case_frame_rules(token: Token): CaseFrameRuleInfo {
 	const stem = token.lookup_results[0].stem
 	const argument_rules_by_sense = VERB_CASE_FRAME_RULES.get(stem)
 
-	// TODO use the default rules instead once more verb rules are added.
-	if (!argument_rules_by_sense) {
-		return {
-			rules_by_sense: [],
-			default_rule_getter: () => [],
-			role_info_getter: (categorization, role_rules) => get_verb_usage_info({ categorization, role_rules }),
-			should_check: false,
-		}
-	}
-
+	// check and collect all the arguments, but only validate if explicitly added.
+	// TODO validate all once more verb rules are added
 	return {
-		rules_by_sense: argument_rules_by_sense,
+		rules_by_sense: argument_rules_by_sense ?? [],
 		default_rule_getter: () => get_default_rules_for_stem(stem),
 		role_info_getter: (categorization, role_rules) => get_verb_usage_info({ categorization, role_rules }),
-		should_check: true,
+		should_validate: !!argument_rules_by_sense,
 	}
 }
 

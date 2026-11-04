@@ -376,9 +376,25 @@ const adjective_sense_priority_overrides: WordStemPriorityOverrides[] = [
  * An empty filter means that sense will always apply as long as its case frame is valid.
  */
 const adposition_sense_priority_overrides: WordStemPriorityOverrides[] = [
+	['at', [
+		['at-B', { 'in_noun_phrase': { 'stem': 'time|midnight' } }],
+	]],
 	['if', [
 		['if-B', { 'were': { } }],
 		['if-C', { 'had': { } }],
+	]],
+	['in', [
+		['in-B', { 'in_noun_phrase': { 'stem': 'city|country|land|nation|region|town|village|desert|field|garden|kingdom|Israel|Egypt|Babylon|Assyria|Persia|Judah' } }],
+		['in-D', { 'in_noun_phrase': { 'stem': 'army|tribe|family|group' } }],
+		['in-E', { 'in_noun_phrase': { 'stem': 'evening|morning|day|future|night|month|time' } }],
+		['in-F', { 'in_noun_phrase': { 'stem': 'ground|water|sand|dust|dirt' } }],
+		['in-G', { 'in_noun_phrase': { 'stem': 'book|scroll|letter|law' } }],
+		['in-I', { 'in_noun_phrase': { 'stem': 'dream|vision' } }],
+		['in-K', { 'in_noun_phrase': { 'stem': 'Greek|Hebrew|Aramaic' } }],
+	]],
+	['on', [
+		['on-B', { 'in_noun_phrase': { 'stem': 'earth|ground' } }],
+		['on-E', { 'in_noun_phrase': { 'stem': 'day|Sabbath' } }],
 	]],
 	['so', [
 		['so-C', { 'would': { } }],

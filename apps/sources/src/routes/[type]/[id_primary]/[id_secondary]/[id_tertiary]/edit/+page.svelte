@@ -87,7 +87,10 @@
 			check_response.tokens = check_response.tokens.flatMap(flatten_tokens)
 
 			errors_and_warnings = check_response.tokens
-				.flatMap((token, i) => token.messages.map<[CheckerMessage, number]>(msg => [msg, i]))
+				.flatMap((token, i) => {
+					const messages = [...token.messages, ...token.pairing?.messages ?? [], ...token.pronoun?.messages ?? []]
+					return messages.map<[CheckerMessage, number]>(msg => [msg, i])
+				})
 				.filter(([msg]) => ['error', 'warning'].includes(msg.label))
 
 			check_result = check_response
@@ -142,6 +145,18 @@
 		} finally {
 			analyzing = false
 		}
+	}
+
+	function get_token_text(token: CheckerToken) {
+		let parts = [token.token]
+		if (token.pairing) {
+			const separator = token.pairing_type === 'dynamic-literal' ? '|' : '/'
+			parts = [...parts, separator, token.pairing.token]
+		}
+		if (token.pronoun) {
+			parts = [token.pronoun.token, '(', ...parts, ')']
+		}
+		return parts.join('')
 	}
 </script>
 
@@ -206,12 +221,13 @@
 		<p>
 			{#each check_result.tokens as token, i}
 				{@const msg = errors_and_warnings.find(([, token_index]) => i === token_index)?.[0]}
+				{@const text = get_token_text(token)}
 				{#if msg?.label === 'error'}
-					<span class="text-error">{token.token}&nbsp;</span>
+					<span class="text-error">{text}&nbsp;</span>
 				{:else if msg?.label === 'warning'}
-					<span class="text-warning">{token.token}&nbsp;</span>
+					<span class="text-warning">{text}&nbsp;</span>
 				{:else}
-					<span>{token.token}&nbsp;</span>
+					<span>{text}&nbsp;</span>
 				{/if}
 			{/each}
 		</p>
@@ -220,11 +236,11 @@
 	<div>
 		{#each errors_and_warnings as [message, token_index]}
 			{@const is_error = message.label === 'error'}
-			{@const token = check_result.tokens[token_index]}
+			{@const token = get_token_text(check_result.tokens[token_index])}
 			<div class="alert {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-2">
 				<div>
 					<Icon icon={is_error ? 'mdi:close-circle' : 'mdi:alert-circle'} class="h-6 w-6" />
-					<span>{message.message} <sup>(token: "{token.token}")</sup></span>
+					<span>{message.message} <sup>(token: "{token}")</sup></span>
 				</div>
 			</div>
 		{/each}

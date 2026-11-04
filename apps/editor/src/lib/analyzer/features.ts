@@ -317,7 +317,6 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			['Most Patient-like', by_subtoken_tag({ 'auxiliary': 'passive' })],
 		]],
 		['Salience Band', [
-			['Primary Storyline', { }],
 			['Backgrounded Actions', by_subtoken_tag({ 'time': 'past', 'auxiliary': 'imperfective_aspect' })],
 			['Flashback', by_subtoken_tag({ 'auxiliary': 'flashback' })],
 		]],
