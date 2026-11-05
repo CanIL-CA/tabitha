@@ -1,12 +1,20 @@
 <script lang="ts">
+	import { onMount } from 'svelte'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { Navigation, SourceEntities } from '#lib/index.js'
+	import { get_header_content } from '#lib/header_content.svelte.js'
 	import Settings from '#lib/settings/Settings.svelte'
 	import SelectedEntitySidebar from '#lib/sidebar/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 
 	let { data } = $props()
+
+	const header_content = get_header_content()
+	onMount(() => {
+		header_content.current = header_content_snippet
+		return () => (header_content.current = null)
+	})
 
 	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
 
@@ -22,14 +30,11 @@
 	<title>{source.id_primary} {source.id_secondary}:{source.id_tertiary} - TaBiThA Sources</title>
 </svelte:head>
 
-<div class="grid justify-items-stretch grid-cols-3 pb-5">
-	<div class="justify-self-start">
-		<Settings />
-	</div>
-	<div class="justify-self-center">
-		<Navigation {nav_data} />
-	</div>
-</div>
+{#snippet header_content_snippet()}
+	<Navigation nav_data={data.nav_data} />
+
+	<Settings />
+{/snippet}
 
 {#if source.status !== 'Ready to Translate' && source.parsed_semantic_encoding.length > 0}
 	{@const time_note = source.status === 'Final Review in Progress' ? 'almost' : 'not yet'}

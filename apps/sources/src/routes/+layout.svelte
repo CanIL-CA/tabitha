@@ -2,11 +2,13 @@
 	import '#lib/app.css'
 	import { onMount, type Snippet } from 'svelte'
 	import { onNavigate } from '$app/navigation'
-	import { Search } from '#lib/index.js'
+	import { HeaderContent, set_header_content } from '#lib/header_content.svelte.js'
 	import { Header, Footer, theme_state } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'
 
 	let { children }: { children?: Snippet } = $props()
+
+	const header_content = set_header_content(new HeaderContent())
 
 	onMount(() => report_active_theme(theme_state.current))
 
@@ -26,7 +28,11 @@
 <!-- layout not handled by daisyUI, https://daisyui.com/docs/layout-and-typography -->
 
 <Header app="Sources">
-	<Search />
+	{#if header_content.current}
+		<div class="flex flex-wrap items-center gap-4">
+			{@render header_content.current()}
+		</div>
+	{/if}
 </Header>
 
 <main class="mx-8 mt-8">
