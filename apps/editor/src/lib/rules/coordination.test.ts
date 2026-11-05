@@ -15,6 +15,7 @@ const VERB_CATEGORIZATIONS: Record<string, string> = {
 	left: 'A',
 	see: 'AB',
 	saw: 'AB',
+	ate: 'AB',
 	say: 'AH',
 }
 
@@ -24,6 +25,7 @@ const PARTS_OF_SPEECH: Record<string, PartOfSpeech> = {
 	to: 'Adposition',
 	in: 'Adposition',
 	before: 'Adposition',
+	named: 'Verb',
 	big: 'Adjective',
 	red: 'Adjective',
 	old: 'Adjective',
@@ -79,6 +81,10 @@ describe('agents with genitives', () => {
 
 	test('every noun after a repeated "of" in a list is not an agent', () => {
 		expect(agents(parse_with_lookups('The brother of James, of John and of Peter go.'))).toEqual(['brother'])
+	})
+
+	test("a noun after \"named\" is not an agent: A man named John ate Mary's apple.", () => {
+		expect(agents(parse_with_lookups("A man named John ate Mary's apple."))).toEqual(['man'])
 	})
 
 	test('a noun without a repeated "of" is a coordinated agent with the noun the genitive belongs to', () => {

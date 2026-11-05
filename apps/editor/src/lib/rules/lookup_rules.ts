@@ -60,11 +60,6 @@ const lookup_rules_json: LookupRuleJson[] = [
 		'lookup': 'much-many',
 	},
 	{
-		'name': 'every becomes each',
-		'trigger': { 'token': 'Every|every' },
-		'lookup': 'each',
-	},
-	{
 		'name': 'half becomes .5',
 		'trigger': { 'token': 'half' },
 		'lookup': '.5',

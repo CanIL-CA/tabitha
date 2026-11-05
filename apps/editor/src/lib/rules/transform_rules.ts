@@ -564,7 +564,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': 'tag head nouns',
 		'trigger': { 'category': 'Noun' },
 		'context': {
-			'notprecededby': [{ 'category': 'Noun' }, { 'token': 'of', 'skip': 'np_modifiers' }],
+			'notprecededby': [{ 'category': 'Noun' }, { 'tag': { 'relation': 'genitive_norman|name|group|kind' }, 'skip': 'np_modifiers' }],
 		},
 		'transform': { 'tag': { 'syntax': 'head_np', 'role': 'none' } },
 		'comment': "can't use 'np_modifiers' in the 'notfollowedby' skip since we don't want to skip the genitive_norman 'of'",

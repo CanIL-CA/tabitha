@@ -215,3 +215,31 @@ export function assign_noun_list_indexes(entities: EditorAnalyzedEntity[]) {
 		}
 	}
 }
+
+export function move_format_markers_out_of_clauses(entities: EditorAnalyzedEntity[]) {
+	const result: EditorAnalyzedEntity[] = []
+
+	let i = 0
+	while (i < entities.length) {
+		if (entities[i].value !== '{') {
+			result.push(entities[i])
+			i++
+			continue
+		}
+
+		const closing_index = entities.findIndex((entity, j) => j > i && entity.value === '}')
+		const sentence_end = closing_index < 0 ? entities.length - 1 : closing_index
+		const sentence = entities.slice(i, sentence_end + 1)
+
+		const body = sentence.filter(entity => entity.category !== 'Format Marker')
+		const markers = sentence.filter(entity => entity.category === 'Format Marker')
+		// a poetry-end at the very end of the sentence goes after it instead of before it
+		const trailing = markers.filter(marker => marker.value === 'Poetry End'
+			&& sentence.slice(sentence.indexOf(marker) + 1, -1).every(later => ['Particle', 'period'].includes(later.category)))
+		const leading = markers.filter(marker => !trailing.includes(marker))
+
+		result.push(...leading, ...body, ...trailing)
+		i = sentence_end + 1
+	}
+	return result
+}
