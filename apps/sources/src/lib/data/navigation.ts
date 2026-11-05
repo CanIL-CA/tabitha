@@ -1,7 +1,7 @@
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { get_primary_ids, get_secondary_ids, get_source_data, get_tertiary_ids } from './read'
-import { BIBLE_BOOKS } from '@tabitha/types/patterns'
-import type { Book, Reference } from '@tabitha/types'
+import { primary_id_orders } from './lookups'
+import type { Book, PrimaryId, Reference } from '@tabitha/types'
 
 export async function get_previous_reference({ db, reference }: { db: D1DatabaseSession, reference: Reference }): Promise<Reference | null> {
 	// try decrementing id_tertiary
@@ -98,12 +98,30 @@ export async function get_next_reference({ db, reference }: { db: D1DatabaseSess
  * `get_primary_ids` returns them in.
  */
 async function get_primary_order({ db, type }: { db: D1DatabaseSession, type: string }): Promise<Book> {
-	if (type === 'Bible') {
-		return BIBLE_BOOKS
+	const fixed_order = primary_id_orders[type]
+	if (fixed_order) {
+		return fixed_order
 	}
 
 	const primary_ids = await get_primary_ids({ db, type })
 	return Object.fromEntries(primary_ids.map(({ id_primary }, index) => [index + 1, id_primary]))
+}
+
+/**
+ * The primary ids that actually have data for a type, in `get_primary_order`'s order. Ids the
+ * order doesn't know about sort last, in the order `get_primary_ids` returned them.
+ */
+export async function get_primary_ids_in_order({ db, type }: { db: D1DatabaseSession, type: string }): Promise<PrimaryId[]> {
+	const [primary_ids, primary_order] = await Promise.all([
+		get_primary_ids({ db, type }),
+		get_primary_order({ db, type }),
+	])
+	const ordered_names = Object.values(primary_order).map(name => name.toUpperCase())
+	const rank = ({ id_primary }: PrimaryId) => {
+		const index = ordered_names.indexOf(id_primary.toUpperCase())
+		return index === -1 ? ordered_names.length : index
+	}
+	return primary_ids.toSorted((a, b) => rank(a) - rank(b))
 }
 
 function find_book_index({ reference, primary_order }: { reference: Reference, primary_order: Book }): number | undefined {
