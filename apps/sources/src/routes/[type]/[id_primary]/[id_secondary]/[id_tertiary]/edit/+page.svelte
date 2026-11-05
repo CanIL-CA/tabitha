@@ -213,53 +213,54 @@
 	</div>
 {/if}
 
-<div>
-	<p class="label">Input Text</p>
-	<p>
-		<textarea bind:value={phase1_text} oninput={text_changed} rows="3" class="textarea textarea-bordered textarea-lg w-4/5"></textarea>
-	</p>
-</div>
-
-{#if check_result && errors_and_warnings.length}
-	<div class="divider my-2"></div>
-	<div>
-		<p>
-			{#each check_result.tokens as token, i}
-				{@const msg = errors_and_warnings.find(([, token_index]) => i === token_index)?.[0]}
-				{@const text = get_token_text(token)}
-				{#if msg?.label === 'error'}
-					<span class="text-error">{text}&nbsp;</span>
-				{:else if msg?.label === 'warning'}
-					<span class="text-warning">{text}&nbsp;</span>
-				{:else}
-					<span>{text}&nbsp;</span>
-				{/if}
-			{/each}
-		</p>
-	</div>
-
-	<div>
-		{#each errors_and_warnings as [message, token_index]}
-			{@const is_error = message.label === 'error'}
-			{@const token = get_token_text(check_result.tokens[token_index])}
-			<div class="alert {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-2">
-				<div>
-					<Icon icon={is_error ? 'mdi:close-circle' : 'mdi:alert-circle'} class="h-6 w-6" />
-					<span>{message.message} <sup>(token: "{token}")</sup></span>
-				</div>
-			</div>
-		{/each}
-	</div>
-{/if}
-
-{#if !analyzing}
-	<div class="divider my-2"></div>
-	<div class="flex h-screen">
-		<div id="entity-container" class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
-			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
+<div class="flex h-screen">
+	<div class="overflow-y-auto transition-all duration-200 flex-[1_1_auto]" style="margin-right: {sidebar_open ? 'calc(24rem - 1rem)' : '0'};">
+		<div>
+			<p class="label">Input Text (Phase 1)</p>
+			<p>
+				<textarea bind:value={phase1_text} oninput={text_changed} rows="3" class="textarea textarea-bordered textarea-lg w-full"></textarea>
+			</p>
 		</div>
-		{#if sidebar_open}
-			<SelectedEntitySidebar />
+
+		{#if check_result && errors_and_warnings.length}
+			<div class="divider my-2"></div>
+			<div>
+				{#each check_result.tokens as token, i}
+					{@const msg = errors_and_warnings.find(([, token_index]) => i === token_index)?.[0]}
+					{@const text = get_token_text(token)}
+					{#if msg?.label === 'error'}
+						<span class="text-error">{text}{' '}</span>
+					{:else if msg?.label === 'warning'}
+						<span class="text-warning">{text}{' '}</span>
+					{:else}
+						<span>{text}{' '}</span>
+					{/if}
+				{/each}
+			</div>
+
+			<div>
+				{#each errors_and_warnings as [message, token_index]}
+					{@const is_error = message.label === 'error'}
+					{@const token = get_token_text(check_result.tokens[token_index])}
+					<div class="alert {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-2">
+						<div>
+							<Icon icon={is_error ? 'mdi:close-circle' : 'mdi:alert-circle'} class="h-6 w-6" />
+							<span>{message.message} <sup>(token: "{token}")</sup></span>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		{#if !analyzing}
+			<div class="divider my-2"></div>
+			<div id="entity-container">
+				<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
+			</div>
 		{/if}
 	</div>
-{/if}
+
+	{#if sidebar_open}
+		<SelectedEntitySidebar />
+	{/if}
+</div>
