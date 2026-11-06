@@ -1,0 +1,24 @@
+{
+  "name": "@tabitha/alerts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reconciles the TaBiThA Cloudflare account's notification policies, such as the Worker failure email",
+  "scripts": {
+    "check": "bun --check",
+    "check:lint": "eslint .",
+    "check:lint:fix": "eslint . --fix",
+    "test": "bun run test:unit",
+    "test:unit": "bun test",
+    "apply": "bun apply.ts",
+    "apply:run": "bun apply.ts --run"
+  },
+  "devDependencies": {
+    "@tabitha/eslint-config": "workspace:*",
+    "@tabitha/tsconfig": "workspace:*",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -10,7 +10,10 @@
 	"workers_dev": false,
 	"observability": {
 		"enabled": true,
-		"head_sampling_rate": 1
+		"head_sampling_rate": 1,
+		"issues": {
+			"enabled": true
+		}
 	},
 	"triggers": {
 		// Each cron here runs the job mapped to it in src/index.ts's JOBS_BY_CRON.

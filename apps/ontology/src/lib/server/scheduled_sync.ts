@@ -36,7 +36,10 @@ export async function run_scheduled_sync(env: ScheduledSyncEnv): Promise<Schedul
 		index: env.VECTORIZE_Concepts,
 		embedder: create_concept_embedder(env),
 	})
-	console.info(`Concept embeddings synced: ${embeddings.embedded} embedded, ${embeddings.unchanged} unchanged, ${embeddings.failed} failed`)
+	// console.error, not info, when any failed: Workers Issues only alerts on errors, and a failed
+	// embedding otherwise just waits silently for the next sync's retry.
+	const log = embeddings.failed > 0 ? console.error : console.info
+	log(`Concept embeddings synced: ${embeddings.embedded} embedded, ${embeddings.unchanged} unchanged, ${embeddings.failed} failed`)
 
 	if (typeof complex_terms !== 'number') throw complex_terms
 
