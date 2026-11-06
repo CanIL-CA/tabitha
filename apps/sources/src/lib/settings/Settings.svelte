@@ -14,9 +14,19 @@
 		const setting_json = JSON.stringify(view_settings)
 		localStorage.setItem('source_view_settings', setting_json)
 	}
+
+	let details_element = $state<HTMLDetailsElement>()
+	let is_open = $state(false)
+
+	function close_if_outside(event: PointerEvent) {
+		if (details_element?.contains(event.target as Node)) return
+		is_open = false
+	}
 </script>
 
-<details class="dropdown">
+<svelte:window onpointerdowncapture={close_if_outside} />
+
+<details bind:this={details_element} bind:open={is_open} class="dropdown">
 	<summary class="btn px-3">
 		<Icon icon="material-symbols:settings" class="h-6 w-6" />
 	</summary>

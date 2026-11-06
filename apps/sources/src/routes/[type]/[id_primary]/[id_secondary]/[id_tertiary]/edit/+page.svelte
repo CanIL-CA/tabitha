@@ -217,9 +217,11 @@
 	<div class="overflow-y-auto transition-all duration-200 flex-[1_1_auto]" style="margin-right: {sidebar_open ? 'calc(24rem - 1rem)' : '0'};">
 		<div>
 			<p class="label">Input Text (Phase 1)</p>
-			<p>
-				<textarea bind:value={phase1_text} oninput={text_changed} rows="3" class="textarea textarea-bordered textarea-lg w-full"></textarea>
-			</p>
+			<textarea
+				bind:value={phase1_text}
+				oninput={text_changed}
+				class="textarea textarea-bordered textarea-lg field-sizing-content w-full">
+			</textarea>
 		</div>
 
 		{#if check_result && errors_and_warnings.length}
@@ -242,9 +244,9 @@
 				{#each errors_and_warnings as [message, token_index]}
 					{@const is_error = message.label === 'error'}
 					{@const token = get_token_text(check_result.tokens[token_index])}
-					<div class="alert {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-2">
-						<div>
-							<Icon icon={is_error ? 'mdi:close-circle' : 'mdi:alert-circle'} class="h-6 w-6" />
+					<div class="alert alert-soft {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-1">
+						<div class="flex items-center gap-2">
+							<Icon icon="mdi:alert-circle" class="h-5 w-5" />
 							<span>{message.message} <sup>(token: "{token}")</sup></span>
 						</div>
 					</div>
