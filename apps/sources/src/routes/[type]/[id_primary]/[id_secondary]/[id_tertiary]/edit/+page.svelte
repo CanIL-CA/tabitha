@@ -16,6 +16,7 @@
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { fetch_ontology_data_for_all } from '#lib/data/api_lookups.ts'
+	import { Toast } from '@tabitha/ui'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })
@@ -32,21 +33,43 @@
 	set_clipboard(new EntityClipboard())
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
+
+	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
+	set_selected_entity(selected_entity)
+	let sidebar_open = $derived(selected_entity.current !== null)
+	
+	// ---------------
+	// history tracking
+
 	let edit_history = $derived(new EditHistory({
 		source_entities: data.source.parsed_semantic_encoding,
 	}))
 	set_edit_history(() => edit_history)
 
-	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
-	set_selected_entity(selected_entity)
-	let sidebar_open = $derived(selected_entity.current !== null)
-
 	function undo() {
-		selected_entity.select_ids({ ids: edit_history.undo() })
+		const action = edit_history.undo()
+		selected_entity.select_ids({ ids: action?.ids ?? [] })
+		if (action) show_history_toast(`Undid ${action.action}: ${action.details}`)
 	}
 
 	function redo() {
-		selected_entity.select_ids({ ids: edit_history.redo() })
+		const action = edit_history.redo()
+		selected_entity.select_ids({ ids: action?.ids ?? [] })
+		if (action) show_history_toast(`Redid ${action.action}: ${action.details}`)
+	}
+
+	let history_toast = $state<string | null>(null)
+	let history_toast_timeout: ReturnType<typeof setTimeout> | undefined
+	
+	function dismiss_history_toast() {
+		clearTimeout(history_toast_timeout)
+		history_toast = null
+	}
+
+	function show_history_toast(message: string) {
+		clearTimeout(history_toast_timeout)
+		history_toast = message
+		history_toast_timeout = setTimeout(dismiss_history_toast, 5000)
 	}
 
 	const HISTORY_SHORTCUTS: Record<string, () => void> = {
@@ -67,6 +90,9 @@
 		event.preventDefault()
 		action()
 	}
+
+	// ---------------
+	// check and analyze
 
 	let is_checked = $state(false)
 	let checking = $state(false)
@@ -146,7 +172,7 @@
 			const results_by_stem = await fetch_ontology_data_for_all(analyzed_entities)
 			senses.remember(Object.values(results_by_stem).flat())
 
-			edit_history.record({ ids_before: [] })
+			edit_history.record({ action: 'analyze', ids_before: [] })
 			edit_history.current = { source_entities: analyzed_entities }
 		} catch (err) {
 			api_error = err instanceof Error ? err.message : 'Failed to analyze text'
@@ -269,3 +295,7 @@
 		<SelectedEntitySidebar />
 	{/if}
 </div>
+
+{#if history_toast}
+	<Toast variant="info" on_dismiss={dismiss_history_toast}>{history_toast}</Toast>
+{/if}

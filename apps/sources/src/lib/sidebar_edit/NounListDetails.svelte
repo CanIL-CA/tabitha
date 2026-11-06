@@ -20,7 +20,8 @@
 	let is_mixed = $derived(do_noun_list_indexes_differ({ entities: selected_entity.all }))
 
 	function set_index(index: string) {
-		edit_history().record({ ids_before: selected_entity.ids })
+		const details = `${data.concept!.stem}-${data.concept!.sense} -> ${index}`
+		edit_history().record({ action: 'noun_index', details, ids_before: selected_entity.ids })
 		apply_noun_list_index({ entities: selected_entity.all, index })
 	}
 
@@ -29,8 +30,7 @@
 	}
 
 	function add_and_set_index() {
-		edit_history().record({ ids_before: selected_entity.ids })
-		apply_noun_list_index({ entities: selected_entity.all, index: next_index })
+		set_index(next_index)
 	}
 </script>
 

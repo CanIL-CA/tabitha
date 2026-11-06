@@ -49,13 +49,14 @@
 	function close_dialog() {
 		dialog_open = false
 		if (pairing_concept.stem) {
-			edit_history().record({ ids_before: selected_entity.ids })
+			const details = `${data.category} ${pairing_concept.stem}-${pairing_concept.sense}`
+			edit_history().record({ action: 'pairing', details, ids_before: selected_entity.ids })
 			apply_pairing({ entities: selected_entity.all, pairing_concept, pairing_type })
 		}
 	}
 
 	function remove_pairing() {
-		edit_history().record({ ids_before: selected_entity.ids })
+		edit_history().record({ action: 'pairing', details: 'removed', ids_before: selected_entity.ids })
 		apply_pairing({ entities: selected_entity.all, pairing_concept: null, pairing_type: null })
 	}
 </script>

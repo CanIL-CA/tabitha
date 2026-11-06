@@ -12,7 +12,9 @@
 	const selected_entity = get_selected_entity()
 
 	function set_feature_value({ feature_name, value }: { feature_name: string, value: string }) {
-		edit_history().record({ ids_before: selected_entity.ids })
+		const old_value = data.features.find(({ name }) => name === feature_name)?.value ?? 'none'
+		const details = `${data.category} ${feature_name} = ${old_value} -> ${value}`
+		edit_history().record({ action: 'feature', details, ids_before: selected_entity.ids })
 		apply_feature_value({ entities: selected_entity.all, feature_name, value, feature_map: page.data.features })
 	}
 
