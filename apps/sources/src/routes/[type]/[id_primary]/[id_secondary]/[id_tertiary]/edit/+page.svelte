@@ -173,25 +173,7 @@
 {#snippet header_content_snippet()}
 	<Navigation nav_data={data.nav_data} url_end="/edit" />
 
-	<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-primary">
-		Check
-		{#if checking}
-			<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
-		{:else if is_checked && check_result?.status === 'ok'}
-			<Icon icon="mdi:check-bold" class="h-6 w-6" />
-		{:else}
-			<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
-		{/if}
-	</button>
-
-	<button onclick={ analyze_text } type="submit" disabled={analyzing} class="btn btn-secondary">
-		Analyze
-		{#if analyzing}
-			<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
-		{:else}
-			<Icon icon="mdi:magnify" class="h-6 w-6" />
-		{/if}
-	</button>
+	<Settings />
 
 	<div class="join">
 		<button onclick={undo} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
@@ -201,8 +183,6 @@
 			<Icon icon="mdi:redo" class="h-6 w-6" />
 		</button>
 	</div>
-
-	<Settings />
 {/snippet}
 
 {#if api_error}
@@ -216,7 +196,30 @@
 <div class="flex h-screen">
 	<div class="overflow-y-auto transition-all duration-200 flex-[1_1_auto]" style="margin-right: {sidebar_open ? 'calc(24rem - 1rem)' : '0'};">
 		<div>
-			<p class="label">Input Text (Phase 1)</p>
+			<div class="flex gap-3 mb-2 ms-0.5">
+				<span class="label font-semibold">Input Text (Phase 1)</span>
+
+				<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-sm btn-primary">
+					Check
+					{#if checking}
+						<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
+					{:else if is_checked && check_result?.status === 'ok'}
+						<Icon icon="mdi:check-bold" class="h-6 w-6" />
+					{:else}
+						<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
+					{/if}
+				</button>
+
+				<button onclick={ analyze_text } type="submit" disabled={analyzing} class="btn btn-sm btn-secondary">
+					Analyze
+					{#if analyzing}
+						<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
+					{:else}
+						<Icon icon="mdi:magnify" class="h-6 w-6" />
+					{/if}
+				</button>
+			</div>
+
 			<textarea
 				bind:value={phase1_text}
 				oninput={text_changed}
