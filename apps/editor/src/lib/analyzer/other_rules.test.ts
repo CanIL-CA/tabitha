@@ -47,7 +47,7 @@ describe('other_rules', () => {
 	})
 
 	describe('move_format_markers_out_of_clauses', () => {
-		const entity = (category: EditorAnalyzedEntity['category'], value: string): EditorAnalyzedEntity => ({
+		const entity = ({ category, value }: Pick<EditorAnalyzedEntity, 'category' | 'value'>): EditorAnalyzedEntity => ({
 			category,
 			value,
 			features: [],
@@ -57,15 +57,15 @@ describe('other_rules', () => {
 			noun_list_index: null,
 		})
 		const values = (entities: EditorAnalyzedEntity[]) => entities.map(({ value }) => value)
-		const paragraph = () => entity('Format Marker', 'Paragraph')
-		const poetry_begin = () => entity('Format Marker', 'Poetry Begin')
-		const poetry_end = () => entity('Format Marker', 'Poetry End')
-		const word = (value: string) => entity('Noun', value)
+		const paragraph = () => entity({ category: 'Format Marker', value: 'Paragraph' })
+		const poetry_begin = () => entity({ category: 'Format Marker', value: 'Poetry Begin' })
+		const poetry_end = () => entity({ category: 'Format Marker', value: 'Poetry End' })
+		const word = (value: string) => entity({ category: 'Noun', value })
 
 		test('moves paragraph and poetry-begin before the sentence', () => {
 			const entities = [
-				entity('Clause', '{'), word('a'), entity('Clause', '['), paragraph(), poetry_begin(), word('b'), entity('', ']'),
-				entity('period', '.'), entity('', '}'),
+				entity({ category: 'Clause', value: '{' }), word('a'), entity({ category: 'Clause', value: '[' }), paragraph(), poetry_begin(), word('b'), entity({ category: '', value: ']' }),
+				entity({ category: 'period', value: '.' }), entity({ category: '', value: '}' }),
 			]
 			expect(values(move_format_markers_out_of_clauses(entities))).toEqual([
 				'Paragraph', 'Poetry Begin', '{', 'a', '[', 'b', ']', '.', '}',
@@ -74,21 +74,21 @@ describe('other_rules', () => {
 
 		test('moves poetry-end before the sentence when more follows it', () => {
 			const entities = [
-				entity('Clause', '{'), word('a'), poetry_end(), word('b'), entity('period', '.'), entity('', '}'),
+				entity({ category: 'Clause', value: '{' }), word('a'), poetry_end(), word('b'), entity({ category: 'period', value: '.' }), entity({ category: '', value: '}' }),
 			]
 			expect(values(move_format_markers_out_of_clauses(entities))).toEqual(['Poetry End', '{', 'a', 'b', '.', '}'])
 		})
 
 		test('moves a poetry-end at the end of the sentence to the end of the sentence, past particles', () => {
 			const entities = [
-				entity('Clause', '{'), word('a'), word('b'), poetry_end(),
-				entity('Particle', 'exclamation'), entity('period', '.'), entity('', '}'),
+				entity({ category: 'Clause', value: '{' }), word('a'), word('b'), poetry_end(),
+				entity({ category: 'Particle', value: 'exclamation' }), entity({ category: 'period', value: '.' }), entity({ category: '', value: '}' }),
 			]
 			expect(values(move_format_markers_out_of_clauses(entities))).toEqual(['{', 'a', 'b', 'exclamation', '.', '}', 'Poetry End'])
 		})
 
 		test('leaves markers outside any sentence alone', () => {
-			const entities = [paragraph(), entity('Clause', '{'), word('a'), entity('period', '.'), entity('', '}')]
+			const entities = [paragraph(), entity({ category: 'Clause', value: '{' }), word('a'), entity({ category: 'period', value: '.' }), entity({ category: '', value: '}' })]
 			expect(values(move_format_markers_out_of_clauses(entities))).toEqual(['Paragraph', '{', 'a', '.', '}'])
 		})
 	})
