@@ -30,7 +30,7 @@
 		type="button"
 		title="Go to reference"
 		onclick={() => (is_dialog_open = true)}
-		class="btn btn-md join-item px-5 bg-base-200 border-base-300 text-2xl"
+		class="btn btn-md join-item px-5 bg-base-200 border-base-300 text-2xl font-bold"
 	>
 		{create_reference_string(nav_data.current)}
 	</button>

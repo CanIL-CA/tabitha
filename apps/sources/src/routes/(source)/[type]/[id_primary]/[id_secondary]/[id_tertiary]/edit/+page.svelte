@@ -3,6 +3,7 @@
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken } from '@tabitha/types'
 	import type { PageProps } from './$types'
+	import HistoryTracking from '#lib/edit/HistoryTracking.svelte'
 	import SelectedEntitySidebar from '#lib/sidebar_edit/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
@@ -12,7 +13,6 @@
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { fetch_ontology_data_for_all } from '#lib/data/api_lookups.ts'
-	import { Toast } from '@tabitha/ui'
 
 	const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
 	const sources_client = create_sources_client({ base_url: '/' })
@@ -24,65 +24,14 @@
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
 
-	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
-	set_selected_entity(selected_entity)
-	let sidebar_open = $derived(selected_entity.current !== null)
-	
-	// ---------------
-	// history tracking
-
 	let edit_history = $derived(new EditHistory({
 		source_entities: data.source.parsed_semantic_encoding,
 	}))
 	set_edit_history(() => edit_history)
 
-	function undo() {
-		const action = edit_history.undo()
-		selected_entity.select_ids({ ids: action?.ids ?? [] })
-		if (action) show_history_toast(`Undid ${action.action}: ${action.details}`)
-	}
-
-	function redo() {
-		const action = edit_history.redo()
-		selected_entity.select_ids({ ids: action?.ids ?? [] })
-		if (action) show_history_toast(`Redid ${action.action}: ${action.details}`)
-	}
-
-	let history_toast = $state<string | null>(null)
-	let history_toast_timeout: ReturnType<typeof setTimeout> | undefined
-	
-	function dismiss_history_toast() {
-		clearTimeout(history_toast_timeout)
-		history_toast = null
-	}
-
-	function show_history_toast(message: string) {
-		clearTimeout(history_toast_timeout)
-		history_toast = message
-		history_toast_timeout = setTimeout(dismiss_history_toast, 5000)
-	}
-
-	const HISTORY_SHORTCUTS: Record<string, () => void> = {
-		'z': undo,
-		'shift+z': redo,
-		'y': redo,
-	}
-
-	function handle_history_shortcut(event: KeyboardEvent) {
-		if (!event.ctrlKey && !event.metaKey) return
-		// leave the browser's native text undo alone inside text fields
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
-
-		const shortcut = `${event.shiftKey ? 'shift+' : ''}${event.key.toLowerCase()}`
-		const action = HISTORY_SHORTCUTS[shortcut]
-		if (!action) return
-
-		event.preventDefault()
-		action()
-	}
-
-	// ---------------
-	// check and analyze
+	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
+	set_selected_entity(selected_entity)
+	let sidebar_open = $derived(selected_entity.current !== null)
 
 	let is_checked = $state(false)
 	let checking = $state(false)
@@ -184,18 +133,6 @@
 	}
 </script>
 
-<svelte:window onkeydown={handle_history_shortcut} />
-
-<!-- TODO where to place? -->
-<div class="join">
-	<button onclick={undo} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
-		<Icon icon="mdi:undo" class="h-6 w-6" />
-	</button>
-	<button onclick={redo} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
-		<Icon icon="mdi:redo" class="h-6 w-6" />
-	</button>
-</div>
-
 {#if api_error}
 	<div role="alert" class="alert alert-error my-3">
 		<Icon icon="mdi:alert-circle-outline" class="h-6 w-6" />
@@ -268,8 +205,13 @@
 			</div>
 		{/if}
 
+		<div class="divider my-2"></div>
+
+		<div>
+			<HistoryTracking />
+		</div>
+
 		{#if !analyzing}
-			<div class="divider my-2"></div>
 			<div id="entity-container">
 				<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
 			</div>
@@ -280,7 +222,3 @@
 		<SelectedEntitySidebar />
 	{/if}
 </div>
-
-{#if history_toast}
-	<Toast variant="info" on_dismiss={dismiss_history_toast}>{history_toast}</Toast>
-{/if}
