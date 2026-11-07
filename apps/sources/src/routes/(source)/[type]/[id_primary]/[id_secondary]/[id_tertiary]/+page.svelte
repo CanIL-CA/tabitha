@@ -36,6 +36,13 @@
 	</div>
 {/if}
 
+{#if source.phase_1_encoding.length > 0}
+	<div class="flex flex-col gap-2 bg-base-100 shadow-sm rounded-box px-4 py-4 my-3">
+		<span class="label font-semibold">Phase 1 encoding (may be out of date)</span>
+		<p>{source.phase_1_encoding}</p>
+	</div>
+{/if}
+
 {#if source.parsed_semantic_encoding.length > 0}
 	<div class="flex h-screen">
 		<div class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
