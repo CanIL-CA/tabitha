@@ -41,8 +41,9 @@ export default {
 
 async function call_app_endpoint({ app, url, token }: CallAppEndpointOptions): Promise<void> {
 	// SvelteKit's CSRF guard refuses a POST with no content-type and no same-site Origin as a cross-site
-	// form submission, before the endpoint's own token check ever runs.
-	const headers = { 'authorization': `Bearer ${token}`, 'content-type': 'application/json' }
+	// form submission, before the endpoint's own token check ever runs. A bound request also arrives
+	// with only the headers set here, and ontology's Better Auth resolves its base URL from Host.
+	const headers = { 'authorization': `Bearer ${token}`, 'content-type': 'application/json', 'host': new URL(url).host }
 	const response = await app.fetch(url, { method: 'POST', headers })
 	const body = await response.text()
 	if (!response.ok) throw new Error(`scheduler: ${url} failed with ${response.status}: ${body}`)
