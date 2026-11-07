@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Header, Settings, Search } from '#lib/index.js'
+	import { Header, Settings } from '#lib/index.js'
 	import Navigation from '#lib/Navigation.svelte'
 	import { page } from '$app/state'
 	import type { LayoutProps } from './$types'
@@ -18,13 +18,9 @@
 </svelte:head>
 
 <Header>
-	<div class="flex flex-wrap items-center gap-3">
+	<div class="flex flex-wrap gap-3">
 		<Navigation nav_data={data.nav_data} {url_end}  />
 		<Settings />
-
-		<div class="flex-1 min-w-64">
-			<Search />
-		</div>
 	</div>
 </Header>
 
