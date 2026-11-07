@@ -12,6 +12,7 @@
     "test:unit": "LOG_LEVEL=quiet bun test migrations",
     "migrate": "bun migrations/orchestrator.ts",
     "examples:rebuild": "bun migrations/ontology/examples.ts",
+    "fixture:ontology": "bun migrations/ontology/fixture.ts",
     "refresh:preview": "bun migrations/ontology/refresh_preview.ts",
     "migrate:sources": "bun migrations/sources/migrate.ts",
     "migrate:targets": "bun migrations/targets/migrate.ts",

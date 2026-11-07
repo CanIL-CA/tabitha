@@ -1,6 +1,6 @@
 {
 	"pinned_snapshots": {
-		"DB_Ontology": "Ontology_9494_2026-09-29.tabitha.sqlite.sql"
+		"DB_Ontology": "Ontology_3-0-9533_fixture.tabitha.sqlite.sql"
 	},
 	"raw": [
 		"Bible_2026-06-25.tbta.sqlite",
@@ -14,9 +14,7 @@
 		"Indonesian_2026-10-06.tbta.sqlite",
 		"MissionsDocuments_2026-02-19.tbta.sqlite",
 		"MissionsDocuments_2026-04-29.tbta.sqlite",
-		"Ontology_9494_2026-04-29.tabitha.sqlite",
 		"Ontology_9494_2026-06-25.tabitha.sqlite",
-		"Ontology_9494_2026-09-29.tabitha.sqlite",
 		"Sample_2026-07-27.tbta.sqlite",
 		"Sample_2026-07-31.tbta.sqlite",
 		"Sources_2026-06-25.tabitha.sqlite",
@@ -36,9 +34,7 @@
 		"Targets_Tagalog_2026-07-31.tabitha.sqlite"
 	],
 	"snapshots": [
-		"Ontology_9494_2026-04-29.tabitha.sqlite.sql",
-		"Ontology_9494_2026-06-25.tabitha.sqlite.sql",
-		"Ontology_9494_2026-09-29.tabitha.sqlite.sql",
+		"Ontology_3-0-9533_fixture.tabitha.sqlite.sql",
 		"Sources_2026-06-25.tabitha.sqlite.sql",
 		"Sources_2026-07-27.tabitha.sqlite.sql",
 		"Targets_2026-07-30.tabitha.sqlite.sql",

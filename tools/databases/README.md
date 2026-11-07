@@ -50,7 +50,7 @@ bun run r2:push   # uploads any local file not yet in manifest.json, and updates
 bun run r2:prune  # deletes stale dated versions from R2, keeping the latest 2 per database
 ```
 
-Ontology snapshots are the exception: the nightly backup (`migrations/backup/index.ts`) uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` once per version, and `manifest.json`'s `pinned_snapshots.DB_Ontology` names the one `db:load` uses. To move local dev and CI to newer Ontology data, add that file to the `snapshots` list and move the pin in the same PR. `r2:prune` never removes these, since only dated files are pruned.
+Ontology snapshots are the exception: the nightly backup (`migrations/backup/index.ts`) uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` once per version, and `manifest.json`'s `pinned_snapshots.DB_Ontology` names the one `db:load` uses. The pin is a test fixture, not a mirror of production: it names a smaller file derived from that full snapshot, with 10 examples per concept and source instead of all 677,839 (`Concepts.occurrences` keeps the full counts). To move local dev and CI to newer Ontology data, run `bun run fixture:ontology <version>` (for example `3-0-9533`), upload the result with `bun run r2:push snapshots`, and move the pin in the same PR. The full snapshot stays on R2 for anyone who wants every example. `r2:prune` never removes these, since only dated files are pruned.
 
 `r2:push` and `r2:prune` shell out to `wrangler`, so they need a Cloudflare API token with R2 write access (`wrangler login`, or `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` env vars -- same auth as `migrations/backup/index.ts`).
 
