@@ -2,9 +2,8 @@
 	import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken } from '@tabitha/types'
-	import { Navigation } from '#lib/index.js'
 	import type { PageProps } from './$types'
-	import Settings from '#lib/settings/Settings.svelte'
+	import HistoryTracking from '#lib/edit/HistoryTracking.svelte'
 	import SelectedEntitySidebar from '#lib/sidebar_edit/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
@@ -24,6 +23,7 @@
 	set_clipboard(new EntityClipboard())
 
 	let phase1_text = $derived(data.source.phase_1_encoding)
+
 	let edit_history = $derived(new EditHistory({
 		source_entities: data.source.parsed_semantic_encoding,
 	}))
@@ -32,33 +32,6 @@
 	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
 	set_selected_entity(selected_entity)
 	let sidebar_open = $derived(selected_entity.current !== null)
-
-	function undo() {
-		selected_entity.select_ids({ ids: edit_history.undo() })
-	}
-
-	function redo() {
-		selected_entity.select_ids({ ids: edit_history.redo() })
-	}
-
-	const HISTORY_SHORTCUTS: Record<string, () => void> = {
-		'z': undo,
-		'shift+z': redo,
-		'y': redo,
-	}
-
-	function handle_history_shortcut(event: KeyboardEvent) {
-		if (!event.ctrlKey && !event.metaKey) return
-		// leave the browser's native text undo alone inside text fields
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
-
-		const shortcut = `${event.shiftKey ? 'shift+' : ''}${event.key.toLowerCase()}`
-		const action = HISTORY_SHORTCUTS[shortcut]
-		if (!action) return
-
-		event.preventDefault()
-		action()
-	}
 
 	let is_checked = $state(false)
 	let checking = $state(false)
@@ -138,7 +111,7 @@
 			const results_by_stem = await fetch_ontology_data_for_all(analyzed_entities)
 			senses.remember(Object.values(results_by_stem).flat())
 
-			edit_history.record({ ids_before: [] })
+			edit_history.record({ action: 'analyze', ids_before: [] })
 			edit_history.current = { source_entities: analyzed_entities }
 		} catch (err) {
 			api_error = err instanceof Error ? err.message : 'Failed to analyze text'
@@ -160,45 +133,6 @@
 	}
 </script>
 
-<svelte:window onkeydown={handle_history_shortcut} />
-
-<div class="flex flex-row flex-wrap max-w-full">
-	<Navigation nav_data={data.nav_data} url_end="/edit" />
-
-	<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-primary ml-8">
-		Check
-		{#if checking}
-			<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
-		{:else if is_checked && check_result?.status === 'ok'}
-			<Icon icon="mdi:check-bold" class="h-6 w-6" />
-		{:else}
-			<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
-		{/if}
-	</button>
-
-	<button onclick={ analyze_text } type="submit" disabled={analyzing} class="btn btn-secondary ml-4">
-		Analyze
-		{#if analyzing}
-			<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
-		{:else}
-			<Icon icon="mdi:magnify" class="h-6 w-6" />
-		{/if}
-	</button>
-
-	<div class="join ml-4">
-		<button onclick={undo} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
-			<Icon icon="mdi:undo" class="h-6 w-6" />
-		</button>
-		<button onclick={redo} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
-			<Icon icon="mdi:redo" class="h-6 w-6" />
-		</button>
-	</div>
-
-	<div class="ml-4">
-		<Settings />
-	</div>
-</div>
-
 {#if api_error}
 	<div role="alert" class="alert alert-error my-3">
 		<Icon icon="mdi:alert-circle-outline" class="h-6 w-6" />
@@ -207,54 +141,98 @@
 	</div>
 {/if}
 
-<div class="divider my-2"></div>
-<div>
-	<p class="label">Input Text</p>
-	<p>
-		<textarea bind:value={phase1_text} oninput={text_changed} rows="3" class="textarea textarea-bordered textarea-lg w-4/5"></textarea>
-	</p>
-</div>
+<div class="flex h-screen">
+	<div class="overflow-y-auto transition-all duration-200 flex-[1_1_auto]" style="margin-right: {sidebar_open ? 'calc(24rem - 1rem)' : '0'};">
+		<div class="grid grid-cols-2 gap-2 mx-1">
+			<div>
+				<div class="flex gap-3 mb-2 ms-0.5">
+					<span class="label font-semibold">Input Text (Phase 1)</span>
 
-{#if check_result && errors_and_warnings.length}
-	<div class="divider my-2"></div>
-	<div>
-		<p>
-			{#each check_result.tokens as token, i}
-				{@const msg = errors_and_warnings.find(([, token_index]) => i === token_index)?.[0]}
-				{@const text = get_token_text(token)}
-				{#if msg?.label === 'error'}
-					<span class="text-error">{text}&nbsp;</span>
-				{:else if msg?.label === 'warning'}
-					<span class="text-warning">{text}&nbsp;</span>
-				{:else}
-					<span>{text}&nbsp;</span>
-				{/if}
-			{/each}
-		</p>
-	</div>
+					<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-sm btn-primary">
+						Check
+						{#if checking}
+							<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
+						{:else if is_checked && check_result?.status === 'ok'}
+							<Icon icon="mdi:check-bold" class="h-6 w-6" />
+						{:else}
+							<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
+						{/if}
+					</button>
 
-	<div>
-		{#each errors_and_warnings as [message, token_index]}
-			{@const is_error = message.label === 'error'}
-			{@const token = get_token_text(check_result.tokens[token_index])}
-			<div class="alert {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-2">
-				<div>
-					<Icon icon={is_error ? 'mdi:close-circle' : 'mdi:alert-circle'} class="h-6 w-6" />
-					<span>{message.message} <sup>(token: "{token}")</sup></span>
+					<button onclick={ analyze_text } type="submit" disabled={analyzing} class="btn btn-sm btn-secondary">
+						Analyze
+						{#if analyzing}
+							<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
+						{:else}
+							<Icon icon="mdi:magnify" class="h-6 w-6" />
+						{/if}
+					</button>
 				</div>
-			</div>
-		{/each}
-	</div>
-{/if}
 
-{#if !analyzing}
-	<div class="divider my-2"></div>
-	<div class="flex h-screen">
-		<div id="entity-container" class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
-			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
+				<textarea
+					bind:value={phase1_text}
+					oninput={text_changed}
+					class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+			</div>
+
+			<div>
+				<div class="flex gap-3 mb-2 ms-0.5">
+					<span class="label font-semibold">Generated English (coming soon)</span>
+
+					<button type="submit" disabled class="btn btn-sm btn-primary">
+						Generate
+						<Icon icon="mdi:play-circle-outline" class="h-6 w-6" />
+					</button>
+				</div>
+
+				<textarea disabled class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+			</div>
 		</div>
-		{#if sidebar_open}
-			<SelectedEntitySidebar />
+
+		{#if check_result && errors_and_warnings.length}
+			<div class="divider my-2"></div>
+			<div>
+				{#each check_result.tokens as token, i}
+					{@const msg = errors_and_warnings.find(([, token_index]) => i === token_index)?.[0]}
+					{@const text = get_token_text(token)}
+					{#if msg?.label === 'error'}
+						<span class="text-error">{text}{' '}</span>
+					{:else if msg?.label === 'warning'}
+						<span class="text-warning">{text}{' '}</span>
+					{:else}
+						<span>{text}{' '}</span>
+					{/if}
+				{/each}
+			</div>
+
+			<div>
+				{#each errors_and_warnings as [message, token_index]}
+					{@const is_error = message.label === 'error'}
+					{@const token = get_token_text(check_result.tokens[token_index])}
+					<div class="alert alert-soft {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-1">
+						<div class="flex items-center gap-2">
+							<Icon icon="mdi:alert-circle" class="h-5 w-5" />
+							<span>{message.message} <sup>(token: "{token}")</sup></span>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		<div class="divider my-2"></div>
+
+		<div>
+			<HistoryTracking />
+		</div>
+
+		{#if !analyzing}
+			<div id="entity-container">
+				<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
+			</div>
 		{/if}
 	</div>
-{/if}
+
+	{#if sidebar_open}
+		<SelectedEntitySidebar />
+	{/if}
+</div>

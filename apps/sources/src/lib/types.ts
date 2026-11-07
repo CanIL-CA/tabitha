@@ -16,9 +16,13 @@ export type NavData = {
 	next: Reference | null
 }
 
+export type PrimaryIdGroup = {
+	label: string | null
+	ids: string[]
+}
+
 export type PageData = {
 	source: PageSource
-	nav_data: NavData
 	ontology_senses: SensesByConcept
 }
 

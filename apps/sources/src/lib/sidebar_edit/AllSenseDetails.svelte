@@ -21,7 +21,8 @@
 	let can_set_sense = $derived(!do_stems_differ({ concepts }))
 
 	function set_sense(sense_data: OntologyResult) {
-		edit_history().record({ ids_before: selected_entity.ids })
+		const details = `${data.category} ${displayed_concept.stem}-${displayed_concept.sense} -> ${sense_data.stem}-${sense_data.sense}`
+		edit_history().record({ action: 'concept', details, ids_before: selected_entity.ids })
 		apply_sense({ concepts, sense: sense_data.sense })
 	}
 </script>

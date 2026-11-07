@@ -20,7 +20,6 @@
 		is_hover_target_in_range,
 		is_slot_in_range,
 		type HoverTarget,
-		type IndexRange,
 	} from '#lib/data/entity_ranges.js'
 	import type { PageSourceEntity } from '#lib/types.js'
 	import type { EntityContextMenuData } from '#lib/edit/types.js'
@@ -108,10 +107,6 @@
 	//---------------
 	// ui class derivation
 
-	type RangeCheck = (arg: { id: number, range: IndexRange | null }) => boolean
-
-	const is_insert_slot_in_range: RangeCheck = ({ id, range }) => is_slot_in_range({ slot: id, range })
-
 	const ENTITY_STATE_BG_CLASSES = {
 		hover: 'bg-base-300',
 		selected: 'bg-neutral-content',
@@ -119,21 +114,21 @@
 		idle: '',
 	} as const
 
-	function get_entity_state({ id, range_check }: { id: number, range_check: RangeCheck }): keyof typeof ENTITY_STATE_BG_CLASSES {
-		if (range_check({ id, range: drag_range })) return 'dragging'
-		if (range_check({ id, range: hover_range })) return 'hover'
-		if (select_ranges.some(range => range_check({ id, range }))) return 'selected'
+	function get_entity_state(id: number): keyof typeof ENTITY_STATE_BG_CLASSES {
+		if (is_entity_in_range({ id, range: drag_range })) return 'dragging'
+		if (is_entity_in_range({ id, range: hover_range })) return 'hover'
+		if (select_ranges.some(range => is_entity_in_range({ id, range }))) return 'selected'
 		return 'idle'
 	}
 
-	const INSERT_BUTTON_STATE_CLASSES = {
-		drop_target: 'btn-accent opacity-100 scale-125 shadow-md',
-		menu_open: 'btn-primary opacity-100',
-		dragging_elsewhere: 'btn-primary opacity-0',
-		idle: 'btn-primary opacity-0 focus:opacity-100 hover:opacity-100',
+	const INSERT_SLOT_STATE_CLASSES = {
+		drop_target: 'opacity-100',
+		menu_open: 'opacity-100',
+		dragging_elsewhere: 'opacity-0',
+		idle: 'opacity-0 hover:opacity-100 hover:delay-100 focus-within:opacity-100',
 	} as const
 
-	function get_insert_button_state(slot: number): keyof typeof INSERT_BUTTON_STATE_CLASSES {
+	function get_insert_slot_state(slot: number): keyof typeof INSERT_SLOT_STATE_CLASSES {
 		if (drop_slot === slot) return 'drop_target'
 		if (entity_drag.is_dragging) return 'dragging_elsewhere'
 		if (insert_context_menu_data.entity_id === slot) return 'menu_open'
@@ -201,7 +196,8 @@
 
 		// Where the dragged range starts once it has been removed and re-inserted at `slot`.
 		const insert_position = slot <= range[0] ? slot : slot - range_length
-		edit_history().record({ ids_before: [range[0]], ids_after: [insert_position] })
+
+		edit_history().record({ action: 'move', details: source_entities[range[0]].category, ids_before: [range[0]], ids_after: [insert_position] })
 		const moved_entities = source_entities.splice(range[0], range_length)
 		source_entities.splice(insert_position, 0, ...moved_entities)
 
@@ -220,7 +216,7 @@
 		const range = get_action_range({ entities: source_entities, id })
 		if (!range) return
 
-		edit_history().record({ ids_before: [range[0]] })
+		edit_history().record({ action: 'delete', details: source_entities[range[0]].category, ids_before: [range[0]] })
 		source_entities.splice(range[0], get_range_length(range))
 		structure_entities(source_entities)
 		select_entity(range[0])
@@ -262,15 +258,27 @@
 	}
 </script>
 
-{#snippet insert_button(i: number)}
-	<button
-		onclick={e => open_insert_context_menu({ event: e, entity_id: i })}
-		onkeydown={e => e.key === 'Enter' && open_insert_context_menu({ event: e, entity_id: i })}
-		aria-label="Insert Constituent"
-		class="btn btn-xs mt-4 h-12 w-4 text-lg {INSERT_BUTTON_STATE_CLASSES[get_insert_button_state(i)]} transition-[opacity,scale] duration-150"
-	>
-		+
-	</button>
+{#snippet insert_slot({ i, side }: { i: number, side: 'left' | 'right' })}
+	<div data-drop-slot={i} class="absolute inset-y-0 z-10 w-0 {side === 'left' ? 'left-0' : 'right-0'}">
+		<div
+			role="presentation"
+			onmouseenter={() => insert_button_mouseover(i)}
+			onmouseleave={entity_mouseout}
+			class="absolute inset-y-0 -left-2 flex w-4 justify-center text-primary {INSERT_SLOT_STATE_CLASSES[get_insert_slot_state(i)]} transition-opacity duration-150"
+		>
+			<span aria-hidden="true" class="h-full w-0.5 bg-current"></span>
+			<button
+				type="button"
+				tabindex={side === 'right' && i < source_entities.length ? -1 : 0}
+				onclick={e => open_insert_context_menu({ event: e, entity_id: i })}
+				onkeydown={e => e.key === 'Enter' && open_insert_context_menu({ event: e, entity_id: i })}
+				aria-label="Insert Constituent"
+				class="btn btn-primary btn-circle btn-xs absolute -translate-y-1/3"
+			>
+				+
+			</button>
+		</div>
+	</div>
 {/snippet}
 
 {#snippet entity_component(entity: PageSourceEntity)}
@@ -278,22 +286,14 @@
 	<Component source_entity={entity} />
 {/snippet}
 
-<div class="inline-flex flex-wrap py-3 {entity_drag.is_dragging ? 'select-none cursor-grabbing **:cursor-grabbing [&_.dropdown-content]:hidden!' : ''}">
+<div class="inline-flex flex-wrap py-3 px-3 {entity_drag.is_dragging ? 'select-none cursor-grabbing **:cursor-grabbing [&_.dropdown-content]:hidden!' : ''}">
 	{#each source_entities as entity}
 		{@const i = entity.id}
 
-		<div
-			role="button"
-			tabindex="0"
-			data-drop-slot={i}
-			onmouseenter={() => insert_button_mouseover(i)}
-			onmouseleave={entity_mouseout}
-			class="{ENTITY_STATE_BG_CLASSES[get_entity_state({ id: i, range_check: is_insert_slot_in_range })]} z-10"
-		>
-			{@render insert_button(i)}
-		</div>
-
 		<div class="relative">
+			{@render insert_slot({ i, side: 'left' })}
+			{@render insert_slot({ i: i + 1, side: 'right' })}
+
 			<div
 				role="button"
 				tabindex="0"
@@ -306,7 +306,7 @@
 				onblur={() => {}}
 				onpointerdown={event => !is_multi_select_click(event) && entity_drag.press({ event, id: i })}
 				ondragstart={e => e.preventDefault()}
-				class="id-{i} cursor-pointer content-center h-20 {ENTITY_STATE_BG_CLASSES[get_entity_state({ id: i, range_check: is_entity_in_range })]} transition-opacity"
+				class="cursor-pointer content-center px-1 h-20 {ENTITY_STATE_BG_CLASSES[get_entity_state(i)]} transition-opacity"
 			>
 				{@render entity_component(entity)}
 			</div>
@@ -329,10 +329,6 @@
 			{/if}
 		</div>
 	{/each}
-
-	<div data-drop-slot={source_entities.length}>
-		{@render insert_button(source_entities.length)}
-	</div>
 
 	{#if drag_ghost && entity_drag.ghost_position}
 		<div

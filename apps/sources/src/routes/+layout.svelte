@@ -2,8 +2,7 @@
 	import '#lib/app.css'
 	import { onMount, type Snippet } from 'svelte'
 	import { onNavigate } from '$app/navigation'
-	import { Search } from '#lib/index.js'
-	import { Header, Footer, theme_state } from '@tabitha/ui'
+	import { Footer, theme_state } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'
 
 	let { children }: { children?: Snippet } = $props()
@@ -25,15 +24,9 @@
 
 <!-- layout not handled by daisyUI, https://daisyui.com/docs/layout-and-typography -->
 
-<Header app="Sources">
-	<Search />
-</Header>
-
-<main class="mx-8 mt-8">
-	{#if children}
-		{@render children()}
-	{/if}
-</main>
+{#if children}
+	{@render children()}
+{/if}
 
 <Footer>
 	<a href="/lookup/status/Bible" class="link link-hover">Bible encoding status</a>

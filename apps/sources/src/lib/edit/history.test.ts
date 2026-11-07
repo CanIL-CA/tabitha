@@ -6,7 +6,7 @@ const make_state = (values: string[]): EditState => ({
 	source_entities: values.map((value, id) => ({ ...DEFAULTS.EMPTY, id, value })),
 })
 
-const NO_IDS = { ids_before: [], ids_after: [] }
+const NO_IDS = { action: 'insert' as const, ids_before: [], ids_after: [] }
 
 const entity_values = (history: EditHistory): string[] =>
 	history.current.source_entities.map(entity => entity.value)
@@ -98,7 +98,6 @@ describe('EditHistory', () => {
 		expect(history.current.source_entities[0].features[0].value).toBe('Independent')
 	})
 
-
 	test('noun_list_rows follows edits, undo and redo', () => {
 		const history = new EditHistory(make_state(['a']))
 		expect(history.noun_list_rows).toEqual([])
@@ -114,6 +113,7 @@ describe('EditHistory', () => {
 		history.redo()
 		expect(history.noun_list_rows).toHaveLength(2)
 	})
+
 	test('undo and redo do nothing when their stack is empty', () => {
 		const history = new EditHistory(make_state(['a']))
 
@@ -128,43 +128,53 @@ describe('EditHistory', () => {
 	test('undo returns ids_before and redo returns ids_after', () => {
 		const history = new EditHistory(make_state(['a', 'b', 'c']))
 
-		history.record({ ids_before: [0], ids_after: [2] })
+		history.record({ action: 'move', ids_before: [0], ids_after: [2] })
 		history.current.source_entities.push({ ...DEFAULTS.EMPTY, id: 3, value: 'd' })
 
-		expect(history.undo()).toEqual([0])
-		expect(history.redo()).toEqual([2])
+		expect(history.undo()?.ids).toEqual([0])
+		expect(history.redo()?.ids).toEqual([2])
 	})
 
 	test('ids_after defaults to ids_before', () => {
 		const history = new EditHistory(make_state(['a']))
 
-		history.record({ ids_before: [1] })
+		history.record({ action: 'move', ids_before: [1] })
 		history.current.source_entities[0].value = 'b'
 
-		expect(history.undo()).toEqual([1])
-		expect(history.redo()).toEqual([1])
+		expect(history.undo()?.ids).toEqual([1])
+		expect(history.redo()?.ids).toEqual([1])
 	})
 
 	test('each entry keeps its own ids as undo and redo walk through several edits', () => {
 		const history = new EditHistory(make_state(['a']))
 
-		history.record({ ids_before: [1], ids_after: [2] })
+		history.record({ action: 'move', ids_before: [1], ids_after: [2] })
 		history.current.source_entities[0].value = 'b'
-		history.record({ ids_before: [3], ids_after: [4] })
+		history.record({ action: 'move', ids_before: [3], ids_after: [4] })
 		history.current.source_entities[0].value = 'c'
 
-		expect(history.undo()).toEqual([3])
-		expect(history.undo()).toEqual([1])
-		expect(history.redo()).toEqual([2])
-		expect(history.redo()).toEqual([4])
-		expect(history.undo()).toEqual([3])
+		expect(history.undo()?.ids).toEqual([3])
+		expect(history.undo()?.ids).toEqual([1])
+		expect(history.redo()?.ids).toEqual([2])
+		expect(history.redo()?.ids).toEqual([4])
+		expect(history.undo()?.ids).toEqual([3])
 	})
 
-	test('undo and redo return no ids when their stack is empty', () => {
+	test('undo and redo return nothing when their stack is empty', () => {
 		const history = new EditHistory(make_state(['a']))
 
-		expect(history.undo()).toEqual([])
-		expect(history.redo()).toEqual([])
+		expect(history.undo()).toBeUndefined()
+		expect(history.redo()).toBeUndefined()
+	})
+
+	test('undo and redo return the recorded action and details', () => {
+		const history = new EditHistory(make_state(['a']))
+
+		history.record({ action: 'concept', details: 'God-A', ids_before: [0] })
+		history.current.source_entities[0].value = 'b'
+
+		expect(history.undo()).toEqual({ action: 'concept', details: 'God-A', ids: [0] })
+		expect(history.redo()).toEqual({ action: 'concept', details: 'God-A', ids: [0] })
 	})
 
 	test('keeps only the most recent 20 undo steps', () => {
