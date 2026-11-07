@@ -12,7 +12,9 @@ function create_env(response: Response): SchedulerEnv & { ONTOLOGY: { fetch: Ret
 /**
  * Stands in for the deployed ontology app. It copies SvelteKit 3's CSRF guard (`is_csrf_forbidden`,
  * not exported by the package): a POST with no content-type, or a form one, from another origin is
- * refused before the route runs.
+ * refused before the route runs. It also copies Better Auth's dynamic base URL, which every request
+ * passes through: a bound request arrives with only the headers its caller set, and without an
+ * allowed Host the session lookup throws.
  */
 function create_ontology_app(): { app: Fetcher, synced_runs: string[] } {
 	const synced_runs: string[] = []
@@ -25,6 +27,10 @@ function create_ontology_app(): { app: Fetcher, synced_runs: string[] } {
 		const looks_like_form = !content_type || form_content_types.includes(content_type)
 		if (looks_like_form && request.headers.get('origin') !== self_origin) {
 			return new Response(`Cross-site ${request.method} form submissions are forbidden`, { status: 403 })
+		}
+
+		if (request.headers.get('host') !== new URL(self_origin).host) {
+			return new Response('Dynamic baseURL could not be resolved for this direct auth.api call', { status: 500 })
 		}
 
 		if (new URL(request.url).pathname !== '/scheduled/sync') return new Response('Not found', { status: 404 })
@@ -47,7 +53,7 @@ describe('scheduler', () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => {})
 	})
 
-	it("runs ontology's scheduled sync every 12 hours, past SvelteKit's CSRF guard", async () => {
+	it("runs ontology's scheduled sync every 12 hours, past SvelteKit's CSRF guard and Better Auth's host check", async () => {
 		const { app, synced_runs } = create_ontology_app()
 
 		await run_cron({ cron: '0 */12 * * *', env: { ONTOLOGY: app, SCHEDULER_TOKEN: 's3cret' } })
