@@ -462,7 +462,7 @@ Each email is its own user (emails are stored lowercase), so someone with two ad
 
 The live `DB_Ontology` is the single source of truth and is never replaced ([ADR 0025](docs/decisions/0025-ontology-d1-single-source-of-truth.md)), so its schema changes are D1 migrations in `apps/ontology/migrations/ontology/`, applied in place. Locally, `bun run db:load:ontology` loads the pinned snapshot and then applies any newer migrations. The steps are in that folder's [README](apps/ontology/migrations/ontology/README.md). Classic TBTA downloads this database every night through the backups, so check with the TBTA maintainers before changing a table it reads.
 
-To get newer Ontology data locally and in CI, move the pin: the nightly backup uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` to R2, and a PR adds that file to `manifest.json`'s `snapshots` list and points `pinned_snapshots.DB_Ontology` at it.
+To get newer Ontology data locally and in CI, move the pin: the nightly backup uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` to R2. Run `bun run fixture:ontology <version>` from `tools/databases` to derive the smaller fixture (a sample of the examples) and `bun run r2:push snapshots` to upload it, then a PR points `pinned_snapshots.DB_Ontology` at it and lists it in `manifest.json`'s `snapshots`. The pin is a test fixture, so it only moves when a test needs newer data.
 
 #### Sources/Targets
 
