@@ -38,6 +38,11 @@
 		{
 			"binding": "TARGETS",
 			"service": "targets"
+		},
+		{
+			// Proof of concept: TBTA text generation (apps/generator)
+			"binding": "GENERATOR",
+			"service": "generator"
 		}
 	],
 	"ratelimits": [
@@ -84,6 +89,10 @@
 			{
 				"binding": "TARGETS",
 				"service": "targets"
+			},
+			{
+				"binding": "GENERATOR",
+				"service": "generator"
 			}
 		],
 		"ratelimits": [

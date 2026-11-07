@@ -1,0 +1,23 @@
+{
+	"name": "@tabitha/tbta-wasm",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Proof of concept: builds TBTA's generation engine as WebAssembly and prepares its databases for apps/generator",
+	"scripts": {
+		"check": "bun --check",
+		"check:lint": "eslint .",
+		"check:lint:fix": "eslint . --fix",
+		"engine:build": "bun build_engine.ts",
+		"engine:data": "bun prepare_data.ts"
+	},
+	"devDependencies": {
+		"@tabitha/eslint-config": "workspace:*",
+		"@tabitha/generator": "workspace:*",
+		"@tabitha/tsconfig": "workspace:*",
+		"@types/bun": "^1.4.4",
+		"@types/node": "^26.6.6",
+		"eslint": "^10.14.0",
+		"typescript": "^6.0.3"
+	}
+}

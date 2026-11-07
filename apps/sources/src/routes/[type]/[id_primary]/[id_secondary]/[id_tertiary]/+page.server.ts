@@ -1,13 +1,20 @@
 import { get_next_reference, get_previous_reference } from '#lib/data/navigation.js'
+import { warm_generator } from '#lib/generation/generator.js'
+import { verse_generation } from '#lib/generation/verse_generation.js'
 import { load_ontology_senses } from '#lib/data/ontology_senses.js'
 import { get_source_data } from '#lib/data/read.js'
 import { get_noun_list, structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
 import { error } from '@sveltejs/kit'
+import * as workers from 'cloudflare:workers'
 import type { PageServerLoad } from './$types'
 import type { Reference } from '@tabitha/types'
 import type { PageData } from '#lib/types.js'
 
 export async function load({ locals: { db }, params: { type, id_primary, id_secondary, id_tertiary } }: Parameters<PageServerLoad>[0]) {
+	// workerd provides waitUntil; this app's cloudflare:workers types don't declare it yet.
+	const { waitUntil } = workers as { waitUntil?: (promise: Promise<unknown>) => void }
+	if (workers.env.GENERATOR) waitUntil?.(warm_generator({ generator: workers.env.GENERATOR }))
+
 	const reference: Reference = { type, id_primary, id_secondary, id_tertiary }
 	const source = await get_source_data({ db, ...reference })
 
@@ -36,5 +43,7 @@ export async function load({ locals: { db }, params: { type, id_primary, id_seco
 		},
 		ontology_senses,
 	}
-	return data
+	// Everything the browser needs to generate this verse itself, so it works offline once loaded.
+	const previous_source = previous && await get_source_data({ db, ...previous })
+	return { ...data, generation: verse_generation({ source, previous_source }) }
 }

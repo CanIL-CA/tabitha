@@ -1,0 +1,4 @@
+# Checkout of CanIL-CA/tbta with tbta.patch applied, and its build cache (see build_engine.ts)
+.tbta/
+# Downloaded source databases (see prepare_data.ts)
+.downloads/

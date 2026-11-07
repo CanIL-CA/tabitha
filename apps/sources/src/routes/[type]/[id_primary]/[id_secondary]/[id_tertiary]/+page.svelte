@@ -1,4 +1,5 @@
 <script lang="ts">
+	import GeneratePanel from '#lib/generation/GeneratePanel.svelte'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { Navigation, SourceEntities } from '#lib/index.js'
@@ -12,6 +13,7 @@
 
 	let source = $derived(data.source)
 	let nav_data = $derived(data.nav_data)
+	let generate_url = $derived(`/${[nav_data.current.type, nav_data.current.id_primary, nav_data.current.id_secondary, nav_data.current.id_tertiary].map(encodeURIComponent).join('/')}/generate`)
 
 	const selected_entity = new SelectedEntity(() => data.source.parsed_semantic_encoding)
 	set_selected_entity(selected_entity)
@@ -52,6 +54,7 @@
 {/if}
 
 {#if source.parsed_semantic_encoding.length > 0}
+	<GeneratePanel {generate_url} generation={data.generation} />
 	<div class="flex h-screen">
 		<div class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
 			<SourceEntities source_entities={source.parsed_semantic_encoding} />
