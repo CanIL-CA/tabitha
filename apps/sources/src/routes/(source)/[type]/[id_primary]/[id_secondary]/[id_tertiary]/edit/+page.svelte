@@ -1,12 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
 	import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
-	import { get_header_content } from '#lib/header_content.svelte.js'
 	import { create_editor_client, create_sources_client } from '@tabitha/api-client'
 	import type { EditorCheckResult, CheckerMessage, CheckerToken } from '@tabitha/types'
-	import { Navigation } from '#lib/index.js'
 	import type { PageProps } from './$types'
-	import Settings from '#lib/settings/Settings.svelte'
 	import SelectedEntitySidebar from '#lib/sidebar_edit/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
@@ -22,12 +18,6 @@
 	const sources_client = create_sources_client({ base_url: '/' })
 
 	let { data }: PageProps = $props()
-
-	const header_content = get_header_content()
-	onMount(() => {
-		header_content.current = header_content_snippet
-		return () => (header_content.current = null)
-	})
 
 	const senses = set_ontology_senses(new OntologySenses(() => data.ontology_senses))
 	set_clipboard(new EntityClipboard())
@@ -196,20 +186,15 @@
 
 <svelte:window onkeydown={handle_history_shortcut} />
 
-{#snippet header_content_snippet()}
-	<Navigation nav_data={data.nav_data} url_end="/edit" />
-
-	<Settings />
-
-	<div class="join">
-		<button onclick={undo} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
-			<Icon icon="mdi:undo" class="h-6 w-6" />
-		</button>
-		<button onclick={redo} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
-			<Icon icon="mdi:redo" class="h-6 w-6" />
-		</button>
-	</div>
-{/snippet}
+<!-- TODO where to place? -->
+<div class="join">
+	<button onclick={undo} disabled={!edit_history.can_undo} aria-label="Undo" title="Undo (Ctrl+Z)" class="btn join-item">
+		<Icon icon="mdi:undo" class="h-6 w-6" />
+	</button>
+	<button onclick={redo} disabled={!edit_history.can_redo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" class="btn join-item">
+		<Icon icon="mdi:redo" class="h-6 w-6" />
+	</button>
+</div>
 
 {#if api_error}
 	<div role="alert" class="alert alert-error my-3">

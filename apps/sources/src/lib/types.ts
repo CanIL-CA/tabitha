@@ -23,7 +23,6 @@ export type PrimaryIdGroup = {
 
 export type PageData = {
 	source: PageSource
-	nav_data: NavData
 	ontology_senses: SensesByConcept
 }
 

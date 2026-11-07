@@ -1,0 +1,1 @@
+<!--We want to show the Header with the search bar here, and without this empty page, no UI is shown at all.-->

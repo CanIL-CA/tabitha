@@ -1,14 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
 	import EncodingStatus from '#lib/EncodingStatus.svelte'
-	import { Search } from '#lib/index.js'
-	import { get_header_content } from '#lib/header_content.svelte.js'
-
-	const header_content = get_header_content()
-	onMount(() => {
-		header_content.current = header_content_snippet
-		return () => (header_content.current = null)
-	})
 
 	let { data } = $props()
 
@@ -19,12 +10,6 @@
 <svelte:head>
 	<title>{data.q} - Phase 1 search - TaBiThA Sources</title>
 </svelte:head>
-
-{#snippet header_content_snippet()}
-	<div class="flex-1 min-w-64">
-		<Search />
-	</div>
-{/snippet}
 
 <section class="prose max-w-none mb-5">
 	<h2>Phase 1 search</h2>

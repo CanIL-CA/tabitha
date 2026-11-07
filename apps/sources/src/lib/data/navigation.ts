@@ -2,6 +2,19 @@ import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import { get_primary_ids, get_secondary_ids, get_source_data, get_tertiary_ids } from './read'
 import { primary_id_orders } from './lookups'
 import type { Book, PrimaryId, Reference } from '@tabitha/types'
+import type { NavData } from '#lib/types.ts'
+
+export async function get_nav_data({ db, reference }: { db: D1DatabaseSession, reference: Reference }): Promise<NavData | undefined> {
+	const source = await get_source_data({ db, ...reference })
+	if (!source) return undefined
+
+	reference.id_primary = source.id_primary	// get the proper capitalization
+
+	const previous = await get_previous_reference({ db, reference })
+	const next = await get_next_reference({ db, reference })
+
+	return { previous, current: reference, next }
+}
 
 export async function get_previous_reference({ db, reference }: { db: D1DatabaseSession, reference: Reference }): Promise<Reference | null> {
 	// try decrementing id_tertiary
