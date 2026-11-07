@@ -517,6 +517,18 @@
         "vite": "8.3.5",
       },
     },
+    "tools/alerts": {
+      "name": "@tabitha/alerts",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@tabitha/eslint-config": "workspace:*",
+        "@tabitha/tsconfig": "workspace:*",
+        "@types/bun": "^1.4.4",
+        "@types/node": "^26.6.6",
+        "eslint": "^10.14.0",
+        "typescript": "^6.0.3",
+      },
+    },
     "tools/databases": {
       "name": "@tabitha/databases",
       "version": "1.0.0",
@@ -1005,6 +1017,8 @@
     "@sveltejs/vite-plugin-svelte": ["@sveltejs/vite-plugin-svelte@7.3.1", "", { "dependencies": { "deepmerge": "^4.3.1", "magic-string": "^1.0.0", "obug": "^2.1.0", "vitefu": "^1.1.2" }, "peerDependencies": { "svelte": "^5.46.4", "vite": "^8.0.0-beta.7 || ^8.0.0" } }, "sha512-ZPsLN8B1e/En+Ak5s4V7srFDT532oS0qieLsQwu63NGKsS+iAjoO2Js1BochlHlglcU+Pt7WAO3C5Ee+4f6gVA=="],
 
     "@tabitha/ai": ["@tabitha/ai@workspace:packages/ai"],
+
+    "@tabitha/alerts": ["@tabitha/alerts@workspace:tools/alerts"],
 
     "@tabitha/api-client": ["@tabitha/api-client@workspace:packages/api-client"],
 
