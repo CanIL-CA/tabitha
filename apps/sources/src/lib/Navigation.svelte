@@ -29,7 +29,7 @@
 	<button
 		type="button"
 		title="Go to reference"
-		onclick={() => (is_dialog_open = true)}
+		onclick={() => is_dialog_open = true}
 		class="btn btn-md join-item px-5 bg-base-200 border-base-300 text-2xl font-bold"
 	>
 		{create_reference_string(nav_data.current)}
@@ -46,6 +46,6 @@
 	<ReferenceSelectDialog
 		current={nav_data.current}
 		{create_url}
-		onclose={() => (is_dialog_open = false)}
+		onclose={() => is_dialog_open = false}
 	/>
 {/if}

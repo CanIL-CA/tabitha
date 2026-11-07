@@ -2,7 +2,7 @@
 	import '#lib/app.css'
 	import { onMount, type Snippet } from 'svelte'
 	import { onNavigate } from '$app/navigation'
-	import { Header, Footer, theme_state } from '@tabitha/ui'
+	import { Footer, theme_state } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'
 
 	let { children }: { children?: Snippet } = $props()

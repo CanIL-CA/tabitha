@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Header, Search } from '#lib/index.js'
-	import { type Snippet } from 'svelte'
+	import type { Snippet } from 'svelte'
 
 	let { children }: { children?: Snippet } = $props()
 </script>
