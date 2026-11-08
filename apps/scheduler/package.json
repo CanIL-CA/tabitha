@@ -9,7 +9,6 @@
 		"check:lint": "eslint .",
 		"check:lint:fix": "eslint . --fix",
 		"build": "wrangler deploy --dry-run --outdir dist",
-		"build:ci": "bun run build",
 		"dev": "wrangler dev --test-scheduled",
 		"test": "bun run test:unit",
 		"test:unit": "vitest run src",
