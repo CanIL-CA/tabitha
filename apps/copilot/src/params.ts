@@ -1,5 +1,7 @@
 import { defineParams } from '@sveltejs/kit/params'
-import { BIBLE_BOOKS } from '@tabitha/types/patterns'
+// SvelteKit loads this file with Node's own loader at build time, which can't resolve the
+// extensionless re-exports in `@tabitha/types/patterns`; `scripture.ts` has no imports.
+import { BIBLE_BOOKS } from '@tabitha/types/patterns/scripture'
 
 const KNOWN_BOOKS = new Set(Object.values(BIBLE_BOOKS).map(book => book.toLowerCase()))
 

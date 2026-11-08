@@ -15,7 +15,8 @@
     "./copilot": "./src/copilot.ts",
     "./target": "./src/target.ts",
     "./survey": "./src/survey.ts",
-    "./patterns": "./src/patterns/index.ts"
+    "./patterns": "./src/patterns/index.ts",
+    "./patterns/scripture": "./src/patterns/scripture.ts"
   },
   "scripts": {
     "check": "bun --check",
