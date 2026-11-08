@@ -206,7 +206,7 @@ async function run_safe_update() {
 	// 10. Automated Post-Update Health Verification Gate
 	console.log('🧪 Running post-update verification gate...')
 
-	console.log('   1/4 Running workspace static analysis & typecheck (bun run check)...')
+	console.log('   1/3 Running workspace static analysis & typecheck (bun run check)...')
 	try {
 		await $`bun run check`
 		console.log('   ✓ Static analysis & typecheck passed cleanly!')
@@ -215,7 +215,7 @@ async function run_safe_update() {
 		process.exit(1)
 	}
 
-	console.log('   2/4 Running unit test suites (bun run test:unit)...')
+	console.log('   2/3 Running unit test suites (bun run test:unit)...')
 	try {
 		await $`bun run test:unit`
 		console.log('   ✓ All unit test suites passed!')
@@ -224,24 +224,12 @@ async function run_safe_update() {
 		process.exit(1)
 	}
 
-	console.log('   3/4 Verifying production Cloudflare Worker bundles (bun run build)...')
+	console.log('   3/3 Verifying production Cloudflare Worker bundles (bun run build)...')
 	try {
 		await $`bun run build`
 		console.log('   ✓ All Cloudflare Worker bundles built successfully!')
 	} catch (err) {
 		console.error('❌ Post-update production build failed:', err instanceof Error ? err.message : err)
-		process.exit(1)
-	}
-
-	// Runs after (not alongside) the check above: build and build:ci both write to the same
-	// per-app .svelte-kit/output, dist/, and build/ directories (see turbo.json), so running
-	// them concurrently would race on the same files instead of actually saving time.
-	console.log('   4/4 Verifying CI production build path (bun run build:ci, Bun runtime)...')
-	try {
-		await $`bun run build:ci`
-		console.log('   ✓ All Cloudflare Worker bundles built successfully via the CI (Bun) path!')
-	} catch (err) {
-		console.error('❌ Post-update CI build path failed:', err instanceof Error ? err.message : err)
 		process.exit(1)
 	}
 

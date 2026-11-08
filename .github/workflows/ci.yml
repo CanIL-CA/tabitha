@@ -83,7 +83,7 @@ jobs:
         uses: ./.github/actions/setup-workspace
 
       - name: Production Bundle Verification
-        run: bunx turbo run build:ci ${{ needs.plan.outputs.turbo_filter }}
+        run: bunx turbo run build ${{ needs.plan.outputs.turbo_filter }}
 
   preview_deploy:
     name: 🌐 Per-PR Preview Deploy
