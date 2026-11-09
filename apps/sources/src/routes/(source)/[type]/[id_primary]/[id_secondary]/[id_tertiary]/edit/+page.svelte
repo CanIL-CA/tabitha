@@ -157,7 +157,7 @@
 	</ContextBridge>
 {/snippet}
 
-<div class="flex gap-4 mt-2">
+<div class="sticky top-0 z-10 flex gap-4 bg-base-100 py-3">
 	<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-sm btn-accent min-w-30">
 		Check Phase 1
 		{#if checking}
@@ -195,9 +195,9 @@
 	<HistoryTracking />
 </div>
 
-<div class="divider my-1"></div>
+<div class="divider my-0"></div>
 
-<div class="grid grid-cols-2 gap-8 mt-4">
+<div class="grid grid-cols-2 gap-8 mt-5">
 	<div class="flex flex-col gap-2">
 		<div class="ms-0.5">
 			<span class="label font-semibold">Input Text (Phase 1)</span>
