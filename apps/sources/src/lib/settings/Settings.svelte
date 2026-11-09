@@ -26,9 +26,9 @@
 
 <svelte:window onpointerdowncapture={close_if_outside} />
 
-<details bind:this={details_element} bind:open={is_open} class="dropdown">
-	<summary class="btn px-3">
-		<Icon icon="material-symbols:settings" class="h-6 w-6" />
+<details bind:this={details_element} bind:open={is_open} class="dropdown dropdown-end">
+	<summary class="btn btn-sm px-2">
+		<Icon icon="material-symbols:settings" class="h-5 w-5" />
 	</summary>
 	<div class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
 		<label>
