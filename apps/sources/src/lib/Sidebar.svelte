@@ -15,7 +15,7 @@
 
 <div
 	transition:fly|global={{ x: '100%', opacity: 1, duration: 200 }}
-	class="fixed top-0 right-0 h-full w-96 bg-base-100 border-l border-base-300 shadow-xl flex flex-col"
+	class="fixed top-0 right-0 h-full w-96 bg-base-100 border-l border-base-300 shadow-xl flex flex-col z-20"
 >
 	<button onclick={onclose} class="btn btn-circle btn-ghost btn-sm absolute right-3 top-5">
 		<Icon icon="material-symbols:close" class="h-4 w-4" />

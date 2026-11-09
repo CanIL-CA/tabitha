@@ -30,7 +30,7 @@
 	<summary class="btn btn-sm px-2">
 		<Icon icon="material-symbols:settings" class="h-5 w-5" />
 	</summary>
-	<div class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+	<div class="menu dropdown-content bg-base-100 rounded-box w-52 p-2 shadow-sm">
 		<label>
 			<input type="checkbox" bind:checked={view_settings.show_hover_popups} onchange={store_settings} />
 			Show hover popups
