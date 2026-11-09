@@ -15,6 +15,7 @@ const make_entity = ({ id, concept, pairing_concept = null, noun_list_index }: {
 	category: 'Noun',
 	concept,
 	pairing_concept,
+	pairing_type: pairing_concept ? 'simple-complex' : null,
 	noun_list_index,
 })
 
