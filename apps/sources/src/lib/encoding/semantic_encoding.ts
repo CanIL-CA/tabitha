@@ -205,7 +205,7 @@ export function get_noun_list(raw_encoding: string): NounListEntry[] {
 			const [concept, pairing] = entry.split('/')
 			return {
 				noun: pairing ? `${transform_concept(concept)}/${transform_concept(pairing)}` : transform_concept(concept),
-				index: calculate_noun_list_index(i),
+				index: calculate_noun_list_index(i) ?? '1',
 			}
 		})
 
@@ -216,10 +216,33 @@ export function get_noun_list(raw_encoding: string): NounListEntry[] {
 	}
 }
 
+export function encode_noun_list(entities: SourceEntity[]) {
+	const entries = new Array<string>(35).fill('')
+
+	for (const { concept, pairing_concept, pairing_type, noun_list_index } of entities) {
+		if (!noun_list_index || !concept) continue
+		
+		const index = calculate_noun_list_position(noun_list_index)
+		if (entries[index].length) continue
+
+		const separator = pairing_type ? (pairing_type === 'dynamic-literal' ? '\\' : '/') : ''
+		const pairing_key = pairing_concept ? `${pairing_concept.sense}${pairing_concept.stem}` : ''
+		const key = `${concept.sense}${concept.stem}${separator}${pairing_key}`
+		entries[index] = key
+	}
+
+	return `~|${entries.join('|')}|`
+}
+
+const NOUN_LIST_INDEX_MAX = 35
 const FIRST_LETTER_INDEX_POSITION = 10
 const LETTER_INDEX_START_CODE = 'A'.charCodeAt(0)
 
-export function calculate_noun_list_index(i: number): string {
+export function calculate_noun_list_index(i: number): string | undefined {
+	if (i >= NOUN_LIST_INDEX_MAX) {
+		return undefined
+	}
+
 	const index = i + 1	// noun list index is 1-based instead of 0-based
 	if (index < FIRST_LETTER_INDEX_POSITION) return index.toString()
 

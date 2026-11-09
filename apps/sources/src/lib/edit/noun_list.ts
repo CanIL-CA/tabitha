@@ -13,11 +13,12 @@ const concept_key = ({ stem, sense }: { stem: string, sense: string }): string =
 export function build_noun_list_rows({ source_entities }: { source_entities: PageSourceEntity[] }): NounListRow[] {
 	const rows_by_index = new Map<string, NounListRow>()
 
-	for (const { id, concept, pairing_concept, noun_list_index } of source_entities) {
+	for (const { id, concept, pairing_concept, pairing_type, noun_list_index } of source_entities) {
 		if (!noun_list_index || !concept) continue
 
-		const pairing_key = pairing_concept ? `/${concept_key(pairing_concept)}` : ''
-		const key = `${concept_key(concept)}${pairing_key}`
+		const separator = pairing_type ? (pairing_type === 'dynamic-literal' ? '\\' : '/') : ''
+		const pairing_key = pairing_concept ? `${concept_key(pairing_concept)}` : ''
+		const key = `${concept_key(concept)}${separator}${pairing_key}`
 		const row = rows_by_index.get(noun_list_index)
 		if (!row) {
 			rows_by_index.set(noun_list_index, { index: noun_list_index, noun: key, entity_ids: [id] })
@@ -32,7 +33,7 @@ export function build_noun_list_rows({ source_entities }: { source_entities: Pag
 
 	const highest_position = Math.max(-1, ...[...rows_by_index.keys()].map(calculate_noun_list_position))
 	return Array.from({ length: highest_position + 1 }, (_, position) => {
-		const index = calculate_noun_list_index(position)
+		const index = calculate_noun_list_index(position) ?? '1'
 		return rows_by_index.get(index) ?? { index, noun: '', entity_ids: [] }
 	})
 }

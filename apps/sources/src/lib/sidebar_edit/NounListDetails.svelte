@@ -30,7 +30,9 @@
 	}
 
 	function add_and_set_index() {
-		set_index(next_index)
+		if (next_index) {
+			set_index(next_index)
+		}
 	}
 </script>
 
@@ -80,18 +82,22 @@
 				</tr>
 			{/each}
 			<tr>
-				<td>{next_index}</td>
-				<td></td>
-				<td>
-					<button
-						type="button"
-						disabled={are_concepts_different}
-						onclick={add_and_set_index}
-						class="btn btn-xs"
-					>
-						Set
-					</button>
-				</td>
+				{#if next_index}
+					<td>{next_index}</td>
+					<td></td>
+					<td>
+						<button
+							type="button"
+							disabled={are_concepts_different}
+							onclick={add_and_set_index}
+							class="btn btn-xs"
+						>
+							Set
+						</button>
+					</td>
+				{:else}
+					<td colspan="3">Maximum noun-list index reached.</td>
+				{/if}
 			</tr>
 		</tbody>
 	</table>
