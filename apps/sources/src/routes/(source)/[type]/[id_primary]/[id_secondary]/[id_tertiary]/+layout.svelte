@@ -25,7 +25,7 @@
 <div>
 	<div style="margin-right: {sidebar.is_open ? 'calc(24rem - 1rem)' : '0'};" class="flex min-h-screen flex-col transition-all duration-200">
 		<Header>
-			<div class="flex flex-wrap justify-between">
+			<div class="flex flex-wrap justify-between ml-5">
 				<Navigation nav_data={data.nav_data} {url_end} />
 				<Settings />
 			</div>

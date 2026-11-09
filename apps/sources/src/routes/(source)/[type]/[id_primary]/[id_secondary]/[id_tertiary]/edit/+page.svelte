@@ -157,30 +157,50 @@
 	</ContextBridge>
 {/snippet}
 
-<div class="grid grid-cols-2 gap-2 mx-1">
-	<div>
-		<div class="flex gap-3 mb-2 ms-0.5">
+<div class="flex gap-4 mt-2">
+	<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-sm btn-accent min-w-30">
+		Check Phase 1
+		{#if checking}
+			<Icon icon="line-md:loading-twotone-loop" class="h-5 w-5" />
+		{:else if is_checked && check_result?.status === 'ok'}
+			<Icon icon="mdi:check-bold" class="h-5 w-5" />
+		{:else}
+			<Icon icon="mdi:format-list-checks" class="h-5 w-5" />
+		{/if}
+	</button>
+
+	<button onclick={ analyze_text } type="submit" disabled={analyzing} class="btn btn-sm btn-primary min-w-30">
+		Analyze
+		{#if analyzing}
+			<Icon icon="line-md:loading-twotone-loop" class="h-5 w-5" />
+		{:else}
+			<Icon icon="mdi:magnify" class="h-5 w-5" />
+		{/if}
+	</button>
+
+	<div data-tip="coming soon" class="tooltip">
+		<button type="submit" disabled class="btn btn-sm btn-secondary min-w-30">
+			Generate
+			<Icon icon="mdi:play-circle-outline" class="h-5 w-5" />
+		</button>
+	</div>
+
+	<div data-tip="coming soon" class="tooltip">
+		<button type="submit" disabled class="btn btn-sm btn-primary min-w-30">
+			Save
+			<Icon icon="mdi:content-save-outline" class="h-5 w-5" />
+		</button>
+	</div>
+	
+	<HistoryTracking />
+</div>
+
+<div class="divider my-1"></div>
+
+<div class="grid grid-cols-2 gap-8 mt-4">
+	<div class="flex flex-col gap-2">
+		<div class="ms-0.5">
 			<span class="label font-semibold">Input Text (Phase 1)</span>
-
-			<button onclick={ check_text } type="submit" disabled={checking} class="btn btn-sm btn-primary">
-				Check
-				{#if checking}
-					<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
-				{:else if is_checked && check_result?.status === 'ok'}
-					<Icon icon="mdi:check-bold" class="h-6 w-6" />
-				{:else}
-					<Icon icon="mdi:format-list-checks" class="h-6 w-6" />
-				{/if}
-			</button>
-
-			<button onclick={ analyze_text } type="submit" disabled={analyzing} class="btn btn-sm btn-secondary">
-				Analyze
-				{#if analyzing}
-					<Icon icon="line-md:loading-twotone-loop" class="h-6 w-6" />
-				{:else}
-					<Icon icon="mdi:magnify" class="h-6 w-6" />
-				{/if}
-			</button>
 		</div>
 
 		<textarea
@@ -189,14 +209,9 @@
 			class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
 	</div>
 
-	<div>
-		<div class="flex gap-3 mb-2 ms-0.5">
+	<div class="flex flex-col gap-2">
+		<div class="ms-0.5">
 			<span class="label font-semibold">Generated English (coming soon)</span>
-
-			<button type="submit" disabled class="btn btn-sm btn-primary">
-				Generate
-				<Icon icon="mdi:play-circle-outline" class="h-6 w-6" />
-			</button>
 		</div>
 
 		<textarea disabled class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
@@ -234,10 +249,6 @@
 {/if}
 
 <div class="divider my-2"></div>
-
-<div>
-	<HistoryTracking />
-</div>
 
 {#if !analyzing}
 	<div id="entity-container">
