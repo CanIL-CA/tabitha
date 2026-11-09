@@ -6,7 +6,7 @@ Three pieces make that email happen, and all three are needed:
 
 1. **Issues on each Worker.** Issues only sees a Worker whose `wrangler.jsonc` sets `observability.issues.enabled: true`. Every app sets it; a new app needs it too, or the next deploy turns Issues off for that Worker.
 2. **A Real-Time Issue notification policy** (`workers_observability_real_time_issue`) with an email destination. The dashboard's notification picker doesn't offer this type, and its automation form offers no email destination, so the policy is created through the API. Once it exists, it does show up in the dashboard, which is where its recipients are managed (see below).
-3. **Automations** that send issues to that policy. A policy sends nothing on its own. There's one account-wide automation for a new issue (its first occurrence) and one for an issue that comes back after a quiet day.
+3. **Automations** that send issues to that policy. A policy sends nothing on its own. There's one account-wide automation, for a new issue (its first occurrence). There's deliberately none for an issue that comes back after a quiet day: vulnerability scanners hit every Worker daily, so it emailed again and again for noise. The automations can't filter by issue type, only by Worker.
 
 This tool is deliberately narrow, like its `tools/dns` and `tools/workers` siblings: it only touches a live policy or automation whose `name` matches one in `config.ts`. The account's other policies -- the default budget alert and anything made in the dashboard -- and any other automations are never changed.
 
