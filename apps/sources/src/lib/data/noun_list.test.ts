@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { build_noun_list_rows } from './noun_list'
-import { DEFAULTS } from './default_entities'
+import { DEFAULTS } from '#lib/edit/default_entities.js'
 import type { ConceptKey } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
 

@@ -3,7 +3,7 @@ import { CATEGORY_ABBREVIATIONS, CATEGORY_CODE_LOOKUP, CATEGORY_NAME_LOOKUP, WOR
 import { load_source_feature_map, load_target_feature_map, decode_features, encode_features } from './features'
 import { structure_entities } from './structured'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
-import type { SourceEntityCategory, NounListEntry, SourceConceptData, SourceEntity, TargetEntity, PairingType, PartOfSpeech, EncodingEntityCategory } from '@tabitha/types'
+import type { SourceEntityCategory, SourceConceptData, SourceEntity, TargetEntity, PairingType, PartOfSpeech, EncodingEntityCategory } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
 
 type TransformSemanticEncodingOptions = {
@@ -203,27 +203,6 @@ export function structure_semantic_encoding(entities: SourceEntity[]): PageSourc
 	const new_entities: PageSourceEntity[] = entities.map((entity, i) => ({ ...entity, id: i, parent_id: -1, boundary_category: '' }))
 	structure_entities(new_entities)
 	return new_entities
-}
-
-export function decode_noun_list(raw_encoding: string): NounListEntry[] {
-	const noun_list_start = raw_encoding.lastIndexOf('~|') // this indicates the start of the noun list
-	return raw_encoding
-		.slice(noun_list_start + 2).trim()
-		.split('|')
-		.filter(entry => entry.length)
-		.map((entry, i) => {
-			const [concept, pairing] = entry.split('/')
-			return {
-				noun: pairing ? `${transform_concept(concept)}/${transform_concept(pairing)}` : transform_concept(concept),
-				index: calculate_noun_list_index(i) ?? '1',
-			}
-		})
-
-	function transform_concept(concept: string) {
-		// the sense is always the first letter
-		const [stem, sense] = [concept.slice(1), concept[0]]
-		return `${stem}-${sense}`
-	}
 }
 
 export function encode_noun_list(entities: SourceEntity[]) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculate_noun_list_index, calculate_noun_list_position, encode_value, decode_noun_list, structure_semantic_encoding } from './semantic_encoding'
+import { calculate_noun_list_index, calculate_noun_list_position, encode_value, structure_semantic_encoding } from './semantic_encoding'
 import type { SourceEntity } from '@tabitha/types'
 
 describe('encode_value', () => {
@@ -99,19 +99,6 @@ describe('structure_semantic_encoding', () => {
 		expect(structured[1].id).toBe(1)
 		expect(structured[2].id).toBe(2)
 		expect(structured[1].parent_id).toBe(0) // Child of the open clause
-	})
-})
-
-describe('decode_noun_list', () => {
-	it('extracts noun list items and formats index labels', () => {
-		const semantic_encoding = '...some encoding...~|AGod|Bearth|Clight'
-
-		const nounList = decode_noun_list(semantic_encoding)
-		expect(nounList).toEqual([
-			{ noun: 'God-A', index: '1' },
-			{ noun: 'earth-B', index: '2' },
-			{ noun: 'light-C', index: '3' },
-		])
 	})
 })
 
