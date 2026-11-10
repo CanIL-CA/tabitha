@@ -1,4 +1,4 @@
-import { calculate_noun_list_index, calculate_noun_list_position } from '#lib/encoding/semantic_encoding.ts'
+import { calculate_noun_list_index, calculate_noun_list_position, get_pairing_separator } from '#lib/encoding/semantic_encoding.ts'
 import type { NounListEntry } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
 
@@ -16,7 +16,7 @@ export function build_noun_list_rows({ source_entities }: { source_entities: Pag
 	for (const { id, concept, pairing_concept, pairing_type, noun_list_index } of source_entities) {
 		if (!noun_list_index || !concept) continue
 
-		const separator = pairing_type ? (pairing_type === 'dynamic-literal' ? '\\' : '/') : ''
+		const separator = get_pairing_separator({ pairing_type })
 		const pairing_key = pairing_concept ? `${concept_key(pairing_concept)}` : ''
 		const key = `${concept_key(concept)}${separator}${pairing_key}`
 		const row = rows_by_index.get(noun_list_index)

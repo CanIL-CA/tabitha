@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '#lib/types.js'
+	import { get_pairing_separator } from '#lib/encoding/semantic_encoding.ts'
 	import { view_settings } from '#lib/settings/settings.svelte.ts'
 	import FeatureCodes from './FeatureCodes.svelte'
 	import Features from './Features.svelte'
@@ -29,7 +30,7 @@
 		{#if source_entity.pairing_concept === null && source_entity.concept}
 			<OntologyResult data={source_entity.concept} />
 		{:else if source_entity.concept && source_entity.pairing_concept}
-			{@const separator = source_entity.pairing_type === 'dynamic-literal' ? '\\' : '/'}
+			{@const separator = get_pairing_separator({ pairing_type: source_entity.pairing_type })}
 			<div class="join">
 				<OntologyResult data={source_entity.concept} />
 				<span class="px-1">{separator}</span>

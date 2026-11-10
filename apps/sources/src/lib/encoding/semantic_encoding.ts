@@ -141,6 +141,15 @@ function determine_pairing_type({ separator, pairing_stem, pairing_sense }: { se
 	}
 }
 
+export function get_pairing_separator({ pairing_type, style = 'encoding' }: { pairing_type: PairingType | null, style?: 'phase1' | 'encoding' }): string {
+	if (!pairing_type) return ''
+
+	if (pairing_type === 'dynamic-literal') {
+		return style === 'phase1' ? '|' : '\\'
+	}
+	return '/'
+}
+
 function decode_concept_data({ value, category, raw_feature_codes }: { value: string, category: EncodingEntityCategory, raw_feature_codes: string }): SourceConceptData {
 	if (!WORD_ENTITY_CATEGORIES.has(category)) {
 		return { concept: null, pairing_concept: null, pairing_type: null }
@@ -190,7 +199,7 @@ export function encode_source_entity(entity: SourceEntity): string {
 export function encode_value(entity: SourceEntity): string {
 	// Encode the concept entity data back into the TBTA-compatible format for storage and generation
 	if (entity.concept && entity.pairing_concept) {
-		const separator = entity.pairing_type === 'dynamic-literal' ? '\\' : '/'
+		const separator = get_pairing_separator({ pairing_type: entity.pairing_type })
 		return `${entity.concept.stem}${separator}${entity.pairing_concept.sense}${entity.pairing_concept.stem}`
 	} else if (entity.concept) {
 		return entity.concept.stem
@@ -214,7 +223,7 @@ export function encode_noun_list(entities: SourceEntity[]) {
 		const index = calculate_noun_list_position(noun_list_index)
 		if (entries[index].length) continue
 
-		const separator = pairing_type ? (pairing_type === 'dynamic-literal' ? '\\' : '/') : ''
+		const separator = get_pairing_separator({ pairing_type })
 		const pairing_key = pairing_concept ? `${pairing_concept.sense}${pairing_concept.stem}` : ''
 		const key = `${concept.sense}${concept.stem}${separator}${pairing_key}`
 		entries[index] = key

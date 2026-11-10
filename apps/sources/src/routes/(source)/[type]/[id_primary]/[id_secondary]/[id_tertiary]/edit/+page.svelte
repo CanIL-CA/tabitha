@@ -14,6 +14,7 @@
 	import ContextBridge from '#lib/ContextBridge.svelte'
 	import { get_sidebar_slot } from '#lib/sidebar_context.svelte.js'
 	import { getAllContexts } from 'svelte'
+	import { get_pairing_separator } from '#lib/encoding/semantic_encoding.ts'
 
 	let { data }: PageProps = $props()
 
@@ -41,7 +42,7 @@
 	function get_token_text(token: CheckerToken) {
 		let parts = [token.token]
 		if (token.pairing) {
-			const separator = token.pairing_type === 'dynamic-literal' ? '|' : '/'
+			const separator = get_pairing_separator({ pairing_type: token.pairing_type, style: 'phase1' })
 			parts = [...parts, separator, token.pairing.token]
 		}
 		if (token.pronoun) {

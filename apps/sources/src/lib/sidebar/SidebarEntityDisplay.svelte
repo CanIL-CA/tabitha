@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageSourceEntity } from '#lib/types.js'
 	import { is_boundary_start } from '#lib/encoding/entity_filters.js'
+	import { get_pairing_separator } from '#lib/encoding/semantic_encoding.ts'
 	import { Punctuation, FormatMarker } from '@tabitha/ui'
 
 	let { entity }: { entity: PageSourceEntity } = $props()
@@ -28,7 +29,7 @@
 				{#if !entity.pairing_concept}
 					<span>{entity.concept.stem}-{entity.concept.sense}</span>
 				{:else}
-					{@const separator = entity.pairing_type === 'dynamic-literal' ? '\\' : '/'}
+					{@const separator = get_pairing_separator({ pairing_type: entity.pairing_type })}
 					<div class="join">
 						<span>{entity.concept.stem}-{entity.concept.sense}</span>
 						<span class="px-1">{separator}</span>
