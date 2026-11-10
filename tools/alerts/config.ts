@@ -30,12 +30,11 @@ export type DesiredAutomation = {
 }
 
 const WORKER_ISSUES_POLICY = 'Worker issues (tools/alerts)'
-const ONE_DAY_SECONDS = 24 * 60 * 60
 
 export const desired_policies: DesiredPolicy[] = [
 	{
 		name: WORKER_ISSUES_POLICY,
-		description: "Emails when Workers Issues detects a new or recurring failure on any TaBiThA Worker or cron. Needs observability.issues.enabled in each app's wrangler.jsonc.",
+		description: "Emails when Workers Issues detects a new failure on any TaBiThA Worker or cron. Needs observability.issues.enabled in each app's wrangler.jsonc.",
 		// Not offered in the dashboard's notification picker, so this policy can only be made via the API.
 		alert_type: 'workers_observability_real_time_issue',
 	},
@@ -47,10 +46,5 @@ export const desired_automations: DesiredAutomation[] = [
 		name: 'New Worker issue (tools/alerts)',
 		policy_name: WORKER_ISSUES_POLICY,
 		trigger: { after_occurrences: 1 },
-	},
-	{
-		name: 'Worker issue back after a quiet day (tools/alerts)',
-		policy_name: WORKER_ISSUES_POLICY,
-		trigger: { after_inactivity_seconds: ONE_DAY_SECONDS },
 	},
 ]

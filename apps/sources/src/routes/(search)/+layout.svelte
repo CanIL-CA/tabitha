@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Header, Search } from '#lib/index.js'
+	import { Header, Footer, Search } from '#lib/index.js'
 	import type { Snippet } from 'svelte'
 
 	let { children }: { children?: Snippet } = $props()
@@ -16,3 +16,5 @@
 		{@render children()}
 	{/if}
 </main>
+
+<Footer />

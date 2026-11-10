@@ -2,7 +2,7 @@
 	import '#lib/app.css'
 	import { onMount, type Snippet } from 'svelte'
 	import { onNavigate } from '$app/navigation'
-	import { Footer, theme_state } from '@tabitha/ui'
+	import { theme_state } from '@tabitha/ui'
 	import { report_active_theme } from '@tabitha/usage/client'
 
 	let { children }: { children?: Snippet } = $props()
@@ -27,8 +27,3 @@
 {#if children}
 	{@render children()}
 {/if}
-
-<Footer>
-	<a href="/lookup/status/Bible" class="link link-hover">Bible encoding status</a>
-	<a href="/lookup/features" class="link link-hover">Source features list</a>
-</Footer>

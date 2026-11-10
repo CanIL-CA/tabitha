@@ -1,5 +1,5 @@
 import { createContext } from 'svelte'
-import { build_noun_list_rows, type NounListRow } from '#lib/edit/noun_list.js'
+import { build_noun_list_rows, type NounListRow } from '#lib/data/noun_list.js'
 import type { PageSourceEntity } from '#lib/types.js'
 
 export type EditState = {

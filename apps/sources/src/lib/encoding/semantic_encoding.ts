@@ -1,10 +1,15 @@
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
-import { CATEGORY_ABBREVIATIONS, CATEGORY_NAME_LOOKUP, WORD_ENTITY_CATEGORIES } from './lookups'
-import { load_source_feature_map, load_target_feature_map, decode_features } from './features'
+import { CATEGORY_ABBREVIATIONS, CATEGORY_CODE_LOOKUP, CATEGORY_NAME_LOOKUP, WORD_ENTITY_CATEGORIES } from './lookups'
+import { load_source_feature_map, load_target_feature_map, decode_features, encode_features } from './features'
 import { structure_entities } from './structured'
 import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
-import type { SourceEntityCategory, NounListEntry, SourceConceptData, SourceEntity, TargetEntity, PairingType, PartOfSpeech, EncodingEntityCategory } from '@tabitha/types'
+import type { SourceEntityCategory, SourceConceptData, SourceEntity, TargetEntity, PairingType, PartOfSpeech, EncodingEntityCategory } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
+
+type TransformSemanticEncodingOptions = {
+	db: D1DatabaseSession
+	semantic_encoding: string
+}
 
 /**
  * The phase_2_encoding looks something like:
@@ -26,11 +31,6 @@ import type { PageSourceEntity } from '#lib/types.js'
  * ~\wd ~\tg .-~\lu .           => { type: '.', label: 'period', features: '', value: '.' }
  * ~\\wd ~\\tg R-~\\lu |        => { type: 'R', label: 'Paragraph', features: '', value: '|' }
  */
-type TransformSemanticEncodingOptions = {
-	db: D1DatabaseSession
-	semantic_encoding: string
-}
-
 export async function transform_semantic_encoding({ db, semantic_encoding }: TransformSemanticEncodingOptions): Promise<SourceEntity[]> {
 	const EXTRACT_TYPE_FEATURES_VALUES = /~\\wd ~\\tg (?:([\w.])-([^~]*))?~\\lu ([^~]+)/g
 	const entities = [...semantic_encoding.matchAll(EXTRACT_TYPE_FEATURES_VALUES)]
@@ -177,15 +177,25 @@ function decode_concept_data({ value, category, raw_feature_codes }: { value: st
 	}
 }
 
-export function encode_concept_data(entity: SourceEntity): { value: string } {
+export function encode_source_entities(entities: SourceEntity[]): string {
+	return entities.map(encode_source_entity).concat(encode_noun_list(entities)).join('')
+}
+
+export function encode_source_entity(entity: SourceEntity): string {
+	const category_code = CATEGORY_CODE_LOOKUP.get(entity.category)
+	const tag = category_code ? `${category_code}-${encode_features(entity)}` : ''
+	return `~\\wd ~\\tg ${tag}~\\lu ${encode_value(entity)}`
+}
+
+export function encode_value(entity: SourceEntity): string {
 	// Encode the concept entity data back into the TBTA-compatible format for storage and generation
 	if (entity.concept && entity.pairing_concept) {
 		const separator = entity.pairing_type === 'dynamic-literal' ? '\\' : '/'
-		return { value: `${entity.concept.stem}${separator}${entity.pairing_concept.sense}${entity.pairing_concept.stem}` }
+		return `${entity.concept.stem}${separator}${entity.pairing_concept.sense}${entity.pairing_concept.stem}`
 	} else if (entity.concept) {
-		return { value: entity.concept.stem }
+		return entity.concept.stem
 	} else {
-		return { value: entity.value }
+		return entity.value
 	}
 }
 
@@ -195,31 +205,33 @@ export function structure_semantic_encoding(entities: SourceEntity[]): PageSourc
 	return new_entities
 }
 
-export function get_noun_list(raw_encoding: string): NounListEntry[] {
-	const noun_list_start = raw_encoding.lastIndexOf('~|') // this indicates the start of the noun list
-	return raw_encoding
-		.slice(noun_list_start + 2).trim()
-		.split('|')
-		.filter(entry => entry.length)
-		.map((entry, i) => {
-			const [concept, pairing] = entry.split('/')
-			return {
-				noun: pairing ? `${transform_concept(concept)}/${transform_concept(pairing)}` : transform_concept(concept),
-				index: calculate_noun_list_index(i),
-			}
-		})
+export function encode_noun_list(entities: SourceEntity[]) {
+	const entries = new Array<string>(35).fill('')
 
-	function transform_concept(concept: string) {
-		// the sense is always the first letter
-		const [stem, sense] = [concept.slice(1), concept[0]]
-		return `${stem}-${sense}`
+	for (const { concept, pairing_concept, pairing_type, noun_list_index } of entities) {
+		if (!noun_list_index || !concept) continue
+		
+		const index = calculate_noun_list_position(noun_list_index)
+		if (entries[index].length) continue
+
+		const separator = pairing_type ? (pairing_type === 'dynamic-literal' ? '\\' : '/') : ''
+		const pairing_key = pairing_concept ? `${pairing_concept.sense}${pairing_concept.stem}` : ''
+		const key = `${concept.sense}${concept.stem}${separator}${pairing_key}`
+		entries[index] = key
 	}
+
+	return `~|${entries.join('|')}|`
 }
 
+const NOUN_LIST_INDEX_MAX = 35
 const FIRST_LETTER_INDEX_POSITION = 10
 const LETTER_INDEX_START_CODE = 'A'.charCodeAt(0)
 
-export function calculate_noun_list_index(i: number): string {
+export function calculate_noun_list_index(i: number): string | undefined {
+	if (i >= NOUN_LIST_INDEX_MAX) {
+		return undefined
+	}
+
 	const index = i + 1	// noun list index is 1-based instead of 0-based
 	if (index < FIRST_LETTER_INDEX_POSITION) return index.toString()
 

@@ -1,31 +1,34 @@
 <script lang="ts">
-	import { Header, Settings } from '#lib/index.js'
+	import { Header, Footer, Settings } from '#lib/index.js'
 	import Navigation from '#lib/Navigation.svelte'
-	import { page } from '$app/state'
+	import SidebarContainer from '#lib/SidebarContainer.svelte'
 	import type { LayoutProps } from './$types'
 
 	let { data, children }: LayoutProps = $props()
 
 	let nav_data = $derived(data.nav_data)
 	let current = $derived(nav_data.current)
-
-	let is_edit = $derived(page.url.pathname.toLowerCase().endsWith('/edit'))
-	let url_end = $derived(is_edit ? '/edit' : undefined)
 </script>
 
 <svelte:head>
-	<title>{is_edit ? 'Edit ' : ''}{current.id_primary} {current.id_secondary}:{current.id_tertiary} - TaBiThA Sources</title>
+	<title>{current.id_primary} {current.id_secondary}:{current.id_tertiary} - TaBiThA Sources</title>
 </svelte:head>
 
-<Header>
-	<div class="flex flex-wrap gap-3">
-		<Navigation nav_data={data.nav_data} {url_end}  />
-		<Settings />
+<SidebarContainer>
+	<div class="sticky top-0 z-10 bg-base-100">
+		<Header>
+			<div class="flex flex-wrap justify-between ml-5">
+				<Navigation nav_data={data.nav_data} />
+				<Settings />
+			</div>
+		</Header>
 	</div>
-</Header>
 
-<main class="mx-8 mt-4">
-	{#if children}
-		{@render children()}
-	{/if}
-</main>
+	<main class="mx-8 mt-4 flex-1">
+		{#if children}
+			{@render children()}
+		{/if}
+	</main>
+	
+	<Footer />
+</SidebarContainer>

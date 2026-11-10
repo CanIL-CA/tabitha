@@ -19,6 +19,8 @@ export const CATEGORY_NAME_LOOKUP = new Map<string, EncodingEntityCategory>([
 	['.', 'period'],
 ])
 
+export const CATEGORY_CODE_LOOKUP = new Map(CATEGORY_NAME_LOOKUP.entries().map(([code, name]) => ([name, code])))
+
 export const CATEGORY_ABBREVIATIONS = new Map<EncodingEntityCategory, string>([
 	['Noun', 'N'],
 	['Verb', 'V'],
