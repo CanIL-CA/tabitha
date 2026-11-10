@@ -3,7 +3,10 @@
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { SourceEntities } from '#lib/index.js'
 	import SelectedEntitySidebar from '#lib/sidebar/SelectedEntitySidebar.svelte'
+	import ContextBridge from '#lib/ContextBridge.svelte'
+	import { get_sidebar_slot } from '#lib/sidebar_context.svelte.js'
 	import Icon from '@iconify/svelte'
+	import { getAllContexts } from 'svelte'
 
 	let { data } = $props()
 
@@ -13,8 +16,21 @@
 
 	const selected_entity = new SelectedEntity(() => data.source.parsed_semantic_encoding)
 	set_selected_entity(selected_entity)
-	let sidebar_open = $derived(selected_entity.current !== null)
+
+	const sidebar = get_sidebar_slot()
+	const contexts = getAllContexts()
+
+	$effect(() => {
+		sidebar.content = selected_entity.current ? sidebar_content : undefined
+		return () => sidebar.content = undefined
+	})
 </script>
+
+{#snippet sidebar_content()}
+	<ContextBridge {contexts}>
+		<SelectedEntitySidebar />
+	</ContextBridge>
+{/snippet}
 
 {#if source.status !== 'Ready to Translate' && source.parsed_semantic_encoding.length > 0}
 	{@const time_note = source.status === 'Final Review in Progress' ? 'almost' : 'not yet'}
@@ -44,12 +60,5 @@
 {/if}
 
 {#if source.parsed_semantic_encoding.length > 0}
-	<div class="flex h-screen">
-		<div class="overflow-y-auto transition-all duration-300 flex-[1_1_auto]" style="margin-right: {sidebar_open ? '24rem' : '0'};">
-			<SourceEntities source_entities={source.parsed_semantic_encoding} />
-		</div>
-		{#if sidebar_open}
-			<SelectedEntitySidebar />
-		{/if}
-	</div>
+	<SourceEntities source_entities={source.parsed_semantic_encoding} />
 {/if}

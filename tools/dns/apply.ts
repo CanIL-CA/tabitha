@@ -1,7 +1,15 @@
-import { desired_dns_records, desired_redirect_rules, managed_rule_prefix, type DesiredDnsRecord, type DesiredRedirectRule } from './config'
+import { desired_block_rules, desired_dns_records, desired_redirect_rules, managed_rule_prefix, type DesiredBlockRule, type DesiredDnsRecord, type DesiredRedirectRule } from './config'
 
 const CLOUDFLARE_API_BASE = 'https://api.cloudflare.com/client/v4'
-const REDIRECT_PHASE = 'http_request_dynamic_redirect'
+
+/** Each ruleset phase this tool manages rules in, with the name it gives the phase's entrypoint
+ * ruleset if it has to create one. */
+const PHASES = {
+	redirect: { phase: 'http_request_dynamic_redirect', ruleset_name: 'Redirect rules ruleset' },
+	firewall: { phase: 'http_request_firewall_custom', ruleset_name: 'Custom rules ruleset' },
+}
+
+type Phase = typeof PHASES[keyof typeof PHASES]
 
 export type CloudflareCredentials = {
 	zone_id: string
@@ -17,8 +25,8 @@ type RulesetStatus = 'created' | 'updated' | 'unchanged'
 type CloudflareRule = {
 	description?: string
 	expression: string
-	action: 'redirect'
-	action_parameters: {
+	action: 'redirect' | 'block'
+	action_parameters?: {
 		from_value: {
 			target_url: { expression: string }
 			status_code: number
@@ -28,11 +36,11 @@ type CloudflareRule = {
 	enabled: boolean
 }
 
-/** Idempotently reconciles every record in `desired_dns_records` and the redirect rules in
- * `desired_redirect_rules`. Safe to run repeatedly. Never touches a DNS record or redirect rule
- * this tool didn't create -- DNS records are matched by exact (type, name) before touching
- * anything, and existing redirect rules are only replaced if their `description` starts with
- * `managed_rule_prefix`; everything else in the zone is left alone. */
+/** Idempotently reconciles every record in `desired_dns_records`, the redirect rules in
+ * `desired_redirect_rules`, and the WAF custom rules in `desired_block_rules`. Safe to run
+ * repeatedly. Never touches a DNS record or rule this tool didn't create -- DNS records are matched
+ * by exact (type, name) before touching anything, and existing rules are only replaced if their
+ * `description` starts with `managed_rule_prefix`; everything else in the zone is left alone. */
 export async function reconcile_dns({ credentials, fetch_impl = fetch }: {
 	credentials: CloudflareCredentials
 	fetch_impl?: typeof fetch
@@ -42,9 +50,10 @@ export async function reconcile_dns({ credentials, fetch_impl = fetch }: {
 		dns_results.push({ record, status: await reconcile_dns_record({ credentials, record, fetch_impl }) })
 	}
 
-	const redirect_status = await reconcile_redirect_rules({ credentials, fetch_impl })
+	const redirect_status = await reconcile_ruleset({ credentials, phase: PHASES.redirect, desired_rules: desired_redirect_rules.map(to_redirect_rule), fetch_impl })
+	const firewall_status = await reconcile_ruleset({ credentials, phase: PHASES.firewall, desired_rules: desired_block_rules.map(to_block_rule), fetch_impl })
 
-	return { dns_results, redirect_status }
+	return { dns_results, redirect_status, firewall_status }
 }
 
 async function reconcile_dns_record({ credentials, record, fetch_impl }: {
@@ -113,30 +122,40 @@ async function update_dns_record({ credentials: { zone_id, api_token }, record_i
 	if (!response.ok) throw new Error(`Failed to update DNS record "${record.name}" (${record.type}): ${response.status} ${await response.text()}`)
 }
 
-async function reconcile_redirect_rules({ credentials, fetch_impl }: {
+async function reconcile_ruleset({ credentials, phase, desired_rules, fetch_impl }: {
 	credentials: CloudflareCredentials
+	phase: Phase
+	desired_rules: CloudflareRule[]
 	fetch_impl: typeof fetch
 }): Promise<RulesetStatus> {
-	const existing_ruleset = await get_redirect_ruleset({ credentials, fetch_impl })
-	const desired_rules = desired_redirect_rules.map(to_cloudflare_rule)
+	const existing_ruleset = await get_ruleset({ credentials, phase, fetch_impl })
 
 	const unmanaged_rules = (existing_ruleset?.rules ?? []).filter(rule => !rule.description?.startsWith(managed_rule_prefix))
 	const managed_existing = (existing_ruleset?.rules ?? []).filter(rule => rule.description?.startsWith(managed_rule_prefix))
 	const merged_rules = [...unmanaged_rules, ...desired_rules]
 
 	if (!existing_ruleset) {
-		await create_redirect_ruleset({ credentials, rules: merged_rules, fetch_impl })
+		await create_ruleset({ credentials, phase, rules: merged_rules, fetch_impl })
 		return 'created'
 	}
 
 	const already_matches = managed_existing.length === desired_rules.length && managed_existing.every((existing_rule, index) => same_rule({ a: existing_rule, b: desired_rules[index] }))
 	if (already_matches) return 'unchanged'
 
-	await update_redirect_ruleset({ credentials, ruleset_id: existing_ruleset.id, rules: merged_rules, fetch_impl })
+	await update_ruleset({ credentials, phase, ruleset_id: existing_ruleset.id, rules: merged_rules, fetch_impl })
 	return 'updated'
 }
 
-function to_cloudflare_rule(rule: DesiredRedirectRule): CloudflareRule {
+function to_block_rule(rule: DesiredBlockRule): CloudflareRule {
+	return {
+		description: `${managed_rule_prefix}${rule.ref}`,
+		expression: rule.expression,
+		action: 'block',
+		enabled: true,
+	}
+}
+
+function to_redirect_rule(rule: DesiredRedirectRule): CloudflareRule {
 	return {
 		description: `${managed_rule_prefix}${rule.ref}`,
 		expression: rule.expression,
@@ -163,41 +182,45 @@ function same_rule({ a, b }: {
 		a.expression === b.expression &&
 		a.action === b.action &&
 		a.enabled === b.enabled &&
-		JSON.stringify(a.action_parameters) === JSON.stringify(b.action_parameters)
+		// The live API returns these keys in its own order, so compare structurally, not as JSON text.
+		Bun.deepEquals(a.action_parameters, b.action_parameters)
 	)
 }
 
-async function get_redirect_ruleset({ credentials: { zone_id, api_token }, fetch_impl }: {
+async function get_ruleset({ credentials: { zone_id, api_token }, phase: { phase }, fetch_impl }: {
 	credentials: CloudflareCredentials
+	phase: Phase
 	fetch_impl: typeof fetch
 }): Promise<{ id: string; rules: CloudflareRule[] } | null> {
-	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/zones/${zone_id}/rulesets/phases/${REDIRECT_PHASE}/entrypoint`, {
+	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/zones/${zone_id}/rulesets/phases/${phase}/entrypoint`, {
 		headers: auth_headers(api_token),
 	})
 
 	if (response.status === 404) return null
-	if (!response.ok) throw new Error(`Failed to look up the "${REDIRECT_PHASE}" ruleset: ${response.status} ${await response.text()}`)
+	if (!response.ok) throw new Error(`Failed to look up the "${phase}" ruleset: ${response.status} ${await response.text()}`)
 
-	const body = (await response.json()) as { result: { id: string; rules: CloudflareRule[] } }
-	return body.result
+	const body = (await response.json()) as { result: { id: string; rules?: CloudflareRule[] } }
+	return { id: body.result.id, rules: body.result.rules ?? [] }
 }
 
-async function create_redirect_ruleset({ credentials: { zone_id, api_token }, rules, fetch_impl }: {
+async function create_ruleset({ credentials: { zone_id, api_token }, phase: { phase, ruleset_name }, rules, fetch_impl }: {
 	credentials: CloudflareCredentials
+	phase: Phase
 	rules: CloudflareRule[]
 	fetch_impl: typeof fetch
 }): Promise<void> {
 	const response = await fetch_impl(`${CLOUDFLARE_API_BASE}/zones/${zone_id}/rulesets`, {
 		method: 'POST',
 		headers: auth_headers(api_token),
-		body: JSON.stringify({ name: 'Redirect rules ruleset', kind: 'zone', phase: REDIRECT_PHASE, rules }),
+		body: JSON.stringify({ name: ruleset_name, kind: 'zone', phase, rules }),
 	})
 
-	if (!response.ok) throw new Error(`Failed to create the "${REDIRECT_PHASE}" ruleset: ${response.status} ${await response.text()}`)
+	if (!response.ok) throw new Error(`Failed to create the "${phase}" ruleset: ${response.status} ${await response.text()}`)
 }
 
-async function update_redirect_ruleset({ credentials: { zone_id, api_token }, ruleset_id, rules, fetch_impl }: {
+async function update_ruleset({ credentials: { zone_id, api_token }, phase: { phase }, ruleset_id, rules, fetch_impl }: {
 	credentials: CloudflareCredentials
+	phase: Phase
 	ruleset_id: string
 	rules: CloudflareRule[]
 	fetch_impl: typeof fetch
@@ -208,7 +231,7 @@ async function update_redirect_ruleset({ credentials: { zone_id, api_token }, ru
 		body: JSON.stringify({ rules }),
 	})
 
-	if (!response.ok) throw new Error(`Failed to update the "${REDIRECT_PHASE}" ruleset: ${response.status} ${await response.text()}`)
+	if (!response.ok) throw new Error(`Failed to update the "${phase}" ruleset: ${response.status} ${await response.text()}`)
 }
 
 function auth_headers(api_token: string): HeadersInit {
@@ -222,7 +245,7 @@ if (import.meta.main) {
 	const zone_id = require_env('CLOUDFLARE_ZONE_ID')
 	const api_token = require_env('CLOUDFLARE_API_TOKEN')
 
-	const { dns_results, redirect_status } = await reconcile_dns({ credentials: { zone_id, api_token } })
+	const { dns_results, redirect_status, firewall_status } = await reconcile_dns({ credentials: { zone_id, api_token } })
 
 	for (const { record, status } of dns_results) {
 		if (status === 'ambiguous') {
@@ -232,6 +255,7 @@ if (import.meta.main) {
 		}
 	}
 	console.log(`Redirect rules: ${redirect_status}`)
+	console.log(`WAF custom rules: ${firewall_status}`)
 }
 
 function require_env(key: string): string {

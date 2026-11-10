@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { build_noun_list_rows } from './noun_list'
-import { DEFAULTS } from './default_entities'
+import { DEFAULTS } from '#lib/edit/default_entities.js'
 import type { ConceptKey } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
 
@@ -15,6 +15,7 @@ const make_entity = ({ id, concept, pairing_concept = null, noun_list_index }: {
 	category: 'Noun',
 	concept,
 	pairing_concept,
+	pairing_type: pairing_concept ? 'simple-complex' : null,
 	noun_list_index,
 })
 
