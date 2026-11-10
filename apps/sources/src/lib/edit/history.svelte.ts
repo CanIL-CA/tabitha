@@ -28,11 +28,16 @@ type RecordOptions = {
 
 type AppliedAction = Pick<HistoryEntry, 'action' | 'details'> & { ids: number[] }
 
+export type HistoryApplied = AppliedAction & { kind: 'undo' | 'redo' }
+
+type HistoryListener = (applied: HistoryApplied) => void
+
 export class EditHistory {
 	current: EditState
 	noun_list_rows: NounListRow[]
 	#past = $state.raw<HistoryEntry[]>([])
 	#future = $state.raw<HistoryEntry[]>([])
+	#listeners = new Set<HistoryListener>()
 
 	can_undo = $derived(this.#past.length > 0)
 	can_redo = $derived(this.#future.length > 0)
@@ -63,6 +68,7 @@ export class EditHistory {
 		this.current = previous.state
 
 		const { action, details, ids_before: ids } = previous
+		this.#notify({ kind: 'undo', action, details, ids })
 		return { action, details, ids }
 	}
 
@@ -76,7 +82,20 @@ export class EditHistory {
 		this.current = next.state
 		
 		const { action, details, ids_after: ids } = next
+		this.#notify({ kind: 'redo', action, details, ids })
 		return { action, details, ids }
+	}
+
+	/** Calls `listener` after every undo or redo. Returns a function that unsubscribes it. */
+	subscribe(listener: HistoryListener): () => void {
+		this.#listeners.add(listener)
+		return () => {
+			this.#listeners.delete(listener)
+		}
+	}
+
+	#notify(applied: HistoryApplied) {
+		for (const listener of this.#listeners) listener(applied)
 	}
 }
 

@@ -5,7 +5,9 @@ import { createContext, type Snippet } from 'svelte'
  * sidebar it wants shown, or leaves it undefined while nothing is selected.
  */
 export class SidebarSlot {
+	heading = $state<string>('')
 	content = $state<Snippet | undefined>()
+	onclose = $state<() => void>(() => {})
 	is_open = $derived(this.content !== undefined)
 }
 

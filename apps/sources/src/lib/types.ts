@@ -1,4 +1,4 @@
-import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, SourceEntity, SourceStatus } from '@tabitha/types'
+import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, SourceEntity, SourceStatus, OntologyResult } from '@tabitha/types'
 import type { SensesByConcept } from '#lib/data/ontology_senses.js'
 
 //===============
@@ -35,6 +35,11 @@ export type PageSourceEntity = SourceEntity & {
 	id: number
 	parent_id: number
 	boundary_category: string
+}
+
+export type AnalyzedTextResult = {
+	source_entities: PageSourceEntity[]
+	ontology_results: OntologyResult[]
 }
 
 //===============
