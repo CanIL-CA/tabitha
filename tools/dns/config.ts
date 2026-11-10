@@ -62,3 +62,27 @@ export const desired_redirect_rules: DesiredRedirectRule[] = [
 		preserve_query_string: true,
 	},
 ]
+
+export type DesiredBlockRule = {
+	/** Same role as `DesiredRedirectRule.ref`. */
+	ref: string
+	/** Cloudflare rules-language match expression. Requests it matches get a 403 at the edge and
+	 * never reach a Worker. */
+	expression: string
+}
+
+/** Paths vulnerability scanners probe for leaked secrets, source control, WordPress, PHP, and debug
+ * endpoints. No TaBiThA app serves any of them, so they're blocked zone-wide before a Worker runs and
+ * Workers Issues stops reporting them as potential scans. The Free plan has no regex, so each is a
+ * lowercase substring of the path. `%2f.git` catches the encoded-slash variant. */
+const SCANNER_PATH_FRAGMENTS = ['/.git', '%2f.git', '/.svn', '/.env', '/.npmrc', '/.netrc', '/.s3cfg', '/.aws', '/.htaccess', '/wp-', '.php', '/actuator', '/_profiler']
+const SCANNER_PATH_SUFFIXES = ['.log']
+
+const scanner_path_expression = [
+	...SCANNER_PATH_FRAGMENTS.map(fragment => `(lower(http.request.uri.path) contains "${fragment}")`),
+	...SCANNER_PATH_SUFFIXES.map(suffix => `ends_with(lower(http.request.uri.path), "${suffix}")`),
+].join(' or ')
+
+export const desired_block_rules: DesiredBlockRule[] = [
+	{ ref: 'scanner-paths', expression: scanner_path_expression },
+]
