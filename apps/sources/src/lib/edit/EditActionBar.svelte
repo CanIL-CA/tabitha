@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte'
 	import { Header, Settings } from '#lib/index.js'
 	import Navigation from '#lib/Navigation.svelte'
+	import EncodedTextButton from '#lib/edit/EncodedTextButton.svelte'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { get_phase1 } from '#lib/edit/phase1.svelte.js'
@@ -117,7 +118,6 @@
 				<button
 					onclick={generate}
 					disabled
-					aria-label="Generate"
 					title="Generate (Ctrl+G)"
 					class="btn btn-sm btn-secondary min-w-30"
 				>
@@ -130,7 +130,6 @@
 				<button
 					onclick={save}
 					disabled
-					aria-label="Save"
 					title="Save (Ctrl+S)"
 					class="btn btn-sm btn-primary min-w-30"
 				>
@@ -159,6 +158,8 @@
 					<Icon icon="mdi:redo" class="h-4 w-4" />
 				</button>
 			</div>
+
+			<EncodedTextButton />
 
 			<Settings />
 		</div>
