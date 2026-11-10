@@ -2,7 +2,6 @@
 	import Icon from '@iconify/svelte'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import { Toast } from '@tabitha/ui'
 
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
@@ -10,27 +9,11 @@
 	function undo() {
 		const action = edit_history().undo()
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
-		if (action) show_history_toast(`Undid ${action.action}: ${action.details}`)
 	}
 
 	function redo() {
 		const action = edit_history().redo()
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
-		if (action) show_history_toast(`Redid ${action.action}: ${action.details}`)
-	}
-
-	let history_toast = $state<string | null>(null)
-	let history_toast_timeout: ReturnType<typeof setTimeout> | undefined
-	
-	function dismiss_history_toast() {
-		clearTimeout(history_toast_timeout)
-		history_toast = null
-	}
-
-	function show_history_toast(message: string) {
-		clearTimeout(history_toast_timeout)
-		history_toast = message
-		history_toast_timeout = setTimeout(dismiss_history_toast, 5000)
 	}
 
 	const HISTORY_SHORTCUTS: Record<string, () => void> = {
@@ -75,7 +58,3 @@
 		<Icon icon="mdi:redo" class="h-4 w-4" />
 	</button>
 </div>
-
-{#if history_toast}
-	<Toast variant="info" on_dismiss={dismiss_history_toast}>{history_toast}</Toast>
-{/if}

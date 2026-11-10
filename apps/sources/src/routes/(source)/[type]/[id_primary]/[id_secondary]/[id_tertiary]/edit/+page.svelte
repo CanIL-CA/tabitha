@@ -6,6 +6,7 @@
 	import { Header, Settings } from '#lib/index.js'
 	import Navigation from '#lib/Navigation.svelte'
 	import HistoryTracking from '#lib/edit/HistoryTracking.svelte'
+	import HistoryToast from '#lib/edit/HistoryToast.svelte'
 	import SelectedEntitySidebar from '#lib/sidebar_edit/SelectedEntitySidebar.svelte'
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
@@ -198,6 +199,8 @@
 
 	<div class="divider my-0 mx-8"></div>
 </div>
+
+<HistoryToast />
 
 <main class="mx-8 mt-6 flex-1">
 	{#if api_error}
