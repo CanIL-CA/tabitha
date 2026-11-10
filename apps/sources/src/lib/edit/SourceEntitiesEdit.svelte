@@ -260,11 +260,14 @@
 
 {#snippet insert_slot({ i, side }: { i: number, side: 'left' | 'right' })}
 	<div data-drop-slot={i} class="absolute inset-y-0 z-10 w-0 {side === 'left' ? 'left-0' : 'right-0'}">
+		<!-- keyboard users reach the same action through the button inside -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div
 			role="presentation"
 			onmouseenter={() => insert_button_mouseover(i)}
 			onmouseleave={entity_mouseout}
-			class="absolute inset-y-0 -left-2 flex w-4 justify-center text-primary {INSERT_SLOT_STATE_CLASSES[get_insert_slot_state(i)]} transition-opacity duration-150"
+			onclick={e => open_insert_context_menu({ event: e, entity_id: i })}
+			class="absolute inset-y-0 -left-2 flex w-4 cursor-pointer justify-center text-primary {INSERT_SLOT_STATE_CLASSES[get_insert_slot_state(i)]} transition-opacity duration-150"
 		>
 			<span aria-hidden="true" class="h-full w-0.5 bg-current"></span>
 			<button
@@ -273,7 +276,7 @@
 				onclick={e => open_insert_context_menu({ event: e, entity_id: i })}
 				onkeydown={e => e.key === 'Enter' && open_insert_context_menu({ event: e, entity_id: i })}
 				aria-label="Insert Constituent"
-				class="btn btn-primary btn-circle btn-xs absolute -translate-y-1/3"
+				class="btn btn-primary btn-circle btn-xs absolute -translate-y-1/3 text-sm"
 			>
 				+
 			</button>
