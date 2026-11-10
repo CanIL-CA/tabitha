@@ -1,8 +1,11 @@
 import { PUBLIC_ONTOLOGY_API_HOST } from '$app/env/public'
-import { create_ontology_client } from '@tabitha/api-client'
+import { create_ontology_client, create_sources_client } from '@tabitha/api-client'
+import { structure_entities } from '#lib/encoding/structured.js'
 import type { OntologyResult, ConceptKey, SourceEntity } from '@tabitha/types'
+import type { AnalyzedTextResult } from '#lib/types.js'
 
 const client = create_ontology_client({ base_url: PUBLIC_ONTOLOGY_API_HOST })
+const sources_client = create_sources_client({ base_url: '/' })
 
 export function create_fallback_ontology_data(concept: ConceptKey): OntologyResult {
 	return {
@@ -52,4 +55,16 @@ export async function fetch_ontology_data_for_all(entities: SourceEntity[]): Pro
 	} catch {
 		return {}
 	}
+}
+
+/** Analyzes phase 1 text into structured source entities, along with the ontology results for their concepts. Throws if analysis fails. */
+export async function fetch_analyzed_text({ text }: { text: string }): Promise<AnalyzedTextResult> {
+	const result = await sources_client.analyze_text(text)
+	if (!result) throw new Error('Analyze API failed')
+
+	const source_entities = result.source_entities.map(entity => ({ ...entity, id: -1, parent_id: -1, boundary_category: '' }))
+	structure_entities(source_entities)
+
+	const results_by_stem = await fetch_ontology_data_for_all(source_entities)
+	return { source_entities, ontology_results: Object.values(results_by_stem).flat() }
 }
