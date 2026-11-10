@@ -1,4 +1,3 @@
-import { createContext } from 'svelte'
 import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
 import { create_editor_client } from '@tabitha/api-client'
 import { fetch_analyzed_text } from '#lib/data/api_lookups.js'
@@ -81,5 +80,3 @@ export class Phase1 {
 		}
 	}
 }
-
-export const [get_phase1, set_phase1] = createContext<() => Phase1>()

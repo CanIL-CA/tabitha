@@ -7,7 +7,7 @@
 	import Icon from '@iconify/svelte'
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
-	import { Phase1, set_phase1 } from '#lib/edit/phase1.svelte.js'
+	import { Phase1 } from '#lib/edit/phase1.svelte.js'
 	import { EntityClipboard, set_clipboard } from '#lib/edit/clipboard.svelte.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
@@ -20,8 +20,7 @@
 	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
 	set_clipboard(new EntityClipboard())
 
-	let phase1 = $derived(new Phase1(data.source.phase_1_encoding))
-	set_phase1(() => phase1)
+	let phase1 = $derived(data.show_phase1 ? new Phase1(data.source.phase_1_encoding) : null)
 
 	let edit_history = $derived(new EditHistory({
 		source_entities: data.source.parsed_semantic_encoding,
@@ -58,12 +57,12 @@
 	</ContextBridge>
 {/snippet}
 
-<EditActionBar nav_data={data.nav_data} />
+<EditActionBar nav_data={data.nav_data} {phase1} />
 
 <HistoryToast />
 
 <main class="mx-8 mt-6 flex-1">
-	{#if phase1.api_error}
+	{#if phase1?.api_error}
 		<div role="alert" class="alert alert-error my-3">
 			<Icon icon="mdi:alert-circle-outline" class="h-6 w-6" />
 			<span>API Request Failed: {phase1.api_error}</span>
@@ -71,16 +70,18 @@
 		</div>
 	{/if}
 
-	<div class="grid grid-cols-2 gap-8">
-		<div class="flex flex-col gap-2">
-			<div class="ms-0.5">
-				<span class="label font-semibold">Input Text (Phase 1)</span>
-			</div>
+	<div class="grid {phase1 ? 'grid-cols-2' : 'grid-cols-1'} gap-8">
+		{#if phase1}
+			<div class="flex flex-col gap-2">
+				<div class="ms-0.5">
+					<span class="label font-semibold">Input Text (Phase 1)</span>
+				</div>
 
-			<textarea
-				bind:value={phase1.text}
-				class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
-		</div>
+				<textarea
+					bind:value={phase1.text}
+					class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+			</div>
+		{/if}
 
 		<div class="flex flex-col gap-2">
 			<div class="ms-0.5">
@@ -91,7 +92,7 @@
 		</div>
 	</div>
 
-	{#if phase1.check_result && phase1.errors_and_warnings.length}
+	{#if phase1?.check_result && phase1.errors_and_warnings.length}
 		<div class="divider my-2"></div>
 		<div>
 			{#each phase1.check_result.tokens as token, i}
@@ -123,7 +124,7 @@
 
 	<div class="divider my-2"></div>
 
-	{#if !phase1.analyzing}
+	{#if !phase1?.analyzing}
 		<div id="entity-container">
 			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
 		</div>

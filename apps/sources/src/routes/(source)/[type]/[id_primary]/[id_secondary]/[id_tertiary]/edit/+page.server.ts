@@ -4,7 +4,7 @@ import { load_source_feature_map } from '#lib/encoding/features.js'
 import { structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
 import type { PageServerLoad } from './$types'
 
-export async function load({ locals: { db }, parent }: Parameters<PageServerLoad>[0]) {
+export async function load({ locals: { db }, parent, url }: Parameters<PageServerLoad>[0]) {
 	const { nav_data } = await parent()
 
 	// the source is already confirmed to exist by the layout loader
@@ -23,5 +23,7 @@ export async function load({ locals: { db }, parent }: Parameters<PageServerLoad
 		},
 		features,
 		ontology_senses,
+		// temporary: phase 1 UI is hidden with ?phase1=false
+		show_phase1: url.searchParams.get('phase1') !== 'false',
 	}
 }
