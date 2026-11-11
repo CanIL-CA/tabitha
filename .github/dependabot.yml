@@ -1,23 +1,22 @@
-# Bun updates are grouped by production vs. development so 14 workspaces don't produce 14 PRs.
-# Major bumps stay as individual PRs. The monthly `bun audit` triage routine runs alongside.
+# One grouped PR per ecosystem, and one open at a time, so merging a PR never leaves another with a bun.lock conflict.
+# Major bumps stay as individual PRs and queue behind the open one. The monthly `bun audit` triage routine runs alongside.
 version: 2
 updates:
   - package-ecosystem: bun
     directory: /
+    open-pull-requests-limit: 1
     schedule:
       interval: weekly
       day: monday
     groups:
-      production:
-        dependency-type: production
-        update-types: [minor, patch]
-      development:
-        dependency-type: development
+      dependencies:
+        patterns: ['*']
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directories:
       - /
       - /.github/actions/*
+    open-pull-requests-limit: 1
     schedule:
       interval: weekly
       day: monday
