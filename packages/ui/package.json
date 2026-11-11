@@ -22,7 +22,7 @@
     "test:unit": "vitest run src"
   },
   "peerDependencies": {
-    "@iconify/svelte": "^5.2.3",
+    "@iconify/svelte": "^5.2.4",
     "@sveltejs/kit": "^3.1.1",
     "@tailwindcss/typography": "^0.5.20",
     "daisyui": "^5.7.47",
@@ -30,7 +30,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@iconify/svelte": "^5.2.3",
+    "@iconify/svelte": "^5.2.4",
     "@sveltejs/kit": "^3.1.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tabitha/eslint-config": "workspace:*",
