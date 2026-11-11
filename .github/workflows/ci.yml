@@ -308,12 +308,18 @@ jobs:
           echo "=== 🗄️ D1 Miniflare Database Storage Inventory ==="
           ls -lh apps/*/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/ 2>/dev/null || true
 
+      # Chromium only changes with Playwright, so key the cache on its version: keying on bun.lock
+      # missed the cache (and re-downloaded the browser) on every unrelated dependency bump.
+      - name: Resolve Playwright Version
+        id: playwright_version
+        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright Chromium
         id: playwright_cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright_version.outputs.version }}
 
       - name: Install Playwright Chromium & System Dependencies
         if: steps.playwright_cache.outputs.cache-hit != 'true'
@@ -321,10 +327,12 @@ jobs:
         # occasionally hits a "Hash Sum mismatch" against a Google/Ubuntu mirror mid-sync --
         # unrelated to this repo. Each attempt reruns apt-get update from scratch, so it has
         # a real chance of landing on a different mirror node; backoff increases since this
-        # can be a longer-lived stale-mirror window rather than a single blip.
+        # can be a longer-lived stale-mirror window rather than a single blip. Each attempt is
+        # capped at 5 minutes (`timeout`) because apt can also hang outright, which once held the
+        # job for 53 minutes without ever retrying.
         run: |
           for attempt in 1 2 3 4 5; do
-            bun run test:e2e:install && exit 0
+            timeout 300 bun run test:e2e:install && exit 0
             echo "Attempt $attempt/5 failed, retrying in $((attempt * 10))s..." >&2
             sleep $((attempt * 10))
           done
@@ -334,7 +342,7 @@ jobs:
         if: steps.playwright_cache.outputs.cache-hit == 'true'
         run: |
           for attempt in 1 2 3 4 5; do
-            bunx playwright install-deps chromium && exit 0
+            timeout 300 bunx playwright install-deps chromium && exit 0
             echo "Attempt $attempt/5 failed, retrying in $((attempt * 10))s..." >&2
             sleep $((attempt * 10))
           done

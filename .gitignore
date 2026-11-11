@@ -8,6 +8,7 @@ build
 
 # Paraglide i18n compiler output (see @tabitha/vite-config/paraglide)
 **/src/lib/paraglide/
+**/project.inlang/cache/
 
 # Cloudflare
 .wrangler
