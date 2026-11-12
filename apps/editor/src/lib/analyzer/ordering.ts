@@ -5,7 +5,7 @@ import { get_phrase_span, get_span_contents, is_np_start, is_vp_start, is_adjp_s
 import type { Sentence, Token } from '#lib/types.js'
 import type { TokenFilter } from '#lib/rules/types.js'
 
-type OrderingPosition = 'before_verb' | 'after_verb' | 'end_of_clause' | 'after_head_noun' | 'after_head_adjective'
+type OrderingPosition = 'before_verb' | 'after_verb' | 'end_of_clause' | 'start_of_phrase' | 'after_head_noun' | 'after_head_adjective'
 type OrderingRule = {
 	readonly name: string
 	readonly matches: TokenFilter
@@ -28,6 +28,7 @@ const INSERT_INDEX_GETTERS: Record<OrderingPosition, (children: ConstituentSpan[
 		return verb_index === -1 ? -1 : verb_index + 1
 	},
 	end_of_clause: children => children.findLastIndex(child => !should_skip(child[0])) + 1,
+	start_of_phrase: () => 0,
 	after_head_noun: children => {
 		const head_index = children.findIndex(is_head_noun)
 		return head_index === -1 ? -1 : head_index + 1
@@ -45,8 +46,18 @@ const NP_ORDERING_RULES: OrderingRule[] = [
 	{
 		name: 'Place pre-noun relation NPs directly after the noun they modify',
 		// the relations whose NP comes before the noun it modifies, eg 'John's brother', 'King David', 'the gold statue', 'a group of people'
-		matches: create_token_filter({ 'token': '{NP', 'tag': { 'relation': 'genitive_saxon|title|made_of|group' } }),
+		matches: create_token_filter({ 'token': '{NP', 'tag': { 'relation': 'genitive_saxon|pre_head_adjunct|pre_head_of' } }),
 		position: 'after_head_noun',
+	},
+	{
+		name: 'Place adpositions at the front of the NP',
+		matches: create_token_filter({ 'category': 'Adposition' }),
+		position: 'start_of_phrase',
+	},
+	{
+		name: 'Place conjunctions at the front of the NP (must be after the adposition rule so the conjunction goes first)',
+		matches: create_token_filter({ 'category': 'Adposition' }),
+		position: 'start_of_phrase',
 	},
 ]
 

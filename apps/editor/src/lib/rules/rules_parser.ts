@@ -398,7 +398,7 @@ const SKIP_GROUPS = new Map<SkipGroup, SkipJsonSingle[]>([
 		{ 'category': 'Adverb' },
 	]],
 	['np_modifiers', [
-		{ 'tag': ['determiner|relation', { 'clause_type': 'relative_clause' }] },
+		{ 'tag': ['determiner|relation', { 'clause_type': 'relative_clause' }, { 'syntax': 'nested_np' }] },
 		'adjp_attributive',
 	]],
 	// the adposition is optional before a coordinated NP, eg 'went to Jerusalem and (to) Bethlehem'

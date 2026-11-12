@@ -200,15 +200,15 @@ const ORDERED_PHRASE_PRE_FILTERS: Array<[phrase_filter: TokenFilter, token_filte
 			// [the(determiner) gold(made_of) statue's] base
 			// [John's(saxon) big(adj) gold(made_of) statue's] base
 			// [King(title) David's] house
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'made_of|title' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'pre_head_adjunct' } },
 			{ 'tag': { 'phrase_type': 'AdjP', 'adj_usage': 'attributive', 'adj_type': 'regular' } },	// no subgroup type
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_saxon|group' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_saxon|pre_head_of' } },
 			{ 'tag': 'determiner' },
 		],
 	],
 	[
 		// made_of and title relations cannot be modified
-		{ 'tag': { 'phrase_type': 'NP', 'relation': 'made_of|title' } },
+		{ 'tag': { 'phrase_type': 'NP', 'relation': 'pre_head_adjunct' } },
 		[
 			// [the(determiner) gold(made_of) statue's] base
 			// [John's(saxon) big(adj) gold(made_of) statue's] base
@@ -217,11 +217,12 @@ const ORDERED_PHRASE_PRE_FILTERS: Array<[phrase_filter: TokenFilter, token_filte
 	[
 		{ 'tag': { 'phrase_type': 'NP' } },
 		[
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'made_of|title' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'pre_head_adjunct' } },
 			{ 'tag': { 'phrase_type': 'AdjP', 'adj_usage': 'attributive', 'adj_type': 'regular' } },	// no subgroup type
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_saxon|group' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_saxon|pre_head_of' } },
 			{ 'tag': 'determiner' },
 			{ 'tag': { 'phrase_type': 'AdjP', 'relation': 'subgroup' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'multiplication' } },	// 7 times the amount
 			{ 'tag': 'pre_np_adposition' },
 			{ 'tag': { 'syntax': 'coord_noun' } },
 		],
@@ -248,8 +249,8 @@ const ORDERED_PHRASE_POST_FILTERS: Array<[phrase_filter: TokenFilter, token_filt
 	[
 		{ 'tag': { 'phrase_type': 'NP' } },
 		[
-			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name|kind' } },
-			{ 'type': TOKEN_TYPE.FUNCTION_WORD, 'tag': { 'relation': 'group' } },
+			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name' } },
+			{ 'type': TOKEN_TYPE.FUNCTION_WORD, 'tag': { 'relation': 'pre_head_of' } },
 			{ 'tag': { 'phrase_type': 'NP', 'role': 'noun_argument_np' } },
 			{ 'tag': { 'clause_type': 'relative_clause' } },
 			{ 'tag': 'post_np_adposition' },	// ((X) years ago)

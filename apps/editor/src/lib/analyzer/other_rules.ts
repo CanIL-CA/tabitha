@@ -54,6 +54,8 @@ const NOUN_REALTIONS_STRUCTURAL: Array<[string, TokenFilter, 'replace' | 'insert
 	['-Made of', create_token_filter({ 'tag': { 'relation': 'made_of' } }), 'insert'],
 	['-Group', create_token_filter({ 'tag': { 'relation': 'group' } }), 'replace'],
 	['-Kind of', create_token_filter({ 'tag': { 'relation': 'kind' } }), 'replace'],
+	['-Quantity', create_token_filter({ 'tag': { 'relation': 'quantity' } }), 'replace'],
+	['-Iteration', create_token_filter({ 'tag': { 'relation': 'iteration' } }), 'insert'],
 ]
 
 const BODY_PART_STEMS = 'arm|back|blood|body|bone|chest|eye|face|feather|finger|foot|forehead|hair|hand|head|heart|heel|hip|horn|knee|leg|lip|mouth|neck|nose|shoulder|skin|stomach|toe|wing'
@@ -82,9 +84,6 @@ const NOUN_REALTIONS_CONTEXTUAL: Array<[string, { head: TokenFilter, modified?: 
 	}],
 	['-Part Whole', {
 		head: create_token_filter({ 'stem': 'bottom|side|top' }),
-	}],
-	['-Quantity', {
-		head: create_token_filter({ 'stem': 'gram|jar|kilogram|liter|loaf' }),
 	}],
 	['-Quantity-Distance', {
 		head: create_token_filter({ 'stem': 'meter' }),

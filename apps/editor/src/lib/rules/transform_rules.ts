@@ -377,23 +377,34 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'function': { 'relation': 'name', 'pre_np_adposition': 'relation' } },
 	},
 	{
-		'name': "'of' after kind becomes a function word",
-		'trigger': { 'token': 'of' },
-		'context': { 'precededby': { 'stem': 'kind' } },
-		'transform': { 'function': { 'relation': 'kind', 'pre_np_adposition': 'relation' } },
-	},
-	{
 		'name': "'of' after group/crowd becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'group|crowd' } },
-		'transform': { 'function': { 'relation': 'group' }, 'remove_tag': 'pre_np_adposition' },
-		'comment': '"group of" is the modifier of the noun that follows, which is unique among the "of" relations, so it is handled a bit differently',
+		'transform': { 'function': { 'relation': 'group|pre_head_of' }, 'remove_tag': 'pre_np_adposition' },
+		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
+		'comment': '"group of" is the modifier of the noun that follows, so it is handled a bit differently',
+	},
+	{
+		'name': "'of' after kind becomes a function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'stem': 'kind' } },
+		'transform': { 'function': { 'relation': 'kind|pre_head_of', 'remove_tag': 'pre_np_adposition' } },
+		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
+		'comment': '"kind of" is the modifier of the noun that follows, so it is handled a bit differently'
+	},
+	{
+		'name': "'of' after quantity nouns becomes a function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'stem': 'gram|jar|kilogram|liter|loaf' } },
+		'transform': { 'function': { 'relation': 'quantity|pre_head_of', 'remove_tag': 'pre_np_adposition' } },
+		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
+		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently'
 	},
 	{
 		'name': 'certain Noun-Noun combinations are "made_of"',
 		'trigger': { 'category': 'Noun', 'stem': 'bamboo|bronze|gold|iron|leather|marble|metal|plastic|silver|wood' },
 		'context': { 'followedby': { 'category': 'Noun' } },
-		'transform': { 'tag': { 'relation': 'made_of' } },
+		'transform': { 'tag': { 'relation': 'made_of|pre_head_adjunct' } },
 		'comment': 'eg. a gold statue; a bamboo chair. The Nouns are always right next to each other',
 	},
 	{
@@ -403,8 +414,24 @@ const transform_rules_json: TransformRuleJson[] = [
 			'precededby': { 'category': 'Noun', 'stem': 'king|queen|Christ|Caesar|Lord' },
 			'notprecededby': { 'tag': 'relation' },
 		},
-		'context_transform': { 'tag': { 'relation': 'title' } },
+		'context_transform': { 'tag': { 'relation': 'title|pre_head_adjunct' } },
 		'comment': "eg. King Herod, Lord Jesus, but NOT 'the king's army'",
+	},
+	{
+		'name': 'tag "times" preceded by an adjective as an oblique',
+		'trigger': { 'token': 'times' },
+		'context': {
+			'precededby': { 'category': 'Adjective' },
+		},
+		'transform': { 'tag': { 'role': 'oblique', 'relation': 'iteration' }, 'remove_tag': 'syntax' },
+	},
+	{
+		'name': 'tag "times-B" preceded by an adjective as "multiplication"',
+		'trigger': { 'token': 'times-B' },
+		'context': {
+			'precededby': { 'category': 'Adjective' },
+		},
+		'transform': { 'tag': { 'syntax': 'nested_np', 'relation': 'multiplication' }, 'remove_tag': ['role'] },
 	},
 	// Senses of 'be'
 	{
@@ -564,14 +591,15 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': 'tag head nouns',
 		'trigger': { 'category': 'Noun' },
 		'context': {
-			'notprecededby': [{ 'category': 'Noun' }, { 'tag': { 'relation': 'genitive_norman|name|group|kind' }, 'skip': 'np_modifiers' }],
+			'notprecededby': [{ 'category': 'Noun' }, { 'tag': { 'relation': 'genitive_norman|name' }, 'skip': 'np_modifiers' }],
+			'notfollowedby': [{ 'tag': { 'relation': 'pre_head_of' } }],
 		},
 		'transform': { 'tag': { 'syntax': 'head_np', 'role': 'none' } },
 		'comment': "can't use 'np_modifiers' in the 'notfollowedby' skip since we don't want to skip the genitive_norman 'of'",
 	},
 	{
 		'name': 'remove head_np tag from saxon genitives, made_of, and title relations',
-		'trigger': { 'tag': { 'relation': 'genitive_saxon|made_of|title' } },
+		'trigger': { 'tag': { 'relation': 'genitive_saxon|pre_head_adjunct' } },
 		'context': { },
 		'transform': { 'remove_tag': ['syntax', 'role'] },
 	},
