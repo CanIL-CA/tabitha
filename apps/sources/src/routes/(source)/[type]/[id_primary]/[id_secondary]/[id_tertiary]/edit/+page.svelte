@@ -63,11 +63,18 @@
 <HistoryToast />
 
 <main class="mx-8 mt-6 flex-1">
-	{#if phase1?.api_error}
-		<div role="alert" class="alert alert-error my-3">
-			<Icon icon="mdi:alert-circle-outline" class="h-6 w-6" />
-			<span>API Request Failed: {phase1.api_error}</span>
-			<button onclick={() => phase1.api_error = null} class="btn btn-xs btn-ghost">Dismiss</button>
+	{#if phase1?.analyze_result?.status === 'error' && !phase1.error_dismissed}
+		{@const encoding_message = edit_history.current.source_entities.length > 0 ? 'the existing encoding was not replaced.' : 'no encoding was produced.'}
+		<div role="alert" class="alert alert-error mb-3">
+			<div class="flex items-center gap-4">
+				<Icon icon="mdi:alert-circle-outline" class="h-6 w-6" />
+				{#if phase1.api_error}
+					<span>Analyze API request failed: {phase1.api_error} - {encoding_message}</span>
+				{:else}
+					<span>Analyze failed - {encoding_message}</span>
+				{/if}
+				<button onclick={() => phase1.dismiss_error()} class="btn btn-xs btn-ghost italic">Dismiss</button>
+			</div>
 		</div>
 	{/if}
 
@@ -93,30 +100,34 @@
 		</div>
 	</div>
 
-	{#if phase1?.check_result && phase1.errors_and_warnings.length}
+	{#if phase1?.analyze_result && phase1.token_messages.length}
 		<div class="divider my-2"></div>
 		<div>
-			{#each phase1.check_result.tokens as token, i}
-				{@const msg = phase1.errors_and_warnings.find(([, token_index]) => i === token_index)?.[0]}
+			{#each phase1.analyze_result.tokens as token, i}
+				{@const msg = phase1.token_messages.find(({ token_index }) => i === token_index)?.message}
 				{@const text = get_token_text(token)}
-				{#if msg?.label === 'error'}
-					<span class="text-error">{text}{' '}</span>
-				{:else if msg?.label === 'warning'}
-					<span class="text-warning">{text}{' '}</span>
-				{:else}
+				{#if !msg}
 					<span>{text}{' '}</span>
+				{:else if msg.label === 'error'}
+					<span class="text-error font-semibold">{text}{' '}</span>
+				{:else}
+					<span class="text-warning font-semibold">{text}{' '}</span>
 				{/if}
 			{/each}
 		</div>
 
 		<div>
-			{#each phase1.errors_and_warnings as [message, token_index]}
+			{#each phase1.token_messages as token_message (token_message)}
+				{@const { message, token_index } = token_message}
 				{@const is_error = message.label === 'error'}
-				{@const token = get_token_text(phase1.check_result.tokens[token_index])}
+				{@const token = get_token_text(phase1.analyze_result.tokens[token_index])}
 				<div class="alert alert-soft {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-1">
-					<div class="flex items-center gap-2">
-						<Icon icon="mdi:alert-circle" class="h-5 w-5" />
+					<div class="flex items-center gap-4">
+						<Icon icon="mdi:alert-circle-outline" class="h-5 w-5" />
 						<span>{message.message} <sup>(token: "{token}")</sup></span>
+						<button onclick={() => phase1.dismiss_message(token_message)} class="btn btn-xs btn-ghost italic">
+							Dismiss
+						</button>
 					</div>
 				</div>
 			{/each}
@@ -125,9 +136,7 @@
 
 	<div class="divider my-2"></div>
 
-	{#if !phase1?.analyzing}
-		<div id="entity-container">
-			<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
-		</div>
-	{/if}
+	<div id="entity-container">
+		<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
+	</div>
 </main>

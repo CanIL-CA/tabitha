@@ -66,5 +66,5 @@ export async function fetch_analyzed_text({ text }: { text: string }): Promise<A
 	structure_entities(source_entities)
 
 	const results_by_stem = await fetch_ontology_data_for_all(source_entities)
-	return { source_entities, ontology_results: Object.values(results_by_stem).flat() }
+	return { ...result, source_entities, ontology_results: Object.values(results_by_stem).flat() }
 }

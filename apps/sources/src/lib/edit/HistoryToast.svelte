@@ -17,7 +17,8 @@
 
 	function show({ kind, action, details }: HistoryApplied) {
 		clearTimeout(dismiss_timeout)
-		message = `${VERB_BY_KIND[kind]} ${action}: ${details}`
+		const details_part = details ? `: ${details}` : ''
+		message = `${VERB_BY_KIND[kind]} ${action}${details_part}`
 		dismiss_timeout = setTimeout(dismiss, TOAST_DURATION_MS)
 	}
 
