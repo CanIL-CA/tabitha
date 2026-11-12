@@ -86,6 +86,12 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 		['Participant Status', [
 			['Not Applicable', { }],
+			['Significant Time', {
+				'trigger': { 'tag': { 'participant_status': 'significant_time' } },
+			}],
+			['Significant Location', {
+				'trigger': { 'tag': { 'participant_status': 'significant_location' } },
+			}],
 			['Emphasized', {
 				'context': { 'followedby': { 'token': '_emphasized' } },
 			}],

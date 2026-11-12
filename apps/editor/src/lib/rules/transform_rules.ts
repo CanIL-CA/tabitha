@@ -632,6 +632,31 @@ const transform_rules_json: TransformRuleJson[] = [
 		'context_transform': { 'tag': { 'syntax': 'nested_np|comparative_np' } },
 		'comment': "eg 'bigger than X', 'more content than X', 'more food than X', etc ",
 	},
+	{
+		'name': 'tag fronted time nouns as significant time',
+		'trigger': { 'stem': 'morning|evening|afternoon|hour|day|week|month|year|time' },
+		'context': {
+			'precededby': { 'token': 'In|On|At|During', 'skip': 'np_modifiers' },
+			'followedby': { 'token': ',' },
+		},
+		'transform': { 'tag': { 'participant_status': 'significant_time' } },
+	},
+	{
+		'name': 'tag nouns marked with _significantTime',
+		'trigger': { 'category': 'Noun' },
+		'context': {
+			'followedby': { 'token': '_significantTime', 'skip': 'np_modifiers' },
+		},
+		'transform': { 'tag': { 'participant_status': 'significant_time' } },
+	},
+	{
+		'name': 'tag nouns marked with _significantLocation',
+		'trigger': { 'category': 'Noun' },
+		'context': {
+			'followedby': { 'token': '_significantLocation', 'skip': 'np_modifiers' },
+		},
+		'transform': { 'tag': { 'participant_status': 'significant_location' } },
+	},
 	// Commas and Coordination
 	{
 		'name': 'tag all commas',
@@ -665,6 +690,7 @@ const transform_rules_json: TransformRuleJson[] = [
 				{ 'stem': 'and|or', 'skip': 'all' },
 				{ 'category': 'Verb', 'skip': 'all' },
 			],
+			'notprecededby': { 'category': 'Adposition', 'skip': 'np_modifiers' },
 		},
 		'transform': { 'tag': { 'role': 'addressee' } },
 		'context_transform': [{ 'tag': { 'syntax': 'comma_addressee' } }],
@@ -692,6 +718,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'trigger': { 'tag': { 'syntax': 'comma' } },
 		'context': {
 			'precededby': { 'category': 'Noun' },
+			'notprecededby': { 'tag': { 'participant_status': 'significant_time|significant_location' } },
 			'followedby': {
 				'category': 'Noun',
 				'skip': ['np_modifiers_and_adpositions', { 'tag': { 'syntax': 'coord_noun' } }],

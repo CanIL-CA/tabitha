@@ -116,6 +116,13 @@ const lookup_rules_json: LookupRuleJson[] = [
 		'context': { 'followedby': { 'token': '?', 'skip': 'all' } },
 		'lookup': 'person',
 	},
+	{
+		'name': '"One day," becomes "-Begin Scene"',
+		'trigger': { 'token': 'One' },
+		'context': { 'followedby': [{ 'token': 'day' }, { 'token': ',' } ] },
+		'lookup': '-Begin Scene',
+		'combine': 1,
+	},
 ]
 
 export function parse_lookup_rule({ rule_json, index }: {
