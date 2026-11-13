@@ -441,12 +441,14 @@ import system_instruction from './review_prompt.md?raw'
    - `@tabitha/vite-config` — Shared Vite, SvelteKit, Vitest, and Playwright configurations.
    - `@tabitha/eslint-config` — ESLint flat configurations.
    - `@tabitha/tsconfig` — Base TypeScript compiler configurations.
+   - `@tabitha/d1` — `with_timeout` wrapper for D1 bindings and sessions, so a stuck query fails instead of hanging the request.
+   - `@tabitha/service-worker` — Shared service worker (`register_service_worker`) for the apps that work offline.
 
 3. **Dependency Direction**:
    - `apps/*` ➔ `packages/*` (Allowed)
-   - `packages/*` ➔ `apps/*` (STRICTLY PROHIBITED)
+   - `packages/*` ➔ `apps/*` (Not allowed)
    - Within a single app, `src/routes/**` ➔ `src/lib/**` (Allowed)
-   - Within a single app, `src/lib/**` ➔ `src/routes/**` (STRICTLY PROHIBITED)
+   - Within a single app, `src/lib/**` ➔ `src/routes/**` (Not allowed)
    - No circular dependencies between workspace packages.
 
 ### App-internal lib/routes boundary
@@ -469,12 +471,11 @@ a package boundary breaks silently if that package ever reorganizes its files, a
 reader to count directory hops instead of recognizing "this comes from another package" at a
 glance -- which is exactly what the package name already signals everywhere else in this repo.
 
-This only targets imports that actually cross a package boundary -- a `../` import that stays
-*within* the importing file's own package (e.g. `apps/editor/src/lib/rules/case_frame/common.ts`
-reaching into `lib/rules`) is completely normal and unaffected by this rule. Enforced by `bun run
-check:package-boundaries` (`scripts/audits/check_relative_package_imports.ts`), which resolves
+This rule is about imports that cross a package boundary. Within a package, import from the same
+folder with `./x` and everything else through the package's alias (`#lib/…`), never `../`.
+`bun run check:package-boundaries` (`scripts/audits/check_relative_package_imports.ts`) resolves
 every `../` import to its actual target and only flags the ones that land outside the importing
-file's own package.
+file's own package, so a `../` inside a package passes it.
 
 ```typescript
 // ❌ Avoid: scripts/ reaching directly into another package's internal file layout
@@ -577,8 +578,7 @@ populated real-world example spanning both tiers and all three kinds of var it u
 `scripts/*` and `tools/*` run directly on a developer's own machine (Bun on the shell, not inside
 a Cloudflare Worker), so unlike `apps/*` -- which ship to Workers, an OS-agnostic runtime -- these
 are the only parts of the codebase actually exposed to OS differences. The team includes Windows
-developers, so code here should not assume a POSIX-only environment. Two real bugs have already
-shipped from this:
+developers, so code here should not assume a POSIX-only environment. Known failure shapes:
 
 - **`Glob` patterns spanning multiple path segments.** `new Glob('dir/pattern').scanSync('.')`
   bakes the directory into the pattern; Bun then returns the traversed-directory portion of a
@@ -597,9 +597,7 @@ shipped from this:
   finalized *or garbage collected*. That deferred release is prompt enough on macOS/Linux to look
   like it worked while still holding a Windows file lock, so deleting the file (or its containing
   directory) fails with `EBUSY`. Use **`.close(true)`**, which finalizes everything and releases
-  immediately. This is what actually broke `migrate_source_texts.test.ts` on Windows in
-  [#105](https://github.com/CanIL-CA/tabitha/issues/105) -- and it stayed broken after a
-  first fix that added a bare `.close()`, because the deferred release looked correct on macOS.
+  immediately.
 
 A further pattern to avoid on the same grounds: hardcoded POSIX-only absolute paths (`/tmp/...`,
 `/var/...`) -- use `os.tmpdir()` or a path relative to the project instead.
@@ -640,6 +638,6 @@ runs `git worktree add` or `git worktree move`.
 Before submitting any code changes, ensure the entire repository passes the standard verification gate:
 
 ```bash
-cd tabitha && bun run precommit
+bun run precommit
 # Runs: bun run check && bun run check:lint && bun run test && bun run build
 ```

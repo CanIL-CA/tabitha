@@ -1,13 +1,13 @@
 ---
 name: svelte
-description: Official Svelte 5 & SvelteKit 2 development skill. MANDATORY best practices for Svelte 5 (Runes) and SvelteKit 2. TRIGGER when writing, modifying, inspecting, or refactoring any Svelte code, components (.svelte), or Svelte module files (.svelte.js, .svelte.ts).
+description: Svelte 5 (Runes) & SvelteKit 3 conventions for TaBiThA. TRIGGER when writing, modifying, inspecting, or refactoring any Svelte code, components (.svelte), or Svelte module files (.svelte.js, .svelte.ts).
 metadata:
   version: 5.x
 ---
 
-# Svelte 5 & SvelteKit 2 Best Practices
+# Svelte 5 & SvelteKit 3 Best Practices
 
-This document defines mandatory guidelines and code standards for Svelte 5 (Runes) and SvelteKit 2.
+Code standards for Svelte 5 (Runes) and SvelteKit 3 in this repo.
 
 **Validate with the Svelte MCP server.** The repo's `.mcp.json` connects the official Svelte server (`mcp.svelte.dev`). After writing or changing a `.svelte` file or a `.svelte.ts`/`.svelte.js` module, run its `svelte-autofixer` tool on the result and resolve what it reports. Its suggestions don't override these repo rules: when one conflicts with a rule below, follow the rule. When unsure of Svelte 5 or SvelteKit syntax, look it up with `list-sections` and `get-documentation` instead of guessing.
 
@@ -28,10 +28,7 @@ This document defines mandatory guidelines and code standards for Svelte 5 (Rune
   </script>
   ```
 - **NO `export let`**: Never use legacy Svelte 3/4 `export let` declarations.
-- **Two-Way Binding (`$bindable()`)**: Use `$bindable()` only when two-way binding is explicitly intended by the parent:
-  ```svelte
-  let { value = $bindable('') } = $props()
-  ```
+- **NO `$bindable()`**: Pass changes up through `on*` callback props (see section 4) instead of two-way binding.
 
 ---
 
@@ -145,7 +142,7 @@ This document defines mandatory guidelines and code standards for Svelte 5 (Rune
 
 ---
 
-## 7. SvelteKit 2 Integration
+## 7. SvelteKit 3 Integration
 
 - **Page Loader Data**: In `+page.svelte`, receive page loader data via `$props()`:
   ```svelte
@@ -154,5 +151,5 @@ This document defines mandatory guidelines and code standards for Svelte 5 (Rune
   </script>
   ```
 - **Syncing Route Changes**: If component state depends on loader data, use `$derived(data.foo)` or update reactive state when loader data changes. Avoid assigning `$state(data.foo)` without a mechanism to update state when route navigation changes `data`.
-- **Page & State Runes**: Use `import { page } from '$app/state'` for modern SvelteKit 2 page state access instead of legacy `$app/stores`.
+- **Page & State Runes**: Use `import { page } from '$app/state'` for page state, not `$app/stores`.
 - **Navigation**: Use `import { goto } from '$app/navigation'`.
