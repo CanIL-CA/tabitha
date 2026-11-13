@@ -56,7 +56,7 @@ const NP_ORDERING_RULES: OrderingRule[] = [
 	},
 	{
 		name: 'Place conjunctions at the front of the NP (must be after the adposition rule so the conjunction goes first)',
-		matches: create_token_filter({ 'category': 'Adposition' }),
+		matches: create_token_filter({ 'category': 'Conjunction' }),
 		position: 'start_of_phrase',
 	},
 ]

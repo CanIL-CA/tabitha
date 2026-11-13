@@ -1,5 +1,5 @@
-import { CheckerToken } from './editor'
-import { SourceEntity } from './source'
+import type { CheckerToken } from './editor'
+import type { SourceEntity } from './source'
 
 export type EditorAnalyzedEntity = Omit<SourceEntity, 'category_abbr' | 'feature_codes'>
 

@@ -81,6 +81,7 @@ const NOUN_REALTIONS_CONTEXTUAL: Array<[string, { head: TokenFilter, modified?: 
 	}],
 	['-Owner', {
 		head: create_token_filter({ 'stem': OWNER_STEMS }),
+		// TODO use Lexicon feature to see if 'modified' is 'Masculine/Feminine' (a person)
 	}],
 	['-Part Whole', {
 		head: create_token_filter({ 'stem': 'bottom|side|top' }),
