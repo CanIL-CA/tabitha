@@ -388,17 +388,24 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': "'of' after kind becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'kind' } },
-		'transform': { 'function': { 'relation': 'kind|pre_head_of', 'remove_tag': 'pre_np_adposition' } },
+		'transform': { 'function': { 'relation': 'kind|pre_head_of' }, 'remove_tag': 'pre_np_adposition' },
 		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
-		'comment': '"kind of" is the modifier of the noun that follows, so it is handled a bit differently'
+		'comment': '"kind of" is the modifier of the noun that follows, so it is handled a bit differently',
 	},
 	{
 		'name': "'of' after quantity nouns becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'gram|jar|kilogram|liter|loaf' } },
-		'transform': { 'function': { 'relation': 'quantity|pre_head_of', 'remove_tag': 'pre_np_adposition' } },
+		'transform': { 'function': { 'relation': 'quantity|pre_head_of' }, 'remove_tag': 'pre_np_adposition' },
 		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
-		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently'
+		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently',
+	},
+	{
+		'name': "'of' after an adjective becomes a subgroup function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'category': 'Adjective' } },
+		'transform': { 'function': { 'relation': 'subgroup' }, 'remove_tag': 'pre_np_adposition' },
+		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently',
 	},
 	{
 		'name': 'certain Noun-Noun combinations are "made_of"',
