@@ -368,7 +368,10 @@ export function* validate_case_frame(trigger_context: RuleTriggerContext): Gener
 	// Flag a pairing that is invalid
 	// If the base word is invalid, there's no point checking the pairing
 	const pairing_token = token.pairing
-	if (case_frame.status === 'valid' && pairing_token && pairing_token.lookup_results.some(({ case_frame }) => case_frame.result.status === 'invalid')) {
+	if (!pairing_token || pairing_token.lookup_results.every(lookup => !lookup.case_frame.should_validate)) {
+		return
+	}
+	if (case_frame.status === 'valid' && pairing_token.lookup_results.some(({ case_frame }) => case_frame.result.status === 'invalid')) {
 		const selected_pairing_result = pairing_token.lookup_results[0]
 		const simple_sense = stem_with_sense(selected_result)
 		if (no_matches_and_ambiguous_sense(pairing_token)) {
@@ -393,6 +396,10 @@ export function* validate_case_frame(trigger_context: RuleTriggerContext): Gener
 }
 
 function show_invalid_roles(lookup: LookupResult): MessageInfo {
+	return { info: `${stem_with_sense(lookup)}: ${get_invalid_roles_message(lookup)}` }
+}
+
+function get_invalid_roles_message(lookup: LookupResult): string {
 	function get_missing_messages(role_tag: RoleTag) {
 		const missing_message = lookup.case_frame.rules.find(rule => rule.role_tag === role_tag)?.missing_message ?? ''
 		if (missing_message.length) {
@@ -407,8 +414,7 @@ function show_invalid_roles(lookup: LookupResult): MessageInfo {
 	const extra_message = extra_roles.length ? `unexpected ${extra_roles.join(', ')}` : ''
 
 	const joiner = missing_message.length && extra_message.length ? '; ' : ''
-	
-	return { info: `${stem_with_sense(lookup)}: ${missing_message}${joiner}${extra_message}` }
+	return `${missing_message}${joiner}${extra_message}`
 }
 
 function shares_argument_token({ match, other_match }: { match: RoleMatchResult; other_match: RoleMatchResult }): boolean {
@@ -444,5 +450,55 @@ function* flag_unbracketed_clause({ trigger_context, severity }: { trigger_conte
 
 	for (const extra_argument of trigger_token.lookup_results[0].case_frame.result.extra_arguments) {
 		yield flag_extra_argument({ trigger_context, extra_argument, message: extra_argument.rule.extra_message, severity: 'warning' })
+	}
+}
+
+export function validate_case_frame_for_analyze(trigger_context: RuleTriggerContext): MessageInfo[] {
+	const token = trigger_context.trigger_token
+
+	if (token.lookup_results.every(lookup => !lookup.case_frame.should_validate)) {
+		return [{ suggest: "The arguments of '{stem}' were not explicitly checked and may need attention." }]
+	}
+
+	const selected_result = token.lookup_results[0]
+	const case_frame = selected_result.case_frame.result
+
+	if (no_matches_and_ambiguous_sense(token)) {
+		const reason_hint = get_no_match_reason_hint(token)
+		return [{ warning: `The sense of '{stem}' could not be determined by the case frame${reason_hint}. Defaulted to 'A'.` }]
+
+	} else if (case_frame.status === 'invalid') {
+		return [{ warning: `{sense} may have been analyzed poorly due to unexpected usage of {sense} (${get_invalid_roles_message(selected_result)}).` }]
+	}
+
+	// Flag a pairing that is invalid
+	// If the base word is invalid, there's no point checking the pairing
+	const pairing_token = token.pairing
+	if (case_frame.status === 'valid' && pairing_token && pairing_token.lookup_results.some(({ case_frame }) => case_frame.result.status === 'invalid')) {
+		const selected_pairing_result = pairing_token.lookup_results[0]
+		const simple_sense = stem_with_sense(selected_result)
+		if (no_matches_and_ambiguous_sense(pairing_token)) {
+			return [{ warning: `'${selected_pairing_result.stem}' may not be compatible with this usage of ${simple_sense}.` }]
+
+		} else if (selected_pairing_result.case_frame.result.status === 'invalid') {
+			const pairing_sense = stem_with_sense(selected_pairing_result)
+			return [{ warning: `${pairing_sense} may not be compatible with this usage of ${simple_sense}.` }]
+		}
+	}
+
+	return []
+
+	function get_no_match_reason_hint(token: Token) {
+		if (token.lookup_results.every(lookup => lookup.case_frame.result.extra_arguments.length > 0)) {
+			const extra_arguments = [...new Set(token.lookup_results.flatMap(lookup => lookup.case_frame.result.extra_arguments.map(arg => readable_role_tag(arg.role_tag))))]
+			const arg_hint = extra_arguments.length > 2 ? '' : ` (${extra_arguments.join(', ')})`
+			return ` due to unexpected arguments${arg_hint}`
+		} else if (token.lookup_results.every(lookup => lookup.case_frame.result.missing_arguments.length > 0)) {
+			const missing_arguments = [...new Set(token.lookup_results.flatMap(lookup => lookup.case_frame.result.missing_arguments.map(readable_role_tag)))]
+			const arg_hint = missing_arguments.length > 2 ? '' : ` (${missing_arguments.join(', ')})`
+			return ` due to missing arguments${arg_hint}`
+		} else {
+			return ''
+		}
 	}
 }

@@ -89,19 +89,18 @@ describe('ordering', () => {
 
 		test.each([
 			['genitive_saxon', '-Kinship', 'John', 'brother'],
-			['title', '-Title', 'King', 'David'],
-			['made_of', '-Made of', 'gold', 'statue'],
+			['pre_head_adjunct', '-Title', 'King', 'David'],
 		])('places a %s NP directly after the noun it modifies', (relation, adposition, modifier, head) => {
 			const tokens = order_main_clause(np({ role: 'patient', contents: [...relation_np({ relation, adposition, modifier }), noun(head)] }))
 
 			expect(stems(tokens)).toEqual([head, adposition, modifier])
 		})
 
-		test('places a group NP directly after the noun it modifies', () => {
-			const group_np = phrase({ type: 'NP', tag: { relation: 'group' }, contents: [noun('group'), word({ stem: '-Group', part_of_speech: 'Adposition', tag: { relation: 'group' } })] })
+		test('places a pre_head_of NP directly after the noun it modifies', () => {
+			const group_np = phrase({ type: 'NP', tag: { relation: 'pre_head_of' }, contents: [noun('group'), word({ stem: '-Group', part_of_speech: 'Adposition', tag: { relation: 'group' } })] })
 			const tokens = order_main_clause(np({ role: 'patient', contents: [...group_np, noun('people')] }))
 
-			expect(stems(tokens)).toEqual(['people', 'group', '-Group'])
+			expect(stems(tokens)).toEqual(['people', '-Group', 'group'])
 		})
 
 		test('leaves the other modifiers in front of the noun', () => {
@@ -109,13 +108,6 @@ describe('ordering', () => {
 			const tokens = order_main_clause(np({ role: 'patient', contents: [...adjective, ...saxon_np(), noun('brother')] }))
 
 			expect(stems(tokens)).toEqual(['big', 'brother', '-Kinship', 'John'])
-		})
-
-		test('keeps several relation NPs in their original order', () => {
-			const made_of_np = relation_np({ relation: 'made_of', adposition: '-Made of', modifier: 'gold' })
-			const tokens = order_main_clause(np({ role: 'patient', contents: [...made_of_np, ...saxon_np(), noun('statue')] }))
-
-			expect(stems(tokens)).toEqual(['statue', '-Made of', 'gold', '-Kinship', 'John'])
 		})
 
 		test('places the relation NP directly after the noun, before the NPs already after it', () => {
@@ -142,6 +134,28 @@ describe('ordering', () => {
 			const tokens = order_main_clause(phrase({ type: 'AdjP', contents: [word({ stem: 'kind', part_of_speech: 'Adjective' }), ...inner_np] }))
 
 			expect(stems(tokens)).toEqual(['kind', 'book', '-Kinship', 'John'])
+		})
+
+		test('places an adposition at the front of the NP', () => {
+			const to_word = word({ stem: 'to', part_of_speech: 'Adposition' })
+			const tokens = order_main_clause(np({ role: 'destination', contents: [noun('house'), to_word] }))
+
+			expect(stems(tokens)).toEqual(['to', 'house'])
+		})
+
+		test('places a conjunction in front of the adposition at the front of the NP', () => {
+			const to_word = word({ stem: 'to', part_of_speech: 'Adposition' })
+			const and_word = word({ stem: 'and', part_of_speech: 'Conjunction' })
+			const tokens = order_main_clause(np({ role: 'destination', contents: [noun('house'), to_word, and_word] }))
+
+			expect(stems(tokens)).toEqual(['and', 'to', 'house'])
+		})
+
+		test('places a conjunction at the front of the NP when there is no adposition', () => {
+			const and_word = word({ stem: 'and', part_of_speech: 'Conjunction' })
+			const tokens = order_main_clause(np({ role: 'agent', contents: [noun('John'), and_word] }))
+
+			expect(stems(tokens)).toEqual(['and', 'John'])
 		})
 
 		test('leaves NPs where they are when the NP has no head noun', () => {

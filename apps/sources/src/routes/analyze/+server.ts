@@ -19,6 +19,7 @@ export async function GET({ locals: { db }, url: { searchParams } }: Parameters<
 	const source_entities_with_features = await transform_features_to_codes({ db, source_entities })
 
 	const result: AnalysisResult = {
+		...api_result,
 		source_entities: source_entities_with_features,
 	}
 	return Response.json(result)

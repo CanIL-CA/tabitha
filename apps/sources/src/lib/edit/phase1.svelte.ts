@@ -1,37 +1,33 @@
-import { PUBLIC_EDITOR_API_HOST } from '$app/env/public'
-import { create_editor_client } from '@tabitha/api-client'
 import { fetch_analyzed_text } from '#lib/data/api_lookups.js'
-import type { CheckerMessage, CheckerToken, EditorCheckResult } from '@tabitha/types'
+import type { CheckerMessage, CheckerMessageLabel, CheckerToken } from '@tabitha/types'
 import type { AnalyzedTextResult } from '#lib/types.ts'
 
-const editor_client = create_editor_client({ base_url: PUBLIC_EDITOR_API_HOST })
-
-type MessageWithTokenIndex = [CheckerMessage, number]
+type AnalyzerTokenMessage = {
+	message: CheckerMessage
+	token_index: number
+}
 
 const flatten_tokens = (token: CheckerToken): CheckerToken[] =>
 	token.sub_tokens.length ? token.sub_tokens.flatMap(flatten_tokens) : [token]
 
-const collect_errors_and_warnings = (tokens: CheckerToken[]): MessageWithTokenIndex[] =>
-	tokens
-		.flatMap((token, token_index) => {
-			const messages = [...token.messages, ...token.pairing?.messages ?? [], ...token.pronoun?.messages ?? []]
-			return messages.map<MessageWithTokenIndex>(message => [message, token_index])
-		})
-		.filter(([message]) => ['error', 'warning'].includes(message.label))
+const collect_messages = ({ tokens, labels }: { tokens: CheckerToken[], labels: CheckerMessageLabel[] }): AnalyzerTokenMessage[] =>
+	tokens.flatMap((token, token_index) => {
+		const messages = [...token.messages, ...token.pairing?.messages ?? [], ...token.pronoun?.messages ?? []]
+		return messages.map<AnalyzerTokenMessage>(message => ({ message, token_index }))
+	}).filter(({ message }) => labels.includes(message.label))
 
 export class Phase1 {
-	is_checked: boolean
-	check_result = $state.raw<EditorCheckResult | null>(null)
-	errors_and_warnings = $state.raw<MessageWithTokenIndex[]>([])
-	checking = $state(false)
-	analyzing = $state(false)
-	api_error = $state<string | null>(null)
 	#text = $state('')
-	#checked_text = $state<string | null>(null)
+
+	analyzing = $state(false)
+	analyze_result = $state.raw<AnalyzedTextResult | null>(null)
+
+	token_messages = $state.raw<AnalyzerTokenMessage[]>([])
+	api_error = $state<string | null>(null)
+	error_dismissed = $state(false)
 
 	constructor(initial_text: string) {
 		this.#text = initial_text
-		this.is_checked = $derived(this.#checked_text === this.#text)
 	}
 
 	get text() {
@@ -43,40 +39,43 @@ export class Phase1 {
 		this.api_error = null
 	}
 
-	async check() {
+	dismiss_error() {
+		this.error_dismissed = true
 		this.api_error = null
-		this.check_result = null
-		this.checking = true
+	}
 
-		const text_to_check = this.text
-		try {
-			const check_response = await editor_client.check_text({ text: text_to_check })
-			if (!check_response) throw new Error('Checker API request failed')
-
-			const tokens = check_response.tokens.flatMap(flatten_tokens)
-			this.errors_and_warnings = collect_errors_and_warnings(tokens)
-			this.check_result = { ...check_response, tokens }
-			this.#checked_text = text_to_check
-		} catch (err) {
-			this.api_error = err instanceof Error ? err.message : 'Failed to check text'
-		} finally {
-			this.checking = false
-		}
+	dismiss_message(dismissed_message: AnalyzerTokenMessage) {
+		this.token_messages = this.token_messages.filter(token_message => token_message !== dismissed_message)
 	}
 
 	/** Analyzes the current text. Returns `undefined` if the request failed, with the reason in `api_error`. */
-	async analyze(): Promise<AnalyzedTextResult | undefined> {
-		this.api_error = null
-		this.check_result = null
+	async analyze(): Promise<AnalyzedTextResult> {
+		this.clear_analyze_result()
 		this.analyzing = true
 
 		try {
-			return await fetch_analyzed_text({ text: this.text })
+			const result = await fetch_analyzed_text({ text: this.text })
+			const was_error = result.status === 'error'
+
+			const tokens = result.tokens.flatMap(flatten_tokens)
+
+			const labels_to_show: CheckerMessageLabel[] = was_error ? ['error'] : ['warning', 'suggest']
+			this.token_messages = collect_messages({ tokens, labels: labels_to_show })
+			this.analyze_result = { ...result, tokens }
 		} catch (err) {
+			this.analyze_result = { status: 'error', tokens: [], source_entities: [], ontology_results: [] }
 			this.api_error = err instanceof Error ? err.message : 'Failed to analyze text'
-			return undefined
 		} finally {
 			this.analyzing = false
 		}
+
+		return this.analyze_result
+	}
+
+	clear_analyze_result() {
+		this.api_error = null
+		this.token_messages = []
+		this.analyze_result = null
+		this.error_dismissed = false
 	}
 }

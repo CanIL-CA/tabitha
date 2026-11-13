@@ -75,6 +75,11 @@ const adposition_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<Adpos
 			'comment': 'eg. If John had left...',
 		}],
 	]],
+	['later', [
+		['later-A', {
+			'in_noun_phrase': head_noun_post(),
+		}],
+	]],
 	['so', [
 		['so-A', {
 			'in_noun_phrase': { },

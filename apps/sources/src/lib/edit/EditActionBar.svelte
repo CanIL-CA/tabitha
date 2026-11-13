@@ -15,8 +15,6 @@
 	}
 	let { nav_data, phase1 }: Props = $props()
 
-	let navigation_url_end = $derived(phase1 ? '/edit' : '/edit?phase1=false')
-
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
 	const senses = get_ontology_senses()
@@ -24,28 +22,28 @@
 	async function analyze_text() {
 		if (!phase1) return
 
-		if (!phase1.is_checked) {
-			if (!confirm('The text has not been checked yet. Are you sure you want to continue?')) {
-				return
-			}
-		}
-		const check_result = phase1.check_result
-		if (check_result && check_result.status !== 'ok') {
-			if (!confirm(`The checker found some ${check_result.status} in the text. Are you sure you want to continue?`)) {
+		if (edit_history().current.source_entities.length) {
+			if (!confirm('Are you sure you want to re-analyze this verse? The current encoding will get wiped out.')) {
 				return
 			}
 		}
 
-		const analyzed_text = await phase1.analyze()
-		if (!analyzed_text) return
+		const analyze_result = await phase1.analyze()
 
-		senses.remember(analyzed_text.ontology_results)
+		if (analyze_result.status === 'error') {
+			return
+		}
+		
+		senses.remember(analyze_result.ontology_results)
 		edit_history().record({ action: 'analyze', ids_before: [] })
-		edit_history().current = { source_entities: analyzed_text.source_entities }
+		edit_history().current = { source_entities: analyze_result.source_entities }
 	}
 	
 	function undo() {
 		const action = edit_history().undo()
+		if (action?.action === 'analyze') {
+			phase1?.clear_analyze_result()
+		}
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
 	}
 
@@ -89,25 +87,9 @@
 <div class="sticky top-0 z-15 bg-base-100">
 	<Header>
 		<div class="flex flex-wrap gap-4 ml-4">
-			<Navigation {nav_data} url_end={navigation_url_end} size="sm" />
+			<Navigation {nav_data} url_end="/edit" size="sm" />
 
 			{#if phase1}
-				<button
-					type="submit"
-					onclick={() => phase1.check()}
-					disabled={phase1.checking}
-					class="btn btn-sm btn-accent min-w-30"
-				>
-					Check Phase 1
-					{#if phase1.checking}
-						<Icon icon="line-md:loading-twotone-loop" class="h-5 w-5" />
-					{:else if phase1.is_checked && phase1.check_result?.status === 'ok'}
-						<Icon icon="mdi:check-bold" class="h-5 w-5" />
-					{:else}
-						<Icon icon="mdi:format-list-checks" class="h-5 w-5" />
-					{/if}
-				</button>
-
 				<button
 					type="submit"
 					onclick={analyze_text}
