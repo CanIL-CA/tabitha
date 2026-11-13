@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import { cached_json } from '@tabitha/api-client'
 import { normalize_wildcards } from '@tabitha/types/patterns'
+import { decode_lexicon_features, load_lexical_feature_map, type LexicalFeatureMap } from '#lib/server/features.js'
 import type { RequestHandler } from './$types'
 import type { D1DatabaseSession } from '@cloudflare/workers-types'
 import type { TargetFormResult } from '@tabitha/types'
@@ -26,13 +27,14 @@ export async function GET({ locals: { db }, params: { project }, url: { searchPa
 			AND forms LIKE ?
 	`
 
-	const [{ results: stem_matches }, { results: forms_matches }, form_name_by_position] = await Promise.all([
+	const [{ results: stem_matches }, { results: forms_matches }, form_name_by_position, lexical_feature_map] = await Promise.all([
 		db.prepare(stem_sql).bind(project, `${word}`).all<DbRowLexicon>(),
 		db.prepare(forms_sql).bind(project, `%|${word}|%`).all<DbRowLexicon>(),
 		get_form_name_by_position({ db, project }),
+		load_lexical_feature_map({ db, project }),
 	])
 
-	const forms = to_form_results({ word, stem_matches: stem_matches ?? [], forms_matches: forms_matches ?? [], form_name_by_position })
+	const forms = to_form_results({ word, stem_matches: stem_matches ?? [], forms_matches: forms_matches ?? [], form_name_by_position, lexical_feature_map })
 
 	return cached_json({ data: forms })
 }
@@ -54,10 +56,11 @@ export async function POST({ locals: { db }, params: { project }, request }: Par
 	const unique_words: string[] = [...new Set(words.map(word => word.toLowerCase()))]
 	const word_chunks = chunk({ items: unique_words, size: MAX_WORDS_PER_QUERY })
 
-	const [stem_rows, forms_rows, form_name_by_position] = await Promise.all([
+	const [stem_rows, forms_rows, form_name_by_position, lexical_feature_map] = await Promise.all([
 		Promise.all(word_chunks.map(chunk_words => select_by_stems({ db, project, words: chunk_words }))),
 		Promise.all(word_chunks.map(chunk_words => select_by_forms({ db, project, words: chunk_words }))),
 		get_form_name_by_position({ db, project }),
+		load_lexical_feature_map({ db, project }),
 	])
 	const stem_candidates = stem_rows.flat()
 	const forms_candidates = forms_rows.flat()
@@ -67,7 +70,7 @@ export async function POST({ locals: { db }, params: { project }, request }: Par
 		const stem_matches = stem_candidates.filter(row => row.stem.toLowerCase() === lowercase_word)
 		const forms_matches = forms_candidates.filter(row => row.forms.toLowerCase().includes(`|${lowercase_word}|`))
 
-		return [word, to_form_results({ word, stem_matches, forms_matches, form_name_by_position })]
+		return [word, to_form_results({ word, stem_matches, forms_matches, form_name_by_position, lexical_feature_map })]
 	}))
 
 	return Response.json(forms_by_word)
@@ -108,22 +111,27 @@ async function get_form_name_by_position({ db, project }: { db: D1DatabaseSessio
 	return new Map((results ?? []).map(({ part_of_speech, position, name }) => [form_name_key({ part_of_speech, position }), name]))
 }
 
-function to_form_results({ word, stem_matches, forms_matches, form_name_by_position }: {
+function to_form_results({ word, stem_matches, forms_matches, form_name_by_position, lexical_feature_map }: {
 	word: string
 	stem_matches: DbRowLexicon[]
 	forms_matches: DbRowLexicon[]
 	form_name_by_position: Map<string, string>
+	lexical_feature_map: LexicalFeatureMap
 }): TargetFormResult[] {
 	const forms: TargetFormResult[] = []
 
-	for (const { id, stem: base_stem, part_of_speech, constituents } of stem_matches) {
+	for (const lexicon_row of stem_matches) {
+		const { id, stem: base_stem, part_of_speech, constituents } = lexicon_row
 		const stem = derive_stem({ base_stem, constituents })
+		const features = decode_features_if_any({ lexicon_row, lexical_feature_map })
 
-		forms.push({ id, stem, part_of_speech, form: 'Stem' })
+		forms.push({ id, stem, part_of_speech, form: 'Stem', ...features })
 	}
 
-	for (const { id, stem: base_stem, part_of_speech, constituents, forms: encoded_forms } of forms_matches) {
+	for (const lexicon_row of forms_matches) {
+		const { id, stem: base_stem, part_of_speech, constituents, forms: encoded_forms } = lexicon_row
 		const stem = derive_stem({ base_stem, constituents })
+		const features = decode_features_if_any({ lexicon_row, lexical_feature_map })
 
 		const matched_indices = trim_pipes(encoded_forms)
 			.split('|')
@@ -133,11 +141,19 @@ function to_form_results({ word, stem_matches, forms_matches, form_name_by_posit
 		for (const i of matched_indices) {
 			const position = i + 1
 			const name = form_name_by_position.get(form_name_key({ part_of_speech, position })) ?? ''
-			forms.push({ id, stem, part_of_speech, form: name })
+			forms.push({ id, stem, part_of_speech, form: name, ...features })
 		}
 	}
 
 	return forms
+
+	function decode_features_if_any({ lexicon_row, lexical_feature_map }: {
+		lexicon_row: DbRowLexicon
+		lexical_feature_map: LexicalFeatureMap
+	}): Pick<TargetFormResult, 'features'> {
+		const features = decode_lexicon_features({ lexicon_row, lexical_feature_map })
+		return Object.keys(features).length ? { features } : {}
+	}
 
 	function derive_stem({ base_stem, constituents }: { base_stem: string; constituents: string }): string {
 		if (!constituents) {
