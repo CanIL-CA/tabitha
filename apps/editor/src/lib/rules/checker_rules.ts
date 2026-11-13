@@ -673,7 +673,8 @@ const builtin_checker_rules: BuiltInRule[] = [
 				}
 
 				function check_for_empty_theta_grid(token: Token): MessageInfo {
-					if (token.lookup_results.length === 0) {
+					// don't flag the categorization if the case frame wasn't validated to begin with
+					if (token.lookup_results.length === 0 || token.lookup_results.every(lookup => !lookup.case_frame.should_validate)) {
 						return {}
 					}
 					if (token.lookup_results.every(lookup => lookup.categorization.length === 0)) {

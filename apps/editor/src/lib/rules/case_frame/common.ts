@@ -368,7 +368,10 @@ export function* validate_case_frame(trigger_context: RuleTriggerContext): Gener
 	// Flag a pairing that is invalid
 	// If the base word is invalid, there's no point checking the pairing
 	const pairing_token = token.pairing
-	if (case_frame.status === 'valid' && pairing_token && pairing_token.lookup_results.some(({ case_frame }) => case_frame.result.status === 'invalid')) {
+	if (!pairing_token || pairing_token.lookup_results.every(lookup => !lookup.case_frame.should_validate)) {
+		return
+	}
+	if (case_frame.status === 'valid' && pairing_token.lookup_results.some(({ case_frame }) => case_frame.result.status === 'invalid')) {
 		const selected_pairing_result = pairing_token.lookup_results[0]
 		const simple_sense = stem_with_sense(selected_result)
 		if (no_matches_and_ambiguous_sense(pairing_token)) {
