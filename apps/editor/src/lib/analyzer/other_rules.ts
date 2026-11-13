@@ -69,7 +69,7 @@ pig|pillow|pitcher|pitchfork|plate|pot|present|purse|rag|ring|robe|room|rooster|
 // these relations have 'genitive_norman' or 'genitive_saxon' structure, and are differentiated only by the words they modify
 const NOUN_REALTIONS_CONTEXTUAL: Array<[string, { head: TokenFilter, modified?: TokenFilter }]> = [
 	['-Body Part', {
-		head: create_token_filter({ 'tag': { 'noun_category': 'locative' } }),
+		head: create_token_filter({ 'tag': { 'noun_category': 'body_part' } }),
 	}],
 	['-Kinship', {
 		head: create_token_filter({ 'tag': { 'noun_category': 'kinship' } }),
@@ -80,7 +80,7 @@ const NOUN_REALTIONS_CONTEXTUAL: Array<[string, { head: TokenFilter, modified?: 
 	}],
 	['-Owner', {
 		head: create_token_filter({ 'stem': OWNER_STEMS }),
-		modified: create_token_filter({ 'tag': { 'noun_category': 'person' } })
+		modified: create_token_filter({ 'tag': { 'noun_category': 'person' } }),
 	}],
 	['-Part Whole', {
 		head: create_token_filter({ 'stem': 'bottom|side|top' }),

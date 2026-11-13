@@ -590,7 +590,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': 'tag (most) animals',
 		'trigger': { 'stem': 'animal|bear|bird|cattle|chicken|cow|dog|donkey|dove|goat|horse|lion|pigeon|ram|rooster|sheep' },
 		'transform': { 'tag': { 'noun_category': 'animal' } },
-		'comment': 'overrides the "person" tag, since animals also get masculine/feminine gender.'
+		'comment': 'overrides the "person" tag, since animals also get masculine/feminine gender.',
 	},
 	{
 		'name': 'tag thing nouns',

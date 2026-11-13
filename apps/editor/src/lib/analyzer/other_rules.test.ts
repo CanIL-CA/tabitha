@@ -3,7 +3,7 @@ import { assign_noun_list_indexes, move_format_markers_out_of_clauses, replace_o
 import { phrase } from './test_helps'
 import { TOKEN_TYPE, create_lookup_result, create_token } from '#lib/token.js'
 import type { EditorAnalyzedEntity } from '@tabitha/types'
-import type { Sentence, Token } from '#lib/types.js'
+import type { Sentence, Tag, Token } from '#lib/types.js'
 
 describe('other_rules', () => {
 	test('assign_noun_list_indexes gives each distinct noun its own index', () => {
@@ -105,9 +105,10 @@ describe('other_rules', () => {
 
 	describe('replace_or_insert_noun_relations', () => {
 		const relation_word = ({ token, relation }: { token: string; relation: string }) => create_token({ token, type: TOKEN_TYPE.FUNCTION_WORD, tag: { relation, pre_np_adposition: 'relation' } })
-		const noun_word = (stem: string) => create_token({
+		const noun_word = ({ stem, tag = {} }: { stem: string; tag?: Tag }) => create_token({
 			token: stem,
 			type: TOKEN_TYPE.LOOKUP_WORD,
+			tag,
 			lookup_results: [create_lookup_result({ stem, part_of_speech: 'Noun', sense: 'A' })],
 		})
 		const relate = (sub_tokens: Token[]) => replace_or_insert_noun_relations([{
@@ -116,7 +117,7 @@ describe('other_rules', () => {
 		const stems = (tokens: Token[]) => tokens.map(token => token.lookup_results[0]?.stem ?? token.token)
 
 		test('replaces "of" after a quantity noun with -Quantity', () => {
-			const tokens = relate([noun_word('jar'), relation_word({ token: 'of', relation: 'quantity' }), noun_word('water')])
+			const tokens = relate([noun_word({ stem: 'jar' }), relation_word({ token: 'of', relation: 'quantity' }), noun_word({ stem: 'water' })])
 
 			expect(stems(tokens)).toEqual(['jar', '-Quantity', 'water'])
 			expect(tokens[1].type).toBe(TOKEN_TYPE.LOOKUP_WORD)
@@ -124,7 +125,7 @@ describe('other_rules', () => {
 		})
 
 		test('inserts -Iteration before the noun for the iteration relation, keeping the original token', () => {
-			const tokens = relate([relation_word({ token: 'times', relation: 'iteration' }), noun_word('week')])
+			const tokens = relate([relation_word({ token: 'times', relation: 'iteration' }), noun_word({ stem: 'week' })])
 
 			expect(stems(tokens)).toEqual(['-Iteration', 'times', 'week'])
 			expect(tokens[0].tag).toEqual({ relation: 'iteration', pre_np_adposition: 'relation' })
@@ -139,7 +140,7 @@ describe('other_rules', () => {
 			['made_of', '-Made of', 'insert'],
 		])('the %s relation uses %s (%s)', (relation, relation_stem, action) => {
 			const original = relation_word({ token: 'of', relation })
-			const tokens = relate([noun_word('thing'), original])
+			const tokens = relate([noun_word({ stem: 'thing' }), original])
 
 			expect(tokens.length).toBe(action === 'replace' ? 2 : 3)
 			expect(stems(tokens)).toContain(relation_stem)
@@ -147,45 +148,57 @@ describe('other_rules', () => {
 		})
 
 		test('leaves tokens without a relation alone', () => {
-			const tokens = relate([noun_word('jar'), noun_word('water')])
+			const tokens = relate([noun_word({ stem: 'jar' }), noun_word({ stem: 'water' })])
 
 			expect(stems(tokens)).toEqual(['jar', 'water'])
 		})
 
 		describe('generic genitive', () => {
+			const person_tag: Tag = { noun_category: 'person' }
 			const modifier_np = ({ relation, modifier }: { relation: 'genitive_norman' | 'genitive_saxon'; modifier: string }) => phrase({
 				type: 'NP',
 				tag: { relation },
 				contents: relation === 'genitive_norman'
-					? [relation_word({ token: 'of', relation }), noun_word(modifier)]
-					: [{ ...noun_word(modifier), tag: { relation } }],
+					? [relation_word({ token: 'of', relation }), noun_word({ stem: modifier, tag: person_tag })]
+					: [noun_word({ stem: modifier, tag: { ...person_tag, relation } })],
 			})
 			// eg {NP brother {NP<genitive_norman> of James } } or {NP {NP<genitive_saxon> James's } brother }
-			const genitive_stems = ({ relation, head, modifier }: { relation: 'genitive_norman' | 'genitive_saxon'; head: string; modifier: string }) => {
+			const genitive_stems = ({ relation, head, head_category, modifier }: { relation: 'genitive_norman' | 'genitive_saxon'; head: string; head_category?: string; modifier: string }) => {
+				const head_tag: Tag = head_category ? { noun_category: head_category } : {}
 				const contents = relation === 'genitive_norman'
-					? [noun_word(head), ...modifier_np({ relation, modifier })]
-					: [...modifier_np({ relation, modifier }), noun_word(head)]
+					? [noun_word({ stem: head, tag: head_tag }), ...modifier_np({ relation, modifier })]
+					: [...modifier_np({ relation, modifier }), noun_word({ stem: head, tag: head_tag })]
 				const tokens = relate(phrase({ type: 'NP', contents }))
 				return stems(tokens)
 			}
 
 			test('a norman genitive replaces "of" with the relation', () => {
-				expect(genitive_stems({ relation: 'genitive_norman', head: 'brother', modifier: 'James' })).toEqual(['{NP', 'brother', '{NP', '-Kinship', 'James', '}', '}'])
+				expect(genitive_stems({ relation: 'genitive_norman', head: 'brother', head_category: 'kinship', modifier: 'James' })).toEqual(['{NP', 'brother', '{NP', '-Kinship', 'James', '}', '}'])
 			})
 
 			test('a saxon genitive inserts the relation before the possessive word', () => {
-				expect(genitive_stems({ relation: 'genitive_saxon', head: 'brother', modifier: 'James' })).toEqual(['{NP', '{NP', '-Kinship', 'James', '}', 'brother', '}'])
+				expect(genitive_stems({ relation: 'genitive_saxon', head: 'brother', head_category: 'kinship', modifier: 'James' })).toEqual(['{NP', '{NP', '-Kinship', 'James', '}', 'brother', '}'])
 			})
 
 			test.each([
-				['hand', '-Body Part'],
-				['brother', '-Kinship'],
-				['house', '-Owner'],
-				['top', '-Part Whole'],
-				['meter', '-Quantity-Distance'],
-				['thing', '-Owner'],
-			])('uses the contextual relation for the head noun %s', (head, relation_stem) => {
-				expect(genitive_stems({ relation: 'genitive_norman', head, modifier: 'James' })).toContain(relation_stem)
+				['hand', 'body_part', '-Body Part'],
+				['brother', 'kinship', '-Kinship'],
+				['person', undefined, '-Kinship'],
+				['house', undefined, '-Owner'],
+				['top', undefined, '-Part Whole'],
+				['meter', undefined, '-Quantity-Distance'],
+				['thing', undefined, '-Owner'],
+			])('uses the contextual relation for the head noun %s', (head, head_category, relation_stem) => {
+				expect(genitive_stems({ relation: 'genitive_norman', head, head_category, modifier: 'James' })).toContain(relation_stem)
+			})
+
+			test('-Owner requires the modifier to be a person', () => {
+				const tokens = relate(phrase({
+					type: 'NP',
+					contents: [noun_word({ stem: 'house' }), ...phrase({ type: 'NP', tag: { relation: 'genitive_norman' }, contents: [relation_word({ token: 'of', relation: 'genitive_norman' }), noun_word({ stem: 'Jerusalem' })] })],
+				}))
+
+				expect(stems(tokens)).toContain('-Generic Genitive')
 			})
 
 			test('falls back to -Generic Genitive when the head noun has no contextual relation', () => {
