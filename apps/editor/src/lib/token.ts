@@ -206,6 +206,7 @@ export function create_lookup_result(overrides: CreatLookupResultOptions): Looku
 			should_validate: false,
 		},
 		form: overrides.form?.toLowerCase() ?? 'stem',
+		lexical_features: overrides.lexical_features ?? {},
 	}
 }
 

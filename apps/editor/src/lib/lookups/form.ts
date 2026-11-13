@@ -62,6 +62,9 @@ function apply_form_results({ lookup_token, form_results }: { lookup_token: Toke
 			// The lexical entry is the same as a previous one, but it has a different form. Include the new form
 			existing_result.form = `${existing_result.form}|${form_result.form.toLowerCase()}`
 
+			// The lexical features may also be different, but the extra complexity to deal with it isn't worth the few 
+			// edge cases that handling it would address. Saving for if it becomes a requested issue later
+
 		} else {
 			// This would result from a unique lexical entry with the same stem and part-of-speech as a previous one.
 			// But since we only need one instance of each form name, we can ignore this result. eg. Judah or Gad

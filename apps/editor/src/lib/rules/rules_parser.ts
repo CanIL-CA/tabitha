@@ -74,6 +74,18 @@ export function create_token_filter(filter_json: TokenFilterJson | undefined): T
 		},
 	})
 
+	const feature_json = filter_json['feature']
+	if (feature_json !== undefined) {
+		// A feature filter can include multiple pipe-separated values per key.
+		// A lookup results's lexical feature only has one value per key.
+		const feature_checkers = Object.entries(feature_json).map<LookupFilter>(([key, value]) => {
+			const value_checker = get_value_checker(value)
+			return lookup => key in lookup.lexical_features && value_checker(lookup.lexical_features[key])
+		})
+		const lookup_filter: LookupFilter = lookup => feature_checkers.every(checker => checker(lookup))
+		filters.push(token => token.lookup_results.length > 0 && token.lookup_results.every(lookup_filter))
+	}
+
 	return token => filters.every(filter => filter(token))
 
 	function add_value_filter({ property_value, value_getter }: { property_value: string | undefined; value_getter: (token: Token) => string }) {
