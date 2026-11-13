@@ -1,8 +1,8 @@
 import { TOKEN_TYPE } from '#lib/token.js'
-import type { CaseFrameRuleJson, RoleRuleValueJson } from '#lib/rules/case_frame/types.js'
+import type { CaseFrameRuleJson, RoleRuleValueJson, SenseRuleJson, VerbRoleTag } from '#lib/rules/case_frame/types.js'
 import type { TokenContextFilterJson, TokenFilterJsonBase } from '#lib/rules/types.js'
 
-export function patient_from_subordinate_clause() {
+export function patient_from_subordinate_clause(): SenseRuleJson<VerbRoleTag> {
 	return {
 		'patient': {
 			...by_clause_tag('patient_clause_different_participant'),
@@ -18,7 +18,7 @@ export function patient_from_subordinate_clause() {
 	}
 }
 
-export function with_be_auxiliary() {
+export function with_be_auxiliary(): SenseRuleJson<VerbRoleTag> {
 	return {
 		'other_rules': {
 			'be_auxiliary': {
@@ -34,7 +34,7 @@ export function with_be_auxiliary() {
 	}
 }
 
-export function with_no_double_patient() {
+export function with_no_double_patient(): SenseRuleJson<VerbRoleTag> {
 	return {
 		'other_rules': {
 			'double_patient': {
@@ -45,6 +45,15 @@ export function with_no_double_patient() {
 				},
 				'extra_message': "'{stem}' requires the patient to immediately follow the Verb. Make sure to use 'to X' for the destination.",
 			},
+		},
+	}
+}
+
+export function with_instrument({ trigger, adposition = 'with' }: { trigger?: TokenFilterJsonBase, adposition?: string } = {}): SenseRuleJson<VerbRoleTag> {
+	return {
+		'instrument': {
+			...by_adposition(adposition),
+			'trigger': { 'tag': { 'syntax': 'head_np', 'noun_category': 'thing' }, ...trigger },
 		},
 	}
 }

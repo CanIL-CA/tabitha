@@ -55,7 +55,8 @@ function apply_form_results({ lookup_token, form_results }: { lookup_token: Toke
 
 		if (!existing_result) {
 			// This is a new lexical entry
-			const new_result = create_lookup_result({ ...form_result, form: form_result.form })
+			const { stem, part_of_speech, form, features: lexical_features } = form_result
+			const new_result = create_lookup_result({ stem, part_of_speech, form, lexical_features })
 			transformed_results.push(new_result)
 
 		} else if (!existing_result.form.includes(form_result.form.toLowerCase())) {

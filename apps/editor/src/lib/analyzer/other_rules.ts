@@ -58,8 +58,7 @@ const NOUN_REALTIONS_STRUCTURAL: Array<[string, TokenFilter, 'replace' | 'insert
 	['-Iteration', create_token_filter({ 'tag': { 'relation': 'iteration' } }), 'insert'],
 ]
 
-const BODY_PART_STEMS = 'arm|back|blood|body|bone|chest|eye|face|feather|finger|foot|forehead|hair|hand|head|heart|heel|hip|horn|knee|leg|lip|mouth|neck|nose|shoulder|skin|stomach|toe|wing'
-const KINSHIP_STEMS = 'ancestor|baby|brother|child|cousin|daughter|daughter-in-law|descendant|family|father|Father|father-in-law|grandchild|grandfather|grandson|husband|mother|mother-in-law|parent|relative|sister|son|Son|uncle|wife'
+// This list of stems was copied from the classic Analyzer.
 const OWNER_STEMS = `animal|arrow|awl|axe|bag|bandage|barley|barn|basket|bed|bedroom|beer|belt|bleach|board|boat|book|booth|bowl|box|bread|brick|bucket|building|bull|bush|
 cage|calf|camel|chicken|clinic|cloth|clothes|club|coat|coffin|coin|comb|condom|container|couch|crop|cross|crown|cup|curtain|dock|dog|dollar|donkey|door|doorframe|dough|dove
 |dress|duck|egg|farm|fence|field|fig|fish|floor|flour|food|fruit|garden|gate|gem|gift|glass|glove|goat|gold|grape|grass|grave|helmet|hen|herb|horse|house|idol|incense|jar|
@@ -70,18 +69,18 @@ pig|pillow|pitcher|pitchfork|plate|pot|present|purse|rag|ring|robe|room|rooster|
 // these relations have 'genitive_norman' or 'genitive_saxon' structure, and are differentiated only by the words they modify
 const NOUN_REALTIONS_CONTEXTUAL: Array<[string, { head: TokenFilter, modified?: TokenFilter }]> = [
 	['-Body Part', {
-		head: create_token_filter({ 'stem': BODY_PART_STEMS }),
+		head: create_token_filter({ 'tag': { 'noun_category': 'locative' } }),
 	}],
 	['-Kinship', {
-		head: create_token_filter({ 'stem': KINSHIP_STEMS }),
+		head: create_token_filter({ 'tag': { 'noun_category': 'kinship' } }),
 	}],
 	['-Kinship', {
-		head: create_token_filter({ 'stem': 'person' }),
+		head: create_token_filter({ 'stem': 'person|baby' }),
 		modified: token => !['God', 'king'].includes(token.lookup_results[0].stem),
 	}],
 	['-Owner', {
 		head: create_token_filter({ 'stem': OWNER_STEMS }),
-		// TODO use Lexicon feature to see if 'modified' is 'Masculine/Feminine' (a person)
+		modified: create_token_filter({ 'tag': { 'noun_category': 'person' } })
 	}],
 	['-Part Whole', {
 		head: create_token_filter({ 'stem': 'bottom|side|top' }),

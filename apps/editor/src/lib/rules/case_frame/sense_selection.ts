@@ -59,7 +59,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['be-R', { }],	// partitive (part)
 		['be-T', { }],	// place of origin (from)
 		['be-U', { }],	// be like
-		['be-H', { 'state': { 'stem': 'day|morning|afternoon|evening|Sabbath' } }],	// temporal TODO check features of word from lexicon
+		['be-H', { 'state': { 'tag': { 'noun_category': 'temporal' } } }],
 		['be-W', { 'state': { 'stem': 'family|tribe' } }],
 		// senses with unique agents
 		['be-J', { 'agent': { 'stem': 'date' } }],	// date
@@ -72,7 +72,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 			'context': { 'precededby': [{ 'tag': { 'determiner': 'indefinite_article' }, 'skip': 'adjp_modifiers_attributive' }, { 'category': 'Adjective' }] },
 		} }],	// class membership (eg. John is a wicked man)
 		['be-Q', { 'state': { 'stem': 'bronze|clay|cloth|gold|iron|metal|sackcloth|silver|stone|wood' } } ],	// substance (made of)
-		['be-M', { 'state': { 'stem': 'ancestor|brother|child|daughter|descendant|father|husband|mother|sister|son|wife' } }],	// kinship
+		['be-M', { 'state': { 'tag': { 'noun_category': 'kinship' } } }],	// kinship
 		['be-L', { 'state': { 'stem': 'apostle|captain|emperor|farmer|governor|judge|king|leader|officer|official|priest|prince|prophet|queen|ruler|servant|slave|teacher' } }],	// social role
 		['be-S', { }],	// age
 		['be-B', { }],	// equative
@@ -89,7 +89,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		// 'become' is very particular and so each sense is specified to make the priority clear. Not all verbs will need this.
 		['become-G', { }],	// become like
 		['become-F', { 'agent': { 'stem': 'weather' } }],	// weather
-		['become-I', { 'state': { 'stem': 'day|morning|afternoon|evening|Sabbath' } }],	// temporal TODO check features of word from lexicon
+		['become-I', { 'state': { 'tag': { 'noun_category': 'temporal' } } }],
 		['become-H', { 'state': { 'stem': 'bronze|clay|cloth|gold|iron|metal|sackcloth|silver|wood' } } ],	// substance (made of)
 		['become-E', { 'state': { 'stem': 'ancestor|brother|child|daughter|descendant|father|husband|mother|sister|son|wife' } }],	// kinship
 		['become-C', { 'state': { 'stem': 'apostle|captain|emperor|farmer|governor|judge|king|leader|officer|official|priest|prince|prophet|queen|ruler|servant|slave|teacher' } }],	// social role
@@ -109,9 +109,8 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['break-E', { 'patient': { 'stem': 'promise|agreement' } }],
 	]],
 	['bring', [
-		// TODO use a lexicon feature for bring-B to check for any person.
-		['bring-B', { 'patient': { 'stem': 'baby|brother|child|girl|man|person|son|woman' } }],
-		['bring-C', { 'patient': { 'stem': 'animal|cattle|chicken|cow|horse|goat' } }],
+		['bring-B', { 'patient': { 'tag': { 'noun_category': 'person' } } }],
+		['bring-C', { 'patient': { 'tag': { 'noun_category': 'animal' } } }],
 	]],
 	['call', [
 		['call-B', { 'state': { } }],
@@ -146,7 +145,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['escape-C', { 'source': { 'stem': 'fire' } }],
 	]],
 	['fall', [
-		// TODO add an entry for fall-B to use a lexicon feature to check for any person.
+		['fall-B', { 'agent': { 'tag': { 'noun_category': 'person|animal' } } }],
 		['fall-D', { 'agent': { 'stem': 'soldier' } }],	// Nahum 2:5 'The soldiers fell in the streets.'  When soldiers fall, it will usually be because they're dead.
 	]],
 	['follow', [
@@ -159,8 +158,6 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['gather-B', { 'patient': { 'stem': 'grain|wheat|wood' } }],
 	]],
 	['give', [
-		['give-B', { 'patient': { 'stem': 'ring|vaccine' } }],
-		// TODO add another give-B entry to use a lexicon feature to check for any person.
 		['give-C', { 'patient': { 'stem': 'authority|law|name|peace|power|promise|skill|wisdom' } }],
 	]],
 	['go', [
@@ -175,11 +172,11 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['have-G', { 'state': { 'stem': 'feast|party' } }],
 		['have-F', { 'state': { 'stem': 'leaf|branch|wheel' } }],
 		['have-D', { 'state': { 'stem': 'authority|custom|faith|hope|life|peace|power|problem|spirit|trouble' } }],
-		['have-C', { 'state': { 'stem': 'wing|head|tooth|horn|eye|mouth|testicle' } }],
-		['have-B', { 'state': { 'stem': 'ancestor|brother|child|cousin|daughter|descendant|family|father|father-in-law|husband|mother|mother-in-law|parent|relative|sister|son|wife' } }],
+		['have-C', { 'state': { 'tag': { 'noun_category': 'body_part' } } }],
+		['have-B', { 'state': { 'tag': { 'noun_category': 'kinship' } } }],
 		['have-E', { 'state': { 'stem': 'AIDS|Avian-Influenza|cold|disease|fever|HIV|pain|sore|leprosy' } }],
+		['have-I', { 'agent': { 'tag': { 'noun_category': 'locative' } } }],
 		['have-A', { }],
-		['have-I', { }],	// TODO use a lexicon feature to check for the agent being a place
 	]],
 	['hurt', [
 		['hurt-C', { 'be_auxiliary': { } }],
@@ -195,7 +192,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['laugh-B', { }],
 	]],
 	['leave', [
-		['leave-B', { 'patient': { 'stem': 'father|king|man|Mary|Naomi|person|woman|Simon|Jesus|boy' } }],	// TODO use lexicon rules. these values were copied from the analyzer
+		['leave-B', { 'patient': { 'tag': { 'noun_category': 'person|animal' } } }],
 	]],
 	['live', [
 		['live-B', { 'lifespan_oblique': { } }],
@@ -206,7 +203,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['make-E', { 'patient': { 'stem': 'bread|food' } }],
 	]],
 	['move', [
-		['move-C', { 'patient': { 'stem': 'foot|hand|leg' } }],
+		['move-C', { 'patient': { 'tag': { 'noun_category': 'body_part' } } }],
 	]],
 	['open', [
 		['open-B', { 'patient': { 'stem': 'door|gate|window' } }],
@@ -232,7 +229,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	]],
 	['remember', [
 		['remember-B', { 'patient': { 'stem': 'day|event|holiday' } }],
-		['remember-C', { 'patient': { 'level': '4' } }],	// TODO use a lexicon feature to check for any person.
+		['remember-C', { 'patient': { 'tag': { 'noun_category': 'person|animal' } } }],
 		['remember-D', { 'patient': { } }],
 	]],
 	['run', [
@@ -253,7 +250,7 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['send-B', { 'patient': { 'stem': 'letter|message' } }],
 	]],
 	['shout', [
-		['shout-C', { 'agent': { 'stem': 'lion|dog|sheep|cow' } }],
+		['shout-C', { 'agent': { 'tag': { 'noun_category': 'animal' } } }],
 	]],
 	['show', [
 		['show-C', { 'patient': { 'stem': 'dream|vision|event|power' } }],
@@ -262,15 +259,13 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['speak-B', { }],
 	]],
 	['take', [
-		['take-B', { 'patient': { 'level': '4' } }], // TODO use a lexicon feature to check for any person.
-		['take-B', { 'patient': { 'stem': 'person|man|woman|child|son|daughter' } }],
-		['take-C', { 'patient': { 'stem': 'rooster|sheep|horse' } }],
-		['take-D', { 'source': { 'stem': 'person|man|woman|child|son|daughter' } }], // TODO use a lexicon feature to check for any person.
-		['take-E', { 'destination': { 'stem': 'person|man|woman|child|son|daughter' } }], // TODO use a lexicon feature to check for any person.
+		['take-B', { 'patient': { 'tag': { 'noun_category': 'person' } } }],
+		['take-C', { 'patient': { 'tag': { 'noun_category': 'animal' } } }],
+		['take-D', { 'source': { 'tag': { 'noun_category': 'person' } } }],
+		['take-E', { 'destination': { 'tag': { 'noun_category': 'person' } } }],
 	]],
 	['take-away', [
-		['take-away-A', { 'source': { 'level': '4' } }], // TODO use a lexicon feature to check for any person.
-		['take-away-A', { 'source': { 'stem': 'person|man|woman|child|son|daughter' } }],
+		['take-away-A', { 'source': { 'tag': { 'noun_category': 'person|animal' } } }],
 		['take-away-B', { 'patient': { 'stem': 'honor|power' } }],
 		['take-away-C', { }],	// this is the default sense of take-away
 	]],
@@ -377,7 +372,7 @@ const adjective_sense_priority_overrides: WordStemPriorityOverrides[] = [
  */
 const adposition_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	['at', [
-		['at-B', { 'in_noun_phrase': { 'stem': 'time|midnight' } }],
+		['at-B', { 'in_noun_phrase': { 'tag': { 'noun_category': 'temporal' } } }],
 	]],
 	['if', [
 		['if-B', { 'were': { } }],
@@ -386,7 +381,7 @@ const adposition_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	['in', [
 		['in-B', { 'in_noun_phrase': { 'stem': 'city|country|land|nation|region|town|village|desert|field|garden|kingdom|Israel|Egypt|Babylon|Assyria|Persia|Judah' } }],
 		['in-D', { 'in_noun_phrase': { 'stem': 'army|tribe|family|group' } }],
-		['in-E', { 'in_noun_phrase': { 'stem': 'evening|morning|day|future|night|month|time' } }],
+		['in-E', { 'in_noun_phrase': { 'tag': { 'noun_category': 'temporal' } } }],
 		['in-F', { 'in_noun_phrase': { 'stem': 'ground|water|sand|dust|dirt' } }],
 		['in-G', { 'in_noun_phrase': { 'stem': 'book|scroll|letter|law' } }],
 		['in-I', { 'in_noun_phrase': { 'stem': 'dream|vision' } }],
@@ -394,7 +389,7 @@ const adposition_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	]],
 	['on', [
 		['on-B', { 'in_noun_phrase': { 'stem': 'earth|ground' } }],
-		['on-E', { 'in_noun_phrase': { 'stem': 'day|Sabbath' } }],
+		['on-E', { 'in_noun_phrase': { 'tag': { 'noun_category': 'temporal' } } }],
 	]],
 	['so', [
 		['so-C', { 'would': { } }],

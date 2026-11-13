@@ -70,6 +70,11 @@ const ADJP_ORDERING_RULES: OrderingRule[] = [
 		matches: create_token_filter({ 'token': '{NP' }),
 		position: 'after_head_adjective',
 	},
+	{
+		name: 'Place adpositions at the front of the AdjP',
+		matches: create_token_filter({ 'category': 'Adposition' }),
+		position: 'start_of_phrase',
+	},
 ]
 
 /**
