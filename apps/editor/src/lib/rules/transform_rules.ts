@@ -574,6 +574,44 @@ const transform_rules_json: TransformRuleJson[] = [
 		'transform': { 'tag': { 'clause_type': 'patient_clause_different_participant|patient_clause_same_subject_passive' } },
 		'comment': 'eg John was ready-C [to be killed by people].',
 	},
+	// Noun features
+	// Eventually, we could expand the Ontology's Noun Categorization to include these subcategories
+	{
+		'name': 'tag Masculine/Feminine nouns as people',
+		'trigger': { 'feature': { 'Gender': 'Masculine|Feminine' } },
+		'transform': { 'tag': { 'noun_category': 'person' } },
+	},
+	{
+		'name': 'tag kinship nouns',
+		'trigger': { 'stem': 'ancestor|brother|child|cousin|daughter|daughter-in-law|descendant|family|father|Father|father-in-law|grandchild|grandfather|grandson|husband|mother|mother-in-law|parent|relative|sister|son|Son|uncle|wife' },
+		'transform': { 'tag': { 'noun_category': 'person|kinship' } },
+	},
+	{
+		'name': 'tag (most) animals',
+		'trigger': { 'stem': 'animal|bear|bird|cattle|chicken|cow|dog|donkey|dove|goat|horse|lion|pigeon|ram|rooster|sheep' },
+		'transform': { 'tag': { 'noun_category': 'animal' } },
+		'comment': 'overrides the "person" tag, since animals also get masculine/feminine gender.',
+	},
+	{
+		'name': 'tag thing nouns',
+		'trigger': { 'feature': { 'Common/Proper': 'Common', 'Gender': 'Neuter' } },
+		'transform': { 'tag': { 'noun_category': 'thing' } },
+	},
+	{
+		'name': 'tag body-part nouns',
+		'trigger': { 'stem': 'arm|back|blood|body|bone|chest|eye|face|feather|finger|foot|forehead|hair|hand|head|heart|heel|hip|horn|knee|leg|lip|mouth|neck|nose|shoulder|skin|stomach|testicle|toe|tooth|wing' },
+		'transform': { 'tag': { 'noun_category': 'thing|body_part' } },
+	},
+	{
+		'name': 'tag temporal nouns',
+		'trigger': { 'feature': { 'Type of Relative Clause': 'Temporal - Relativizer is when' } },
+		'transform': { 'tag': { 'noun_category': 'temporal' } },
+	},
+	{
+		'name': 'tag locative nouns',
+		'trigger': { 'feature': { 'Type of Relative Clause': 'Locative - Relativizer is where' } },
+		'transform': { 'tag': { 'noun_category': 'locative' } },
+	},
 	// Adpositions
 	{
 		'name': "'that' preceded by the Adposition 'so' does not have any function",
@@ -588,7 +626,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': "'from' becomes a function word when not followed by a time word",
 		'trigger': { 'token': 'from' },
 		'context': {
-			'notfollowedby': { 'stem': 'time|day|evening|morning|beginning', 'skip': 'np_modifiers' },
+			'notfollowedby': { 'tag': { 'noun_category': 'temporal' }, 'skip': 'np_modifiers' },
 		},
 		'transform': { 'function': { } },
 		'comment': '"from" followed by a time word does not indicate a source argument, but remains an Adposition',

@@ -55,12 +55,16 @@ function apply_form_results({ lookup_token, form_results }: { lookup_token: Toke
 
 		if (!existing_result) {
 			// This is a new lexical entry
-			const new_result = create_lookup_result({ ...form_result, form: form_result.form })
+			const { stem, part_of_speech, form, features: lexical_features } = form_result
+			const new_result = create_lookup_result({ stem, part_of_speech, form, lexical_features })
 			transformed_results.push(new_result)
 
 		} else if (!existing_result.form.includes(form_result.form.toLowerCase())) {
 			// The lexical entry is the same as a previous one, but it has a different form. Include the new form
 			existing_result.form = `${existing_result.form}|${form_result.form.toLowerCase()}`
+
+			// The lexical features may also be different, but the extra complexity to deal with it isn't worth the few 
+			// edge cases that handling it would address. Saving for if it becomes a requested issue later
 
 		} else {
 			// This would result from a unique lexical entry with the same stem and part-of-speech as a previous one.

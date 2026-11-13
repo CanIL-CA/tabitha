@@ -1,4 +1,4 @@
-import type { ConceptKey, PairingType } from '@tabitha/types'
+import type { ConceptKey, FeatureName, FeatureValue, PairingType } from '@tabitha/types'
 import type { CheckerTokenType, CheckerMessage, CheckerMessageLabel, CheckerLookupResult, CheckerTextInsertion, CheckerAutoFix } from '@tabitha/types/editor'
 import type { CaseFrame } from '#lib/rules/case_frame/types.js'
 
@@ -7,6 +7,7 @@ export type LookupTerm = string
 export type LookupWord = Pick<ConceptKey, 'stem' | 'part_of_speech'>
 
 export type LookupResult = Omit<CheckerLookupResult, 'case_frame'> & {
+	lexical_features: Record<FeatureName, FeatureValue>
 	case_frame: CaseFrame
 }
 

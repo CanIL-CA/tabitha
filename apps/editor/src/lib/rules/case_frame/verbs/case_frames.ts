@@ -1,6 +1,20 @@
 import { TOKEN_TYPE } from '#lib/token.js'
 import { parse_case_frame_rule, parse_sense_rules } from '../common'
-import { by_adposition, by_clause_tag, by_complementizer, by_adposition_concept, by_relative_context, directly_after_verb, directly_after_verb_with_adposition, directly_before_verb, patient_from_subordinate_clause, predicate_adjective, with_be_auxiliary, with_no_double_patient } from './presets'
+import {
+	by_adposition,
+	by_clause_tag,
+	by_complementizer,
+	by_adposition_concept,
+	by_relative_context,
+	directly_after_verb,
+	directly_after_verb_with_adposition,
+	directly_before_verb,
+	patient_from_subordinate_clause,
+	predicate_adjective,
+	with_be_auxiliary,
+	with_no_double_patient,
+	with_instrument,
+} from './presets'
 import type { Token } from '#lib/types.js'
 import type {
 	ArgumentRoleRule,
@@ -36,16 +50,15 @@ const default_verb_case_frame_json: RoleRuleJson<VerbRoleTag> = {
 	'destination': by_adposition('to'),
 	'instrument': {
 		'trigger': 'none',
-		// TODO check feature on lexicon word like the Analyzer does. instruments have to be a thing, not a person
-		'comment': 'An instrument is not present by default ("with" could mean other things as well)',
+		'comment': `An instrument is not present by default ("with" could mean other things as well).
+			Always triggering on a thing is too general - let each verb indicate if it expects an instrument.
+			I'd rather miss the instrument on some verbs (leaving 'with' in the analysis) than falsely setting it and removing the with.`,
 	},
 	'beneficiary': {
-		// TODO check feature on lexicon word like the Analyzer does. beneficiaries have to be animate, not things.
-		// For now only accept proper names. Not a big deal because the beneficiary is never required, and could be used for most verbs.
 		...by_relative_context({
 			'followedby': [
 				{ 'token': 'for', 'skip': 'all' },
-				{ 'tag': { 'syntax': 'head_np' }, 'level': '4', 'skip': 'np_modifiers' },
+				{ 'tag': { 'syntax': 'head_np', 'noun_category': 'person' }, 'skip': 'np_modifiers' },
 			],
 		}),
 		'argument_context_index': 1,
@@ -118,7 +131,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['arrive-A', { 'patient': directly_after_verb_with_adposition('at|in') }],
 	]],
 	['attach', [
-		['attach-A', { 'instrument': by_adposition('with') }],
+		['attach-A', with_instrument()],
 	]],
 	['ask', [
 		['ask-A', {
@@ -280,7 +293,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['be-X', { 'state': directly_after_verb() }],
 	]],
 	['beat', [
-		['beat-A', { 'instrument': by_adposition('with') }],
+		['beat-A', with_instrument()],
 	]],
 	['become', [
 		['become-A', {
@@ -372,13 +385,13 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['bring', []],
 	['build', []],
 	['burn', [
-		['burn-A', { 'instrument': by_adposition('with') }],
+		['burn-A', with_instrument()],
 	]],
 	['bury', [
 		['bury-A', { 'destination': by_adposition('in') }],
 	]],
 	['buy', [
-		['buy-A', { 'instrument': by_adposition('with|for') }],
+		['buy-A', with_instrument({ adposition: 'with|for' })],
 	]],
 	['call', [
 		['call-A', { 'state': { 'trigger': 'none' } }],
@@ -405,24 +418,24 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['carry', [
 		['carry-A', {
 			'destination': by_adposition('to|into'),
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 		}],
 	]],
 	['carry', [
-		['carry-B', { 'instrument': by_adposition('with') }],
-		['carry-C', { 'instrument': by_adposition('with') }],
-		['carry-E', { 'instrument': by_adposition('with') }],
+		['carry-B', with_instrument()],
+		['carry-C', with_instrument()],
+		['carry-E', with_instrument()],
 	]],
 	['catch', [
-		['catch-B', { 'instrument': by_adposition('with') }],
-		['catch-C', { 'instrument': by_adposition('with') }],
+		['catch-B', with_instrument()],
+		['catch-C', with_instrument()],
 	]],
 	['cause', []],
 	['celebrate', [
-		['celebrate-A', { 'instrument': by_adposition('with') }],
+		['celebrate-A', with_instrument()],
 		['celebrate-B', {
 			'destination': by_adposition('until'),
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 		}],
 	]],
 	['change', [
@@ -456,7 +469,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['command', [
 		['command-A', {
 			...patient_from_subordinate_clause(),
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 		}],
 		['command-B', { 'patient_clause_type': 'patient_clause_quote_begin' }],
 	]],
@@ -466,8 +479,8 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['contain', []],
 	['cost', []],
 	['cover', [
-		['cover-A', { 'instrument': by_adposition('with') }],
-		['cover-B', { 'instrument': by_adposition('with') }],
+		['cover-A', with_instrument()],
+		['cover-B', with_instrument()],
 	]],
 	['cry-out', [
 		['cry-out-A', { 'patient': by_adposition('about') }],
@@ -493,7 +506,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['divide', [
 		['divide-A', {
 			'destination': by_adposition('into'),	// divided the kingdom into regions
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 			'beneficiary': by_adposition('among'),	// divided the lang among the tribes
 		}],
 		['divide-B', { 'patient': by_adposition('into') }],
@@ -507,7 +520,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['drop-A', { 'destination': by_adposition_concept('to|on|into') }],
 	]],
 	['eat', [
-		['eat-A', { 'instrument': by_adposition('with') }],
+		['eat-A', with_instrument()],
 	]],
 	['encourage', [
 		['encourage-B', patient_from_subordinate_clause()],
@@ -539,12 +552,10 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 				directly_after_verb(),
 				by_adposition('against|with'),
 			],
-			'instrument': {
-				...by_adposition('with'),
-				'trigger': { 'tag': { 'syntax': 'head_np' }, 'level': '0|1|2|3' },	// the instrument can't be a level 4 word (proper name)
-			},
+			// the instrument can't be a level 4 word (proper name) or it might clash with the patient
+			...with_instrument({ trigger: { 'level': '0|1|2|3' } }),
 		}],
-		['fight-B', { 'instrument': by_adposition('with') }],
+		['fight-B', with_instrument()],
 	]],
 	['find-out', [
 		['find-out-B', {
@@ -567,7 +578,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['forgive-D', patient_from_subordinate_clause()],
 	]],
 	['gather', [
-		['gather-B', { 'instrument': by_adposition('with') }],
+		['gather-B', with_instrument()],
 	]],
 	['give', [
 		['give-A', with_no_double_patient()],
@@ -596,11 +607,11 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['hate-B', { 'patient_clause_type': 'patient_clause_same_participant' }],
 	]],
 	['have', [
-		['have-J', { 'instrument': by_adposition('with') }],
+		['have-J', with_instrument()],
 	]],
 	['hear', [
-		['hear-A', { 'instrument': by_adposition('with') }],
-		['hear-B', { 'instrument': by_adposition('with') }],
+		['hear-A', with_instrument()],
+		['hear-B', with_instrument()],
 		['hear-C', { 'other_optional': 'patient_clause_simultaneous' }],
 		['hear-D', { 'patient': by_adposition('about') }],
 	]],
@@ -628,7 +639,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['kill', []],
 	['know', [
 		['know-D', { 'patient': directly_after_verb_with_adposition('about') }],
-		['know-B', { 'instrument': by_adposition('with') }],
+		['know-B', with_instrument()],
 	]],
 	['know-how', [
 		['know-how-A', { 'patient_clause_type': 'patient_clause_same_participant' }],
@@ -707,7 +718,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['look-B', { 'other_required': 'predicate_adjective' }],	// X looked happy/sad/excited
 	]],
 	['make', [
-		['make-A', { 'instrument': by_adposition('with') }],
+		['make-A', with_instrument()],
 		['make-C', {
 			// Possible accepted formats:
 			// Gen 22:16 make a promise [in my name](instrument).
@@ -732,7 +743,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 				},
 			],
 		}],
-		['make-E', { 'instrument': by_adposition('with') }],
+		['make-E', with_instrument()],
 	]],
 	['marry', [
 		['marry-B', with_be_auxiliary()],
@@ -799,9 +810,9 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	]],
 	['prevent', []],
 	['promise', [
-		['promise-A', { 'instrument': by_adposition('with') }],
+		['promise-A', with_instrument()],
 		['promise-B', {
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 			'patient_clause_type': 'patient_clause_quote_begin',
 		}],
 	]],
@@ -874,13 +885,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['seem-C', { 'patient': directly_after_verb_with_adposition('like') }],
 	]],
 	['sell', [
-		['sell-A', {
-			'instrument': {
-				...by_adposition('for'),
-				'trigger': { 'tag': { 'syntax': 'head_np' }, 'level': '0|1' },
-				'comment': "don't confuse the instrument with a beneficiary, which currently must be level 4",
-			},
-		}],
+		['sell-A', with_instrument({ adposition: 'for' })],
 	]],
 	['send', [
 		['send-A', with_no_double_patient()],
@@ -919,7 +924,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['speak', [
 		['speak-A', {
 			'patient': by_adposition('about'),
-			'instrument': by_adposition('in'),	// in a language
+			...with_instrument({ adposition: 'in' }),	// in a language
 			'other_rules': {
 				'extra_patient': {
 					...directly_after_verb(),
@@ -990,17 +995,17 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	]],
 	['tell', [
 		['tell-A', {
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 			'patient_clause_different_participant': by_clause_tag('patient_clause_different_participant|relative_clause_that'),
 			'comment': "the patient clause may have been interpreted as a relative clause if 'that' was present",
 		}],
 		['tell-B', patient_from_subordinate_clause()],
 		['tell-C', {
 			'destination': directly_after_verb(),
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 			'patient': by_adposition('about'),
 		}],
-		['tell-D', { 'instrument': by_adposition('with') }],
+		['tell-D', with_instrument()],
 		['tell-E', { 'patient_clause_type': 'patient_clause_quote_begin' }],
 	]],
 	['think', [
@@ -1043,20 +1048,20 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['throw-E', { 'destination': by_adposition('into|on|at') }],
 	]],
 	['tie', [
-		['tie-A', { 'instrument': by_adposition('with') }],
+		['tie-A', with_instrument()],
 		['tie-B', {
 			...with_be_auxiliary(),
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 		}],
-		['tie-C', { 'instrument': by_adposition('with') }],
+		['tie-C', with_instrument()],
 	]],
 	['trust', [
 		['trust-A', {
 			'patient': by_adposition('in'),
-			'instrument': by_adposition('with'),
+			...with_instrument(),
 		}],
-		['trust-B', { 'instrument': by_adposition('with') }],
-		['trust-C', { 'instrument': by_adposition('with') }],
+		['trust-B', with_instrument()],
+		['trust-C', with_instrument()],
 		['trust-D', patient_from_subordinate_clause()],
 	]],
 	['try', [
@@ -1129,7 +1134,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	]],
 	['weigh', []],
 	['work', [
-		['work-A', { 'instrument': by_adposition('with') }],
+		['work-A', with_instrument()],
 	]],
 	['worry', [
 		['worry-A', {
@@ -1139,11 +1144,11 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['worry-B', with_be_auxiliary()],
 	]],
 	['wrap', [
-		['wrap-A', { 'instrument': by_adposition('with') }],
+		['wrap-A', with_instrument()],
 	]],
 	['write', [
-		['write-A', { 'instrument': by_adposition('with') }],
-		['write-B', { 'instrument': by_adposition('with') }],
+		['write-A', with_instrument()],
+		['write-B', with_instrument()],
 		['write-C', {
 			'patient': by_adposition('about'),
 			'patient_clause_type': 'patient_clause_quote_begin',
