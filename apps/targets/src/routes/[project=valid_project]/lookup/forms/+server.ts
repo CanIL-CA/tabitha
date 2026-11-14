@@ -61,7 +61,10 @@ export async function POST({ locals: { db }, params: { project }, request }: Par
 		Promise.all(word_chunks.map(chunk_words => select_by_forms({ db, project, words: chunk_words }))),
 		get_form_name_by_position({ db, project }),
 		load_lexical_feature_map({ db, project }),
-	])
+	]).catch(cause => {
+		console.error('Batch forms lookup failed', { project, word_count: unique_words.length, words: unique_words })
+		throw cause
+	})
 	const stem_candidates = stem_rows.flat()
 	const forms_candidates = forms_rows.flat()
 
