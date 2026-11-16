@@ -6,6 +6,7 @@ export function patient_from_subordinate_clause(): SenseRuleJson<VerbRoleTag> {
 	return {
 		'patient': {
 			...by_clause_tag('patient_clause_different_participant'),
+			'transform': { 'tag': { 'gap': 'patient_from_clause' } },
 			'missing_message': "write 'X {stem} [Y to Verb]'",
 		},
 		'other_rules': {
