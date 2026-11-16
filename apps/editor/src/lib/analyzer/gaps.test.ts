@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { replace_gaps } from './gaps'
-import { clause, np, vp, word } from './test_helps'
+import { clause, np, phrase, vp, word, fw } from './test_helps'
 import { TOKEN_TYPE, create_gap_token } from '#lib/token.js'
 import type { Token } from '#lib/types.js'
 
@@ -43,6 +43,19 @@ describe('gaps', () => {
 		const filled_tokens = tokens.at(-1)!.sub_tokens
 		expect(texts(filled_tokens)).toEqual(['{NP', 'John', '}', '{NP', 'and', 'Mary', '}', '{VP', 'go', '}'])
 		expect(filled_tokens[3].tag).toEqual({ role: 'patient' })
+	})
+
+	test('GAP_SAME_SUB is replaced with the patient NP of a passive parent clause', () => {
+		const same_subject_clause = clause({ clause_type: 'patient_clause_same_participant', sub_tokens: [...np({ contents: [gap('SAME_SUB')] }), ...vp('go')] })
+		const passive_vp = phrase({ type: 'VP', contents: [word({ stem: 'be', part_of_speech: 'Verb', tag: { auxiliary: 'passive' } }), word({ stem: 'send', part_of_speech: 'Verb' })] })
+		const tokens = replace_in_main_clause([
+			...np({ role: 'patient', contents: [john()] }),
+			...passive_vp,
+			...np({ role: 'agent', contents: [fw({ token: 'by', tag: { 'pre_np_adposition': 'verb_argument' } }), word({ stem: 'Mary', part_of_speech: 'Noun' })] }),
+			same_subject_clause,
+		])
+
+		expect(texts(tokens.at(-1)!.sub_tokens)).toEqual(['{NP', 'John', '}', '{VP', 'go', '}'])
 	})
 
 	test('GAP_SAME_SUB uses a parent agent that was itself a filled gap', () => {

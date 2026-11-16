@@ -1203,10 +1203,14 @@ export function get_verb_case_frame_rules(token: Token): CaseFrameRuleInfo {
 }
 
 export function get_passive_verb_case_frame_rules(token: Token): CaseFrameRuleInfo {
-	// for a passive, the 'patient' goes right before the verb and the 'agent' is detected by the adposition 'by'
+	// For a passive, the 'patient' goes right before the verb and the 'agent' is detected by the adposition 'by'.
+	// For verbs like 'tell' in the passive, the different-participant clause looks instead like a same-participant clause.
+	//    eg. John told [Mary to go] -> Mary was told by John [to go].
+	//    Verbs that actually take a same-participant clause shouldn't have a patient and can't be passivized anyway.
 	const passive_rules_json = {
 		'patient': directly_before_verb(),
 		'agent': by_adposition('by'),
+		'patient_clause_different_participant': by_clause_tag('patient_clause_different_participant|patient_clause_same_participant'),
 	}
 	const passive_rules = Object.entries(passive_rules_json)
 		.flatMap(([role_tag, rule_json]) => parse_case_frame_rule({ sense: 'verb_passive', role_tag: role_tag as RoleTag, rule_json: rule_json as RoleRuleValueJson }))

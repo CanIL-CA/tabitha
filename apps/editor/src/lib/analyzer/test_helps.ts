@@ -8,6 +8,11 @@ export const word = ({ stem, part_of_speech, tag = {} }: { stem: string; part_of
 	lookup_results: [create_lookup_result({ stem, part_of_speech, sense: 'A' })],
 	tag,
 })
+export const fw = ({ token, tag }: { token: string, tag: Tag }) => create_token({
+	token,
+	type: TOKEN_TYPE.FUNCTION_WORD,
+	tag,
+})
 export const phrase = ({ type, tag = {}, contents }: { type: string; tag?: Tag; contents: Token[] }) => [
 	create_token({ token: `{${type}`, type: TOKEN_TYPE.PHRASE, tag }),
 	...contents,
