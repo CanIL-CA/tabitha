@@ -224,19 +224,19 @@ describe('checking an ambiguous gap', () => {
 	test('the editor warns on the inner verb about a subject reading', () => {
 		const warnings = warnings_on({ text: 'John saw the person [that Peter wanted [to leave]].', rules: RULES.CHECKER, stem: 'leave' })
 
-		expect(warnings).toContain("The relativized noun was interpreted as the subject of 'leave', but could also be its object. Specify the sense of 'leave' or reword the sentence if this is incorrect.")
+		expect(warnings).toContain("The relativized noun was interpreted as the subject of 'leave', but could also be its object. Other errors and warnings may not be accurate as a result. Specify the sense of 'leave' to help disambiguate.")
 	})
 
-	test('the editor only suggests rewording when the sense is written', () => {
+	test('the editor does not suggest a sense when one is written', () => {
 		const warnings = warnings_on({ text: 'John saw the person [that Peter wanted [to leave-B]].', rules: RULES.CHECKER, stem: 'leave' })
 
-		expect(warnings).toContain("The relativized noun was interpreted as the subject of 'leave', but could also be its object. Reword the sentence if this is incorrect.")
+		expect(warnings).toContain("The relativized noun was interpreted as the subject of 'leave', but could also be its object. Other errors and warnings may not be accurate as a result.")
 	})
 
 	test('the analyzer warns on the inner verb about an object reading', () => {
 		const warnings = warnings_on({ text: 'What did Peter want [to leave]?', rules: ANALYZER_CHECKER_RULES, stem: 'leave' })
 
-		expect(warnings).toContain("The questioned noun was analyzed as the object of 'leave', but could also be its subject. Check that this was intended.")
+		expect(warnings).toContain("The interrogative noun was analyzed as the object of 'leave', but could also be its subject. Check that this was intended.")
 	})
 
 	test('a gap that is not ambiguous is not flagged', () => {
