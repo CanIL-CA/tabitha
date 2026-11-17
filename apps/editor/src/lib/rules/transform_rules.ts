@@ -572,7 +572,7 @@ const transform_rules_json: TransformRuleJson[] = [
 			],
 		},
 		'transform': { 'tag': { 'clause_type': 'patient_clause_different_participant|patient_clause_same_subject_passive' } },
-		'comment': 'eg John was ready-C [to be killed by people].',
+		'comment': 'A true "same_participant" clause can never be made passive. eg John was ready-C [to be killed by people].',
 	},
 	// Noun features
 	// Eventually, we could expand the Ontology's Noun Categorization to include these subcategories

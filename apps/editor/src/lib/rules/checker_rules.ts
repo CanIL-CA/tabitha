@@ -4,6 +4,7 @@ import { MESSAGE_TYPE, TOKEN_TYPE, create_added_token, format_token_message, is_
 import { REGEXES } from '#lib/regexes.js'
 import { spaced_insertion_text } from '#lib/text_insertions.js'
 import { validate_case_frame } from './case_frame'
+import { describe_ambiguous_gap } from './case_frame/gap_option'
 import { create_context_filter, create_token_filter, from_built_in_rule, message_set_action } from './rules_parser'
 import type { CheckerMessage, CheckerMessageType, CheckerTextInsertion } from '@tabitha/types'
 import type { MessageInfo, Token } from '#lib/types.js'
@@ -822,6 +823,25 @@ const builtin_checker_rules: BuiltInRule[] = [
 						token_to_flag: that_token,
 						warning: "This is being interpreted as a relative clause. If it's supposed to be a complement clause, remove the 'that'.",
 					}
+				}
+			}),
+		},
+	},
+	{
+		name: 'Warn about a relativized or interrogative noun that could be either the subject or the object',
+		comment: "eg. 'John saw the person [that Peter wanted [to see]].' A written sense that still allows both readings can't be made more specific.",
+		rule: {
+			trigger: create_token_filter({ 'tag': { 'gap_reading': 'ambiguous' } }),
+			context: create_context_filter({}),
+			action: message_set_action(trigger_context => {
+				const ambiguous_gap = describe_ambiguous_gap(trigger_context)
+				if (!ambiguous_gap) return
+				const { verb, reading, other_reading, noun_description } = ambiguous_gap
+
+				const fix = verb.specified_sense ? '' : " Specify the sense of '{stem}' to help disambiguate."
+				return {
+					token_to_flag: verb,
+					warning: `The ${noun_description} was interpreted as the ${reading} of '{stem}', but could also be its ${other_reading}. Other errors and warnings may not be accurate as a result.${fix}`,
 				}
 			}),
 		},

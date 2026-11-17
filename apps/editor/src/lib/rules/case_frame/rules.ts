@@ -1,14 +1,10 @@
 import { add_tag_to_token, is_one_part_of_speech, token_has_tag, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_token_filter, from_built_in_rule, simple_rule_action } from '#lib/rules/rules_parser.js'
 import { select_pairing_sense, select_sense } from './sense_selection'
-import { get_adjective_case_frame_rules } from './adjectives/case_frames'
-import { get_verb_case_frame_rules, get_passive_verb_case_frame_rules } from './verbs/case_frames'
-import { get_adposition_case_frame_rules } from './adpositions/case_frames'
-import { get_conjunction_case_frame_rules } from './conjunctions/case_frames'
-import { initialize_case_frame_rules, check_case_frames, check_pairing_case_frames } from './common'
+import { check_case_frames, check_pairing_case_frames } from './common'
 import { fill_interrogative_gap, fill_relative_clause_gap, fill_same_subject_gap, handle_be_interrogative, restore_ghost_tokens } from './gap_handling'
-import type { Token } from '#lib/types.js'
-import type { CaseFrameRuleInfo } from '#lib/rules/case_frame/types.js'
+import { resolve_gap_option } from './gap_option'
+import { check_passive_verb_case_frames, has_invalid_case_frame, initialize_word_case_frames, is_passive_verb_context, is_verb } from './word_case_frames'
 import type { BuiltInRule } from '#lib/rules/types.js'
 
 
@@ -31,7 +27,7 @@ const argument_and_sense_rules: BuiltInRule[] = [
 			trigger: create_token_filter({ 'tag': { 'clause_type': 'relative_clause' } }),
 			context: create_context_filter({}),
 			action: simple_rule_action(({ trigger_token, rule_id }) => {
-				fill_relative_clause_gap({ tokens: trigger_token.sub_tokens, rule_id })
+				fill_relative_clause_gap({ clause: trigger_token, rule_id })
 			}),
 		},
 	},
@@ -45,8 +41,17 @@ const argument_and_sense_rules: BuiltInRule[] = [
 			}),
 			action: simple_rule_action(({ trigger_token, subtoken_indexes, rule_id }) => {
 				const verb_index = subtoken_indexes[0]
-				fill_interrogative_gap({ tokens: trigger_token.sub_tokens, verb_index, rule_id })
+				fill_interrogative_gap({ clause: trigger_token, verb_index, rule_id })
 			}),
+		},
+	},
+	{
+		name: 'Resolve whether a relative or interrogative gap is the subject or object of a patient clause',
+		comment: 'Each reading is tried against the case frames of the words in the clauses involved. The case frames are initialized again afterwards.',
+		rule: {
+			trigger: create_token_filter({ 'tag': { 'gap_reading': 'subject_or_object' } }),
+			context: create_context_filter({}),
+			action: simple_rule_action(resolve_gap_option),
 		},
 	},
 	{
@@ -55,20 +60,7 @@ const argument_and_sense_rules: BuiltInRule[] = [
 		rule: {
 			trigger: token => token.lookup_results.length > 0 && is_one_part_of_speech(token),
 			context: create_context_filter({}),
-			action: simple_rule_action(trigger_context => {
-				const CASE_FRAME_RULE_GETTERS = new Map<string, (token: Token) => CaseFrameRuleInfo>([
-					['Verb', get_verb_case_frame_rules],
-					['Adjective', get_adjective_case_frame_rules],
-					['Adposition', get_adposition_case_frame_rules],
-					['Conjunction', get_conjunction_case_frame_rules],
-				])
-
-				const part_of_speech = trigger_context.trigger_token.lookup_results[0].part_of_speech
-				const case_frame_rule_getter = CASE_FRAME_RULE_GETTERS.get(part_of_speech)
-				if (case_frame_rule_getter) {
-					initialize_case_frame_rules({ trigger_context, rule_info_getter: case_frame_rule_getter })
-				}
-			}),
+			action: simple_rule_action(initialize_word_case_frames),
 		},
 	},
 	{
@@ -132,16 +124,9 @@ const argument_and_sense_rules: BuiltInRule[] = [
 		name: 'Verb case frame, passive',
 		comment: '',
 		rule: {
-			trigger: token => create_token_filter({ 'category': 'Verb' })(token)
-					&& token.lookup_results.some(({ case_frame }) => case_frame.result.status === 'invalid'),
-			context: create_context_filter({
-				'precededby': { 'tag': { 'auxiliary': 'passive' }, 'skip': 'all' },
-				'followedby': { 'tag': { 'pre_np_adposition': 'agent_of_passive' }, 'skip': 'all' },
-			}),
-			action: simple_rule_action(trigger_context => {
-				initialize_case_frame_rules({ trigger_context, rule_info_getter: get_passive_verb_case_frame_rules })
-				check_case_frames(trigger_context)
-			}),
+			trigger: token => is_verb(token) && has_invalid_case_frame(token),
+			context: is_passive_verb_context,
+			action: simple_rule_action(check_passive_verb_case_frames),
 		},
 	},
 	{

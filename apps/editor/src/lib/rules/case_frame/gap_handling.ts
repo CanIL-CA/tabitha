@@ -1,5 +1,6 @@
 import { add_tag_to_token, create_gap_token, TOKEN_TYPE } from '#lib/token.js'
 import { create_context_filter, create_skip_filter, create_token_filter, simple_rule_action } from '../rules_parser'
+import { create_gap_option, use_same_subject_gap, type GapLabel } from './gap_option'
 import type { Token } from '#lib/types.js'
 import type { RuleTriggerContext, TokenFilter, TokenRuleCore } from '#lib/rules/types.js'
 
@@ -10,12 +11,55 @@ export function fill_same_subject_gap({ tokens, rule_id }: { tokens: Token[]; ru
 	insert_gap_noun_token({ gap_label: 'SAME_SUB', tokens, gap_indexes: [gap_index], rule_id })
 }
 
-export function fill_relative_clause_gap({ tokens, rule_id }: { tokens: Token[]; rule_id: string }) {
-	const gap_indexes = find_clause_gap(tokens)
-	insert_gap_noun_token({ gap_label: 'REL', tokens, gap_indexes, rule_id })
+/**
+ * - insert: the gap is inserted at the location
+ * - same_subject: the same-subject gap at the location is the relative gap
+ * - subject_or_object: the gap is either the same-subject gap of the clause, or in the object position at the location.
+ *     This gets resolved once the case frames can be checked.
+ */
+type GapKind = 'insert' | 'same_subject' | 'subject_or_object'
+
+type GapLocation = {
+	kind: GapKind
+	// the indexes of any nested clauses, then the index within the innermost clause
+	path: number[]
 }
 
-export function fill_interrogative_gap({ tokens, verb_index, rule_id }: { tokens: Token[]; verb_index: number; rule_id: string }) {
+type GapFillOptions = {
+	gap_clause: Token
+	clause: Token
+	index: number
+	gap_label: GapLabel
+	rule_id: string
+}
+
+const GAP_FILLERS: Record<GapKind, (options: GapFillOptions) => void> = {
+	insert: ({ clause, index, gap_label, rule_id }) => {
+		insert_gap_noun_token({ gap_label, tokens: clause.sub_tokens, gap_indexes: [index], rule_id })
+	},
+	same_subject: ({ clause, gap_label, rule_id }) => {
+		const { sub_tokens, tag } = use_same_subject_gap({ clause, gap_label, rule_id })
+		clause.sub_tokens = sub_tokens
+		add_tag_to_token({ token: clause, tag: { 'clause_type': tag['clause_type'] }, rule_id })
+	},
+	subject_or_object: ({ gap_clause, clause, index, gap_label, rule_id }) => {
+		clause.sub_tokens.splice(index, 0, create_gap_option({ gap_label, rule_id }))
+		add_tag_to_token({ token: gap_clause, tag: { 'gap_reading': 'subject_or_object' }, rule_id })
+	},
+}
+
+export function fill_relative_clause_gap({ clause, rule_id }: { clause: Token; rule_id: string }) {
+	fill_clause_gap({ gap_clause: clause, gap_label: 'REL', rule_id })
+}
+
+function fill_clause_gap({ gap_clause, gap_label, rule_id }: { gap_clause: Token; gap_label: GapLabel; rule_id: string }) {
+	const { kind, path } = find_clause_gap(gap_clause.sub_tokens)
+	const innermost_clause = path.slice(0, -1).reduce((parent, index) => parent.sub_tokens[index], gap_clause)
+	GAP_FILLERS[kind]({ gap_clause, clause: innermost_clause, index: path.at(-1)!, gap_label, rule_id })
+}
+
+export function fill_interrogative_gap({ clause, verb_index, rule_id }: { clause: Token; verb_index: number; rule_id: string }) {
+	const tokens = clause.sub_tokens
 	const head_np = { 'tag': { 'syntax': 'head_np' }, 'skip': ['np_modifiers', 'vp_modifiers'] }
 
 	const gap_rules: TokenRuleCore[] = [
@@ -35,9 +79,8 @@ export function fill_interrogative_gap({ tokens, verb_index, rule_id }: { tokens
 			context: create_context_filter({
 				'precededby': [head_np, { 'tag': 'auxiliary', 'skip': 'np_modifiers' }, head_np],
 			}),
-			action: simple_rule_action(({ tokens, rule_id }) => {
-				const gap_indexes = find_clause_gap(tokens)
-				insert_gap_noun_token({ gap_label: 'INTV_N', tokens, gap_indexes, rule_id })
+			action: simple_rule_action(({ rule_id }) => {
+				fill_clause_gap({ gap_clause: clause, gap_label: 'INTV_N', rule_id })
 			}),
 		},
 	]
@@ -86,8 +129,11 @@ function find_clause_end_for_gap(tokens: Token[]): number {
 	return find_preceding({ tokens, start_index: tokens.length, token_filter: token => !IS_PUNCTUATION(token), skip_filter: IS_PUNCTUATION })[1] + 1
 }
 
-// returns an array of indexes, where the length indicates the nested level of the found gap
-function find_clause_gap(tokens: Token[]): number[] {
+const is_patient_clause_with_gap = create_token_filter({ 'tag': { 'clause_type': 'patient_clause_same_participant|patient_clause_different_participant' } })
+
+const insert_at = (path: number[]): GapLocation => ({ kind: 'insert', path })
+
+function find_clause_gap(tokens: Token[]): GapLocation {
 	const head_np_filter = create_token_filter({ 'tag': { 'syntax': 'head_np' } })
 	const np_vp_filter = create_skip_filter(['np', 'vp_modifiers'])
 	const np_filter = create_skip_filter('np')
@@ -95,24 +141,14 @@ function find_clause_gap(tokens: Token[]): number[] {
 	const verb_index = tokens.findIndex(create_token_filter({ 'category': 'Verb' }))
 	if (verb_index === -1) {
 		// if no verb, default to the end of the clause
-		return [find_clause_end_for_gap(tokens)]
+		return insert_at([find_clause_end_for_gap(tokens)])
 	}
 
 	// First check if there's a gap in the subject position
 	// eg. John saw the person [who {} left].
 	const [found_subj, index_subj] = find_preceding({ tokens, start_index: verb_index, token_filter: head_np_filter, skip_filter: np_vp_filter })
 	if (!found_subj) {
-		return [index_subj + 1]
-	}
-
-	// Next check inside a patient clause of 'want' or 'think'
-	// eg. John knows the thing [that Peter wants [John to do {}]].
-	if (create_token_filter({ 'stem': 'want|think' })(tokens[verb_index])) {
-		const patient_clause_filter = create_token_filter({ 'tag': { 'clause_type': 'patient_clause_same_participant|patient_clause_different_participant' } })
-		const patient_clause_index = tokens.findIndex(patient_clause_filter)
-		if (patient_clause_index !== -1) {
-			return [patient_clause_index, ...find_clause_gap(tokens[patient_clause_index].sub_tokens)]
-		}
+		return insert_at([index_subj + 1])
 	}
 
 	// Next check if there is a dangling adposition at the end of the clause
@@ -122,7 +158,7 @@ function find_clause_gap(tokens: Token[]): number[] {
 	if (last_adp_index !== -1 && last_adp_index > verb_index) {
 		const [found_oblique, index_oblique] = find_following({ tokens, start_index: last_adp_index, token_filter: head_np_filter, skip_filter: np_filter })
 		if (!found_oblique) {
-			return [index_oblique]
+			return insert_at([index_oblique])
 		}
 	}
 
@@ -132,21 +168,39 @@ function find_clause_gap(tokens: Token[]): number[] {
 	for (let i = 0; i < tokens.length; i++) {
 		if (adposition_filter(tokens[i])) {
 			if (prev_adp_index === i-1) {
-				return [prev_adp_index + 1]
+				return insert_at([prev_adp_index + 1])
 			}
 			prev_adp_index = i
 		}
 	}
 
+	// Next check inside a non-quote patient clause
+	// eg. John knows the thing [that Peter wants [John to do {}]].
+	// eg. John was the person [that Peter wants [{} to do those things]].
+	// if there is a non-quote patient clause, the gap is highly likely to be inside it at this point.
+	const patient_clause_index = tokens.findIndex(is_patient_clause_with_gap)
+	if (patient_clause_index !== -1) {
+		const { kind, path } = find_clause_gap(tokens[patient_clause_index].sub_tokens)
+		return { kind, path: [patient_clause_index, ...path] }
+	}
+
+	const [found_obj, index_obj] = find_following({ tokens, start_index: verb_index, token_filter: head_np_filter, skip_filter: np_vp_filter })
+
+	// Inside a patient clause, the gap may be the clause's own same-subject gap
+	// eg. John saw the person [that Peter wanted [{} to do those things]].
+	// eg. John saw the person [that Peter wanted [{} to leave {}]]. (either one)
+	if (tokens[index_subj].token === 'GAP_SAME_SUB') {
+		return { kind: found_obj ? 'same_subject' : 'subject_or_object', path: [found_obj ? index_subj : index_obj] }
+	}
+
 	// Next check if there's a gap right after the verb
 	// eg. John saw the person [who John told {} about the problem].
-	const [found_obj, index_obj] = find_following({ tokens, start_index: verb_index, token_filter: head_np_filter, skip_filter: np_vp_filter })
 	if (!found_obj) {
-		return [index_obj]
+		return insert_at([index_obj])
 	}
 
 	// Default to the end of the clause
-	return [find_clause_end_for_gap(tokens)]
+	return insert_at([find_clause_end_for_gap(tokens)])
 }
 
 function insert_gap_noun_token({ gap_label, tokens, gap_indexes, rule_id }: { gap_label: string; tokens: Token[]; gap_indexes: number[]; rule_id: string }) {
