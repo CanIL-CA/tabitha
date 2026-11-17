@@ -20,11 +20,13 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 				'trigger': { 'form': 'plural' },
 			}],
 			['Singular', {
+				// to prioritize the singular for ambiguous nouns like 'sheep'
 				'trigger': { 'form': 'stem' },
 			}],
-			['Plural', {
-				'context': { 'followedby': { 'token': '_plural' } },
-			}],
+			['Plural', [
+				{ 'trigger': { 'tag': { 'pronoun': 'plural' } } },
+				{ 'context': { 'followedby': { 'token': '_plural' } } },
+			]],
 			['Dual', {
 				'context': { 'followedby': { 'token': '_dual' } },
 			}],
