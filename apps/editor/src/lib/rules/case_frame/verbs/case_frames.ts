@@ -461,6 +461,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['choose-B', patient_from_subordinate_clause()],
 		['choose-C', { 'patient_clause_type': 'patient_clause_same_participant' }],
 	]],
+	['climb', []],
 	['close', []],
 	['come', []],
 	['come-out', [
@@ -473,10 +474,16 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		}],
 		['command-B', { 'patient_clause_type': 'patient_clause_quote_begin' }],
 	]],
+	['compare', [
+		['compare-A', { 'destination': by_adposition('with|to') }],
+	]],
 	['complain', [
 		['complain-A', { 'patient': by_adposition('about') }],
 	]],
 	['consider', []],
+	['consist', [
+		['consist-A', { 'patient': directly_after_verb_with_adposition('of') }],
+	]],
 	['contain', []],
 	['cost', []],
 	['cover', [
@@ -499,6 +506,9 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'destination': by_adposition('into'),
 			...with_instrument(),
 		}],
+	]],
+	['cut-down', [
+		['cut-down-A', with_instrument()],
 	]],
 	['cut-off', [
 		['cut-off-A', with_instrument()],
@@ -530,6 +540,9 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['destroy-B', with_instrument()],
 	]],
 	['die', []],
+	['dig', [
+		['dig-A', { 'destination': by_adposition('in') }],
+	]],
 	['dip', [
 		['dip-A', {
 			'destination': by_adposition('in|into'),
@@ -553,6 +566,9 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['drink', []],
 	['drop', [
 		['drop-A', { 'destination': by_adposition_concept('to|on|into') }],
+	]],
+	['dry', [
+		['dry-A', with_instrument()],
 	]],
 	['eat', [
 		['eat-A', with_instrument()],
@@ -581,6 +597,9 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['fall-B', { 'destination': by_adposition_concept('to|on|into') }],
 		['fall-D', { 'destination': by_adposition_concept('to|on|into') }],
 		['fall-E', { 'destination': by_adposition_concept('to|on|into') }],
+	]],
+	['feel', [
+		['feel-A', { 'other_optional': 'predicate_adjective' }],	// X felt good/sick/better
 	]],
 	['fight', [
 		['fight-A', {
@@ -650,6 +669,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 			'comment': 'The boys grew up. OR The boys grew-B.',
 		}],
 	]],
+	['guard', []],
 	['hang', [
 		['hang-B', { 'destination': by_adposition('on') }],
 		['hang-C', { 'destination': by_adposition('on') }],
@@ -783,6 +803,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		['look-A', { 'patient': directly_after_verb_with_adposition('at') }],
 		['look-B', { 'other_required': 'predicate_adjective' }],	// X looked happy/sad/excited
 	]],
+	['lose', []],
 	['love', []],
 	['make', [
 		['make-A', with_instrument()],
@@ -825,6 +846,10 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	]],
 	['meet', [
 		['meet-D', { 'patient': by_adposition('with') }],
+	]],
+	['mix', [
+		['mix-A', { 'destination': by_adposition('with|into') }],
+		['mix-B', { 'patient': directly_after_verb_with_adposition('with') }],	// one liquid mixes with another liquid
 	]],
 	['move', []],
 	['name', [
@@ -871,6 +896,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['plant', [
 		['plant-A', { 'destination': by_adposition('in|on') }],
 	]],
+	['play', []],
 	['please', []],
 	['point', [
 		['point-A', {
@@ -894,6 +920,9 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['pray-hope', []],
 	['prepare', [
 		['prepare-A', { 'patient_clause_type': 'patient_clause_same_participant' }],
+	]],
+	['pretend', [
+		['pretend-A', { 'patient_clause_type': 'patient_clause_same_participant' }],
 	]],
 	['prevent', []],
 	['promise', [
@@ -951,6 +980,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		}],
 	]],
 	['ride', []],
+	['rise', []],
 	['rule', [
 		['rule-A', with_instrument()],
 	]],
@@ -998,6 +1028,11 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	]],
 	['set-up', [
 		['set-up-A', { 'destination': by_adposition_concept() }],
+	]],
+	['shake', []],
+	['share', [
+		['share-A', { 'destination': by_adposition('with') }],
+		['share-B', { 'destination': by_adposition('with') }],
 	]],
 	['shine', [
 		['shine-B', { 'destination': by_adposition('on|onto') }],
@@ -1071,6 +1106,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 	['suggest', []],
 	['take', []],
 	['take-away', []],
+	['take-out', []],
 	['talk', [
 		['talk-A', { 'patient': by_adposition('about') }],
 		['talk-B', {
@@ -1217,6 +1253,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		}],
 	]],
 	['use', []],
+	['visit', []],
 	['wait', [
 		['wait-B', {
 			'patient_clause_same_participant': [
@@ -1234,6 +1271,7 @@ const verb_case_frames = new Map<WordStem, [WordSense, SenseRuleJson<VerbRoleTag
 		}],
 		['wait-D', { 'patient_clause_type': 'patient_clause_same_participant' }],
 	]],
+	['wake-up', []],
 	['want', [
 		['want-B', { 'patient_clause_type': 'patient_clause_same_participant' }],
 	]],

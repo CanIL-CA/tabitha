@@ -170,6 +170,9 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['grow-B', { 'up': {  } }],	// if 'up' is present, select grow-B
 		['grow-D', { 'patient': { 'stem': 'food|crop' } }],
 	]],
+	['guard', [
+		['guard-B', { 'patient': { 'stem': 'door|farm' } }],
+	]],
 	['have', [
 		['have-H', { 'state': { 'stem': 'eunuch|man|servant|slave' } }],
 		['have-G', { 'state': { 'stem': 'feast|party' } }],
@@ -213,6 +216,11 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['live-B', { 'lifespan_oblique': { } }],
 		['live-C', { 'just_like_clause': { } }],
 	]],
+	['lose', [
+		['lose-B', { 'patient': { 'stem': 'battle|fight|war' } }],
+		['lose-C', { 'patient': { 'tag': { 'noun_category': 'animal' } } }],
+		['lose-C', { 'patient': { 'stem': 'coin|gold|key|money|ring|silver' } }],
+	]],
 	['love', [
 		['love-C', { 'patient': { 'tag': { 'noun_category': 'thing|animal' } } }],
 	]],
@@ -250,6 +258,9 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['remember-C', { 'patient': { 'tag': { 'noun_category': 'person|animal' } } }],
 		['remember-D', { 'patient': { } }],
 	]],
+	['rise', [
+		['rise-B', { 'agent': { 'stem': 'moon|star|sun' } }],
+	]],
 	['run', [
 		['run-B', { 'patient': { 'stem': 'army|God|king' } }],
 		['run-D', { 'agent': { 'stem': 'nose' } }],
@@ -266,6 +277,10 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	]],
 	['send', [
 		['send-B', { 'patient': { 'stem': 'letter|message' } }],
+	]],
+	['shake', [
+		['shake-D', { 'patient': { 'stem': 'hand' } }],
+		['shake-C', { 'agent': { 'tag': { 'noun_category': 'body_part' } } }],
 	]],
 	['shout', [
 		['shout-C', { 'agent': { 'tag': { 'noun_category': 'animal' } } }],
