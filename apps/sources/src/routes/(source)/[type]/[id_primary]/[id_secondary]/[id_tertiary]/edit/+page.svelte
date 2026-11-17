@@ -40,6 +40,8 @@
 	})
 
 	function get_token_text(token: CheckerToken) {
+		if (token.type === 'Gap') return ''
+
 		let parts = [token.token]
 		if (token.pairing) {
 			const separator = get_pairing_separator({ pairing_type: token.pairing_type, style: 'phase1' })
@@ -48,7 +50,7 @@
 		if (token.pronoun) {
 			parts = [token.pronoun.token, '(', ...parts, ')']
 		}
-		return parts.join('')
+		return parts.join('') + ' '
 	}
 </script>
 
@@ -107,11 +109,11 @@
 				{@const msg = phase1.token_messages.find(({ token_index }) => i === token_index)?.message}
 				{@const text = get_token_text(token)}
 				{#if !msg}
-					<span>{text}{' '}</span>
+					<span>{text}</span>
 				{:else if msg.label === 'error'}
-					<span class="text-error font-semibold">{text}{' '}</span>
+					<span class="text-error font-semibold">{text}</span>
 				{:else}
-					<span class="text-warning font-semibold">{text}{' '}</span>
+					<span class="text-warning font-semibold">{text}</span>
 				{/if}
 			{/each}
 		</div>

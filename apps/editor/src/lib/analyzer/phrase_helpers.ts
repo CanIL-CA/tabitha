@@ -52,6 +52,14 @@ export function get_phrase_span({ tokens, start_index }: { tokens: Token[]; star
 	return tokens.slice(start_index)
 }
 
+export function split_constituents(tokens: Token[]): ConstituentSpan[] {
+	const constituents: ConstituentSpan[] = []
+	for (let i = 0; i < tokens.length; i += constituents[constituents.length - 1].length) {
+		constituents.push(get_phrase_span({ tokens, start_index: i }))
+	}
+	return constituents
+}
+
 // the tokens inside a phrase span, without its opening and closing phrase tokens
 export function get_span_contents(span: ConstituentSpan): Token[] {
 	return span.slice(1, -1)

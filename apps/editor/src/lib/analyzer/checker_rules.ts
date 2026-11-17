@@ -2,6 +2,7 @@ import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
 import { TOKEN_TYPE, is_one_part_of_speech } from '#lib/token.js'
 import { create_context_filter, create_token_filter, from_built_in_rule, message_set_action } from '#lib/rules/rules_parser.js'
 import { validate_case_frame_for_analyze } from '#lib/rules/case_frame/common.ts'
+import { describe_ambiguous_gap } from '#lib/rules/case_frame/gap_option.ts'
 import { parse_checker_rule } from '#lib/rules/checker_rules.ts'
 import type { MessageInfo, Token } from '#lib/types.js'
 import type { BuiltInRule, CheckerRuleJson, LookupFilter, TokenFilter } from '#lib/rules/types.js'
@@ -38,14 +39,14 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': "Suggest expanding 'there' to 'at that place' for clarity",
 		'trigger': { 'token': 'There|there' },
 		'context': { 'notfollowedby': { 'stem': 'be', 'skip': 'vp_modifiers' } },	// TODO trigger on 'not tag existential' instead
-		'suggest': {
+		'warning': {
 			'message': "Check that 'at that place' was intended by the use of 'there'.",
 		},
 	},
 	{
 		'name': "Suggest expanding 'here' to 'at this place' for clarity",
 		'trigger': { 'token': 'Here|here' },
-		'suggest': {
+		'warning': {
 			'message': "Check that 'at this place' was intended by the use of 'here'.",
 		},
 	},
@@ -102,7 +103,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'context': {
 			'subtokens': { 'token': 'that', 'skip': 'clause_start' },
 		},
-		'suggest': {
+		'warning': {
 			'on': 'subtokens:0',
 			'message': "This 'that' was interpreted as a demonstrative. Make sure that was intended.",
 		},
@@ -115,7 +116,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
 			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE },
 		},
-		'suggest': {
+		'warning': {
 			'on': 'subtokens:0',
 			'message': 'This may be an unintentional nested independent clause. Check if you need to split the sentence in two.',
 		},
@@ -127,7 +128,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'relative_clause' } },
 		},
-		'suggest': {
+		'warning': {
 			'on': 'subtokens:0',
 			'message': 'This may be an unintentional nested independent clause. Check if you need to split the sentence in two.',
 		},
@@ -272,6 +273,24 @@ const builtin_checker_rules: BuiltInRule[] = [
 				// Only show the message if all senses are invalid, but some are missing a patient clause
 				if (['agent_clause', 'patient_clause_different_participant'].some(role => missing_arguments.has(role))) {
 					return { warning: 'This was interpreted as a relative clause, but may have been intended as a complement clause.' }
+				}
+			}),
+		},
+	},
+	{
+		name: 'Warn about an ambiguous gap for a relativized or interrogative noun',
+		comment: "eg. 'John saw the person [that Peter wanted [to see]].'",
+		rule: {
+			trigger: create_token_filter({ 'tag': { 'gap_reading': 'ambiguous' } }),
+			context: create_context_filter({}),
+			action: message_set_action(trigger_context => {
+				const ambiguous_gap = describe_ambiguous_gap(trigger_context)
+				if (!ambiguous_gap) return
+				const { verb, reading, other_reading, noun_description } = ambiguous_gap
+
+				return {
+					token_to_flag: verb,
+					warning: `The ${noun_description} was analyzed as the ${reading} of '{stem}', but could also be its ${other_reading}. Check that this was intended.`,
 				}
 			}),
 		},

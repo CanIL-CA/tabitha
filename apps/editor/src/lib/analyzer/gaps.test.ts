@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { replace_gaps } from './gaps'
-import { clause, np, vp, word } from './test_helps'
+import { clause, np, phrase, vp, word, fw } from './test_helps'
 import { TOKEN_TYPE, create_gap_token } from '#lib/token.js'
 import type { Token } from '#lib/types.js'
 
@@ -45,6 +45,19 @@ describe('gaps', () => {
 		expect(filled_tokens[3].tag).toEqual({ role: 'patient' })
 	})
 
+	test('GAP_SAME_SUB is replaced with the patient NP of a passive parent clause', () => {
+		const same_subject_clause = clause({ clause_type: 'patient_clause_same_participant', sub_tokens: [...np({ contents: [gap('SAME_SUB')] }), ...vp('go')] })
+		const passive_vp = phrase({ type: 'VP', contents: [word({ stem: 'be', part_of_speech: 'Verb', tag: { auxiliary: 'passive' } }), word({ stem: 'send', part_of_speech: 'Verb' })] })
+		const tokens = replace_in_main_clause([
+			...np({ role: 'patient', contents: [john()] }),
+			...passive_vp,
+			...np({ role: 'agent', contents: [fw({ token: 'by', tag: { 'pre_np_adposition': 'verb_argument' } }), word({ stem: 'Mary', part_of_speech: 'Noun' })] }),
+			same_subject_clause,
+		])
+
+		expect(texts(tokens.at(-1)!.sub_tokens)).toEqual(['{NP', 'John', '}', '{VP', 'go', '}'])
+	})
+
 	test('GAP_SAME_SUB uses a parent agent that was itself a filled gap', () => {
 		const same_subject_clause = clause({ clause_type: 'patient_clause_same_participant', sub_tokens: [...np({ contents: [gap('SAME_SUB')] }), ...vp('go')] })
 		const relative_clause = clause({ clause_type: 'relative_clause', sub_tokens: [...np({ role: 'agent', contents: [gap('REL')] }), ...vp('want'), same_subject_clause] })
@@ -52,6 +65,50 @@ describe('gaps', () => {
 
 		const filled_relative_clause = tokens.find(token => token.type === TOKEN_TYPE.CLAUSE)!
 		expect(texts(filled_relative_clause.sub_tokens.at(-1)!.sub_tokens)).toEqual(['{NP', 'man', '}', '{VP', 'go', '}'])
+	})
+
+	test('the agent of a patient_from_clause clause is copied into a new patient NP directly before the clause', () => {
+		const patient_clause = clause({ clause_type: 'patient_clause_different_participant', sub_tokens: [...np({ role: 'agent', contents: [john()] }), ...vp('go')] })
+		patient_clause.tag = { ...patient_clause.tag, gap: 'patient_from_clause' }
+		const tokens = replace_in_main_clause([...np({ role: 'agent', contents: [word({ stem: 'Mary', part_of_speech: 'Noun' })] }), ...vp('tell'), patient_clause])
+
+		expect(texts(tokens)).toEqual(['{NP', 'Mary', '}', '{VP', 'tell', '}', '{NP', 'John', '}', '['])
+		expect(tokens[6].tag).toEqual({ role: 'patient' })
+		expect(texts(tokens.at(-1)!.sub_tokens)).toEqual(['{NP', 'John', '}', '{VP', 'go', '}'])
+	})
+
+	test('every agent of a patient_from_clause clause is copied out in order, each into its own patient NP', () => {
+		const patient_clause = clause({ clause_type: 'patient_clause_different_participant', sub_tokens: [
+			...np({ role: 'agent', contents: [john()] }),
+			...np({ role: 'agent', contents: [word({ stem: 'and', part_of_speech: 'Conjunction' }), word({ stem: 'Mary', part_of_speech: 'Noun' })] }),
+			...vp('go'),
+		] })
+		patient_clause.tag = { ...patient_clause.tag, gap: 'patient_from_clause' }
+		const tokens = replace_in_main_clause([...vp('tell'), patient_clause])
+
+		expect(texts(tokens)).toEqual(['{VP', 'tell', '}', '{NP', 'John', '}', '{NP', 'and', 'Mary', '}', '['])
+		expect(tokens[3].tag).toEqual({ role: 'patient' })
+		expect(tokens[6].tag).toEqual({ role: 'patient' })
+		expect(texts(tokens.at(-1)!.sub_tokens)).toEqual(['{NP', 'John', '}', '{NP', 'and', 'Mary', '}', '{VP', 'go', '}'])
+		expect(tokens.at(-1)!.sub_tokens[0].tag).toEqual({ role: 'agent' })
+	})
+
+	test('a copied agent NP keeps its other tags, with the role changed to patient', () => {
+		const agent_np = np({ role: 'agent', contents: [john()] })
+		agent_np[0].tag = { role: 'agent', relation: 'genitive_saxon' }
+		const patient_clause = clause({ clause_type: 'patient_clause_different_participant', sub_tokens: [...agent_np, ...vp('go')] })
+		patient_clause.tag = { ...patient_clause.tag, gap: 'patient_from_clause' }
+		const tokens = replace_in_main_clause([...vp('tell'), patient_clause])
+
+		expect(tokens[3].tag).toEqual({ role: 'patient', relation: 'genitive_saxon' })
+	})
+
+	test('a patient_from_clause clause without an agent is left alone', () => {
+		const patient_clause = clause({ clause_type: 'patient_clause_different_participant', sub_tokens: vp('go') })
+		patient_clause.tag = { ...patient_clause.tag, gap: 'patient_from_clause' }
+		const tokens = replace_in_main_clause([...vp('tell'), patient_clause])
+
+		expect(texts(tokens)).toEqual(['{VP', 'tell', '}', '['])
 	})
 
 	const what = () => word({ stem: 'thing', part_of_speech: 'Noun', tag: { determiner: 'interrogative' } })

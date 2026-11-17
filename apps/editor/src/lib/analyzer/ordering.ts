@@ -1,7 +1,7 @@
 import { create_token_filter } from '#lib/rules/rules_parser.js'
 import { TOKEN_TYPE } from '#lib/token.js'
 import { PUNCTUATION_PARTICLE_STEMS } from './other_rules'
-import { get_phrase_span, get_span_contents, is_np_start, is_vp_start, is_adjp_start, is_phrase_start, type ConstituentSpan } from './phrase_helpers'
+import { get_span_contents, is_np_start, is_vp_start, is_adjp_start, is_phrase_start, split_constituents, type ConstituentSpan } from './phrase_helpers'
 import type { Sentence, Token } from '#lib/types.js'
 import type { TokenFilter } from '#lib/rules/types.js'
 
@@ -141,14 +141,6 @@ function order_phrase_span(span: ConstituentSpan): ConstituentSpan {
 
 	const rules = rules_by_category.find(([filter]) => filter(span[0]))?.[1] ?? []
 	return [span[0], ...order_tokens({ tokens: get_span_contents(span), rules }), span[span.length - 1]]
-}
-
-function split_constituents(tokens: Token[]): ConstituentSpan[] {
-	const constituents: ConstituentSpan[] = []
-	for (let i = 0; i < tokens.length; i += constituents[constituents.length - 1].length) {
-		constituents.push(get_phrase_span({ tokens, start_index: i }))
-	}
-	return constituents
 }
 
 function apply_ordering_rules({ children, rules }: { children: ConstituentSpan[], rules: OrderingRule[] }): ConstituentSpan[] {

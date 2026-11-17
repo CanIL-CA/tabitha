@@ -1,5 +1,5 @@
 import { create_token, token_has_tag, TOKEN_TYPE } from '#lib/token.js'
-import { find_enclosing_np_start, get_np_head, get_phrase_span, get_span_contents, is_np_start, type ConstituentSpan } from './phrase_helpers'
+import { find_enclosing_np_start, get_np_head, get_phrase_span, get_span_contents, is_np_start, split_constituents, type ConstituentSpan } from './phrase_helpers'
 import type { Sentence, Token } from '#lib/types.js'
 
 // the tokens inside an NP, without its opening '{NP' and closing '}' phrase tokens
@@ -7,26 +7,27 @@ type NpContents = ConstituentSpan
 
 type GapSources = {
 	readonly relative_np: NpContents | null
-	// coordinated agents are each their own NP
-	readonly parent_agent_nps: NpContents[]
+	// the agents of an active parent clause or the patients of a passive one. Coordinated NPs are each their own NP
+	readonly parent_subject_nps: NpContents[]
 	readonly interrogative_np: NpContents | null
 }
 
 // GAP_INTV_V tokens have already been replaced by the time the analyzer runs, so they are left alone
 const GAP_SOURCE_GETTERS: Record<string, (sources: GapSources) => NpContents[]> = {
 	GAP_REL: ({ relative_np }) => relative_np ? [relative_np] : [],
-	GAP_SAME_SUB: ({ parent_agent_nps }) => parent_agent_nps,
+	GAP_SAME_SUB: ({ parent_subject_nps }) => parent_subject_nps,
 	GAP_INTV_N: ({ interrogative_np }) => interrogative_np ? [interrogative_np] : [],
 }
 
 const NO_GAP_SOURCES: GapSources = {
 	relative_np: null,
-	parent_agent_nps: [],
+	parent_subject_nps: [],
 	interrogative_np: null,
 }
 
 /**
- * Replace each GAP token with a copy of the NP(s) it refers to, except the interrogative NP which is moved. The gap's own '{NP' token is kept,
+ * Replace each GAP token with a copy of the NP(s) it refers to (for GAP_SAME_SUB, the parent clause's agents, or its patients when the parent is passive),
+ * except the interrogative NP which is moved. The gap's own '{NP' token is kept,
  * so the gap's role is maintained rather than the role of the NP that was copied.
  * When a gap refers to multiple NPs, each copy gets its own '{NP' based on the gap's.
  * This expects phrasified tokens.
@@ -46,20 +47,47 @@ function replace_gaps_in_clause({ clause, sources }: { clause: Token; sources: G
 		gap_np_start: original_tokens[find_enclosing_np_start({ tokens: original_tokens, index })],
 		sources: clause_sources,
 	}))
-	const agent_nps = find_agent_nps(tokens)
+	const subject_nps = find_subject_nps(tokens)
 
-	const sub_tokens = tokens.map((token, index) => {
-		if (token.type !== TOKEN_TYPE.CLAUSE) return token
+	const sub_tokens = tokens.flatMap((token, index) => {
+		if (token.type !== TOKEN_TYPE.CLAUSE) return [token]
 
 		const sub_clause_sources: GapSources = {
 			relative_np: is_relative_clause(token) ? find_modified_np({ tokens, relative_clause_index: index }) : clause_sources.relative_np,
-			parent_agent_nps: agent_nps,
+			parent_subject_nps: subject_nps,
 			interrogative_np: clause_sources.interrogative_np,
 		}
-		return replace_gaps_in_clause({ clause: token, sources: sub_clause_sources })
+		const filled_clause = replace_gaps_in_clause({ clause: token, sources: sub_clause_sources })
+		return is_patient_from_clause(filled_clause) ? bring_out_agent_as_patient(filled_clause) : [filled_clause]
 	})
 
 	return { ...clause, sub_tokens }
+}
+
+/**
+ * The clause's agent NPs are each moved out of it, in order, into their own patient NP directly before the clause.
+ * The clause is left as it is when it has no agent.
+ */
+function bring_out_agent_as_patient(clause: Token): Token[] {
+	const constituents = split_constituents(clause.sub_tokens)
+	const agent_spans = constituents.filter(is_agent_np_span)
+	if (!agent_spans.length) return [clause]
+
+	const patient_nps = agent_spans.flatMap(agent_span => [
+		{ ...agent_span[0], tag: { ...agent_span[0].tag, 'role': 'patient' } },
+		...get_span_contents(agent_span),
+		agent_span[agent_span.length - 1],
+	])
+
+	return [...patient_nps, clause]
+}
+
+function is_agent_np_span(span: ConstituentSpan): boolean {
+	return is_np_start(span[0]) && token_has_tag({ token: span[0], tag_to_check: { 'role': 'agent' } })
+}
+
+function is_patient_from_clause(token: Token): boolean {
+	return token_has_tag({ token, tag_to_check: { 'gap': 'patient_from_clause' } })
 }
 
 function fill_gap({ token, gap_np_start, sources }: { token: Token; gap_np_start: Token | undefined; sources: GapSources }): Token[] {
@@ -77,10 +105,17 @@ function fill_gap({ token, gap_np_start, sources }: { token: Token; gap_np_start
 	])
 }
 
-function find_agent_nps(tokens: Token[]): NpContents[] {
-	return tokens.flatMap((token, index) => is_np_start(token) && token_has_tag({ token, tag_to_check: { 'role': 'agent' } })
+function find_subject_nps(tokens: Token[]): NpContents[] {
+	const subject_role = is_passive(tokens) ? 'patient' : 'agent'
+	return tokens.flatMap((token, index) => is_np_start(token) && token_has_tag({ token, tag_to_check: { 'role': subject_role } })
 		? [get_np_contents({ tokens, np_start_index: index })]
 		: [])
+}
+
+function is_passive(tokens: Token[]): boolean {
+	// matches the condition for checking the passive case frames
+	return tokens.some(token => token_has_tag({ token, tag_to_check: { 'auxiliary': 'passive' } }))
+		&& tokens.some(token => token.token === 'by' && token_has_tag({ token, tag_to_check: { 'pre_np_adposition': 'verb_argument' } }))
 }
 
 /**
