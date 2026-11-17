@@ -39,14 +39,14 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': "Suggest expanding 'there' to 'at that place' for clarity",
 		'trigger': { 'token': 'There|there' },
 		'context': { 'notfollowedby': { 'stem': 'be', 'skip': 'vp_modifiers' } },	// TODO trigger on 'not tag existential' instead
-		'suggest': {
+		'warning': {
 			'message': "Check that 'at that place' was intended by the use of 'there'.",
 		},
 	},
 	{
 		'name': "Suggest expanding 'here' to 'at this place' for clarity",
 		'trigger': { 'token': 'Here|here' },
-		'suggest': {
+		'warning': {
 			'message': "Check that 'at this place' was intended by the use of 'here'.",
 		},
 	},
@@ -103,7 +103,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'context': {
 			'subtokens': { 'token': 'that', 'skip': 'clause_start' },
 		},
-		'suggest': {
+		'warning': {
 			'on': 'subtokens:0',
 			'message': "This 'that' was interpreted as a demonstrative. Make sure that was intended.",
 		},
@@ -116,7 +116,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
 			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE },
 		},
-		'suggest': {
+		'warning': {
 			'on': 'subtokens:0',
 			'message': 'This may be an unintentional nested independent clause. Check if you need to split the sentence in two.',
 		},
@@ -128,7 +128,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'relative_clause' } },
 		},
-		'suggest': {
+		'warning': {
 			'on': 'subtokens:0',
 			'message': 'This may be an unintentional nested independent clause. Check if you need to split the sentence in two.',
 		},
@@ -278,7 +278,7 @@ const builtin_checker_rules: BuiltInRule[] = [
 		},
 	},
 	{
-		name: 'Warn about a relativized or interrogative noun that could be either the subject or the object',
+		name: 'Warn about an ambiguous gap for a relativized or interrogative noun',
 		comment: "eg. 'John saw the person [that Peter wanted [to see]].'",
 		rule: {
 			trigger: create_token_filter({ 'tag': { 'gap_reading': 'ambiguous' } }),

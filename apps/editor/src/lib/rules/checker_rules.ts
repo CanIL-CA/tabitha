@@ -828,7 +828,7 @@ const builtin_checker_rules: BuiltInRule[] = [
 		},
 	},
 	{
-		name: 'Warn about a relativized or interrogative noun that could be either the subject or the object',
+		name: 'Warn about an ambiguous gap for a relativized or interrogative noun',
 		comment: "eg. 'John saw the person [that Peter wanted [to see]].' A written sense that still allows both readings can't be made more specific.",
 		rule: {
 			trigger: create_token_filter({ 'tag': { 'gap_reading': 'ambiguous' } }),

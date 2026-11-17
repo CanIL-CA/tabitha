@@ -465,7 +465,7 @@ export function validate_case_frame_for_analyze(trigger_context: RuleTriggerCont
 
 	if (no_matches_and_ambiguous_sense(token)) {
 		const reason_hint = get_no_match_reason_hint(token)
-		return [{ warning: `The sense of '{stem}' could not be determined by the case frame${reason_hint}. Defaulted to 'A'.` }]
+		return [{ warning: `The sense of '{stem}' could not be determined, and may have been analyzed poorly. Defaulted to 'A'.${reason_hint}` }]
 
 	} else if (case_frame.status === 'invalid') {
 		return [{ warning: `{sense} may have been analyzed poorly due to unexpected usage of {sense} (${get_invalid_roles_message(selected_result)}).` }]
@@ -492,11 +492,11 @@ export function validate_case_frame_for_analyze(trigger_context: RuleTriggerCont
 		if (token.lookup_results.every(lookup => lookup.case_frame.result.extra_arguments.length > 0)) {
 			const extra_arguments = [...new Set(token.lookup_results.flatMap(lookup => lookup.case_frame.result.extra_arguments.map(arg => readable_role_tag(arg.role_tag))))]
 			const arg_hint = extra_arguments.length > 2 ? '' : ` (${extra_arguments.join(', ')})`
-			return ` due to unexpected arguments${arg_hint}`
+			return ` Each sense had unexpected arguments${arg_hint}.`
 		} else if (token.lookup_results.every(lookup => lookup.case_frame.result.missing_arguments.length > 0)) {
 			const missing_arguments = [...new Set(token.lookup_results.flatMap(lookup => lookup.case_frame.result.missing_arguments.map(readable_role_tag)))]
 			const arg_hint = missing_arguments.length > 2 ? '' : ` (${missing_arguments.join(', ')})`
-			return ` due to missing arguments${arg_hint}`
+			return ` Each sense was missing arguments${arg_hint}.`
 		} else {
 			return ''
 		}

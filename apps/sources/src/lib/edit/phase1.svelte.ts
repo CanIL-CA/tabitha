@@ -59,7 +59,7 @@ export class Phase1 {
 
 			const tokens = result.tokens.flatMap(flatten_tokens)
 
-			const labels_to_show: CheckerMessageLabel[] = was_error ? ['error'] : ['warning', 'suggest']
+			const labels_to_show: CheckerMessageLabel[] = was_error ? ['error'] : ['warning']
 			this.token_messages = collect_messages({ tokens, labels: labels_to_show })
 			this.analyze_result = { ...result, tokens }
 		} catch (err) {
