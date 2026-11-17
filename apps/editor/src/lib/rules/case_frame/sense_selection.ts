@@ -157,6 +157,9 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	['gather', [
 		['gather-B', { 'patient': { 'stem': 'grain|wheat|wood' } }],
 	]],
+	['get', [
+		['get-B', { 'patient': { 'tag': { 'noun_category': 'kinship' } } }],
+	]],
 	['give', [
 		['give-C', { 'patient': { 'stem': 'authority|law|name|peace|power|promise|skill|wisdom' } }],
 	]],
@@ -178,6 +181,18 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 		['have-I', { 'agent': { 'tag': { 'noun_category': 'locative' } } }],
 		['have-A', { }],
 	]],
+	['hear', [
+		['hear-C', { 'patient_clause_simultaneous': { } }],
+	]],
+	['hit', [
+		['hit-A', { 'instrument': { 'stem': 'hand' } }],
+		['hit-C', { 'instrument': { } }],
+		['hit-B', { 'agent': { 'tag': { 'noun_category': 'animal' } } }],
+	]],
+	['hold', [
+		['hold-A', { 'instrument': { 'stem': 'hand' } }],
+		['hold-C', { 'patient': { 'stem': 'hand' } }],
+	]],
 	['hurt', [
 		['hurt-C', { 'be_auxiliary': { } }],
 	]],
@@ -197,6 +212,9 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	['live', [
 		['live-B', { 'lifespan_oblique': { } }],
 		['live-C', { 'just_like_clause': { } }],
+	]],
+	['love', [
+		['love-C', { 'patient': { 'tag': { 'noun_category': 'thing|animal' } } }],
 	]],
 	['make', [
 		['make-C', { 'patient': { 'stem': 'command|fire|god|peace|promise|wave|covenant' } }],
@@ -297,6 +315,10 @@ const verb_sense_priority_overrides: WordStemPriorityOverrides[] = [
 	]],
 	['want', [
 		['want-D', { 'patient': { 'stem': 'peace|health|life' } }],
+	]],
+	['wash', [
+		['wash-A', { 'patient': { 'tag': { 'noun_category': 'person|body_part' } } }],
+		['wash-C', { 'patient': { 'stem': 'clothes|coat|robe' } }],
 	]],
 	['weigh', [
 		['weigh-A', { 'patient': { 'stem': 'gram|kilogram|amount' } }],
