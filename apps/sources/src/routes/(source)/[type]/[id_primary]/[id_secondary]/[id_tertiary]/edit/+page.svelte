@@ -8,6 +8,8 @@
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
 	import { Phase1 } from '#lib/edit/phase1.svelte.js'
+	import { Validation } from '#lib/edit/validation.svelte.js'
+	import ValidationIssues from '#lib/edit/ValidationIssues.svelte'
 	import { EntityClipboard, set_clipboard } from '#lib/edit/clipboard.svelte.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
@@ -18,7 +20,8 @@
 
 	let { data }: PageProps = $props()
 
-	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
+	const senses = new OntologySenses(() => data.ontology_senses)
+	set_ontology_senses(senses)
 	set_clipboard(new EntityClipboard())
 
 	let phase1 = $derived(data.show_phase1 ? new Phase1(data.source.phase_1_encoding) : null)
@@ -27,6 +30,12 @@
 		source_entities: data.source.parsed_semantic_encoding,
 	}))
 	set_edit_history(() => edit_history)
+
+	let validation = $derived(new Validation({
+		source_entities: () => edit_history.current.source_entities,
+		senses: () => senses.all,
+		show_if_issues: data.source.parsed_semantic_encoding.length > 0,
+	}))
 
 	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
 	set_selected_entity(selected_entity)
@@ -60,7 +69,7 @@
 	</ContextBridge>
 {/snippet}
 
-<EditActionBar nav_data={data.nav_data} {phase1} />
+<EditActionBar nav_data={data.nav_data} {phase1} {validation} />
 
 <HistoryToast />
 
@@ -134,6 +143,11 @@
 				</div>
 			{/each}
 		</div>
+	{/if}
+
+	{#if validation.is_shown}
+		<div class="divider my-2"></div>
+		<ValidationIssues {validation} />
 	{/if}
 
 	<div class="divider my-2"></div>

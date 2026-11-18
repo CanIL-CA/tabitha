@@ -7,13 +7,15 @@
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import type { Phase1 } from '#lib/edit/phase1.svelte.js'
+	import type { Validation } from '#lib/edit/validation.svelte.js'
 	import type { NavData } from '#lib/types.js'
 
 	type Props = {
 		nav_data: NavData
 		phase1: Phase1 | null
+		validation: Validation
 	}
-	let { nav_data, phase1 }: Props = $props()
+	let { nav_data, phase1, validation }: Props = $props()
 
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
@@ -52,7 +54,14 @@
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
 	}
 
+	function validate() {
+		validation.show()
+	}
+
 	function save() {
+		validation.show()
+		if (validation.errors.length) return
+
 		// TODO
 	}
 
@@ -128,6 +137,15 @@
 					<Icon icon="mdi:content-save-outline" class="h-5 w-5" />
 				</button>
 			</div>
+
+			<button
+				onclick={validate}
+				title="Validate"
+				class="btn btn-sm btn-primary min-w-30"
+			>
+				Validate
+				<Icon icon="mdi:clipboard-check-outline" class="h-5 w-5" />
+			</button>
 
 			<div class="join">
 				<button
