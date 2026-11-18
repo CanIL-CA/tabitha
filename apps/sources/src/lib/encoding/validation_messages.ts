@@ -54,16 +54,15 @@ function get_shared_alternate_name({ feature_name, value }: { feature_name: stri
 	return SHARED_NAME_BY_FEATURE[feature_name]?.(value) ?? value.toLowerCase()
 }
 
-function describe_alternate({ feature_name, value, expected, severity }: AlternateIssue): string {
+function describe_alternate({ feature_name, value, expected }: AlternateIssue): string {
 	const phrases = ALTERNATE_PHRASES_BY_VALUE[value]
 	const expected_names = new Set(expected.values.map(expected_value => get_shared_alternate_name({ feature_name, value: expected_value })))
 
 	const subject = phrases?.name ?? get_shared_alternate_name({ feature_name, value })
 	const expectation = phrases?.[expected.direction === 'before' ? 'previous' : 'next'] ?? [...expected_names].join(' or ')
-	const should = severity === 'warning' ? 'should usually' : 'should'
 	const position = expected.direction === 'before' ? 'preceded' : 'followed'
 
-	return `${capitalize(with_article(subject))} ${should} be ${position} by ${with_article(expectation)}, but none was found.`
+	return `${capitalize(with_article(subject))} should usually be ${position} by ${with_article(expectation)}, but none was found.`
 }
 
 function describe_noun_list(issue: NounListIssue): IssueTarget {

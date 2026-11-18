@@ -12,10 +12,8 @@ export type ValidationSeverity = 'error' | 'warning'
 
 type EntityRef = { entity_id: number }
 
-// The severity is a warning when the neighboring clause has another value from the same group of alternates as `value`, and an error otherwise.
 export type AlternateIssue = EntityRef & {
 	check: 'alternate'
-	severity: ValidationSeverity
 	feature_name: string
 	value: string
 	expected: { direction: 'before' | 'after'; values: string[] }
@@ -106,7 +104,8 @@ export type ValidationResult = {
 	warnings: ValidationIssue[]
 }
 
-const SEVERITY_BY_CHECK: Record<Exclude<ValidationIssue['check'], 'alternate'>, ValidationSeverity> = {
+const SEVERITY_BY_CHECK: Record<ValidationIssue['check'], ValidationSeverity> = {
+	alternate: 'warning',
 	unset_feature: 'error',
 	phrase_structure: 'error',
 	noun_list: 'warning',
@@ -121,22 +120,18 @@ type ValidateEncodingOptions = {
 
 export function validate_encoding({ source_entities, senses }: ValidateEncodingOptions): ValidationResult {
 	const issues: ValidationIssue[] = [
-		...check_alternates({ source_entities }),
 		...check_unset_features({ source_entities }),
 		...check_phrase_structure({ source_entities }),
 		...check_case_frames({ source_entities, senses }),
+		...check_alternates({ source_entities }),
 		...check_noun_list({ source_entities }),
 		...check_concept_level({ source_entities, senses }),
 	]
 
 	return {
-		errors: issues.filter(issue => get_severity(issue) === 'error'),
-		warnings: issues.filter(issue => get_severity(issue) === 'warning'),
+		errors: issues.filter(({ check }) => SEVERITY_BY_CHECK[check] === 'error'),
+		warnings: issues.filter(({ check }) => SEVERITY_BY_CHECK[check] === 'warning'),
 	}
-}
-
-function get_severity(issue: ValidationIssue): ValidationSeverity {
-	return issue.check === 'alternate' ? issue.severity : SEVERITY_BY_CHECK[issue.check]
 }
 
 //===============
@@ -212,17 +207,6 @@ const VOCABULARY_ALTERNATE_RULES: Record<string, AlternateRule> = {
 	[SIMPLE_LAST]: { previous: [SIMPLE_FIRST, SIMPLE_COORDINATE] },
 }
 
-// Values that belong together. A feature can hold several groups, since 'Alternative Analysis' is shared by unrelated kinds of alternates.
-const ALTERNATE_GROUPS_BY_FEATURE: Record<string, string[][]> = {
-	'Alternative Analysis': [
-		['Primary Analysis', 'First Alternative Analysis', 'Second Alternative Analysis', 'Third Alternative Analysis', 'Fourth Alternative Analysis', 'Fifth Alternative Analysis'],
-		['Literal Alternate', 'Dynamic Alternate'],
-		['Biblical Units', 'Contemporary Units'],
-	],
-	'Vocabulary Alternate': [[COMPLEX_SINGLE, COMPLEX_FIRST, COMPLEX_COORDINATE, COMPLEX_LAST, SIMPLE_SINGLE, SIMPLE_FIRST, SIMPLE_COORDINATE, SIMPLE_LAST]],
-	'Rhetorical Question': [[...RHETORICAL_QUESTIONS, 'Equivalent Statement']],
-}
-
 const ALTERNATE_RULES_BY_FEATURE: Record<string, Record<string, AlternateRule>> = {
 	'Alternative Analysis': ALTERNATIVE_ANALYSIS_RULES,
 	'Vocabulary Alternate': VOCABULARY_ALTERNATE_RULES,
@@ -268,31 +252,12 @@ function find_clause_alternate_issues({ source_entities, clause }: ClauseOptions
 		const neighbor_value = (neighbor: PageSourceEntity | undefined) =>
 			neighbor ? get_feature_value({ entity: neighbor, feature_name }) : ''
 
-		const is_in_same_group = (neighbor_value: string) =>
-			ALTERNATE_GROUPS_BY_FEATURE[feature_name].some(group => group.includes(value) && group.includes(neighbor_value))
-
 		const issues: AlternateIssue[] = []
-		const previous_value = neighbor_value(previous)
-		if (expected_previous && !expected_previous.includes(previous_value)) {
-			issues.push({
-				check: 'alternate',
-				severity: is_in_same_group(previous_value) ? 'warning' : 'error',
-				entity_id: clause.id,
-				feature_name,
-				value,
-				expected: { direction: 'before', values: expected_previous },
-			})
+		if (expected_previous && !expected_previous.includes(neighbor_value(previous))) {
+			issues.push({ check: 'alternate', entity_id: clause.id, feature_name, value, expected: { direction: 'before', values: expected_previous } })
 		}
-		const next_value = neighbor_value(next)
-		if (expected_next && !expected_next.includes(next_value)) {
-			issues.push({
-				check: 'alternate',
-				severity: is_in_same_group(next_value) ? 'warning' : 'error',
-				entity_id: clause.id,
-				feature_name,
-				value,
-				expected: { direction: 'after', values: expected_next },
-			})
+		if (expected_next && !expected_next.includes(neighbor_value(next))) {
+			issues.push({ check: 'alternate', entity_id: clause.id, feature_name, value, expected: { direction: 'after', values: expected_next } })
 		}
 		return issues
 	})

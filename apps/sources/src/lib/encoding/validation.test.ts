@@ -60,7 +60,6 @@ describe('check_alternates', () => {
 			feature_name: 'Alternative Analysis',
 			value: 'Literal Alternate',
 			expected: { direction: 'after', values: ['Dynamic Alternate'] },
-			severity: 'error',
 		}])
 	})
 
@@ -621,63 +620,45 @@ describe('check_phrase_structure', () => {
 	})
 })
 
-describe('validate_encoding alternate severity', () => {
+describe('validate_encoding alternates', () => {
 	const result_for = ({ feature, values }: { feature: string; values: string[] }) => {
 		const entities = structured(values.flatMap(value => clause_with({ [feature]: value })))
 		return validate_encoding({ source_entities: entities, senses: {} })
 	}
 	const analysis = (values: string[]) => result_for({ feature: 'Alternative Analysis', values })
 
-	test('is an error when the neighboring clause has no value for the feature', () => {
-		const missing = analysis(['Literal Alternate'])
-		expect(missing.errors).toHaveLength(1)
-		expect(missing.warnings).toEqual([])
-
-		const not_applicable = analysis(['Literal Alternate', 'Not Applicable'])
-		expect(not_applicable.errors.map(issue => issue.check)).toEqual(['alternate'])
+	test.each([
+		['has no neighboring clause', ['Literal Alternate']],
+		['has a neighbor with no value for the feature', ['Literal Alternate', 'Not Applicable']],
+		['has a neighbor that is a different kind of alternate sharing the feature', ['Literal Alternate', 'Biblical Units', 'Contemporary Units']],
+		['has a neighbor that is another value of the same kind', ['Literal Alternate', 'Literal Alternate']],
+	])('is only a warning when an alternate %s', (_description, values) => {
+		const { errors, warnings } = analysis(values)
+		expect(errors).toEqual([])
+		expect(warnings.length).toBeGreaterThan(0)
+		expect(warnings.every(({ check }) => check === 'alternate')).toBe(true)
 	})
 
-	test('is an error when the neighbor belongs to a different kind of alternate sharing the feature', () => {
-		const { errors, warnings } = analysis(['Literal Alternate', 'Biblical Units', 'Contemporary Units'])
-		expect(errors).toMatchObject([{ check: 'alternate', value: 'Literal Alternate', severity: 'error' }])
-		expect(warnings).toEqual([])
-	})
-
-	test('is a warning when the neighbor is another value of the same kind of alternate', () => {
-		const { errors, warnings } = analysis(['Literal Alternate', 'Literal Alternate'])
-		expect(errors.map(issue => issue.check)).toEqual(['alternate'])
-		expect(warnings).toMatchObject([{ check: 'alternate', value: 'Literal Alternate', severity: 'warning' }])
-
-		const numbered = analysis(['Primary Analysis', 'Second Alternative Analysis'])
-		expect(numbered.errors).toEqual([])
-		expect(numbered.warnings).toMatchObject([
-			{ value: 'Primary Analysis', expected: { direction: 'after' } },
-			{ value: 'Second Alternative Analysis', expected: { direction: 'before' } },
-		])
-	})
-
-	test('treats every value of the vocabulary and rhetorical features as one kind of alternate', () => {
-		const vocabulary = result_for({
-			feature: 'Vocabulary Alternate',
-			values: ['Single Sentence - Complex Vocabulary Alternate', 'Single Sentence - Complex Vocabulary Alternate'],
-		})
-		expect(vocabulary.warnings).toMatchObject([{ value: 'Single Sentence - Complex Vocabulary Alternate', severity: 'warning' }])
+	test('is only a warning for the vocabulary and rhetorical alternates too', () => {
+		const vocabulary = result_for({ feature: 'Vocabulary Alternate', values: ['Single Sentence - Complex Vocabulary Alternate'] })
+		expect(vocabulary.errors).toEqual([])
+		expect(vocabulary.warnings).toHaveLength(1)
 
 		const rhetorical = result_for({ feature: 'Rhetorical Question', values: ['Content Rhetorical Question', 'Not Applicable'] })
-		expect(rhetorical.warnings).toEqual([])
-		expect(rhetorical.errors).toHaveLength(1)
+		expect(rhetorical.errors).toEqual([])
+		expect(rhetorical.warnings).toHaveLength(1)
 	})
 })
 
 describe('validate_encoding', () => {
 	test('separates errors from warnings', () => {
 		const entities = structured([
-			...clause_with({ 'Alternative Analysis': 'Literal Alternate' }),
+			...clause_with({ 'Alternative Analysis': 'Literal Alternate', Type: '' }),
 			...noun_phrase({ stem: 'tree', noun_list_index: '1' }),
 			...noun_phrase({ stem: 'rock', noun_list_index: '1' }),
 		])
 		const { errors, warnings } = validate_encoding({ source_entities: entities, senses: {} })
-		expect(errors.map(({ check }) => check)).toEqual(['alternate'])
-		expect(warnings.map(({ check }) => check)).toEqual(['noun_list'])
+		expect(errors.map(({ check }) => check)).toEqual(['unset_feature'])
+		expect(warnings.map(({ check }) => check)).toEqual(['alternate', 'noun_list'])
 	})
 })
