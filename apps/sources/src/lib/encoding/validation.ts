@@ -97,7 +97,22 @@ export type UnsetFeatureIssue = EntityRef & {
 	feature_names: string[]
 }
 
-export type ValidationIssue = AlternateIssue | NounListIssue | ConceptLevelIssue | CaseFrameIssue | PhraseStructureIssue | UnsetFeatureIssue
+export type UnpairedBracketIssue = EntityRef & {
+	check: 'bracket'
+	reason: 'unclosed' | 'unmatched'
+	bracket: string
+}
+
+export type MismatchedBracketIssue = EntityRef & {
+	check: 'bracket'
+	reason: 'mismatched'
+	bracket: string
+	opened_with: string
+}
+
+export type BracketIssue = UnpairedBracketIssue | MismatchedBracketIssue
+
+export type ValidationIssue = BracketIssue | AlternateIssue | NounListIssue | ConceptLevelIssue | CaseFrameIssue | PhraseStructureIssue | UnsetFeatureIssue
 
 export type ValidationResult = {
 	errors: ValidationIssue[]
@@ -105,12 +120,13 @@ export type ValidationResult = {
 }
 
 const SEVERITY_BY_CHECK: Record<ValidationIssue['check'], ValidationSeverity> = {
-	alternate: 'warning',
+	bracket: 'error',
 	unset_feature: 'error',
 	phrase_structure: 'error',
+	case_frame: 'warning',
+	alternate: 'warning',
 	noun_list: 'warning',
 	concept_level: 'warning',
-	case_frame: 'warning',
 }
 
 type ValidateEncodingOptions = {
@@ -120,6 +136,7 @@ type ValidateEncodingOptions = {
 
 export function validate_encoding({ source_entities, senses }: ValidateEncodingOptions): ValidationResult {
 	const issues: ValidationIssue[] = [
+		...check_brackets({ source_entities }),
 		...check_unset_features({ source_entities }),
 		...check_phrase_structure({ source_entities }),
 		...check_case_frames({ source_entities, senses }),
@@ -688,6 +705,33 @@ export function check_phrase_structure({ source_entities }: { source_entities: P
 		...source_entities.flatMap(word => find_orphan_head_issues({ source_entities, word })),
 		...adjective_phrases.flatMap(phrase => find_adjective_usage_issues({ source_entities, phrase })),
 	]
+}
+
+//===============
+// Brackets
+
+const CLOSING_BRACKET_BY_OPENING: Record<string, string> = { '{': '}', '[': ']', '(': ')' }
+
+// The brackets are matched on their own, without the structure, since structure_entities pairs them by order and ignores their kind.
+export function check_brackets({ source_entities }: { source_entities: PageSourceEntity[] }): BracketIssue[] {
+	const open_brackets: PageSourceEntity[] = []
+	const issues: BracketIssue[] = []
+
+	for (const entity of source_entities) {
+		if (is_boundary_start(entity)) {
+			open_brackets.push(entity)
+		} else if (is_boundary_end(entity)) {
+			const opener = open_brackets.pop()
+			if (!opener) {
+				issues.push({ check: 'bracket', reason: 'unmatched', entity_id: entity.id, bracket: entity.value })
+			} else if (CLOSING_BRACKET_BY_OPENING[opener.value] !== entity.value) {
+				issues.push({ check: 'bracket', reason: 'mismatched', entity_id: entity.id, bracket: entity.value, opened_with: opener.value })
+			}
+		}
+	}
+
+	const unclosed = open_brackets.map((opener): BracketIssue => ({ check: 'bracket', reason: 'unclosed', entity_id: opener.id, bracket: opener.value }))
+	return [...issues, ...unclosed]
 }
 
 //===============

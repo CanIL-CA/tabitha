@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { check_alternates, check_case_frames, check_concept_level, check_noun_list, check_phrase_structure, check_unset_features, validate_encoding } from './validation'
+import { check_alternates, check_brackets, check_case_frames, check_concept_level, check_noun_list, check_phrase_structure, check_unset_features, validate_encoding } from './validation'
 import { structure_entities } from './structured'
 import { DEFAULTS } from '#lib/edit/default_entities.js'
 import { group_senses_by_concept } from '#lib/data/ontology_senses.js'
@@ -174,6 +174,43 @@ describe('check_alternates', () => {
 		test('does not allow a version to continue with a clause of the other version', () => {
 			expect(flagged_for([COMPLEX('First'), SIMPLE('Coordinate'), SIMPLE('Last')]).length).toBeGreaterThan(0)
 		})
+	})
+})
+
+describe('check_brackets', () => {
+	const bracket = ({ value, id = -1 }: { value: string; id?: number }): PageSourceEntity => ({ ...DEFAULTS.EMPTY, value, id })
+	const issues_for = (values: string[]) => check_brackets({ source_entities: structured(values.map(value => bracket({ value }))) })
+
+	test('accepts brackets that are all paired, including nested ones', () => {
+		expect(issues_for(['{', '(', ')', '[', '(', ')', ']', '}'])).toEqual([])
+	})
+
+	test('accepts an encoding with no brackets', () => {
+		expect(issues_for([])).toEqual([])
+	})
+
+	test('flags an opening bracket that is never closed', () => {
+		expect(issues_for(['{', '(', ')'])).toEqual([{ check: 'bracket', reason: 'unclosed', entity_id: 0, bracket: '{' }])
+	})
+
+	test('flags every opening bracket left unclosed', () => {
+		expect(issues_for(['{', '[', '(']).map(({ entity_id }) => entity_id)).toEqual([0, 1, 2])
+	})
+
+	test('flags a closing bracket with no opening bracket', () => {
+		expect(issues_for(['(', ')', '}'])).toEqual([{ check: 'bracket', reason: 'unmatched', entity_id: 2, bracket: '}' }])
+	})
+
+	test('flags a closing bracket of the wrong kind', () => {
+		expect(issues_for(['{', '(', '}', ')'])).toEqual([
+			{ check: 'bracket', reason: 'mismatched', entity_id: 2, bracket: '}', opened_with: '(' },
+			{ check: 'bracket', reason: 'mismatched', entity_id: 3, bracket: ')', opened_with: '{' },
+		])
+	})
+
+	test('is an error', () => {
+		const entities = structured([bracket({ value: '{' })])
+		expect(validate_encoding({ source_entities: entities, senses: {} }).errors.map(({ check }) => check)).toEqual(['bracket'])
 	})
 })
 

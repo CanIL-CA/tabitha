@@ -1,5 +1,5 @@
 import type { ConceptKey } from '@tabitha/types'
-import type { AlternateIssue, CaseFrameIssue, ConceptLevelIssue, NounListIssue, PhraseStructureIssue, ValidationIssue } from './validation'
+import type { AlternateIssue, BracketIssue, CaseFrameIssue, ConceptLevelIssue, NounListIssue, PhraseStructureIssue, ValidationIssue } from './validation'
 import type { PageSourceEntity } from '#lib/types.js'
 
 type IssueTarget = {
@@ -65,6 +65,17 @@ function describe_alternate({ feature_name, value, expected }: AlternateIssue): 
 	return `${capitalize(with_article(subject))} should usually be ${position} by ${with_article(expectation)}, but none was found.`
 }
 
+function describe_bracket({ issue, entity }: { issue: BracketIssue; entity: PageSourceEntity }): string {
+	switch (issue.reason) {
+		case 'unclosed':
+			return `${describe_entity(entity)} is opened with '${issue.bracket}' but never closed.`
+		case 'unmatched':
+			return `The closing '${issue.bracket}' has no matching opening bracket.`
+		case 'mismatched':
+			return `The closing '${issue.bracket}' does not match the '${issue.opened_with}' it closes.`
+	}
+}
+
 function describe_noun_list(issue: NounListIssue): IssueTarget {
 	switch (issue.reason) {
 		case 'multiple_concepts':
@@ -122,6 +133,10 @@ function describe_issue_target({ issue, source_entities }: DescribeIssueOptions)
 	switch (issue.check) {
 		case 'alternate':
 			return { message: describe_alternate(issue), entity_ids: [issue.entity_id] }
+		case 'bracket': {
+			const entity = source_entities[issue.entity_id]
+			return { message: describe_bracket({ issue, entity }), entity_ids: [issue.entity_id] }
+		}
 		case 'unset_feature': {
 			const entity = source_entities[issue.entity_id]
 			return { message: `${describe_entity(entity)} has unset features: ${issue.feature_names.join(', ')}.`, entity_ids: [issue.entity_id] }

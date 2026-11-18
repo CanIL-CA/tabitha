@@ -12,7 +12,8 @@ export function structure_entities(entities: PageSourceEntity[]) {
 			parent_id_stack.push(i)
 
 		} else if (is_boundary_end(entity)) {
-			entity.boundary_category = entities[entity.parent_id].boundary_category
+			// a closing bracket with no opener has no parent, which shouldn't but may happen
+			entity.boundary_category = entities[entity.parent_id]?.boundary_category ?? ''
 			parent_id_stack.pop()
 		}
 	}
