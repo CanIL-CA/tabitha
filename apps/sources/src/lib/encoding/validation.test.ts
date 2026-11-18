@@ -1,41 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import { check_alternates, check_brackets, check_case_frames, check_concept_level, check_noun_list, check_phrase_structure, check_unset_features, validate_encoding } from './validation'
-import { structure_entities } from './structured'
+import { close_clause, close_phrase, concept, open_clause, open_phrase, structured, word, type Features } from './test_entities'
 import { DEFAULTS } from '#lib/edit/default_entities.js'
 import { group_senses_by_concept } from '#lib/data/ontology_senses.js'
-import type { ConceptKey, OntologyResult, PairingType } from '@tabitha/types'
+import type { ConceptKey, OntologyResult } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
-
-type Features = Record<string, string>
-
-const to_features = (features: Features) => Object.entries(features).map(([name, value]) => ({ name, value }))
-
-const open_clause = (features: Features = {}): PageSourceEntity => ({
-	...DEFAULTS.EMPTY, category: 'Clause', category_abbr: 'C', value: '{', features: to_features(features),
-})
-const close_clause = (): PageSourceEntity => ({ ...DEFAULTS.EMPTY, value: '}' })
-const open_phrase = ({ category, features = {} }: { category: 'Noun Phrase' | 'Verb Phrase' | 'Adjective Phrase' | 'Adverb Phrase'; features?: Features }): PageSourceEntity => ({
-	...DEFAULTS.EMPTY, category, category_abbr: 'P', value: '(', features: to_features(features),
-})
-const close_phrase = (): PageSourceEntity => ({ ...DEFAULTS.EMPTY, value: ')' })
-
-const word = ({ category, concept, pairing_concept = null, pairing_type = null, noun_list_index = null, features = {} }: {
-	category: 'Noun' | 'Verb' | 'Adjective' | 'Adverb' | 'Adposition' | 'Conjunction'
-	concept: ConceptKey
-	pairing_concept?: ConceptKey | null
-	pairing_type?: PairingType | null
-	noun_list_index?: string | null
-	features?: Features
-}): PageSourceEntity => ({
-	...DEFAULTS.EMPTY, category, value: concept.stem, concept, pairing_concept, pairing_type, noun_list_index, features: to_features(features),
-})
-
-const structured = (entities: PageSourceEntity[]): PageSourceEntity[] => {
-	structure_entities(entities)
-	return entities
-}
-
-const concept = ({ stem, part_of_speech = 'Noun' }: { stem: string; part_of_speech?: ConceptKey['part_of_speech'] }): ConceptKey => ({ stem, sense: 'A', part_of_speech })
 
 const sense = ({ concept, level = '0', categories = [] }: { concept: ConceptKey; level?: string; categories?: string[] }): OntologyResult => ({
 	...concept, level, gloss: '', categorization: '', categories, status: 'in ontology', how_to_hints: [],
@@ -374,15 +343,35 @@ describe('check_case_frames', () => {
 	test('flags a verb with no ontology categories', () => {
 		const entities = structured(clause_with_arguments(['Most Agent-like']))
 		expect(check_case_frames({ source_entities: entities, senses: {} })).toEqual([
-			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2], category: 'Verb', concept: GIVE },
+			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2], category: 'Verb', concept: GIVE, present: ['Agent-like'] },
 		])
 	})
 
-	test('reports a concept with no categories once, listing every entity that uses it', () => {
+	test('reports a concept with no categories once per way it is used, listing every entity that uses it that way', () => {
 		const entities = structured([...clause_with_arguments([]), ...clause_with_arguments([])])
 		expect(check_case_frames({ source_entities: entities, senses: {} })).toEqual([
-			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2, 7], category: 'Verb', concept: GIVE },
+			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2, 7], category: 'Verb', concept: GIVE, present: [] },
 		])
+	})
+
+	test('reports a concept with no categories separately for each different set of arguments', () => {
+		const entities = structured([
+			...clause_with_arguments(['Most Agent-like']),
+			...clause_with_arguments(['Most Agent-like']),
+			...clause_with_arguments(['Most Agent-like', 'Most Patient-like']),
+		])
+		expect(check_case_frames({ source_entities: entities, senses: {} })).toMatchObject([
+			{ reason: 'no_categories', entity_ids: [2, 9], present: ['Agent-like'] },
+			{ reason: 'no_categories', entity_ids: [16], present: ['Agent-like', 'Patient-like'] },
+		])
+	})
+
+	test('treats the same arguments in a different order as one way of using the concept', () => {
+		const entities = structured([
+			...clause_with_arguments(['Most Agent-like', 'Most Patient-like']),
+			...clause_with_arguments(['Most Patient-like', 'Most Agent-like']),
+		])
+		expect(check_case_frames({ source_entities: entities, senses: {} })).toHaveLength(1)
 	})
 
 	describe('with a pairing', () => {
