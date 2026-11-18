@@ -8,6 +8,8 @@
 	import SourceEntitiesEdit from '#lib/edit/SourceEntitiesEdit.svelte'
 	import { EditHistory, set_edit_history } from '#lib/edit/history.svelte.js'
 	import { Phase1 } from '#lib/edit/phase1.svelte.js'
+	import { Validation } from '#lib/edit/validation.svelte.js'
+	import ValidationIssues from '#lib/edit/ValidationIssues.svelte'
 	import { EntityClipboard, set_clipboard } from '#lib/edit/clipboard.svelte.js'
 	import { OntologySenses, set_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import { SelectedEntity, set_selected_entity } from '#lib/data/selected_entity.svelte.js'
@@ -18,15 +20,22 @@
 
 	let { data }: PageProps = $props()
 
-	set_ontology_senses(new OntologySenses(() => data.ontology_senses))
+	const senses = new OntologySenses(() => data.ontology_senses)
+	set_ontology_senses(senses)
 	set_clipboard(new EntityClipboard())
 
-	let phase1 = $derived(data.show_phase1 ? new Phase1(data.source.phase_1_encoding) : null)
+	let phase1 = $derived(new Phase1({ initial_text: data.source.phase_1_encoding, allow_analyze: data.allow_analyze }))
 
 	let edit_history = $derived(new EditHistory({
 		source_entities: data.source.parsed_semantic_encoding,
 	}))
 	set_edit_history(() => edit_history)
+
+	let validation = $derived(new Validation({
+		source_entities: () => edit_history.current.source_entities,
+		senses: () => senses.all,
+		show_if_issues: data.source.parsed_semantic_encoding.length > 0,
+	}))
 
 	const selected_entity = new SelectedEntity(() => edit_history.current.source_entities)
 	set_selected_entity(selected_entity)
@@ -60,12 +69,12 @@
 	</ContextBridge>
 {/snippet}
 
-<EditActionBar nav_data={data.nav_data} {phase1} />
+<EditActionBar nav_data={data.nav_data} {phase1} {validation} />
 
 <HistoryToast />
 
 <main class="mx-8 mt-6 flex-1">
-	{#if phase1?.analyze_result?.status === 'error' && !phase1.error_dismissed}
+	{#if phase1.analyze_result?.status === 'error' && !phase1.error_dismissed}
 		{@const encoding_message = edit_history.current.source_entities.length > 0 ? 'the existing encoding was not replaced.' : 'no encoding was produced.'}
 		<div role="alert" class="alert alert-error mb-3">
 			<div class="flex items-center gap-4">
@@ -80,18 +89,16 @@
 		</div>
 	{/if}
 
-	<div class="grid {phase1 ? 'grid-cols-2' : 'grid-cols-1'} gap-8">
-		{#if phase1}
-			<div class="flex flex-col gap-2">
-				<div class="ms-0.5">
-					<span class="label font-semibold">Input Text (Phase 1)</span>
-				</div>
-
-				<textarea
-					bind:value={phase1.text}
-					class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+	<div class="grid grid-cols-2 gap-8">
+		<div class="flex flex-col gap-2">
+			<div class="ms-0.5">
+				<span class="label font-semibold">Input Text (Phase 1)</span>
 			</div>
-		{/if}
+
+			<textarea
+				bind:value={phase1.text}
+				class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+		</div>
 
 		<div class="flex flex-col gap-2">
 			<div class="ms-0.5">
@@ -102,7 +109,7 @@
 		</div>
 	</div>
 
-	{#if phase1?.analyze_result && phase1.token_messages.length}
+	{#if phase1.analyze_result && phase1.token_messages.length}
 		<div class="divider my-2"></div>
 		<div>
 			{#each phase1.analyze_result.tokens as token, i}
@@ -134,6 +141,11 @@
 				</div>
 			{/each}
 		</div>
+	{/if}
+
+	{#if validation.is_shown}
+		<div class="divider my-2"></div>
+		<ValidationIssues {validation} />
 	{/if}
 
 	<div class="divider my-2"></div>

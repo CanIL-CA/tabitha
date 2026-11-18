@@ -4,7 +4,7 @@ import { load_source_feature_map } from '#lib/encoding/features.js'
 import { structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
 import type { PageServerLoad } from './$types'
 
-export async function load({ locals: { db }, parent, url }: Parameters<PageServerLoad>[0]) {
+export async function load({ locals: { db }, parent }: Parameters<PageServerLoad>[0]) {
 	const { nav_data } = await parent()
 
 	// the source is already confirmed to exist by the layout loader
@@ -16,11 +16,8 @@ export async function load({ locals: { db }, parent, url }: Parameters<PageServe
 	const features = await load_source_feature_map(db)
 	const ontology_senses = await load_ontology_senses(parsed_semantic_encoding)
 
-	// by default the phase1 UI does not show for verses far along in the workflow process.
-	// the url parameter can override that for now
-	const phase1_param = url.searchParams.get('phase1')
-	const should_allow_analyze = !['Ready to Translate', 'Final Review in Progress'].includes(source.status)
-	const show_phase1 = !should_allow_analyze && phase1_param === 'true' || should_allow_analyze && phase1_param !== 'false'
+	// analyzing the phase1 text is not allowed for verses far along in the workflow process
+	const allow_analyze = !['Ready to Translate', 'Final Review in Progress'].includes(source.status)
 
 	return {
 		source: {
@@ -29,6 +26,6 @@ export async function load({ locals: { db }, parent, url }: Parameters<PageServe
 		},
 		features,
 		ontology_senses,
-		show_phase1,
+		allow_analyze,
 	}
 }

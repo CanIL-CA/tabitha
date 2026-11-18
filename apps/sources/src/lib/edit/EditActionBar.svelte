@@ -7,20 +7,22 @@
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
 	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
 	import type { Phase1 } from '#lib/edit/phase1.svelte.js'
+	import type { Validation } from '#lib/edit/validation.svelte.js'
 	import type { NavData } from '#lib/types.js'
 
 	type Props = {
 		nav_data: NavData
-		phase1: Phase1 | null
+		phase1: Phase1
+		validation: Validation
 	}
-	let { nav_data, phase1 }: Props = $props()
+	let { nav_data, phase1, validation }: Props = $props()
 
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
 	const senses = get_ontology_senses()
 
 	async function analyze_text() {
-		if (!phase1) return
+		if (!phase1.allow_analyze) return
 
 		if (edit_history().current.source_entities.length) {
 			if (!confirm('Are you sure you want to re-analyze this verse? The current encoding will get wiped out.')) {
@@ -42,7 +44,7 @@
 	function undo() {
 		const action = edit_history().undo()
 		if (action?.action === 'analyze') {
-			phase1?.clear_analyze_result()
+			phase1.clear_analyze_result()
 		}
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
 	}
@@ -52,7 +54,14 @@
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
 	}
 
+	function validate() {
+		validation.show()
+	}
+
 	function save() {
+		validation.show()
+		if (validation.errors.length) return
+
 		// TODO
 	}
 
@@ -89,7 +98,7 @@
 		<div class="flex flex-wrap gap-4 ml-4">
 			<Navigation {nav_data} url_end="/edit" size="sm" />
 
-			{#if phase1}
+			{#if phase1.allow_analyze}
 				<button
 					type="submit"
 					onclick={analyze_text}
@@ -128,6 +137,15 @@
 					<Icon icon="mdi:content-save-outline" class="h-5 w-5" />
 				</button>
 			</div>
+
+			<button
+				onclick={validate}
+				title="Validate"
+				class="btn btn-sm btn-primary min-w-30"
+			>
+				Validate
+				<Icon icon="mdi:clipboard-check-outline" class="h-5 w-5" />
+			</button>
 
 			<div class="join">
 				<button
