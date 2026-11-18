@@ -19,6 +19,7 @@ const collect_messages = ({ tokens, labels }: { tokens: CheckerToken[], labels: 
 export class Phase1 {
 	#text = $state('')
 
+	allow_analyze: boolean
 	analyzing = $state(false)
 	analyze_result = $state.raw<AnalyzedTextResult | null>(null)
 
@@ -26,8 +27,9 @@ export class Phase1 {
 	api_error = $state<string | null>(null)
 	error_dismissed = $state(false)
 
-	constructor(initial_text: string) {
+	constructor({ initial_text, allow_analyze }: { initial_text: string, allow_analyze: boolean }) {
 		this.#text = initial_text
+		this.allow_analyze = allow_analyze
 	}
 
 	get text() {

@@ -12,7 +12,7 @@
 
 	type Props = {
 		nav_data: NavData
-		phase1: Phase1 | null
+		phase1: Phase1
 		validation: Validation
 	}
 	let { nav_data, phase1, validation }: Props = $props()
@@ -22,7 +22,7 @@
 	const senses = get_ontology_senses()
 
 	async function analyze_text() {
-		if (!phase1) return
+		if (!phase1.allow_analyze) return
 
 		if (edit_history().current.source_entities.length) {
 			if (!confirm('Are you sure you want to re-analyze this verse? The current encoding will get wiped out.')) {
@@ -44,7 +44,7 @@
 	function undo() {
 		const action = edit_history().undo()
 		if (action?.action === 'analyze') {
-			phase1?.clear_analyze_result()
+			phase1.clear_analyze_result()
 		}
 		selected_entity.select_ids({ ids: action?.ids ?? [] })
 	}
@@ -98,7 +98,7 @@
 		<div class="flex flex-wrap gap-4 ml-4">
 			<Navigation {nav_data} url_end="/edit" size="sm" />
 
-			{#if phase1}
+			{#if phase1.allow_analyze}
 				<button
 					type="submit"
 					onclick={analyze_text}
