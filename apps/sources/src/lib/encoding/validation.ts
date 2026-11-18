@@ -124,9 +124,9 @@ export function validate_encoding({ source_entities, senses }: ValidateEncodingO
 		...check_alternates({ source_entities }),
 		...check_unset_features({ source_entities }),
 		...check_phrase_structure({ source_entities }),
+		...check_case_frames({ source_entities, senses }),
 		...check_noun_list({ source_entities }),
 		...check_concept_level({ source_entities, senses }),
-		...check_case_frames({ source_entities, senses }),
 	]
 
 	return {
@@ -661,8 +661,8 @@ export function check_case_frames({ source_entities, senses }: ValidateEncodingO
 	const word_concepts = source_entities.flatMap(word => find_word_concepts({ senses, word }))
 
 	return [
-		...find_missing_categories_issues(word_concepts.filter(word_concept => !has_categories(word_concept))),
 		...word_concepts.filter(has_categories).flatMap(word_concept => find_frame_mismatch({ source_entities, word_concept })),
+		...find_missing_categories_issues(word_concepts.filter(word_concept => !has_categories(word_concept))),
 	]
 }
 

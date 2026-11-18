@@ -22,9 +22,48 @@ const describe_entity = (entity: PageSourceEntity | undefined): string => {
 
 const describe_concept = ({ stem, sense }: ConceptKey): string => `${stem}-${sense}`
 
-function describe_alternate(issue: AlternateIssue): string {
-	const expected = issue.value === 'Equivalent Statement' ? 'rhetorical question' : issue.expected.values.map(value => `'${value}'`).join(' or ')
-	return `Clause is '${issue.value}', so a ${expected} should be directly ${issue.expected.direction} it.`
+// Alternates are described with one sentence, so only the names change. Most names come from the value itself, with shared names
+// for features where telling the values apart would not help the reader.
+const SHARED_NAME_BY_FEATURE: Record<string, (value: string) => string> = {
+	'Alternative Analysis': value => value.endsWith('Units') ? `${value.toLowerCase()} alternate` : value.toLowerCase(),
+	'Vocabulary Alternate': value => value.includes('Complex') ? 'complex alternate' : 'simple alternate',
+	'Rhetorical Question': value => value === 'Equivalent Statement' ? 'equivalent statement' : 'rhetorical question',
+}
+
+// The sentences of a complex or simple version expect each other in order, which the shared names would hide.
+type AlternatePhrases = {
+	name: string
+	previous?: string
+	next?: string
+}
+
+const ALTERNATE_PHRASES_BY_VALUE: Record<string, AlternatePhrases> = {
+	'First Sentence - Complex Vocabulary Alternate': { name: 'first complex sentence', next: 'coordinate or last complex sentence' },
+	'Coordinate Sentence - Complex Vocabulary Alternate': { name: 'coordinate complex sentence', previous: 'first or coordinate complex sentence', next: 'coordinate or last complex sentence' },
+	'Last Sentence - Complex Vocabulary Alternate': { name: 'last complex sentence', previous: 'first or coordinate complex sentence' },
+	'First Sentence - Simple Vocabulary Alternate': { name: 'first simple sentence', next: 'coordinate or last simple sentence' },
+	'Coordinate Sentence - Simple Vocabulary Alternate': { name: 'coordinate simple sentence', previous: 'first or coordinate simple sentence', next: 'coordinate or last simple sentence' },
+	'Last Sentence - Simple Vocabulary Alternate': { name: 'last simple sentence', previous: 'first or coordinate simple sentence' },
+}
+
+const with_article = (name: string): string => `${/^[aeiou]/i.test(name) ? 'an' : 'a'} ${name}`
+
+const capitalize = (text: string): string => `${text[0].toUpperCase()}${text.slice(1)}`
+
+function get_shared_alternate_name({ feature_name, value }: { feature_name: string; value: string }): string {
+	return SHARED_NAME_BY_FEATURE[feature_name]?.(value) ?? value.toLowerCase()
+}
+
+function describe_alternate({ feature_name, value, expected, severity }: AlternateIssue): string {
+	const phrases = ALTERNATE_PHRASES_BY_VALUE[value]
+	const expected_names = new Set(expected.values.map(expected_value => get_shared_alternate_name({ feature_name, value: expected_value })))
+
+	const subject = phrases?.name ?? get_shared_alternate_name({ feature_name, value })
+	const expectation = phrases?.[expected.direction === 'before' ? 'previous' : 'next'] ?? [...expected_names].join(' or ')
+	const should = severity === 'warning' ? 'should usually' : 'should'
+	const position = expected.direction === 'before' ? 'preceded' : 'followed'
+
+	return `${capitalize(with_article(subject))} ${should} be ${position} by ${with_article(expectation)}, but none was found.`
 }
 
 function describe_noun_list(issue: NounListIssue): IssueTarget {
