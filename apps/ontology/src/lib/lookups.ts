@@ -216,6 +216,61 @@ export const curated_example_category_codes: Record<string, string> = {
 	']': 'Clause end',
 }
 
+type CuratedExampleBoundary = {
+	start: string
+	feature?: {
+		name: string
+		codes: Record<string, string>
+		fallback_code?: string
+	}
+}
+
+// How a source entity that opens a phrase or clause is written in a curated example: the start token, then the code of one of its features.
+// A phrase whose feature has no code of its own, such as a noun phrase with no semantic role, is written with 'N'.
+export const curated_example_boundaries: Record<string, CuratedExampleBoundary> = {
+	'Noun Phrase': {
+		start: '(NP',
+		feature: {
+			name: 'Semantic Role',
+			codes: {
+				'Most Agent-like': 'A',
+				'Most Patient-like': 'P',
+				'Destination': 'd',
+				'Source': 's',
+				'State': 'S',
+				'Instrument': 'I',
+				'Beneficiary': 'B',
+				'Addressee': 'D',
+			},
+			fallback_code: 'N',
+		},
+	},
+	'Verb Phrase': { start: '(VP' },
+	'Adjective Phrase': {
+		start: '(AP',
+		feature: {
+			name: 'Usage',
+			codes: {
+				'Attributive': 'A',
+				'Predicative': 'P',
+			},
+			fallback_code: 'N',
+		},
+	},
+	'Adverb Phrase': { start: '(aP' },
+	'Clause': {
+		start: '[',
+		feature: {
+			name: 'Type',
+			codes: {
+				'Agent (Subject Complement)': 'A',
+				'Patient (Object Complement)': 'P',
+				'Attributive Patient (Adjectival Object Complement)': 'p',
+			},
+		},
+	},
+}
+
 export const curated_example_feature_codes: Record<string, Record<string, string>> = {
 	'NP': {
 		'A': 'Agent',
@@ -234,5 +289,6 @@ export const curated_example_feature_codes: Record<string, Record<string, string
 	'Clause': {
 		'A': 'Agent',
 		'P': 'Patient',
+		'p': 'Attributive Patient',
 	},
 }
