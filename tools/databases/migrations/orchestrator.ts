@@ -1,4 +1,5 @@
 import { $, Glob } from 'bun'
+import { Database } from 'bun:sqlite'
 import { cp, mkdir, rename } from 'fs/promises'
 import { existsSync } from 'fs'
 import { basename, join } from 'path'
@@ -9,6 +10,7 @@ import { rebuild_examples } from './ontology/examples'
 import { to_d1_importable } from './ontology/live'
 import { plan_migration, type TaskFamily } from './plan'
 import { resolve_dated_file } from './resolve_dated_file'
+import { download_ontology_backup, read_ontology_version } from './live_ontology_backup'
 import { load_state, mark_done, clear_state } from './state'
 import { validate_migration_output, type ValidationConfig } from './validate'
 
@@ -19,8 +21,9 @@ const AUDIENCE_NAME = 'Unchurched Adults'
 // not an independently-versioned raw input -- so it's always staged fresh and excluded from the
 // unchanged-content check.
 const DEDUP_EXEMPT = new Set(['Sources_Complex'])
-// tbta_utils reads Ontology.sqlite where the delivery put it, but the delivered copy is never staged:
-// the live Ontology D1 is the source of truth (docs/decisions/0025-ontology-d1-single-source-of-truth.md).
+// tbta_utils reads Ontology.sqlite from the working directory, where run_tbta_utils puts the live
+// backup matching English. It's never staged: the live Ontology D1 is the source of truth
+// (docs/decisions/0025-ontology-d1-single-source-of-truth.md).
 const NOT_STAGED = new Set(['Ontology'])
 const USAGE = 'Usage: bun migrate.ts "<directory or zip containing all necessary TBTA dbs>" YYYY-MM-DD'
 
@@ -254,6 +257,11 @@ async function run_tbta_utils(working_dir: string) {
 	const english_changed = await is_changed({ name: 'English', src: `${working_dir}/English.sqlite` })
 	const bible_changed = await file_changed_if_present('Bible')
 	const sample_changed = await file_changed_if_present('Sample')
+	const cci_needed = english_changed || bible_changed || sample_changed
+
+	if (cci_needed) {
+		await use_matching_live_ontology()
+	}
 
 	if (english_changed) {
 		log.step('Running tbta_utils export-lexical-forms...')
@@ -262,11 +270,48 @@ async function run_tbta_utils(working_dir: string) {
 		log.step('Skipping tbta_utils export-lexical-forms -- English unchanged since last run.')
 	}
 
-	if (english_changed || bible_changed || sample_changed) {
+	if (cci_needed) {
 		log.step('Running tbta_utils export-generated-cci (this processes the full Bible and can take ~10 minutes)...')
 		await $`${tbta_utils} export-generated-cci --language English.sqlite --audience-name ${AUDIENCE_NAME} --output-path ${working_dir}/Sources_Complex.sqlite`.cwd(working_dir)
+		await assert_complete_cci(`${working_dir}/Sources_Complex.sqlite`)
 	} else {
 		log.step('Skipping tbta_utils export-generated-cci -- English, Bible, and Sample all unchanged since last run.')
+	}
+
+	// A delivered Ontology.sqlite is set aside rather than overwritten, keeping the delivery intact.
+	async function use_matching_live_ontology() {
+		const version = read_ontology_version({ db_path: `${working_dir}/English.sqlite` })
+		const ontology_path = `${working_dir}/Ontology.sqlite`
+		if (await Bun.file(ontology_path).exists()) {
+			log.warn('Setting the delivered Ontology.sqlite aside as Ontology.sqlite.delivered; tbta_utils uses the live backup.')
+			await rename(ontology_path, `${ontology_path}.delivered`)
+		}
+		log.step(`Downloading the live Ontology backup ${version}, which English.sqlite is mapped to...`)
+		await download_ontology_backup({ version, dest: ontology_path })
+	}
+
+	// tbta_utils exits 0 even when it fails, and a failing verse silently ends the export there, so
+	// judge it by its output: every book the previous export covered must still be there.
+	async function assert_complete_cci(path: string) {
+		const books = complex_books(path)
+		if (books.size === 0) throw new Error(`tbta_utils export-generated-cci produced no rows in ${path}; see TBTA.log in ${working_dir}.`)
+
+		const previous = await resolve_dated_file({ dir: 'raw', prefix: 'Sources_Complex', date, ext: 'tabitha.sqlite', silent: true })
+		if (!previous) return
+
+		const missing = [...complex_books(previous)].filter(book => !books.has(book))
+		if (missing.length > 0) {
+			throw new Error(`tbta_utils export-generated-cci stopped early: ${missing.length} book(s) from ${basename(previous)} are missing (${missing.join(', ')}). See "An error occurred" in TBTA.log in ${working_dir}.`)
+		}
+	}
+
+	function complex_books(path: string): Set<string> {
+		const db = new Database(path, { readonly: true })
+		try {
+			return new Set(db.query<{ book: string }, []>('SELECT DISTINCT id_primary AS book FROM Sources').all().map(row => row.book))
+		} finally {
+			db.close()
+		}
 	}
 
 	async function file_changed_if_present(name: string): Promise<boolean> {
