@@ -161,8 +161,10 @@ try {
 	await clear_state(date)
 
 	log.summary()
-} finally {
-	await cleanup_intake?.()
+	await cleanup_intake()
+} catch (error) {
+	log.warn(`Kept the working directory for inspection (TBTA.log, tbta_utils output): ${dir_w_tbta_dbs}`)
+	throw error
 }
 
 async function stage_tbta_files(working_dir: string) {
@@ -261,6 +263,8 @@ async function run_tbta_utils(working_dir: string) {
 
 	if (cci_needed) {
 		await use_matching_live_ontology()
+		await use_latest_staged_if_missing('Sample')
+		await use_latest_staged_if_missing('Bible')
 	}
 
 	if (english_changed) {
@@ -278,16 +282,24 @@ async function run_tbta_utils(working_dir: string) {
 		log.step('Skipping tbta_utils export-generated-cci -- English, Bible, and Sample all unchanged since last run.')
 	}
 
-	// A delivered Ontology.sqlite is set aside rather than overwritten, keeping the delivery intact.
+	// Replaces any delivered Ontology.sqlite; working_dir is intake's copy, so the delivery keeps it.
 	async function use_matching_live_ontology() {
 		const version = read_ontology_version({ db_path: `${working_dir}/English.sqlite` })
-		const ontology_path = `${working_dir}/Ontology.sqlite`
-		if (await Bun.file(ontology_path).exists()) {
-			log.warn('Setting the delivered Ontology.sqlite aside as Ontology.sqlite.delivered; tbta_utils uses the live backup.')
-			await rename(ontology_path, `${ontology_path}.delivered`)
-		}
 		log.step(`Downloading the live Ontology backup ${version}, which English.sqlite is mapped to...`)
-		await download_ontology_backup({ version, dest: ontology_path })
+		await download_ontology_backup({ version, dest: `${working_dir}/Ontology.sqlite` })
+	}
+
+	// tbta_utils reads its companion databases from working_dir, but a delivery only carries what changed.
+	// The copied-in file matches the latest staged one, so staging skips it as unchanged.
+	async function use_latest_staged_if_missing(name: string) {
+		const dest = `${working_dir}/${name}.sqlite`
+		if (await Bun.file(dest).exists()) return
+
+		const latest = await resolve_dated_file({ dir: 'raw', prefix: name, date, ext: 'tbta.sqlite', silent: true })
+		if (!latest) throw new Error(`tbta_utils needs ${name}.sqlite, and neither the delivery nor raw/ has one (run "bun run r2:pull -- raw").`)
+
+		log.step(`Using ${basename(latest)} as ${name}.sqlite for tbta_utils (not in this delivery).`)
+		await cp(latest, dest)
 	}
 
 	// tbta_utils exits 0 even when it fails, and a failing verse silently ends the export there, so
