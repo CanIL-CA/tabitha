@@ -77,7 +77,7 @@ export function expand_token(token: CheckerToken): CheckerToken[] {
 	}
 }
 
-function simplify_tokens(sentences: Sentence[]): CheckerToken[] {
+export function simplify_tokens(sentences: Sentence[]): CheckerToken[] {
 	return sentences.map(({ clause }) => simplify_token(clause))
 
 	function simplify_token({ token, type, tag, messages, lookup_results, pairing, pairing_type, pronoun, sub_tokens, applied_rules, auto_fix }: Token): CheckerToken {

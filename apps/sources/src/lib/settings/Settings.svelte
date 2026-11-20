@@ -14,13 +14,23 @@
 		const setting_json = JSON.stringify(view_settings)
 		localStorage.setItem('source_view_settings', setting_json)
 	}
+
+	let details_element = $state<HTMLDetailsElement>()
+	let is_open = $state(false)
+
+	function close_if_outside(event: PointerEvent) {
+		if (details_element?.contains(event.target as Node)) return
+		is_open = false
+	}
 </script>
 
-<details class="dropdown">
-	<summary class="btn px-3">
-		<Icon icon="material-symbols:settings" class="h-6 w-6" />
+<svelte:window onpointerdowncapture={close_if_outside} />
+
+<details bind:this={details_element} bind:open={is_open} class="dropdown dropdown-end">
+	<summary class="btn btn-sm px-2">
+		<Icon icon="material-symbols:settings" class="h-5 w-5" />
 	</summary>
-	<div class="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+	<div class="menu dropdown-content bg-base-100 rounded-box w-52 p-2 shadow-sm">
 		<label>
 			<input type="checkbox" bind:checked={view_settings.show_hover_popups} onchange={store_settings} />
 			Show hover popups

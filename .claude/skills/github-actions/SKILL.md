@@ -23,7 +23,7 @@ A PAT or App token is only justified for what `GITHUB_TOKEN` can't do:
 
 PRs from forks and Dependabot get a read-only token no matter what you grant, and a PAT doesn't help there either, since those runs don't receive Actions secrets.
 
-**A 403 is a hypothesis, not a diagnosis.** Before concluding that "org policy" blocks something, check the workflow's own `permissions:` blocks and try granting the scope at the job level. `PR_SUMMARY_TOKEN` existed for two weeks because a 403 caused by this workflow's own `contents: read` was blamed on org policy (fixed in PR #169).
+**A 403 is a hypothesis, not a diagnosis.** Before concluding that "org policy" blocks something, check the workflow's own `permissions:` blocks and try granting the scope at the job level. A job-level `contents: read` that omits the scope it needs produces the same 403 an org policy would.
 
 ## Advisory checks hide failures by design
 

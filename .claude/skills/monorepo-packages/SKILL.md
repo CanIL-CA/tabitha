@@ -1,6 +1,6 @@
 ---
 name: monorepo-packages
-description: Monorepo package architecture, shared workspace libraries, and coding standards skill. TRIGGER when creating or modifying shared packages (@tabitha/types, @tabitha/ui, @tabitha/api-client, @tabitha/tsconfig, @tabitha/eslint-config) or reviewing monorepo conventions.
+description: Monorepo package architecture, shared workspace libraries, and coding standards skill. TRIGGER when creating or modifying any workspace package under packages/*, deciding whether code belongs in an app or a shared package, or reviewing monorepo conventions.
 metadata:
   version: 1.x
 ---
@@ -27,6 +27,8 @@ Guidelines for architecting shared packages and adhering to coding standards acr
 | **`@tabitha/vite-config`** | Centralized Vite, SvelteKit, Vitest, and Playwright configuration generators. |
 | **`@tabitha/eslint-config`** | Standardized ESLint 9 flat configuration. |
 | **`@tabitha/tsconfig`** | Base TypeScript compiler configurations (`base.json`, `svelte.json`). |
+| **`@tabitha/d1`** | `with_timeout` wrapper for D1 bindings and sessions, so a stuck query fails instead of hanging the request. |
+| **`@tabitha/service-worker`** | Shared service worker (`register_service_worker`) for the apps that work offline. |
 
 ---
 

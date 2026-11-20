@@ -13,7 +13,7 @@ Guidelines for high-performance SQLite schema design, query optimization, and to
 
 ## 1. High-Throughput Bulk Operations & Pragmas
 
-When performing bulk inserts, migrations, or snapshot loading (e.g. `scripts/dx/db_load.ts`), always wrap operations in a single transaction with memory pragmas:
+When bulk-loading a local SQLite file (as `scripts/dx/db_load.ts` does for snapshots), wrap the statements in a single transaction with memory pragmas. This is for local files only: D1 rejects SQL `BEGIN TRANSACTION`, so group D1 writes with `db.batch([...])` (see the cloudflare-workers skill).
 
 ```sql
 PRAGMA synchronous = OFF;
@@ -30,88 +30,13 @@ COMMIT;
 
 ---
 
-## 2. Query Plan Optimization & Indexing
+## 2. Queries and schema
 
-### Inspecting Query Plans
-Always check queries touching large linguistic tables (>100k rows) with `EXPLAIN QUERY PLAN`:
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT * FROM Concepts WHERE stem = 'write-01' AND language = 'en';
-```
-
-- **Target**: Ensure `USING INDEX` is shown. Avoid `SCAN TABLE` on large tables.
-
-### Indexing Strategies
-- **Composite Indexes**: Index column pairs frequently filtered together:
-  ```sql
-  CREATE INDEX idx_concepts_stem_lang ON Concepts (stem, language);
-  ```
-- **Covering Indexes**: Include selected columns in the index to avoid table B-tree lookups entirely:
-  ```sql
-  CREATE INDEX idx_senses_lookup ON WordSenses (concept_id, sense_number, gloss);
-  ```
-- **Unique Indexes**: Enforce integrity while providing indexed lookups:
-  ```sql
-  CREATE UNIQUE INDEX idx_verse_ref ON Verses (book, chapter, verse);
-  ```
+Read the real schema before writing a query or migration: the app's `migrations` directory where it has one, or the loaded local database (`bun run db:status`). Don't assume table or column names. On large tables, check the plan with `EXPLAIN QUERY PLAN` and add an index where it shows a `SCAN`.
 
 ---
 
-## 3. Schema Design & Table Types
-
-### `WITHOUT ROWID` Tables
-For pure lookup, mapping, or association tables with natural primary keys, use `WITHOUT ROWID` to eliminate the default 64-bit integer rowid and halve storage overhead:
-
-```sql
-CREATE TABLE SenseMapping (
-	source_sense_id TEXT NOT NULL,
-	target_sense_id TEXT NOT NULL,
-	mapping_weight REAL NOT NULL,
-	PRIMARY KEY (source_sense_id, target_sense_id)
-) WITHOUT ROWID;
-```
-
-### Foreign Key Constraints
-Always enable foreign key enforcement in active runtime connections:
-```sql
-PRAGMA foreign_keys = ON;
-```
-
----
-
-## 4. SQLite JSON Functions & FTS5 Search
-
-### Querying Structured JSON Data
-```sql
--- Extract scalar property
-SELECT json_extract(metadata, '$.theological_class') FROM Concepts;
-
--- Unnest JSON arrays into rows
-SELECT Concepts.id, tags.value
-FROM Concepts, json_each(Concepts.metadata, '$.tags') AS tags;
-```
-
-### Full-Text Search (FTS5)
-For fast searching across biblical commentaries and glossaries:
-```sql
-CREATE VIRTUAL TABLE SenseSearch USING fts5(
-	concept_id UNINDEXED,
-	gloss,
-	definition,
-	tokenize = 'porter unicode61'
-);
-
--- Ranked BM25 query
-SELECT concept_id, rank
-FROM SenseSearch
-WHERE SenseSearch MATCH 'covenant AND love'
-ORDER BY rank;
-```
-
----
-
-## 5. Health, Maintenance & Snapshots
+## 3. Health, Maintenance & Snapshots
 
 - **Integrity Check**:
   ```sql
@@ -122,4 +47,4 @@ ORDER BY rank;
   ```sql
   VACUUM INTO 'backup.sqlite';
   ```
-- **Streaming CLI Pipelines**: Use `sqlite3 <db_path>` with standard input pipes for zero-overhead snapshot execution.
+- **Running `sqlite3` from scripts**: call it through Bun's `$` with arguments (as `tools/databases/migrations/ontology/examples.ts` does), not a shell pipe, which `cmd.exe` can't parse (AGENTS.md, "Writing Cross-Platform Scripts & Tools").

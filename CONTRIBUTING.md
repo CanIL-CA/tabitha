@@ -322,14 +322,14 @@ Apps under `apps/*` are picked up automatically by Bun workspaces, Turborepo, CI
 
 **Every app:**
 
-1. **`package.json`** named `@tabitha/<app>`, with at least `check`, `check:lint`, `build`, `build:ci`, `test`, and `precommit`. Workers Builds runs `bun install && bun run build` before deploying, so a missing `build` fails the deploy, and CI only builds apps that define `build:ci`.
+1. **`package.json`** named `@tabitha/<app>`, with at least `check`, `check:lint`, `build`, `test`, and `precommit`. Workers Builds runs `bun install && bun run build` before deploying, so a missing `build` fails the deploy, and CI's Production Bundle Build runs the same `build`. A SvelteKit app's `build` is `bun run --bun vite build`, so production, CI and previews all build under the Bun runtime.
 2. **`wrangler.jsonc`** with `compatibility_date` and `nodejs_compat` (`bun run check:cloudflare` enforces both). Secrets go through `wrangler secret put`, never `vars`.
 3. **`.env`** following the two-tier convention in `AGENTS.md`; local values go in `.env.local`, never `.dev.vars` (gitignored as a safety net only).
 4. **Hardcoded lists**: `search_dirs` in `scripts/audits/check_philosophies.ts`, a `dev:<app>` script in the root `package.json`, and `desired_apps` in `tools/workers/config.ts`. An app with D1 also goes in `apps_config` in `scripts/dx/db_load.ts` and `APP_NAMES` in `scripts/dx/db_status.ts`, or its local database is never built.
 5. **Docs**: the apps list in `AGENTS.md`, the diagram, apps table, and dev commands here, and the app sections of the root `README.md`.
 6. **Workers Builds**: before the app's PR merges, run `bun run apply:run` in `tools/workers`. It creates the app's Worker with placeholder code and connects it to the repo, so the merge itself deploys the app. See [`tools/workers/README.md`](tools/workers/README.md#adding-a-new-apps-worker).
 
-**A SvelteKit app, additionally:** a port in `packages/vite-config/ports.js`, entries in `scripts/dx/dev_multi.ts`, `scripts/dx/dev_menu.ts`, `scripts/ci/run_e2e.ts` (if it has e2e tests), and `scripts/dx/doctor.ts`, a letter in `scripts/dx/lib/brand_mark.ts` (see "How to Generate an App's Icons" below), and `build:preview`/`deploy:preview` plus a `previews` block in `wrangler.jsonc` if it should get per-PR previews ([ADR 0020](docs/decisions/0020-per-pr-worker-previews.md)).
+**A SvelteKit app, additionally:** a port in `packages/vite-config/ports.js`, entries in `scripts/dx/dev_multi.ts`, `scripts/dx/dev_menu.ts`, `scripts/ci/run_e2e.ts` (if it has e2e tests), and `scripts/dx/doctor.ts`, a letter in `scripts/dx/lib/brand_mark.ts` (see "How to Generate an App's Icons" below), and `build:preview` (`bun run build`, kept as its own Turbo task so CI's shared cache never hands a Preview a build made with `.env.local`)/`deploy:preview` plus a `previews` block in `wrangler.jsonc` if it should get per-PR previews ([ADR 0020](docs/decisions/0020-per-pr-worker-previews.md)).
 
 **A plain Worker (like `apps/scheduler`), deliberately not:** don't define `prepare`, `dev:e2e`, `test:e2e`, or `deploy:preview`, and don't add it to the port registry, `dev_multi`, `dev_menu`, `run_e2e`, `doctor`, or `brand_mark` — each assumes a SvelteKit dev server, and `deploy:preview` would enroll it in CI's preview deploy. Extend `@tabitha/tsconfig/base.json` and use `tsc --noEmit` for `check`, and something like `wrangler deploy --dry-run --outdir dist` for `build`.
 
@@ -462,7 +462,7 @@ Each email is its own user (emails are stored lowercase), so someone with two ad
 
 The live `DB_Ontology` is the single source of truth and is never replaced ([ADR 0025](docs/decisions/0025-ontology-d1-single-source-of-truth.md)), so its schema changes are D1 migrations in `apps/ontology/migrations/ontology/`, applied in place. Locally, `bun run db:load:ontology` loads the pinned snapshot and then applies any newer migrations. The steps are in that folder's [README](apps/ontology/migrations/ontology/README.md). Classic TBTA downloads this database every night through the backups, so check with the TBTA maintainers before changing a table it reads.
 
-To get newer Ontology data locally and in CI, move the pin: the nightly backup uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` to R2, and a PR adds that file to `manifest.json`'s `snapshots` list and points `pinned_snapshots.DB_Ontology` at it.
+To get newer Ontology data locally and in CI, move the pin: the nightly backup uploads `snapshots/Ontology_<version>.tabitha.sqlite.sql` to R2. Run `bun run fixture:ontology <version>` from `tools/databases` to derive the smaller fixture (a sample of the examples) and `bun run r2:push snapshots` to upload it, then a PR points `pinned_snapshots.DB_Ontology` at it and lists it in `manifest.json`'s `snapshots`. The pin is a test fixture, so it only moves when a test needs newer data.
 
 #### Sources/Targets
 

@@ -19,9 +19,10 @@
 		concepts: selected_entity.all.flatMap(({ concept }) => concept ?? []),
 	}))
 
-	function set_concept(concept: ConceptKey) {
-		edit_history().record({ ids_before: selected_entity.ids })
-		apply_concept({ entities: selected_entity.all, concept })
+	function set_concept(new_concept: ConceptKey) {
+		const details = `${concept.part_of_speech} ${concept.stem}-${concept.sense} -> ${new_concept.stem}-${new_concept.sense}`
+		edit_history().record({ action: 'concept', details, ids_before: selected_entity.ids })
+		apply_concept({ entities: selected_entity.all, concept: new_concept })
 	}
 
 	let dialog_open = $state(false)

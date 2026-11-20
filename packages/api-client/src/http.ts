@@ -50,6 +50,49 @@ function get_retry_delay_ms({ res, attempt }: {
 	return Math.min(requested_delay_ms, MAX_RETRY_DELAY_MS)
 }
 
+// Cloudflare has left requests to a sibling Worker hanging for minutes with no response at all, while
+// the same request sent again a moment later succeeded. A wait this long means the request is lost,
+// not slow: no read endpoint takes more than a few seconds, and D1 queries time out at 15 s.
+const RESPONSE_TIMEOUT_MS = 20_000
+const RESPONSE_ATTEMPTS = 2
+
+type SendRequest = (signal: AbortSignal) => Promise<Response>
+
+class ResponseTimeoutError extends Error {}
+
+type FetchWithTimeoutOptions = {
+	readonly send: SendRequest
+	readonly url: string
+	readonly timeout_ms: number
+}
+
+// Covers only the wait for response headers, so a streamed body can take as long as it needs
+async function fetch_with_timeout({ send, url, timeout_ms }: FetchWithTimeoutOptions): Promise<Response> {
+	const controller = new AbortController()
+	let timer: ReturnType<typeof setTimeout> | undefined
+	const timeout = new Promise<never>((_resolve, reject) => {
+		timer = setTimeout(() => {
+			const error = new ResponseTimeoutError(`[api-client] no response from ${url} within ${timeout_ms} ms`)
+			controller.abort(error)
+			reject(error)
+		}, timeout_ms)
+	})
+
+	// The race ends the wait even if a fetch implementation ignores the abort signal
+	return Promise.race([send(controller.signal), timeout]).finally(() => clearTimeout(timer))
+}
+
+async function fetch_with_timeout_retry({ send, url, timeout_ms }: FetchWithTimeoutOptions): Promise<Response> {
+	for (let attempt = 1; ; attempt++) {
+		try {
+			return await fetch_with_timeout({ send, url, timeout_ms })
+		} catch (error) {
+			if (!(error instanceof ResponseTimeoutError) || attempt >= RESPONSE_ATTEMPTS) throw error
+			console.warn(`${error.message}; sending it again`)
+		}
+	}
+}
+
 async function fetch_with_rate_limit_retry(do_fetch: () => Promise<Response>): Promise<Response> {
 	let res = await do_fetch()
 
@@ -71,6 +114,7 @@ async function fetch_with_rate_limit_retry(do_fetch: () => Promise<Response>): P
  * - MIME-type aware response dispatching (JSON, text, streams, binary)
  * - Built-in error checking (`!res.ok -> null`), logged via `console.warn` so failures aren't silent
  * - Bounded retry-with-backoff on 429 responses, honoring the server's Retry-After header
+ * - One resend when no response arrives within RESPONSE_TIMEOUT_MS (except `untracked` calls, which are slow by design)
  */
 export function create_http_client(options: ClientOptions): HttpClient {
 	const { base_url, cache = false } = options
@@ -136,30 +180,47 @@ export function create_http_client(options: ClientOptions): HttpClient {
 		}
 	}
 
+	type SendOptions = {
+		readonly url: string
+		readonly init: RequestInit
+		readonly untracked?: boolean
+	}
+
+	async function send({ url, init, untracked }: SendOptions): Promise<Response> {
+		if (untracked) return fetch_with_rate_limit_retry(() => Object.keys(init).length ? get_fetch()(url, init) : get_fetch()(url))
+
+		const send_once: SendRequest = signal => get_fetch()(url, {
+			...init,
+			signal: init.signal ? AbortSignal.any([init.signal, signal]) : signal,
+		})
+		const request = fetch_with_rate_limit_retry(() => fetch_with_timeout_retry({ send: send_once, url, timeout_ms: RESPONSE_TIMEOUT_MS }))
+		return tracked(request)
+	}
+
 	return {
 		async get<T>(path: string, options?: GetOptions): Promise<T | null> {
 			const { untracked, params, ...init } = options ?? {}
 			const url = build_url({ path, params, is_get: true })
-			const request = fetch_with_rate_limit_retry(() =>
-				Object.keys(init).length ? get_fetch()(url, { ...init, method: 'GET' }) : get_fetch()(url),
-			)
-			const res = await (untracked ? request : tracked(request))
+			const res = await send({ url, init: Object.keys(init).length ? { ...init, method: 'GET' } : {}, untracked })
 			return parse_response<T>(res)
 		},
 
 		async post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T | null> {
 			const url = build_url({ path })
 			const { untracked, ...init } = options ?? {}
-			const request = fetch_with_rate_limit_retry(() => get_fetch()(url, {
-				...init,
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					...init.headers,
+			const res = await send({
+				url,
+				init: {
+					...init,
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						...init.headers,
+					},
+					body: body !== undefined ? JSON.stringify(body) : undefined,
 				},
-				body: body !== undefined ? JSON.stringify(body) : undefined,
-			}))
-			const res = await (untracked ? request : tracked(request))
+				untracked,
+			})
 			return parse_response<T>(res)
 		},
 	}

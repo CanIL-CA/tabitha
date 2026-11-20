@@ -12,6 +12,7 @@
     "test:unit": "LOG_LEVEL=quiet bun test migrations",
     "migrate": "bun migrations/orchestrator.ts",
     "examples:rebuild": "bun migrations/ontology/examples.ts",
+    "fixture:ontology": "bun migrations/ontology/fixture.ts",
     "refresh:preview": "bun migrations/ontology/refresh_preview.ts",
     "migrate:sources": "bun migrations/sources/migrate.ts",
     "migrate:targets": "bun migrations/targets/migrate.ts",
@@ -23,7 +24,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.6.1",
-    "officeparser": "^8.4.1"
+    "officeparser": "^8.7.1"
   },
   "devDependencies": {
     "@tabitha/eslint-config": "workspace:*",
@@ -33,6 +34,6 @@
     "@types/node": "^26.6.6",
     "eslint": "^10.14.0",
     "typescript": "^6.0.3",
-    "wrangler": "^4.156.0"
+    "wrangler": "^4.161.0"
   }
 }

@@ -51,6 +51,7 @@ export type TokenFilterJsonBase = {
 	category?: string
 	level?: string
 	form?: string
+	feature?: Tag
 }
 
 export type TokenFilterJson = 'none' | 'all' | TokenFilterJsonBase

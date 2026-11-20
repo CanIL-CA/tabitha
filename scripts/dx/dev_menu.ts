@@ -20,8 +20,8 @@ const PRESETS: Record<string, Preset> = {
 	},
 	'3': {
 		name: '✍️  Editor Workbench',
-		description: 'Editor + Ontology + Targets',
-		apps: ['editor', 'ontology', 'targets'],
+		description: 'Editor + Ontology + Sources + Targets',
+		apps: ['editor', 'ontology', 'sources', 'targets'],
 	},
 	'4': {
 		name: '🤖 Copilot AI Lab',

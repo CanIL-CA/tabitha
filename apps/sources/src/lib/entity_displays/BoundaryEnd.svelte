@@ -8,5 +8,5 @@
 </script>
 
 <div class="inline-flex entity-{source_entity.boundary_category}">
-	<Punctuation source_entity={bracket_entity} size={source_entity.value === '}' ? 'lg' : 'md'} />
+	<Punctuation source_entity={bracket_entity} size={source_entity.value === '}' ? 'lg' : 'md'} classes="-mr-1.5" />
 </div>

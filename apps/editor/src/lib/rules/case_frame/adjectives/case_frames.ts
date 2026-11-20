@@ -276,7 +276,7 @@ export function get_adjective_case_frame_rules(token: Token): CaseFrameRuleInfo 
 		rules_by_sense: ADJECTIVE_CASE_FRAME_RULES.get(stem) ?? [],
 		default_rule_getter: get_adjective_default_rules,
 		role_info_getter: (categorization, role_rules) => get_adjective_usage_info({ categorization, role_rules }),
-		should_check: true,
+		should_validate: true,
 	}
 }
 

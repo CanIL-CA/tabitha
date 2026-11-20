@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
 	cached_json,
 	create_editor_client,
@@ -69,7 +69,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await http.get('search')
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search`, { signal: expect.any(AbortSignal) })
 		})
 
 		test('supports declarative cache: true (appends ?v=1)', async () => {
@@ -84,7 +84,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await http.get('/search?q=love')
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search?q=love&v=1`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search?q=love&v=1`, { signal: expect.any(AbortSignal) })
 		})
 
 		test('does not append version query param when cache is false or omitted', async () => {
@@ -98,7 +98,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await http.get('/search?q=love')
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search?q=love`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/search?q=love`, { signal: expect.any(AbortSignal) })
 		})
 
 		describe('get params', () => {
@@ -147,7 +147,7 @@ describe('@tabitha/api-client', () => {
 
 				await http.get('/search', { params: { q: 'love' }, headers: { Accept: 'application/json' } })
 
-				expect(mock_fetch.mock.calls[0][1]).toEqual({ headers: { Accept: 'application/json' }, method: 'GET' })
+				expect(mock_fetch.mock.calls[0][1]).toEqual({ headers: { Accept: 'application/json' }, method: 'GET', signal: expect.any(AbortSignal) })
 			})
 		})
 
@@ -167,6 +167,7 @@ describe('@tabitha/api-client', () => {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ text: 'hello' }),
+				signal: expect.any(AbortSignal),
 			})
 		})
 
@@ -275,6 +276,68 @@ describe('@tabitha/api-client', () => {
 			}
 		})
 
+		describe('a request that never gets a response', () => {
+			const never_answers = () => new Promise<Response>(() => {})
+			const REQUEST_TIMEOUT_MS = 20_000
+
+			beforeEach(() => {
+				vi.useFakeTimers()
+				vi.spyOn(console, 'warn').mockImplementation(() => {})
+			})
+
+			afterEach(() => {
+				vi.useRealTimers()
+				vi.restoreAllMocks()
+			})
+
+			test('get sends the request again and returns the second answer', async () => {
+				const mock_fetch = vi.fn()
+					.mockImplementationOnce(never_answers)
+					.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 1 }) })
+				const http = create_http_client({ base_url: TARGETS_URL, fetch: mock_fetch as unknown as typeof fetch })
+
+				const result_promise = http.get<{ id: number }>('/item')
+				await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS)
+
+				expect(await result_promise).toEqual({ id: 1 })
+				expect(mock_fetch).toHaveBeenCalledTimes(2)
+			})
+
+			test('post sends the request again with the same body', async () => {
+				const mock_fetch = vi.fn()
+					.mockImplementationOnce(never_answers)
+					.mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) })
+				const http = create_http_client({ base_url: TARGETS_URL, fetch: mock_fetch as unknown as typeof fetch })
+
+				const result_promise = http.post<{ status: string }>('/check', { text: 'hello' })
+				await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS)
+
+				expect(await result_promise).toEqual({ status: 'ok' })
+				expect(mock_fetch.mock.calls.map(([, init]) => init.body)).toEqual(['{"text":"hello"}', '{"text":"hello"}'])
+			})
+
+			test('get gives up with an error after the second silence', async () => {
+				const mock_fetch = vi.fn().mockImplementation(never_answers)
+				const http = create_http_client({ base_url: TARGETS_URL, fetch: mock_fetch as unknown as typeof fetch })
+
+				const outcome = http.get('/item').then(() => 'answered', (error: Error) => error.message)
+				await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS * 2)
+
+				expect(await outcome).toContain(`no response from ${TARGETS_URL}/item`)
+				expect(mock_fetch).toHaveBeenCalledTimes(2)
+			})
+
+			test('an untracked call keeps waiting without sending again', async () => {
+				const mock_fetch = vi.fn().mockImplementation(never_answers)
+				const http = create_http_client({ base_url: TARGETS_URL, fetch: mock_fetch as unknown as typeof fetch })
+
+				void http.post('/ai-assist/generate', { text: 'hello' }, { untracked: true })
+				await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS * 5)
+
+				expect(mock_fetch).toHaveBeenCalledTimes(1)
+			})
+		})
+
 		test('post parses JSON on ok response and returns null on error', async () => {
 			const mock_fetch = vi
 				.fn()
@@ -364,7 +427,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const result = await client.check_text({ text: 'Paul writes-A.' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul+writes-A.`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul+writes-A.`, { signal: expect.any(AbortSignal) })
 			expect(result).toEqual(mock_response)
 		})
 
@@ -395,7 +458,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await client.check_text({ text: 'Paul writes-A.\nJohn reads-A.', auto_fix: true })
-			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul+writes-A.+John+reads-A.&auto_fix=on`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${EDITOR_URL}/check?text=Paul+writes-A.+John+reads-A.&auto_fix=on`, { signal: expect.any(AbortSignal) })
 		})
 
 		test('analyze_text replaces line breaks with spaces and queries /analyze', async () => {
@@ -453,7 +516,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const results = await client.search_concepts({ q: 'write', category: 'Verb' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/search?q=write&category=Verb`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/search?q=write&category=Verb`, { signal: expect.any(AbortSignal) })
 			expect(results).toEqual(mock_results)
 		})
 
@@ -471,7 +534,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await client.search_concepts({ q: 'write' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/search?q=write&v=1`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/search?q=write&v=1`, { signal: expect.any(AbortSignal) })
 		})
 
 		test('get_concept returns matching concept from search', async () => {
@@ -506,7 +569,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const examples = await client.get_examples({ concept: { stem: 'write', sense: 'A', part_of_speech: 'Verb' }, source: 'Bible' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/examples?concept=write-A&part_of_speech=Verb&source=Bible`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/examples?concept=write-A&part_of_speech=Verb&source=Bible`, { signal: expect.any(AbortSignal) })
 			expect(examples).toEqual(mock_examples)
 		})
 
@@ -544,7 +607,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const data = await client.get_source({ type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/Genesis/1/1`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/Genesis/1/1`, { signal: expect.any(AbortSignal) })
 			expect(data).toEqual(mock_data)
 		})
 
@@ -562,7 +625,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await client.get_source({ type: 'Bible', id_primary: 'Genesis', id_secondary: '1', id_tertiary: '1' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/Genesis/1/1?v=1`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/Bible/Genesis/1/1?v=1`, { signal: expect.any(AbortSignal) })
 		})
 
 		test('get_book_status queries lookup status endpoint', async () => {
@@ -578,7 +641,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const status = await client.get_book_status({ type: 'Bible', id_primary: 'Genesis' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/lookup/status/Bible/Genesis`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/lookup/status/Bible/Genesis`, { signal: expect.any(AbortSignal) })
 			expect(status).toBe('Ready to Translate')
 		})
 
@@ -598,7 +661,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const statuses = await client.get_all_book_statuses('Bible')
-			expect(mock_fetch).toHaveBeenCalledWith('http://localhost:8789/lookup/status/Bible')
+			expect(mock_fetch).toHaveBeenCalledWith('http://localhost:8789/lookup/status/Bible', { signal: expect.any(AbortSignal) })
 			expect(statuses).toEqual(mock_data)
 		})
 
@@ -615,7 +678,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const result = await client.analyze_text('Paul writes-A.\nJohn reads-A.')
-			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/analyze?text=Paul+writes-A.+John+reads-A.`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${SOURCES_URL}/analyze?text=Paul+writes-A.+John+reads-A.`, { signal: expect.any(AbortSignal) })
 			expect(result).toEqual(mock_response)
 		})
 	})
@@ -641,7 +704,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const result = await client.get_target_text({ ref, project: 'English', preferred_audience: 'Unchurched Adults' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/Genesis/1/1`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/Genesis/1/1`, { signal: expect.any(AbortSignal) })
 			expect(result?.text).toBe('In the beginning God created...')
 		})
 
@@ -659,7 +722,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			await client.lookup_features({ project: 'English', category: 'Noun' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/lookup/features?category=Noun&v=1`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/lookup/features?category=Noun&v=1`, { signal: expect.any(AbortSignal) })
 		})
 
 		test('lookup_forms queries forms endpoint', async () => {
@@ -675,7 +738,7 @@ describe('@tabitha/api-client', () => {
 			})
 
 			const forms = await client.lookup_forms({ word: 'loved', project: 'English' })
-			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/lookup/forms?word=loved`)
+			expect(mock_fetch).toHaveBeenCalledWith(`${TARGETS_URL}/English/lookup/forms?word=loved`, { signal: expect.any(AbortSignal) })
 			expect(forms).toEqual(mock_forms)
 		})
 	})

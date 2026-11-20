@@ -21,7 +21,6 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 
 	const english = await fetch_target_text({ reference, project: 'English', preferred_audience: default_target_audience['English'] })
 	if (!english) {
-		console.error(`Error fetching english text for ${ref_display}`)
 		return error_result({ error: 'There is no English text saved yet for this verse.', retryable: false })
 	}
 	const english_text = english.ideal || english.text
@@ -31,7 +30,6 @@ export async function get_copilot_result({ reference, settings, ai }: { referenc
 		: english
 
 	if (!lwc_text_result) {
-		console.error(`Error fetching ${settings.lwc} text for ${ref_display}`)
 		return error_result({ error: `There is no ${settings.lwc} text saved yet for this verse.`, retryable: false })
 	}
 	const lwc_text = lwc_text_result.ideal || lwc_text_result.text

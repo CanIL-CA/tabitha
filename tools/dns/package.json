@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Provisions and reconciles DNS records and redirect rules for tabitha.bible's Cloudflare zone",
+  "description": "Provisions and reconciles DNS records, redirect rules, and WAF custom rules for tabitha.bible's Cloudflare zone",
   "scripts": {
     "check": "bun --check",
     "check:lint": "eslint .",

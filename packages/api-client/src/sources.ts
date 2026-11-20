@@ -8,6 +8,8 @@ import type {
 	Reference,
 	PrimaryIdReference,
 	SecondaryIdReference,
+	SourceType,
+	PrimaryId,
 	SecondaryId,
 	TertiaryId,
 	SourceStatusResult,
@@ -52,6 +54,38 @@ export function create_sources_client(options: SourcesClientOptions) {
 			return http.get<SourceSimpleJsonResult>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}/${ref.id_tertiary}/simple-json`, {
 				params: { glosses: include_glosses ? 'true' : undefined },
 			})
+		},
+
+		/**
+		 * List the source types that have data (e.g. 'Bible').
+		 */
+		async get_types(): Promise<string[]> {
+			const entries = await http.get<SourceType[]>('/')
+			return entries?.map(({ type }) => type) ?? []
+		},
+
+		/**
+		 * List the primary ids (e.g. books) of a source type.
+		 */
+		async get_primary_ids(type: string): Promise<string[]> {
+			const entries = await http.get<PrimaryId[]>(`/${type}`)
+			return entries?.map(({ id_primary }) => id_primary) ?? []
+		},
+
+		/**
+		 * List the secondary ids (e.g. chapters) of a book.
+		 */
+		async get_secondary_ids(ref: PrimaryIdReference): Promise<string[]> {
+			const entries = await http.get<SecondaryId[]>(`/${ref.type}/${ref.id_primary}`)
+			return entries?.map(({ id_secondary }) => id_secondary) ?? []
+		},
+
+		/**
+		 * List the tertiary ids (e.g. verses) of a chapter.
+		 */
+		async get_tertiary_ids(ref: SecondaryIdReference): Promise<string[]> {
+			const entries = await http.get<TertiaryId[]>(`/${ref.type}/${ref.id_primary}/${ref.id_secondary}`)
+			return entries?.map(({ id_tertiary }) => id_tertiary) ?? []
 		},
 
 		/**

@@ -1,6 +1,6 @@
 import type { PartOfSpeech } from './core'
 import type { Reference } from './reference'
-import type { SourceFeature } from './source'
+import type { FeatureName, FeatureValue, SourceFeature } from './source'
 
 //===============
 // projects
@@ -47,4 +47,5 @@ export type TargetFormResult = {
 	stem: string
 	part_of_speech: PartOfSpeech
 	form: string
+	features?: Record<FeatureName, FeatureValue>
 }

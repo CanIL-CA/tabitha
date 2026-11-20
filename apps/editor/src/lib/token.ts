@@ -203,8 +203,10 @@ export function create_lookup_result(overrides: CreatLookupResultOptions): Looku
 				required_roles: [],
 			},
 			result: overrides.case_frame ?? create_case_frame(),
+			should_validate: false,
 		},
 		form: overrides.form?.toLowerCase() ?? 'stem',
+		lexical_features: overrides.lexical_features ?? {},
 	}
 }
 

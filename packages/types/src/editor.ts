@@ -1,6 +1,6 @@
 import type { ConceptKey } from './core'
 import type { HowToEntry, OntologyStatus } from './ontology'
-import type { PairingType, SourceEntity } from './source'
+import type { PairingType } from './source'
 
 export type CheckerTokenType =
 	| 'Punctuation'
@@ -83,16 +83,6 @@ export type EditorCheckResult = {
 	back_translation: string
 	// Insertions applied to the submitted text before checking, located by offsets into the submitted text
 	auto_fixes?: CheckerTextInsertion[]
-}
-
-//===============
-// analyze API
-
-export type EditorAnalyzedEntity = Omit<SourceEntity, 'category_abbr' | 'feature_codes'>
-
-export type EditorAnalyzeResult = {
-	notes: string[]
-	source_entities: EditorAnalyzedEntity[]
 }
 
 //===============

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { TOKEN_TYPE, create_token } from '../token'
+import { TOKEN_TYPE, create_lookup_result, create_token } from '../token'
 import { create_context_filter, create_token_filter, create_token_transform } from './rules_parser'
 import type { ContextFilterResult, TokenFilterJson } from '#lib/rules/types.js'
 
@@ -159,6 +159,67 @@ describe('token filters', () => {
 		expect(results[2]).toBe(false)
 		expect(results[3]).toBe(false)
 		expect(results[4]).toBe(true)
+	})
+
+	describe('by feature', () => {
+		const create_token_with_features = (...feature_sets: Record<string, string>[]) => create_token({
+			token: 'token',
+			type: TOKEN_TYPE.LOOKUP_WORD,
+			lookup_results: feature_sets.map(lexical_features => create_lookup_result({ stem: 'stem', part_of_speech: 'Noun', lexical_features })),
+		})
+
+		test('matches a single feature value', () => {
+			const filter = create_token_filter({ 'feature': { 'Gender': 'Feminine' } })
+
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }))).toBe(true)
+			expect(filter(create_token_with_features({ 'Gender': 'Masculine' }))).toBe(false)
+		})
+		test('matches any of the pipe-separated values', () => {
+			const filter = create_token_filter({ 'feature': { 'Gender': 'Feminine|Neuter' } })
+
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }))).toBe(true)
+			expect(filter(create_token_with_features({ 'Gender': 'Neuter' }))).toBe(true)
+			expect(filter(create_token_with_features({ 'Gender': 'Masculine' }))).toBe(false)
+		})
+		test('requires the feature to be present', () => {
+			const filter = create_token_filter({ 'feature': { 'Gender': 'Feminine' } })
+
+			expect(filter(create_token_with_features({}))).toBe(false)
+			expect(filter(create_token_with_features({ 'Number': 'Feminine' }))).toBe(false)
+		})
+		test('requires all of the listed features to match', () => {
+			const filter = create_token_filter({ 'feature': { 'Gender': 'Feminine', 'Number': 'Plural|Dual' } })
+
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine', 'Number': 'Plural' }))).toBe(true)
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine', 'Number': 'Dual', 'Other': 'value' }))).toBe(true)
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine', 'Number': 'Singular' }))).toBe(false)
+			expect(filter(create_token_with_features({ 'Gender': 'Masculine', 'Number': 'Plural' }))).toBe(false)
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }))).toBe(false)
+		})
+		test('does not match a token without lookup results', () => {
+			const filter = create_token_filter({ 'feature': { 'Gender': 'Feminine' } })
+
+			expect(filter(create_token_with_features())).toBe(false)
+		})
+		test('requires every lookup result to match', () => {
+			const filter = create_token_filter({ 'feature': { 'Gender': 'Feminine' } })
+
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }, { 'Gender': 'Feminine' }))).toBe(true)
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }, { 'Gender': 'Masculine' }))).toBe(false)
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }, {}))).toBe(false)
+		})
+		test('combines with other filter properties', () => {
+			const filter = create_token_filter({ 'category': 'Noun', 'feature': { 'Gender': 'Feminine' } })
+
+			expect(filter(create_token_with_features({ 'Gender': 'Feminine' }))).toBe(true)
+
+			const verb = create_token({
+				token: 'token',
+				type: TOKEN_TYPE.LOOKUP_WORD,
+				lookup_results: [create_lookup_result({ stem: 'stem', part_of_speech: 'Verb', lexical_features: { 'Gender': 'Feminine' } })],
+			})
+			expect(filter(verb)).toBe(false)
+		})
 	})
 })
 

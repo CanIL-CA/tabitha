@@ -3,7 +3,7 @@ import type { DbRowFeature } from '#lib/types.js'
 import type { SourceEntityCategory, TargetFeature } from '@tabitha/types'
 
 export async function GET({ locals: { db }, params: { project }, url: { searchParams } }: Parameters<RequestHandler>[0]) {
-	const category = (searchParams.get('category')?.toLowerCase() ?? '') as SourceEntityCategory
+	const category = (searchParams.get('category') ?? '') as SourceEntityCategory
 
 	const lexical_sql = `
 		SELECT *
@@ -29,8 +29,9 @@ function transform({ features, category }: {
 	features: DbRowFeature[]
 	category: SourceEntityCategory
 }): TargetFeature[] {
+	const category_lower = category.toLowerCase()
 	return features
-		.filter(f => !category.length || f.category.toLowerCase() === category)
+		.filter(f => !category.length || f.category.toLowerCase() === category_lower)
 		.map(({ category, feature, position, code, value }) => ({
 			category,
 			feature,

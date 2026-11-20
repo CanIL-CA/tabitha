@@ -19,6 +19,10 @@ export class OntologySenses {
 		return { ...this.#loaded(), ...this.#picked }
 	}
 
+	get all(): SensesByConcept {
+		return this.#senses()
+	}
+
 	senses_of(concept: Pick<ConceptKey, 'stem' | 'part_of_speech'>): OntologyResult[] {
 		return find_senses({ senses: this.#senses(), concept })
 	}

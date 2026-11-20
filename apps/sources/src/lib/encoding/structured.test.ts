@@ -70,4 +70,16 @@ describe('structure_entities', () => {
 		expect(entities[6].boundary_category).toBe('N')
 		expect(entities[7].boundary_category).toBe('C')
 	})
+
+	it('does not throw for a closing bracket with no opener, and gives it no parent', () => {
+		const entities = [
+			make_entity({ value: '{', category_abbr: 'C' }), // 0
+			make_entity({ value: '}', category_abbr: 'C' }), // 1
+			make_entity({ value: '}', category_abbr: 'C' }), // 2: nothing left to close
+		]
+
+		expect(() => structure_entities(entities)).not.toThrow()
+		expect(entities[2].parent_id).toBe(-1)
+		expect(entities[2].boundary_category).toBe('')
+	})
 })

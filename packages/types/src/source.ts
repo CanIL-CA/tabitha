@@ -19,6 +19,13 @@ export type EntityFeature = {
 	value: FeatureValue
 }
 
+export type NounList = NounListEntry[]
+
+export type NounListEntry = {
+	index: string
+	noun: string
+}
+
 //===============
 // partial-reference based APIs
 
@@ -96,25 +103,6 @@ export type EncodingEntity = {
 	pairing_type?: PairingType | null
 	target?: string
 } & SourceFeaturesData
-
-//===============
-// analyze API
-
-export type NounList = NounListEntry[]
-
-export type NounListEntry = {
-	index: string
-	noun: string
-}
-
-// TODO actually use this
-export type AnalyzerStatus = 'ok' | 'warning' | 'error'
-
-export type AnalysisResult = {
-	// status: AnalyzerStatus
-	// notes: AnalysisNote[]
-	source_entities: SourceEntity[]
-}
 
 //===============
 // lookup/features API

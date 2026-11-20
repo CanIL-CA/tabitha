@@ -39,7 +39,7 @@ export function get_conjunction_case_frame_rules(): CaseFrameRuleInfo {
 		rules_by_sense: [],
 		default_rule_getter: get_default_usage_rules,
 		role_info_getter: get_conjunction_usage_info,
-		should_check: true,
+		should_validate: true,
 	}
 }
 

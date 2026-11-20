@@ -33,14 +33,14 @@
 			...fill_in_features({ source_entity: entity, feature_map: page.data.features as FeatureMap }),
 		}))
 
-		record_insert()
+		record_insert(entities)
 		source_entities.splice(data.entity_id, 0, ...new_entities)
 		onclose_and_recalculate()
 	}
 
-	function record_insert() {
+	function record_insert(entities: PageSourceEntity[]) {
 		// undo selects the entity that follows the insertion point, redo selects the first inserted entity
-		edit_history().record({ ids_before: [data.entity_id] })
+		edit_history().record({ action: 'insert', details: entities[0].category, ids_before: [data.entity_id] })
 	}
 
 	function insert_entity(entity: PageSourceEntity) {
@@ -79,7 +79,7 @@
 	function paste_entities() {
 		const new_entities = entity_clipboard.paste()
 		if (new_entities !== null) {
-			record_insert()
+			record_insert(new_entities)
 			source_entities.splice(data.entity_id, 0, ...new_entities)
 			onclose_and_recalculate()
 		} else {
@@ -87,7 +87,15 @@
 		}
 	}
 	
+	let menu_element = $state<HTMLDivElement>()
 	let dialog_open = $state(false)
+
+	function close_if_outside(event: PointerEvent) {
+		if (dialog_open) return
+		if (menu_element?.contains(event.target as Node)) return
+		onclose()
+	}
+
 	let new_concept_entity = $state<PageSourceEntity | null>(null)
 	let new_phrase_entity = $state<PageSourceEntity | null>(null)
 
@@ -245,10 +253,12 @@
 	])
 </script>
 
+<svelte:window onpointerdowncapture={close_if_outside} />
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div onclick={e => e.stopPropagation()}
+<div bind:this={menu_element}
+	onclick={e => e.stopPropagation()}
 	onkeydown={e => e.stopPropagation()}
-	onmouseleave={() => !dialog_open && onclose()}
 	style="left: {data.x}px; top: {data.y}px;"
 	class="card shadow-lg bg-base-100 min-w-40 fixed z-60"
 >

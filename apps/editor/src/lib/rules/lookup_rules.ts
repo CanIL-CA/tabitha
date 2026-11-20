@@ -60,11 +60,6 @@ const lookup_rules_json: LookupRuleJson[] = [
 		'lookup': 'much-many',
 	},
 	{
-		'name': 'every becomes each',
-		'trigger': { 'token': 'Every|every' },
-		'lookup': 'each',
-	},
-	{
 		'name': 'half becomes .5',
 		'trigger': { 'token': 'half' },
 		'lookup': '.5',
@@ -120,6 +115,13 @@ const lookup_rules_json: LookupRuleJson[] = [
 		'trigger': { 'token': 'Who|who' },
 		'context': { 'followedby': { 'token': '?', 'skip': 'all' } },
 		'lookup': 'person',
+	},
+	{
+		'name': '"One day," becomes "-Begin Scene"',
+		'trigger': { 'token': 'One' },
+		'context': { 'followedby': [{ 'token': 'day' }, { 'token': ',' } ] },
+		'lookup': '-Begin Scene',
+		'combine': 1,
 	},
 ]
 

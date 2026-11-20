@@ -219,6 +219,7 @@ const transform_rules_json: TransformRuleJson[] = [
 			},
 		},
 		'transform': { 'tag': { 'clause_type': 'adverbial_clause' } },
+		'subtoken_transform': { 'tag': { 'syntax': 'adverbial_clause_adposition' } },
 	},
 	{
 		'name': 'tag "in-order-to/by/without" clauses as "same subject" adverbial',
@@ -305,6 +306,14 @@ const transform_rules_json: TransformRuleJson[] = [
 		'context_transform': [{ }, { 'function': { 'pre_np_adposition': 'comparative_as' } }],
 		'comment': "eg 'as valuable as X', etc ",
 	},
+	{
+		'name': '"to" before a noun gets tagged as a pre_np_adposition',
+		'trigger': { 'token': 'to' },
+		'context': {
+			'followedby': { 'category': 'Noun', 'skip': 'np_modifiers' },
+		},
+		'transform': { 'function': { 'pre_np_adposition': 'to' } },
+	},
 	// Interrogatives
 	{
 		'name': "'who'/'what' gets tagged as interrogative determiner when in a question",
@@ -371,13 +380,38 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': "'of' after group/crowd becomes a function word",
 		'trigger': { 'token': 'of' },
 		'context': { 'precededby': { 'stem': 'group|crowd' } },
-		'transform': { 'function': { 'relation': 'group' }, 'remove_tag': 'pre_np_adposition' },
+		'transform': { 'function': { 'relation': 'group|pre_head_of' }, 'remove_tag': 'pre_np_adposition' },
+		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
+		'comment': '"group of" is the modifier of the noun that follows, so it is handled a bit differently',
+	},
+	{
+		'name': "'of' after kind becomes a function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'stem': 'kind' } },
+		'transform': { 'function': { 'relation': 'kind|pre_head_of' }, 'remove_tag': 'pre_np_adposition' },
+		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
+		'comment': '"kind of" is the modifier of the noun that follows, so it is handled a bit differently',
+	},
+	{
+		'name': "'of' after quantity nouns becomes a function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'stem': 'gram|jar|kilogram|liter|loaf' } },
+		'transform': { 'function': { 'relation': 'quantity|pre_head_of' }, 'remove_tag': 'pre_np_adposition' },
+		'context_transform': { 'tag': { 'syntax': 'nested_np' } },
+		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently',
+	},
+	{
+		'name': "'of' after an adjective becomes a subgroup function word",
+		'trigger': { 'token': 'of' },
+		'context': { 'precededby': { 'category': 'Adjective' } },
+		'transform': { 'function': { 'relation': 'subgroup' }, 'remove_tag': 'pre_np_adposition' },
+		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently',
 	},
 	{
 		'name': 'certain Noun-Noun combinations are "made_of"',
 		'trigger': { 'category': 'Noun', 'stem': 'bamboo|bronze|gold|iron|leather|marble|metal|plastic|silver|wood' },
 		'context': { 'followedby': { 'category': 'Noun' } },
-		'transform': { 'tag': { 'relation': 'made_of' } },
+		'transform': { 'tag': { 'relation': 'made_of|pre_head_adjunct' } },
 		'comment': 'eg. a gold statue; a bamboo chair. The Nouns are always right next to each other',
 	},
 	{
@@ -387,8 +421,24 @@ const transform_rules_json: TransformRuleJson[] = [
 			'precededby': { 'category': 'Noun', 'stem': 'king|queen|Christ|Caesar|Lord' },
 			'notprecededby': { 'tag': 'relation' },
 		},
-		'context_transform': { 'tag': { 'relation': 'title' } },
+		'context_transform': { 'tag': { 'relation': 'title|pre_head_adjunct' } },
 		'comment': "eg. King Herod, Lord Jesus, but NOT 'the king's army'",
+	},
+	{
+		'name': 'tag "times" preceded by an adjective as an oblique',
+		'trigger': { 'token': 'times' },
+		'context': {
+			'precededby': { 'category': 'Adjective' },
+		},
+		'transform': { 'tag': { 'role': 'oblique', 'relation': 'iteration' }, 'remove_tag': 'syntax' },
+	},
+	{
+		'name': 'tag "times-B" preceded by an adjective as "multiplication"',
+		'trigger': { 'token': 'times-B' },
+		'context': {
+			'precededby': { 'category': 'Adjective' },
+		},
+		'transform': { 'tag': { 'syntax': 'nested_np', 'relation': 'multiplication' }, 'remove_tag': ['role'] },
 	},
 	// Senses of 'be'
 	{
@@ -522,7 +572,45 @@ const transform_rules_json: TransformRuleJson[] = [
 			],
 		},
 		'transform': { 'tag': { 'clause_type': 'patient_clause_different_participant|patient_clause_same_subject_passive' } },
-		'comment': 'eg John was ready-C [to be killed by people].',
+		'comment': 'A true "same_participant" clause can never be made passive. eg John was ready-C [to be killed by people].',
+	},
+	// Noun features
+	// Eventually, we could expand the Ontology's Noun Categorization to include these subcategories
+	{
+		'name': 'tag Masculine/Feminine nouns as people',
+		'trigger': { 'feature': { 'Gender': 'Masculine|Feminine' } },
+		'transform': { 'tag': { 'noun_category': 'person' } },
+	},
+	{
+		'name': 'tag kinship nouns',
+		'trigger': { 'stem': 'ancestor|brother|child|cousin|daughter|daughter-in-law|descendant|family|father|Father|father-in-law|grandchild|grandfather|grandson|husband|mother|mother-in-law|parent|relative|sister|son|Son|uncle|wife' },
+		'transform': { 'tag': { 'noun_category': 'person|kinship' } },
+	},
+	{
+		'name': 'tag (most) animals',
+		'trigger': { 'stem': 'animal|bear|bird|cattle|chicken|cow|dog|donkey|dove|goat|horse|lion|pigeon|ram|rooster|sheep' },
+		'transform': { 'tag': { 'noun_category': 'animal' } },
+		'comment': 'overrides the "person" tag, since animals also get masculine/feminine gender.',
+	},
+	{
+		'name': 'tag thing nouns',
+		'trigger': { 'feature': { 'Common/Proper': 'Common', 'Gender': 'Neuter' } },
+		'transform': { 'tag': { 'noun_category': 'thing' } },
+	},
+	{
+		'name': 'tag body-part nouns',
+		'trigger': { 'stem': 'arm|back|blood|body|bone|chest|eye|face|feather|finger|foot|forehead|hair|hand|head|heart|heel|hip|horn|knee|leg|lip|mouth|neck|nose|shoulder|skin|stomach|testicle|toe|tooth|wing' },
+		'transform': { 'tag': { 'noun_category': 'thing|body_part' } },
+	},
+	{
+		'name': 'tag temporal nouns',
+		'trigger': { 'feature': { 'Type of Relative Clause': 'Temporal - Relativizer is when' } },
+		'transform': { 'tag': { 'noun_category': 'temporal' } },
+	},
+	{
+		'name': 'tag locative nouns',
+		'trigger': { 'feature': { 'Type of Relative Clause': 'Locative - Relativizer is where' } },
+		'transform': { 'tag': { 'noun_category': 'locative' } },
 	},
 	// Adpositions
 	{
@@ -538,7 +626,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': "'from' becomes a function word when not followed by a time word",
 		'trigger': { 'token': 'from' },
 		'context': {
-			'notfollowedby': { 'stem': 'time|day|evening|morning|beginning', 'skip': 'np_modifiers' },
+			'notfollowedby': { 'tag': { 'noun_category': 'temporal' }, 'skip': 'np_modifiers' },
 		},
 		'transform': { 'function': { } },
 		'comment': '"from" followed by a time word does not indicate a source argument, but remains an Adposition',
@@ -548,16 +636,26 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': 'tag head nouns',
 		'trigger': { 'category': 'Noun' },
 		'context': {
-			'notprecededby': [{ 'category': 'Noun' }, { 'token': 'of', 'skip': 'np_modifiers' }],
+			'notprecededby': [{ 'category': 'Noun' }, { 'tag': { 'relation': 'genitive_norman|name' }, 'skip': 'np_modifiers' }],
+			'notfollowedby': [{ 'tag': { 'relation': 'pre_head_of' } }],
 		},
 		'transform': { 'tag': { 'syntax': 'head_np', 'role': 'none' } },
 		'comment': "can't use 'np_modifiers' in the 'notfollowedby' skip since we don't want to skip the genitive_norman 'of'",
 	},
 	{
 		'name': 'remove head_np tag from saxon genitives, made_of, and title relations',
-		'trigger': { 'tag': { 'relation': 'genitive_saxon|made_of|title' } },
+		'trigger': { 'tag': { 'relation': 'genitive_saxon|pre_head_adjunct' } },
 		'context': { },
 		'transform': { 'remove_tag': ['syntax', 'role'] },
+	},
+	{
+		'name': 'remove head_np tag from nouns after a repeated "of" in coordinated genitives',
+		'trigger': { 'tag': { 'syntax': 'head_np' } },
+		'context': {
+			'precededby': [{ 'category': 'Noun' }, { 'token': 'and|or|,' }, { 'token': 'of', 'skip': 'np_modifiers' }],
+		},
+		'transform': { 'remove_tag': ['syntax', 'role'] },
+		'comment': "eg 'the brother of James and of John'. John is coordinated with James, not an argument of the Verb",
 	},
 	{
 		'name': 'nouns modified by an interrogative determiner get tagged with noun_tracking of interrogative',
@@ -607,6 +705,31 @@ const transform_rules_json: TransformRuleJson[] = [
 		'context_transform': { 'tag': { 'syntax': 'nested_np|comparative_np' } },
 		'comment': "eg 'bigger than X', 'more content than X', 'more food than X', etc ",
 	},
+	{
+		'name': 'tag fronted time nouns as significant time',
+		'trigger': { 'stem': 'morning|evening|afternoon|hour|day|week|month|year|time' },
+		'context': {
+			'precededby': { 'token': 'In|On|At|During', 'skip': 'np_modifiers' },
+			'followedby': { 'token': ',' },
+		},
+		'transform': { 'tag': { 'participant_status': 'significant_time' } },
+	},
+	{
+		'name': 'tag nouns marked with _significantTime',
+		'trigger': { 'category': 'Noun' },
+		'context': {
+			'followedby': { 'token': '_significantTime', 'skip': 'np_modifiers' },
+		},
+		'transform': { 'tag': { 'participant_status': 'significant_time' } },
+	},
+	{
+		'name': 'tag nouns marked with _significantLocation',
+		'trigger': { 'category': 'Noun' },
+		'context': {
+			'followedby': { 'token': '_significantLocation', 'skip': 'np_modifiers' },
+		},
+		'transform': { 'tag': { 'participant_status': 'significant_location' } },
+	},
 	// Commas and Coordination
 	{
 		'name': 'tag all commas',
@@ -640,6 +763,7 @@ const transform_rules_json: TransformRuleJson[] = [
 				{ 'stem': 'and|or', 'skip': 'all' },
 				{ 'category': 'Verb', 'skip': 'all' },
 			],
+			'notprecededby': { 'category': 'Adposition', 'skip': 'np_modifiers' },
 		},
 		'transform': { 'tag': { 'role': 'addressee' } },
 		'context_transform': [{ 'tag': { 'syntax': 'comma_addressee' } }],
@@ -661,6 +785,20 @@ const transform_rules_json: TransformRuleJson[] = [
 		'trigger': { 'stem': 'and' },
 		'context': { 'precededby': { 'category': 'Adverb', 'skip': { 'token': ',' } } },
 		'transform': { 'tag': { 'syntax': 'coord_adv' } },
+	},
+	{
+		'name': 'tag commas between nouns as list commas',
+		'trigger': { 'tag': { 'syntax': 'comma' } },
+		'context': {
+			'precededby': { 'category': 'Noun' },
+			'notprecededby': { 'tag': { 'participant_status': 'significant_time|significant_location' } },
+			'followedby': {
+				'category': 'Noun',
+				'skip': ['np_modifiers_and_adpositions', { 'tag': { 'syntax': 'coord_noun' } }],
+			},
+		},
+		'transform': { 'tag': { 'list_comma': 'np' } },
+		'comment': "eg 'John, Mary and Peter', 'went to Jerusalem, to Bethlehem and to Hebron'. The comma ends the NP before it, and addressee commas are excluded since they are tagged comma_addressee",
 	},
 	{
 		'name': 'tag "and/or/but" at start of subordinate clauses',
@@ -817,9 +955,22 @@ const builtin_transform_rules: BuiltInRule[] = [
 		},
 	},
 	{
+		name: 'Tag Nouns with whether they have an adposition, and which one',
+		comment: 'Coordinated Nouns with the same adposition or lack thereof are coordinated with each other. This is for the coordination rules, so it must come before them.',
+		rule: {
+			trigger: create_token_filter({ 'category': 'Noun' }),
+			context: create_context_filter({}),
+			action: simple_rule_action(({ tokens, trigger_index, trigger_token, rule_id }) => {
+				const adposition = find_adposition_token({ tokens, index: trigger_index })
+				const tag: Tag = adposition ? { 'has_adposition': 'yes', 'adposition': adposition.token.toLowerCase() } : { 'has_adposition': 'no' }
+				add_tag_to_token({ token: trigger_token, tag, rule_id })
+			}),
+		},
+	},
+	{
 		// TODO support coordinating Verbs as well
 		name: 'Tag the position of coordinated Nouns, Adjectives, Adverbs, and Clauses',
-		comment: 'eg "John, Mary and Peter" become first/coordinate/last. For the case frame rules and the analyzer.',
+		comment: 'eg "John, Mary and Peter" become first/coordinate/last, and a Noun next to a coordinator without a partner is no_partner. For the case frame rules and the analyzer.',
 		rule: {
 			trigger: is_coordinatable,
 			context: create_context_filter({}),
@@ -845,6 +996,27 @@ const builtin_transform_rules: BuiltInRule[] = [
 		},
 	},
 ]
+
+/**
+ * The adposition that the Noun at the given index is the object of, if any.
+ * A Noun after an adposition that opens an adverbial clause is the subject of that clause instead, eg "[Before John left]".
+ * Saxon genitives, made_of, and title relations are modifiers of the next Noun, so they don't have an adposition either.
+ */
+function find_adposition_token({ tokens, index }: { tokens: Token[]; index: number }): Token | undefined {
+	const IS_RELATION_WITHOUT_ADPOSITION = create_token_filter({ 'tag': { 'relation': 'genitive_saxon|made_of|title' } })
+	const IS_ADVERBIAL_CLAUSE_ADPOSITION = create_token_filter({ 'tag': { 'syntax': 'adverbial_clause_adposition' } })
+	const FIND_PRECEDING_LOOKUP_ADPOSITION = create_context_filter({ 'precededby': { 'category': 'Adposition', 'skip': 'np_modifiers' } })
+	const FIND_PRECEDING_FUNCTION_ADPOSITION = create_context_filter({ 'precededby': { 'tag': 'pre_np_adposition', 'skip': 'np_modifiers' } })
+
+	if (IS_RELATION_WITHOUT_ADPOSITION(tokens[index])) return undefined
+
+	const lookup_adposition = FIND_PRECEDING_LOOKUP_ADPOSITION(tokens, index)
+	const adposition_match = lookup_adposition.success ? lookup_adposition : FIND_PRECEDING_FUNCTION_ADPOSITION(tokens, index)
+	if (!adposition_match.success) return undefined
+
+	const adposition = tokens[adposition_match.context_indexes[0]]
+	return IS_ADVERBIAL_CLAUSE_ADPOSITION(adposition) ? undefined : adposition
+}
 
 function tag_nested_clauses({ clause_token, tag_to_set, rule_id }: { clause_token: Token; tag_to_set: Tag, rule_id: string }) {
 	const quote_begin_filter = create_token_filter({ 'tag': { 'clause_type': 'patient_clause_quote_begin' } })

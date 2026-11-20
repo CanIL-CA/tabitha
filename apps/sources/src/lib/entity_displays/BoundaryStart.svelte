@@ -18,10 +18,10 @@
 	</span>
 {/snippet}
 
-<div class="inline-flex items-center gap-1 entity-{source_entity.boundary_category}">
-	<Punctuation source_entity={bracket_entity} size={source_entity.value === '{' ? 'lg' : 'md'} />
-	<HoverPopup>
-		{#snippet button_content()}
+<HoverPopup>
+	{#snippet button_content()}
+		<div class="inline-flex items-center gap-1 entity-{source_entity.boundary_category}">
+			<Punctuation source_entity={bracket_entity} size={source_entity.value === '{' ? 'lg' : 'md'} />
 			{#if labels.length === 0}
 				{@render category_and_codes()}
 			{:else if labels.length === 1}
@@ -41,9 +41,9 @@
 					</div>
 				</div>
 			{/if}
-		{/snippet}
-		{#snippet dropdown_content()}
-			<Features {source_entity} />
-		{/snippet}
-	</HoverPopup>
-</div>
+		</div>
+	{/snippet}
+	{#snippet dropdown_content()}
+		<Features {source_entity} />
+	{/snippet}
+</HoverPopup>

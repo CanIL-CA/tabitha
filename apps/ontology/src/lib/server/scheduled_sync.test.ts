@@ -72,10 +72,11 @@ function create_fake_index(): ConceptIndex & { vectors: Map<string, VectorizeVec
 }
 
 // The two network boundaries: the how-to spreadsheet and the AI Gateway's embedding endpoint
-function stub_network({ sheet_status = 200 }: { sheet_status?: number } = {}): void {
+function stub_network({ sheet_status = 200, embedding_status = 200 }: { sheet_status?: number, embedding_status?: number } = {}): void {
 	vi.stubGlobal('fetch', async (input: string | URL | Request) => {
 		const url = String(input instanceof Request ? input.url : input)
 		if (url.includes(SHEET_URL_PART)) return new Response(sheet_status === 200 ? SHEET_TSV : 'unavailable', { status: sheet_status })
+		if (embedding_status !== 200) return Response.json({ error: { message: 'invalid argument' } }, { status: embedding_status })
 		return Response.json({ embedding: { values: Array(EMBEDDING_DIMENSIONS).fill(0.1) } })
 	})
 }
@@ -146,5 +147,26 @@ describe('run_scheduled_sync', () => {
 
 		await expect(run_scheduled_sync(make_env({ db, index }))).rejects.toThrow('Failed to fetch complex terms sheet')
 		expect([...index.vectors.keys()]).toEqual(['rejoice-A-Verb'])
+	})
+
+	it('logs an error, so Workers Issues alerts, when any concept fails to embed', async () => {
+		stub_network({ embedding_status: 400 })
+		const error_log = vi.spyOn(console, 'error').mockImplementation(() => {})
+		const db = create_fake_db({ concepts: [REJOICE_ROW] })
+		const index = create_fake_index()
+
+		const summary = await run_scheduled_sync(make_env({ db, index }))
+
+		expect(summary.failed).toBe(2)
+		expect(error_log).toHaveBeenCalledWith(expect.stringContaining('2 failed'))
+	})
+
+	it('logs no error when every concept embeds', async () => {
+		stub_network()
+		const error_log = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+		await run_scheduled_sync(make_env({ db: create_fake_db({ concepts: [REJOICE_ROW] }), index: create_fake_index() }))
+
+		expect(error_log).not.toHaveBeenCalled()
 	})
 })

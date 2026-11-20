@@ -1,4 +1,4 @@
-import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, SourceEntity, SourceStatus } from '@tabitha/types'
+import type { SourceEntityCategory, EncodingEntityCategory, FeatureName, FeatureValue, NounList, Reference, SourceEntity, SourceStatus, OntologyResult, AnalysisResult } from '@tabitha/types'
 import type { SensesByConcept } from '#lib/data/ontology_senses.js'
 
 //===============
@@ -16,9 +16,13 @@ export type NavData = {
 	next: Reference | null
 }
 
+export type PrimaryIdGroup = {
+	label: string | null
+	ids: string[]
+}
+
 export type PageData = {
 	source: PageSource
-	nav_data: NavData
 	ontology_senses: SensesByConcept
 }
 
@@ -31,6 +35,11 @@ export type PageSourceEntity = SourceEntity & {
 	id: number
 	parent_id: number
 	boundary_category: string
+}
+
+export type AnalyzedTextResult = Pick<AnalysisResult, 'status' | 'tokens'> & {
+	source_entities: PageSourceEntity[]
+	ontology_results: OntologyResult[]
 }
 
 //===============

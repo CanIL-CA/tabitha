@@ -20,11 +20,13 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 				'trigger': { 'form': 'plural' },
 			}],
 			['Singular', {
+				// to prioritize the singular for ambiguous nouns like 'sheep'
 				'trigger': { 'form': 'stem' },
 			}],
-			['Plural', {
-				'context': { 'followedby': { 'token': '_plural' } },
-			}],
+			['Plural', [
+				{ 'trigger': { 'tag': { 'pronoun': 'plural' } } },
+				{ 'context': { 'followedby': { 'token': '_plural' } } },
+			]],
 			['Dual', {
 				'context': { 'followedby': { 'token': '_dual' } },
 			}],
@@ -86,6 +88,12 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 		]],
 		['Participant Status', [
 			['Not Applicable', { }],
+			['Significant Time', {
+				'trigger': { 'tag': { 'participant_status': 'significant_time' } },
+			}],
+			['Significant Location', {
+				'trigger': { 'tag': { 'participant_status': 'significant_location' } },
+			}],
 			['Emphasized', {
 				'context': { 'followedby': { 'token': '_emphasized' } },
 			}],
@@ -317,7 +325,6 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			['Most Patient-like', by_subtoken_tag({ 'auxiliary': 'passive' })],
 		]],
 		['Salience Band', [
-			['Primary Storyline', { }],
 			['Backgrounded Actions', by_subtoken_tag({ 'time': 'past', 'auxiliary': 'imperfective_aspect' })],
 			['Flashback', by_subtoken_tag({ 'auxiliary': 'flashback' })],
 		]],

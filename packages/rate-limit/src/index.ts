@@ -1,14 +1,36 @@
 import type { Handle } from '@sveltejs/kit/hooks'
 import type { RateLimit } from '@cloudflare/workers-types'
 
+// The binding normally answers in well under a millisecond. Requests hung at one colo with no CPU
+// time and no error, so a stalled call must not hold every request behind it.
+const RATE_LIMIT_TIMEOUT_MS = 2000
+
 type EnforceRateLimitOptions = {
 	readonly rate_limiter: RateLimit
 	readonly key: string
+	readonly timeout_ms?: number
 }
 
-export async function enforce_rate_limit({ rate_limiter, key }: EnforceRateLimitOptions): Promise<Response | null> {
-	const { success } = await rate_limiter.limit({ key })
-	if (success) return null
+type LimitOutcome = { readonly success: boolean } | 'timed_out'
+
+function limit_or_time_out({ rate_limiter, key, timeout_ms }: Required<EnforceRateLimitOptions>): Promise<LimitOutcome> {
+	let timer: ReturnType<typeof setTimeout> | undefined
+	const timeout = new Promise<'timed_out'>(resolve => {
+		timer = setTimeout(() => resolve('timed_out'), timeout_ms)
+	})
+
+	return Promise.race([rate_limiter.limit({ key }), timeout]).finally(() => clearTimeout(timer))
+}
+
+// Allows the request when the binding doesn't answer in time: rate limiting is abuse protection, not access control.
+export async function enforce_rate_limit({ rate_limiter, key, timeout_ms = RATE_LIMIT_TIMEOUT_MS }: EnforceRateLimitOptions): Promise<Response | null> {
+	const outcome = await limit_or_time_out({ rate_limiter, key, timeout_ms })
+	if (outcome === 'timed_out') {
+		console.error(`Rate limiter did not answer within ${timeout_ms} ms; allowing the request.`)
+		return null
+	}
+
+	if (outcome.success) return null
 
 	return new Response(JSON.stringify({ error: 'Too many requests. Please slow down and try again shortly.' }), {
 		status: 429,

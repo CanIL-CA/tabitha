@@ -8,6 +8,8 @@ This tool is deliberately narrow. It only manages the fields listed above. It ne
 
 ## Adding a new app's Worker
 
+Give the app's `wrangler.jsonc` `"observability": { "issues": { "enabled": true } }` like the other apps, so its failures reach the alert email (`tools/alerts`). The `check:cloudflare` audit flags an app without it.
+
 1. Add the app to `desired_apps` in `config.ts`, then run `bun run apply` (it should say "would create with placeholder code and connect") and `bun run apply:run`. The Workers Builds API only connects an *existing* Worker, so `apply:run` first uploads a placeholder Worker named after the app's `wrangler.jsonc` `name` that answers every request with a 503. It then connects that Worker to the repo with production builds from `main`, preview builds off, and the git repository and build token copied from an already-connected Worker. Don't create the Worker with a local `wrangler deploy` instead: a local build bakes your `.env.local` into the production bundle (see the `cloudflare-workers` skill).
 2. Merge the app's PR (or push to `main` touching the app's watch paths). That first production build replaces the placeholder and attaches the custom domains from `wrangler.jsonc`. Running step 1 before the merge means the merge itself deploys the app.
 

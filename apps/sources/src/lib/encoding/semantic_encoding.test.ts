@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { calculate_noun_list_index, calculate_noun_list_position, encode_concept_data, get_noun_list, structure_semantic_encoding } from './semantic_encoding'
+import { calculate_noun_list_index, calculate_noun_list_position, encode_value, structure_semantic_encoding } from './semantic_encoding'
 import type { SourceEntity } from '@tabitha/types'
 
-describe('encode_concept_data', () => {
+describe('encode_value', () => {
 	it('encodes paired concepts correctly', () => {
 		const entity: SourceEntity = {
 			category: 'Noun',
@@ -16,8 +16,8 @@ describe('encode_concept_data', () => {
 			noun_list_index: null,
 		}
 
-		const result = encode_concept_data(entity)
-		expect(result.value).toBe('god/Bcreator')
+		const result = encode_value(entity)
+		expect(result).toBe('god/Bcreator')
 	})
 
 	it('encodes single concept correctly', () => {
@@ -33,8 +33,8 @@ describe('encode_concept_data', () => {
 			noun_list_index: null,
 		}
 
-		const result = encode_concept_data(entity)
-		expect(result.value).toBe('God')
+		const result = encode_value(entity)
+		expect(result).toBe('God')
 	})
 
 	it('returns value unchanged when no concept exists', () => {
@@ -50,8 +50,8 @@ describe('encode_concept_data', () => {
 			noun_list_index: null,
 		}
 
-		const result = encode_concept_data(entity)
-		expect(result.value).toBe('.')
+		const result = encode_value(entity)
+		expect(result).toBe('.')
 	})
 })
 
@@ -99,19 +99,6 @@ describe('structure_semantic_encoding', () => {
 		expect(structured[1].id).toBe(1)
 		expect(structured[2].id).toBe(2)
 		expect(structured[1].parent_id).toBe(0) // Child of the open clause
-	})
-})
-
-describe('get_noun_list', () => {
-	it('extracts noun list items and formats index labels', () => {
-		const semantic_encoding = '...some encoding...~|AGod|Bearth|Clight'
-
-		const nounList = get_noun_list(semantic_encoding)
-		expect(nounList).toEqual([
-			{ noun: 'God-A', index: '1' },
-			{ noun: 'earth-B', index: '2' },
-			{ noun: 'light-C', index: '3' },
-		])
 	})
 })
 

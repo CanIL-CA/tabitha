@@ -53,6 +53,35 @@ describe('enforce_rate_limit', () => {
 		await enforce_rate_limit({ rate_limiter, key: 'client-9.9.9.9' })
 		expect(received_key).toBe('client-9.9.9.9')
 	})
+
+	describe('when the rate limiter never answers', () => {
+		const stalled_rate_limiter = { limit: () => new Promise(() => {}) } as unknown as RateLimit
+
+		it('allows the request once the timeout passes', async () => {
+			const result = await enforce_rate_limit({ rate_limiter: stalled_rate_limiter, key: '1.2.3.4', timeout_ms: 10 })
+			expect(result).toBeNull()
+		})
+
+		it('logs that the limiter did not answer', async () => {
+			const logged: unknown[] = []
+			const original_error = console.error
+			console.error = (message: unknown) => logged.push(message)
+			try {
+				await enforce_rate_limit({ rate_limiter: stalled_rate_limiter, key: '1.2.3.4', timeout_ms: 10 })
+			} finally {
+				console.error = original_error
+			}
+			expect(logged).toEqual(['Rate limiter did not answer within 10 ms; allowing the request.'])
+		})
+	})
+
+	it('still returns the 429 when the limiter answers just inside the timeout', async () => {
+		const slow_rate_limiter = {
+			limit: () => new Promise(resolve => setTimeout(() => resolve({ success: false }), 5)),
+		} as unknown as RateLimit
+		const result = await enforce_rate_limit({ rate_limiter: slow_rate_limiter, key: '1.2.3.4', timeout_ms: 500 })
+		expect(result?.status).toBe(429)
+	})
 })
 
 describe('create_rate_limit_handle', () => {

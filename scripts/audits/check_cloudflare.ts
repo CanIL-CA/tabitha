@@ -21,6 +21,7 @@ type WranglerConfig = {
 	compatibility_date?: string
 	vars?: Record<string, string>
 	d1_databases?: { binding?: string, database_name?: string, database_id?: string }[]
+	observability?: { issues?: { enabled?: boolean } }
 }
 
 // Where this check's rationale and remediation steps are documented.
@@ -83,6 +84,17 @@ export async function check_cloudflare_configs(): Promise<{ valid: boolean; erro
 				app_name,
 				file_path: wrangler_path,
 				message: `Invalid "compatibility_date" format: "${config.compatibility_date}". Expected YYYY-MM-DD.`,
+				severity: 'error',
+			})
+		}
+
+		// The account's Worker failure email (tools/alerts) only sees Workers with Issues on, and a
+		// deploy without this setting turns Issues off for that Worker.
+		if (config.observability?.issues?.enabled !== true) {
+			local_findings.push({
+				app_name,
+				file_path: wrangler_path,
+				message: 'Missing "observability": { "issues": { "enabled": true } }, so a failure in this Worker sends no alert email (see tools/alerts/README.md).',
 				severity: 'error',
 			})
 		}

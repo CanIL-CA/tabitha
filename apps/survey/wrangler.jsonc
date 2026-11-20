@@ -13,7 +13,10 @@
 	"workers_dev": false,
 	"observability": {
 		"enabled": true,
-		"head_sampling_rate": 1
+		"head_sampling_rate": 1,
+		"issues": {
+			"enabled": true
+		}
 	},
 	// No per-PR Previews: a Preview would read and write the same database as production, so a
 	// test answer would land among real reviewers' (docs/decisions/0024-survey-app.md).

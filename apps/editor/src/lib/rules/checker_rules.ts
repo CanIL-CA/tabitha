@@ -4,6 +4,7 @@ import { MESSAGE_TYPE, TOKEN_TYPE, create_added_token, format_token_message, is_
 import { REGEXES } from '#lib/regexes.js'
 import { spaced_insertion_text } from '#lib/text_insertions.js'
 import { validate_case_frame } from './case_frame'
+import { describe_ambiguous_gap } from './case_frame/gap_option'
 import { create_context_filter, create_token_filter, from_built_in_rule, message_set_action } from './rules_parser'
 import type { CheckerMessage, CheckerMessageType, CheckerTextInsertion } from '@tabitha/types'
 import type { MessageInfo, Token } from '#lib/types.js'
@@ -182,6 +183,31 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'message': `Cannot write "{0:token} own {1:token}". Simply omit 'own' or write "{0:token} _emphasized {1:token}" if desired. See P1 Checklist section 17.`,
 		},
 		'comment': 'See section 17 of the Phase 1 checklist',
+	},
+	{
+		'name': 'Repeat the adposition before a coordinated noun',
+		'trigger': { 'category': 'Noun', 'tag': { 'coordinate': 'no_partner|first' } },
+		'context': {
+			'precededby': { 'tag': [{ 'syntax': 'coord_noun' }, 'list_comma'], 'skip': 'np_modifiers_and_adpositions' },
+		},
+		'warning': {
+			'message': "The adposition should be repeated before '{token}' to coordinate with the preceding noun.",
+		},
+		'comment': "A noun after a coordinator with no preceding coordinate partner is not coordinated with anything, eg 'John went to Jerusalem and Bethlehem', or 'to the house of James and in the store'.",
+	},
+	{
+		'name': 'Suggest repeating the adposition before a coordinated noun after an adposition phrase',
+		'trigger': { 'tag': { 'has_adposition': 'no', 'coordinate': 'coordinate|last' } },
+		'context': {
+			'precededby': [
+				{ 'tag': { 'has_adposition': 'yes' } },
+				{ 'tag': [{ 'syntax': 'coord_noun' }, 'list_comma'], 'skip': 'np_modifiers' },
+			],
+		},
+		'suggest': {
+			'message': "If you intend '{token}' to coordinate with '{0:token}', then you must repeat the adposition before '{token}'.",
+		},
+		'comment': "eg 'the brother of John and Mary' is interpreted as 'the brother of John, and Mary', but may not be intended. See the warning for a coordinated noun that has nothing to be coordinated with",
 	},
 	// TODO redo with the new time-long-hours etc concepts in the Ontology
 	// {
@@ -648,7 +674,8 @@ const builtin_checker_rules: BuiltInRule[] = [
 				}
 
 				function check_for_empty_theta_grid(token: Token): MessageInfo {
-					if (token.lookup_results.length === 0) {
+					// don't flag the categorization if the case frame wasn't validated to begin with
+					if (token.lookup_results.length === 0 || token.lookup_results.every(lookup => !lookup.case_frame.should_validate)) {
 						return {}
 					}
 					if (token.lookup_results.every(lookup => lookup.categorization.length === 0)) {
@@ -796,6 +823,25 @@ const builtin_checker_rules: BuiltInRule[] = [
 						token_to_flag: that_token,
 						warning: "This is being interpreted as a relative clause. If it's supposed to be a complement clause, remove the 'that'.",
 					}
+				}
+			}),
+		},
+	},
+	{
+		name: 'Warn about an ambiguous gap for a relativized or interrogative noun',
+		comment: "eg. 'John saw the person [that Peter wanted [to see]].' A written sense that still allows both readings can't be made more specific.",
+		rule: {
+			trigger: create_token_filter({ 'tag': { 'gap_reading': 'ambiguous' } }),
+			context: create_context_filter({}),
+			action: message_set_action(trigger_context => {
+				const ambiguous_gap = describe_ambiguous_gap(trigger_context)
+				if (!ambiguous_gap) return
+				const { verb, reading, other_reading, noun_description } = ambiguous_gap
+
+				const fix = verb.specified_sense ? '' : " Specify the sense of '{stem}' to help disambiguate."
+				return {
+					token_to_flag: verb,
+					warning: `The ${noun_description} was interpreted as the ${reading} of '{stem}', but could also be its ${other_reading}. Other errors and warnings may not be accurate as a result.${fix}`,
 				}
 			}),
 		},

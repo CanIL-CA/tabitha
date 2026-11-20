@@ -41,9 +41,9 @@ describe('parse_clause', () => {
 
 ---
 
-## 3. Mocking Dependencies with `vi.fn()` & `vi.spyOn()`
+## 3. Faking Only at True Boundaries
 
-Mock external modules or helper functions cleanly:
+Test outcomes: assert return values and observable results, not call counts or internal calls, so a test survives a behavior-preserving refactor. Use real collaborators and plain data, and fake only at a true boundary (network, database, storage, clock). Stub `fetch` with a real `Response`:
 
 ```typescript
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -64,7 +64,6 @@ describe('fetch_concept_details', () => {
 
 		const data = await fetch_concept_details('write-01')
 		expect(data.id).toBe('write-01')
-		expect(fetch).toHaveBeenCalledTimes(1)
 	})
 })
 ```

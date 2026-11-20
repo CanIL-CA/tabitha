@@ -50,8 +50,7 @@ Playwright marks `waitUntil: 'networkidle'` (and its `waitForLoadState` form) as
   ```typescript
   await expect(page).toHaveURL(/\/Bible\/Genesis\/1\/1$/, { timeout: 20_000 })
   ```
-- A test that must not act before hydration (the click would otherwise be a no-op) should wait on something concrete that hydration produces, not on the network.
-- Some existing specs still use `networkidle`; replace them when touching those files.
+- A test that must not act before hydration (the click would otherwise be a no-op) calls `wait_for_hydration({ page })` from `@tabitha/vite-config/playwright`, which waits on something hydration produces rather than on the network.
 
 ---
 
