@@ -4,7 +4,23 @@ import { mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { Glob } from 'bun'
-import { intake } from './intake'
+import { intake, plain_name } from './intake'
+
+describe('plain_name', () => {
+	it('drops the date and .tbta from a dated TBTA export', () => {
+		expect(plain_name('English_2026-11-19.tbta.sqlite')).toBe('English.sqlite')
+	})
+
+	it('keeps underscores that are part of the database name', () => {
+		expect(plain_name('Sources_Complex_2026-11-19.tbta.sqlite')).toBe('Sources_Complex.sqlite')
+	})
+
+	it('leaves plain names, .new upgrades and TaBiThA outputs alone', () => {
+		expect(plain_name('Bible.sqlite')).toBe('Bible.sqlite')
+		expect(plain_name('Ontology.new')).toBe('Ontology.new')
+		expect(plain_name('Targets_2026-07-31.tabitha.sqlite')).toBe('Targets_2026-07-31.tabitha.sqlite')
+	})
+})
 
 const temp_dirs: string[] = []
 const cleanups: (() => Promise<void>)[] = []
@@ -32,14 +48,58 @@ function make_zip({ entries, wrap_in_folder }: {
 }
 
 describe('intake', () => {
-	it('passes a directory path through unchanged', async () => {
+	it('copies a directory into a separate working directory', async () => {
 		const dir = mkdtempSync(join(tmpdir(), 'tabitha-intake-dir-'))
 		temp_dirs.push(dir)
+		await Bun.write(join(dir, 'Bible.sqlite'), 'bible-content')
 
 		const result = await intake(dir)
+		cleanups.push(result.cleanup)
 
-		expect(result.working_dir).toBe(dir)
-		expect(result.cleanup).toBeUndefined()
+		expect(result.working_dir).not.toBe(dir)
+		expect(await Bun.file(join(result.working_dir, 'Bible.sqlite')).text()).toBe('bible-content')
+	})
+
+	it('gives dated TBTA exports their plain names and leaves the delivery untouched', async () => {
+		const dir = mkdtempSync(join(tmpdir(), 'tabitha-intake-dir-'))
+		temp_dirs.push(dir)
+		await Bun.write(join(dir, 'English_2026-11-19.tbta.sqlite'), 'english-content')
+		await Bun.write(join(dir, 'Bible.sqlite'), 'bible-content')
+
+		const result = await intake(dir)
+		cleanups.push(result.cleanup)
+
+		const working_files = Array.from(new Glob('*.sqlite').scanSync(result.working_dir)).sort()
+		expect(working_files).toEqual(['Bible.sqlite', 'English.sqlite'])
+		expect(await Bun.file(join(result.working_dir, 'English.sqlite')).text()).toBe('english-content')
+		const delivery_files = Array.from(new Glob('*.sqlite').scanSync(dir)).sort()
+		expect(delivery_files).toEqual(['Bible.sqlite', 'English_2026-11-19.tbta.sqlite'])
+	})
+
+	it('gives dated exports inside a zip their plain names', async () => {
+		const zip_path = make_zip({ entries: { 'Bible_2026-11-17.tbta.sqlite': 'bible-content' } })
+
+		const result = await intake(zip_path)
+		cleanups.push(result.cleanup)
+
+		expect(await Bun.file(join(result.working_dir, 'Bible.sqlite')).text()).toBe('bible-content')
+	})
+
+	it('throws when a delivery holds the same database under a plain and a dated name', async () => {
+		const dir = mkdtempSync(join(tmpdir(), 'tabitha-intake-dir-'))
+		temp_dirs.push(dir)
+		await Bun.write(join(dir, 'English.sqlite'), 'one')
+		await Bun.write(join(dir, 'English_2026-11-19.tbta.sqlite'), 'two')
+
+		await expect(intake(dir)).rejects.toThrow(/would be staged as English\.sqlite/)
+	})
+
+	it('throws when a directory has no .sqlite or .new files', async () => {
+		const dir = mkdtempSync(join(tmpdir(), 'tabitha-intake-dir-'))
+		temp_dirs.push(dir)
+		await Bun.write(join(dir, 'readme.txt'), 'not a database')
+
+		await expect(intake(dir)).rejects.toThrow(/No \.sqlite or \.new files found/)
 	})
 
 	it('extracts a flat zip (files directly at the root) into a working directory', async () => {
@@ -60,7 +120,6 @@ describe('intake', () => {
 
 		const files = Array.from(new Glob('*.sqlite').scanSync(result.working_dir))
 		expect(files).toEqual(['Bible.sqlite'])
-		expect(result.working_dir.endsWith('TBTA 6-25-26')).toBe(true)
 	})
 
 	it('accepts a zip containing only .new upgrade files, e.g. an ontology-only delivery', async () => {

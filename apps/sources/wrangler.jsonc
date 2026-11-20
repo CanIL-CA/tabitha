@@ -58,8 +58,8 @@
 	"d1_databases": [
 		{
 			"binding": "DB_Sources",
-			"database_name": "Sources_2026-07-27",
-			"database_id": "38e626c1-4edb-4b0d-b0b0-ed47b0d8d671"
+			"database_name": "Sources_2026-11-19",
+			"database_id": "1e83c13a-71b1-44ed-8277-b47e40135830"
 		}
 	],
 	// Anonymous feature-usage events -- see docs/decisions/0017-usage-analytics-engine.md for the
@@ -108,8 +108,8 @@
 		"d1_databases": [
 			{
 				"binding": "DB_Sources",
-				"database_name": "Sources_2026-07-27",
-				"database_id": "38e626c1-4edb-4b0d-b0b0-ed47b0d8d671"
+				"database_name": "Sources_2026-11-19",
+				"database_id": "1e83c13a-71b1-44ed-8277-b47e40135830"
 			}
 		]
 	}
