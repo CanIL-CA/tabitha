@@ -17,6 +17,7 @@ export type DesiredApp = {
 export const desired_apps: DesiredApp[] = [
 	{ worker_name: 'copilot', app_dir: 'copilot' },
 	{ worker_name: 'editor', app_dir: 'editor' },
+	{ worker_name: 'generator', app_dir: 'generator' },
 	{ worker_name: 'ontology', app_dir: 'ontology' },
 	{ worker_name: 'scheduler', app_dir: 'scheduler' },
 	{ worker_name: 'sources', app_dir: 'sources' },
