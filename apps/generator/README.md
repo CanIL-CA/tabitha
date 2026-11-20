@@ -14,7 +14,7 @@ Nothing is built here. [CanIL-CA/tbta](https://github.com/CanIL-CA/tbta)'s CI pr
 | File | Produced by | Downloaded from |
 | --- | --- | --- |
 | `tbta.js`, `tbta.wasm` | tbta's `wasm-engine` workflow, as `TBTA-Worker-WASM.tar.gz` | A release on [CanIL-CA/tbta-public](https://github.com/CanIL-CA/tbta-public/releases) |
-| `Ontology.sqlite`, `English.sqlite` | tbta's `prepare-target-for-web` workflow | `<ontology-version>/` in the `db-generation` R2 bucket (`db-generation.tabitha.bible`, declared in `tools/r2/config.ts`) |
+| `Ontology.sqlite`, `English.sqlite` | tbta's `prepare-target-for-web` workflow | `<ontology-version>/` in the `db-generation` R2 bucket (public through its r2.dev address, declared in `tools/r2/config.ts`) |
 
 `scripts/engine_source.ts` pins the TBTA release and the Ontology version. **To move to a new engine or Ontology, change the line there and merge.** The Ontology version has to be one the workflow has already prepared English for.
 
