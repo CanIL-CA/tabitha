@@ -1,4 +1,4 @@
-// Build outputs of tools/tbta-wasm, imported through the "#engine/*" alias in package.json.
+// Files downloaded by scripts/fetch_engine.ts, imported through the "#engine/*" alias in package.json.
 
 declare module '#engine/tbta.js' {
 	const create_engine: import('./engine').CreateEngine

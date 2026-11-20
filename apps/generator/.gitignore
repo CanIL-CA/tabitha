@@ -1,2 +1,2 @@
-# Built by tools/tbta-wasm: `bun run engine:build` then `bun run engine:data` there
+# Downloaded by `bun run engine:fetch` (scripts/fetch_engine.ts)
 engine/

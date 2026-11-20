@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
-	"description": "Proof of concept: generates verse text from a semantic encoding with TBTA's engine compiled to WebAssembly",
+	"description": "Generates verse text from a semantic encoding with TBTA's engine compiled to WebAssembly",
 	"imports": {
 		"#engine/*": "./engine/*"
 	},
@@ -14,16 +14,21 @@
 		"check": "bun --check",
 		"check:lint": "eslint .",
 		"check:lint:fix": "eslint . --fix",
-		"bundle": "wrangler deploy --dry-run --outdir dist",
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev"
+		"engine:fetch": "bun scripts/fetch_engine.ts",
+		"build": "bun run engine:fetch && wrangler deploy --dry-run --outdir dist",
+		"build:ci": "bun run build",
+		"dev": "bun run engine:fetch && wrangler dev",
+		"test": "bun run test:unit",
+		"test:unit": "vitest run src && bun test scripts"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20261029.1",
 		"@tabitha/eslint-config": "workspace:*",
 		"@tabitha/tsconfig": "workspace:*",
+		"@types/bun": "^1.4.4",
 		"eslint": "^10.14.0",
 		"typescript": "^6.0.3",
+		"vitest": "^5.0.5",
 		"wrangler": "^4.156.0"
 	}
 }

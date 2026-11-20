@@ -4,9 +4,14 @@
 		// engine/tbta.js is generated Emscripten glue: use its declaration in src/engine_modules.d.ts
 		// instead of type-checking it.
 		"allowJs": false,
-		"checkJs": false
+		"checkJs": false,
+		// For scripts/, which run under Bun at build time.
+		"types": [
+			"bun"
+		]
 	},
 	"include": [
-		"src/**/*"
+		"src/**/*",
+		"scripts/**/*"
 	]
 }

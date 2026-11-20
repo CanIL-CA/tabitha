@@ -1,5 +1,6 @@
-// Thin wrapper around TBTA's generation engine, compiled to WebAssembly by tools/tbta-wasm.
-// Shared by the Worker and by tools/tbta-wasm's data preparation, so it uses no Worker-only APIs.
+// Thin wrapper around TBTA's generation engine, compiled to WebAssembly by CanIL-CA/tbta's CI.
+// Shared by the Worker, the build's check in scripts/fetch_engine.ts and the browser's Web Worker
+// in apps/sources, so it uses no Worker-only APIs.
 
 export type EngineModule = {
 	ccall: (name: string, return_type: 'number', arg_types: string[], args: (string | number)[]) => number

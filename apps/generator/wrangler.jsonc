@@ -16,7 +16,7 @@
 		"run_worker_first": true
 	},
 	"rules": [
-		// The engine's databases, prepared by tools/tbta-wasm, are bundled as raw bytes.
+		// The engine's databases, downloaded by scripts/fetch_engine.ts, are bundled as raw bytes.
 		{ "type": "Data", "globs": ["**/*.sqlite"] }
 	]
 }

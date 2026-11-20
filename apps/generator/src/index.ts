@@ -54,7 +54,7 @@ type Env = {
 	ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
-// What a browser needs to run the engine itself. The binary files are gzipped (see tools/tbta-wasm).
+// What a browser needs to run the engine itself. The binary files are gzipped (see scripts/fetch_engine.ts).
 const BROWSER_FILES = new Set(['tbta.js', 'tbta.wasm.gz', 'Ontology.sqlite.gz', `${LANGUAGE}.sqlite.gz`])
 const FILES_PREFIX = '/files/'
 
