@@ -58,11 +58,16 @@
 	}
 </script>
 
-<div class="card card-border bg-base-200 mb-4">
-	<div class="card-body gap-3">
+<div class="card card-dash relative mb-4 overflow-hidden border-warning bg-warning/10">
+	<Icon icon="mdi:flask-outline" class="pointer-events-none absolute -right-6 -bottom-8 h-40 w-40 text-warning opacity-15" aria-hidden="true" />
+	<div class="card-body relative gap-3">
 		<div class="flex flex-wrap items-center gap-3">
+			<Icon icon="mdi:flask-outline" class="h-7 w-7 text-warning" aria-hidden="true" />
 			<h2 class="card-title text-base">Generate English text</h2>
-			<span class="badge badge-warning badge-sm">Experimental</span>
+			<span class="badge badge-warning">
+				<Icon icon="mdi:test-tube" class="h-4 w-4" aria-hidden="true" />
+				Experimental
+			</span>
 			<div class="ms-auto flex flex-wrap items-center gap-2">
 				<label class="select select-sm w-auto">
 					<span class="label">Run on</span>
