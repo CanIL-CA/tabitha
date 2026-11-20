@@ -81,6 +81,8 @@ for (const { test_word, expected_forms } of test_data) {
 		const response = await request.get(`/English/lookup/forms?word=${test_word}`)
 		const returned_forms = await response.json()
 
-		expect(returned_forms).toMatchObject(expected_forms)
+		// Row order within the stem and form matches isn't part of the contract, and moves when the Lexicon is rebuilt.
+		expect(returned_forms).toHaveLength(expected_forms.length)
+		expect(returned_forms).toEqual(expect.arrayContaining(expected_forms.map(form => expect.objectContaining(form))))
 	})
 }

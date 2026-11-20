@@ -44,8 +44,8 @@
 	"d1_databases": [
 		{
 			"binding": "DB_Targets_English",
-			"database_name": "Targets_English_2026-07-31",
-			"database_id": "fa05d7a0-3241-465f-b47a-80898f86c1a9"
+			"database_name": "Targets_English_2026-11-19",
+			"database_id": "94882419-dd61-4601-bce8-a5b28aa170c0"
 		},
 		{
 			"binding": "DB_Targets_Swahili",
@@ -95,8 +95,8 @@
 		"d1_databases": [
 			{
 				"binding": "DB_Targets_English",
-				"database_name": "Targets_English_2026-07-31",
-				"database_id": "fa05d7a0-3241-465f-b47a-80898f86c1a9"
+				"database_name": "Targets_English_2026-11-19",
+				"database_id": "94882419-dd61-4601-bce8-a5b28aa170c0"
 			},
 			{
 				"binding": "DB_Targets_Swahili",

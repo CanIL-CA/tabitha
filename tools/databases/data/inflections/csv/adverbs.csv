@@ -26,125 +26,128 @@
 26,confidently,Adverb,|||
 27,continuously,Adverb,|||
 28,correctly,Adverb,|correctly  more|correctly  most|
-29,cruelly,Adverb,|cruelly  more|cruelly  most|
-30,dearly,Adverb,|||
-31,deeply,Adverb,|||
-32,differently,Adverb,|||
-33,diligently,Adverb,|||
-34,eagerly,Adverb,|||
-35,earlier,Adverb,|||
-36,early,Adverb,|earlier|earliest|
-37,earnestly,Adverb,|earnestly  more|earnestly  most|
-38,easily,Adverb,|easily  more|easily  most|
-39,emphatically,Adverb,|||
-40,enough,Adverb,|||
-41,eternally,Adverb,|||
-42,even,Adverb,|||
-43,eventually,Adverb,|||
-44,exactly,Adverb,|||
-45,fairly,Adverb,|fairly  more|fairly  most|
-46,faithfully,Adverb,|||
-47,far,Adverb,|||
-48,fiercely,Adverb,|fiercely  more|fiercely  most|
-49,finally,Adverb,|||
-50,firmly,Adverb,|||
-51,first,Adverb,|||
-52,foolishly,Adverb,|||
-53,forever,Adverb,|||
-54,freely,Adverb,|||
-55,generously,Adverb,|||
-56,gently,Adverb,|gently  more|gently  most|
-57,gladly,Adverb,|||
-58,gloriously,Adverb,|||
-59,graciously,Adverb,|||
-60,gratefully,Adverb,|||
-61,greatly,Adverb,|greater|greatest|
-62,habitually,Adverb,|||
-63,happily,Adverb,|||
-64,hard,Adverb,|harder|hardest|
-65,harshly,Adverb,|||
-66,highly,Adverb,|||
-67,honestly,Adverb,|||
-68,how,Adverb,|||
-69,how long,Adverb,|||
-70,immediately,Adverb,|||
-71,immorally,Adverb,|||
-72,intensely,Adverb,|||
-73,intently,Adverb,|||
-74,joyfully,Adverb,|||
-75,justly,Adverb,|||
-76,kindly,Adverb,|kindly  more|kindly  most|
-77,last,Adverb,|||
-78,later,Adverb,|laterer|laterest|
-79,less,Adverb,|||
-80,long,Adverb,|longer|longest|
-81,loudly,Adverb,|loudly  more|loudly  most|
-82,more,Adverb,|||
-83,much,Adverb,|||
-84,never,Adverb,|||
-85,no longer,Adverb,|||
-86,now,Adverb,|||
-87,often,Adverb,|often  more|often  most|
-88,only,Adverb,|||
-89,partly,Adverb,|||
-90,passionately,Adverb,|||
-91,patiently,Adverb,|||
-92,peacefully,Adverb,|peacefully  more|peacefully  most|
-93,perfectly,Adverb,|||
-94,perhaps,Adverb,|||
-95,persuasively,Adverb,|persuasively  more|persuasively  most|
-96,powerfully,Adverb,|powerfully  more|powerfully  most|
-97,previously,Adverb,|||
-98,privately,Adverb,|||
-99,proudly,Adverb,|||
-100,publicly,Adverb,|||
-101,quickly,Adverb,|quickly  more|quickly  most|
-102,quietly,Adverb,|quietly  more|quietly  most|
-103,really,Adverb,|||
-104,recently,Adverb,|recently  more|recently  most|
-105,regularly,Adverb,|regularly  more|regularly  most|
-106,religiously,Adverb,|||
-107,repeatedly,Adverb,|||
-108,respectfully,Adverb,|respectfully  more|respectfully  most|
-109,righteously,Adverb,|righteously  more|righteously  most|
-110,safely,Adverb,|safely  more|safely  most|
-111,secretly,Adverb,|||
-112,securely,Adverb,|securely  more|securely  most|
-113,sensibly,Adverb,|||
-114,severely,Adverb,|severely  more|severely  most|
-115,similarly,Adverb,|||
-116,sincerely,Adverb,|sincerely  more|sincerely  most|
-117,skillfully,Adverb,|skillfully  more|skillfully  most|
-118,slowly,Adverb,|slowly  more|slowly  most|
-119,sometimes,Adverb,|||
-120,soon,Adverb,|||
-121,sternly,Adverb,|||
-122,still,Adverb,|||
-123,still,Adverb,|||
-124,straight,Adverb,|straighter|straightest|
-125,stupidly,Adverb,|||
-126,successfully,Adverb,|successfully  more|successfully  most|
-127,suddenly,Adverb,|||
-128,temporarily,Adverb,|||
-129,the most,Adverb,|||
-130,thoroughly,Adverb,|thoroughly  more|thoroughly  most|
-131,tightly,Adverb,|||
-132,today,Adverb,|||
-133,tomorrow,Adverb,|||
-134,tonight,Adverb,|||
-135,truly,Adverb,|||
-136,urgently,Adverb,|urgently  more|urgently  most|
-137,usually,Adverb,|||
-138,viciously,Adverb,|||
-139,violently,Adverb,|violently  more|violently  most|
-140,well,Adverb,|better|best|
-141,when,Adverb,|||
-142,where,Adverb,|||
-143,wholeheartedly,Adverb,|||
-144,why,Adverb,|||
-145,wickedly,Adverb,|||
-146,willingly,Adverb,|||
-147,wisely,Adverb,|wisely  more|wisely  most|
-148,wrongly,Adverb,|||
-149,yesterday,Adverb,|||
-150,yet,Adverb,|||
+29,crazily,Adverb,|||
+30,cruelly,Adverb,|cruelly  more|cruelly  most|
+31,dearly,Adverb,|||
+32,deeply,Adverb,|||
+33,differently,Adverb,|||
+34,diligently,Adverb,|||
+35,directly,Adverb,|||
+36,eagerly,Adverb,|||
+37,earlier,Adverb,|||
+38,early,Adverb,|earlier|earliest|
+39,earnestly,Adverb,|earnestly  more|earnestly  most|
+40,easily,Adverb,|easily  more|easily  most|
+41,emphatically,Adverb,|||
+42,enough,Adverb,|||
+43,eternally,Adverb,|||
+44,even,Adverb,|||
+45,eventually,Adverb,|||
+46,exactly,Adverb,|||
+47,fairly,Adverb,|fairly  more|fairly  most|
+48,faithfully,Adverb,|||
+49,far,Adverb,|||
+50,fiercely,Adverb,|fiercely  more|fiercely  most|
+51,finally,Adverb,|||
+52,firmly,Adverb,|||
+53,first,Adverb,|||
+54,foolishly,Adverb,|||
+55,forever,Adverb,|||
+56,freely,Adverb,|||
+57,generously,Adverb,|||
+58,gently,Adverb,|gently  more|gently  most|
+59,gladly,Adverb,|||
+60,gloriously,Adverb,|||
+61,graciously,Adverb,|||
+62,gratefully,Adverb,|||
+63,greatly,Adverb,|greater|greatest|
+64,habitually,Adverb,|||
+65,happily,Adverb,|||
+66,hard,Adverb,|harder|hardest|
+67,harshly,Adverb,|||
+68,highly,Adverb,|||
+69,honestly,Adverb,|||
+70,how,Adverb,|||
+71,how long,Adverb,|||
+72,immediately,Adverb,|||
+73,immorally,Adverb,|||
+74,intensely,Adverb,|||
+75,intently,Adverb,|||
+76,joyfully,Adverb,|||
+77,justly,Adverb,|||
+78,kindly,Adverb,|kindly  more|kindly  most|
+79,last,Adverb,|||
+80,later,Adverb,|laterer|laterest|
+81,less,Adverb,|||
+82,long,Adverb,|longer|longest|
+83,loudly,Adverb,|loudly  more|loudly  most|
+84,more,Adverb,|||
+85,much,Adverb,|||
+86,never,Adverb,|||
+87,no longer,Adverb,|||
+88,now,Adverb,|||
+89,often,Adverb,|often  more|often  most|
+90,only,Adverb,|||
+91,partly,Adverb,|||
+92,passionately,Adverb,|||
+93,patiently,Adverb,|||
+94,peacefully,Adverb,|peacefully  more|peacefully  most|
+95,perfectly,Adverb,|||
+96,perhaps,Adverb,|||
+97,persuasively,Adverb,|persuasively  more|persuasively  most|
+98,powerfully,Adverb,|powerfully  more|powerfully  most|
+99,previously,Adverb,|||
+100,privately,Adverb,|||
+101,proudly,Adverb,|proudly  more|proudly  most|
+102,publicly,Adverb,|||
+103,quickly,Adverb,|quickly  more|quickly  most|
+104,quietly,Adverb,|quietly  more|quietly  most|
+105,rarely,Adverb,|||
+106,really,Adverb,|||
+107,recently,Adverb,|recently  more|recently  most|
+108,regularly,Adverb,|regularly  more|regularly  most|
+109,religiously,Adverb,|||
+110,repeatedly,Adverb,|||
+111,respectfully,Adverb,|respectfully  more|respectfully  most|
+112,righteously,Adverb,|righteously  more|righteously  most|
+113,safely,Adverb,|safely  more|safely  most|
+114,secretly,Adverb,|||
+115,securely,Adverb,|securely  more|securely  most|
+116,sensibly,Adverb,|||
+117,severely,Adverb,|severely  more|severely  most|
+118,similarly,Adverb,|||
+119,sincerely,Adverb,|sincerely  more|sincerely  most|
+120,skillfully,Adverb,|skillfully  more|skillfully  most|
+121,slowly,Adverb,|slowly  more|slowly  most|
+122,sometimes,Adverb,|||
+123,soon,Adverb,|||
+124,sternly,Adverb,|||
+125,still,Adverb,|||
+126,still,Adverb,|||
+127,straight,Adverb,|straighter|straightest|
+128,stupidly,Adverb,|||
+129,successfully,Adverb,|successfully  more|successfully  most|
+130,suddenly,Adverb,|||
+131,temporarily,Adverb,|||
+132,the most,Adverb,|||
+133,thoroughly,Adverb,|thoroughly  more|thoroughly  most|
+134,tightly,Adverb,|||
+135,today,Adverb,|||
+136,tomorrow,Adverb,|||
+137,tonight,Adverb,|||
+138,truly,Adverb,|||
+139,urgently,Adverb,|urgently  more|urgently  most|
+140,usually,Adverb,|||
+141,viciously,Adverb,|||
+142,violently,Adverb,|violently  more|violently  most|
+143,well,Adverb,|better|best|
+144,when,Adverb,|||
+145,where,Adverb,|||
+146,wholeheartedly,Adverb,|||
+147,why,Adverb,|||
+148,wickedly,Adverb,|||
+149,willingly,Adverb,|||
+150,wisely,Adverb,|wisely  more|wisely  most|
+151,wrongly,Adverb,|||
+152,yesterday,Adverb,|||
+153,yet,Adverb,|||
