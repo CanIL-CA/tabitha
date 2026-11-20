@@ -1,7 +1,6 @@
 import { $, Glob } from 'bun'
 import { Database } from 'bun:sqlite'
 import { cp, mkdir, rename } from 'fs/promises'
-import { existsSync } from 'fs'
 import { basename, join } from 'path'
 import { create_logger } from './log'
 import { deploy_to_d1 } from './deploy'
@@ -11,9 +10,9 @@ import { to_d1_importable } from './ontology/live'
 import { plan_migration, type TaskFamily } from './plan'
 import { resolve_dated_file } from './resolve_dated_file'
 import { download_ontology_backup, read_ontology_version } from './live_ontology_backup'
-import { pad_mapping_tables } from './mapping_padding'
 import { stale_status_csvs, stale_status_message } from './sources/status_freshness'
 import { load_state, mark_done, clear_state } from './state'
+import { assert_pinned_release_is_latest, tbta_utils_binary, to_sources_complex } from './tbta_utils'
 import { validate_migration_output, type ValidationConfig } from './validate'
 
 const log = create_logger('Orchestrator')
@@ -151,7 +150,7 @@ try {
 	if (sources_task?.changed) {
 		const sources_complex_file = await resolve_dated_file({ dir: 'raw', prefix: 'Sources_Complex', date, ext: 'tabitha.sqlite' })
 		if (!sources_complex_file) {
-			throw new Error(`No Sources_Complex database found for ${date} (or any prior date). This is normally generated automatically via "tbta_utils export-generated-cci" during staging.`)
+			throw new Error(`No Sources_Complex database found for ${date} (or any prior date). This is normally generated automatically via "tbta-utils bulk-generate" during staging.`)
 		}
 
 		const examples_step = 'Ontology_examples:preview'
@@ -257,19 +256,20 @@ async function run_tbta_utils(working_dir: string) {
 		return
 	}
 
-	const tbta_utils = resolve_tbta_utils_binary()
+	await assert_pinned_release_is_latest()
+	const tbta_utils = await tbta_utils_binary()
 
 	// Inflections depend only on English; Sources_Complex depends on English, Bible, and Sample.
 	// Skip regenerating either when none of its actual inputs changed, rather than re-running
-	// tbta_utils (export-generated-cci alone can take ~10 minutes) unconditionally every run.
+	// tbta_utils (bulk-generate alone can take ~10 minutes) unconditionally every run.
 	const english_changed = await is_changed({ name: 'English', src: `${working_dir}/English.sqlite` })
 	const bible_changed = await file_changed_if_present('Bible')
 	const sample_changed = await file_changed_if_present('Sample')
 	const cci_needed = english_changed || bible_changed || sample_changed
 
 	// tbta_utils reads English, Bible, Sample and Ontology under those plain names from its working
-	// directory. It runs in a subfolder, so its copies (a padded English, the live Ontology, companions
-	// from raw/) never reach staging, which only scans working_dir itself.
+	// directory. It runs in a subfolder, so its copies (the live Ontology, companions from raw/) never
+	// reach staging, which only scans working_dir itself.
 	const run_dir = join(working_dir, 'tbta_utils')
 	if (cci_needed) {
 		await prepare_run_dir()
@@ -283,19 +283,19 @@ async function run_tbta_utils(working_dir: string) {
 	}
 
 	if (cci_needed) {
-		log.step('Running tbta_utils export-generated-cci (this processes the full Bible and can take ~10 minutes)...')
-		await $`${tbta_utils} export-generated-cci --language English.sqlite --audience-name ${AUDIENCE_NAME} --output-path ${working_dir}/Sources_Complex.sqlite`.cwd(run_dir)
+		log.step('Running tbta-utils bulk-generate up to Complex Concept Insertion (this processes the full Bible and can take ~10 minutes)...')
+		const bulk_generated = `${run_dir}/bulk-generate.sqlite`
+		await $`${tbta_utils} bulk-generate --language English.sqlite --audience-name ${AUDIENCE_NAME} --quit-after ComplexConceptInsertion --output-path ${bulk_generated}`.cwd(run_dir)
+		to_sources_complex({ bulk_generated, sources_complex: `${working_dir}/Sources_Complex.sqlite` })
 		await assert_complete_cci(`${working_dir}/Sources_Complex.sqlite`)
 	} else {
-		log.step('Skipping tbta_utils export-generated-cci -- English, Bible, and Sample all unchanged since last run.')
+		log.step('Skipping tbta-utils bulk-generate -- English, Bible, and Sample all unchanged since last run.')
 	}
 
 	async function prepare_run_dir() {
 		await mkdir(run_dir, { recursive: true })
 
 		await cp(`${working_dir}/English.sqlite`, `${run_dir}/English.sqlite`)
-		const padded = pad_mapping_tables({ db_path: `${run_dir}/English.sqlite` })
-		log.step(`Padded ${padded.length} mapping table(s) in tbta_utils' copy of English.sqlite with a blank row past the end.`)
 
 		const version = read_ontology_version({ db_path: `${working_dir}/English.sqlite` })
 		log.step(`Downloading the live Ontology backup ${version}, which English.sqlite is mapped to...`)
@@ -324,14 +324,14 @@ async function run_tbta_utils(working_dir: string) {
 	// judge it by its output: every book the previous export covered must still be there.
 	async function assert_complete_cci(path: string) {
 		const books = complex_books(path)
-		if (books.size === 0) throw new Error(`tbta_utils export-generated-cci produced no rows in ${path}; see TBTA.log in ${run_dir}.`)
+		if (books.size === 0) throw new Error(`tbta-utils bulk-generate produced no rows in ${path}; see TBTA.log in ${run_dir}.`)
 
 		const previous = await resolve_dated_file({ dir: 'raw', prefix: 'Sources_Complex', date, ext: 'tabitha.sqlite', silent: true })
 		if (!previous) return
 
 		const missing = [...complex_books(previous)].filter(book => !books.has(book))
 		if (missing.length > 0) {
-			throw new Error(`tbta_utils export-generated-cci stopped early: ${missing.length} book(s) from ${basename(previous)} are missing (${missing.join(', ')}). See "An error occurred" in TBTA.log in ${run_dir}.`)
+			throw new Error(`tbta-utils bulk-generate stopped early: ${missing.length} book(s) from ${basename(previous)} are missing (${missing.join(', ')}). See "An error occurred" in TBTA.log in ${run_dir}.`)
 		}
 	}
 
@@ -348,22 +348,4 @@ async function run_tbta_utils(working_dir: string) {
 		const src = `${working_dir}/${name}.sqlite`
 		return await Bun.file(src).exists() && await is_changed({ name, src })
 	}
-}
-
-function resolve_tbta_utils_binary(): string {
-	const platform_dirs: Record<string, string> = {
-		'darwin-arm64': 'darwin-arm64',
-	}
-	const key = `${process.platform}-${process.arch}`
-	const platform_dir = platform_dirs[key]
-	if (!platform_dir) {
-		throw new Error(`No tbta_utils binary is vendored for platform "${key}". Currently available: ${Object.keys(platform_dirs).join(', ')} (see tools/databases/tbta_utils/).`)
-	}
-
-	const binary_path = join(import.meta.dir, '../tbta_utils', platform_dir, 'tbta_utils')
-	if (!existsSync(binary_path)) {
-		throw new Error(`tbta_utils binary not found at ${binary_path}.`)
-	}
-
-	return binary_path
 }

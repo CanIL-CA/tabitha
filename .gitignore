@@ -50,6 +50,8 @@ tools/databases/.d1-workerd-hash-cache.json
 # files currently exist) stays tracked; the actual file contents don't.
 tools/databases/raw/*
 tools/databases/snapshots/*
+# TBTA release downloads (see tools/databases/migrations/tbta_utils.ts)
+tools/databases/.cache/
 !tools/databases/raw/.gitkeep
 !tools/databases/snapshots/.gitkeep
 
