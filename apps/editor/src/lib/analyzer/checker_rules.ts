@@ -114,7 +114,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
 		'context': {
 			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
-			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE },
+			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE, 'skip': { 'tag': { 'list_comma': 'relative_clause' } } },
 		},
 		'warning': {
 			'on': 'subtokens:0',
