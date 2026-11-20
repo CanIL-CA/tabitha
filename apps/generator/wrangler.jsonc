@@ -7,7 +7,10 @@
 	"workers_dev": false,
 	"observability": {
 		"enabled": true,
-		"head_sampling_rate": 1
+		"head_sampling_rate": 1,
+		"issues": {
+			"enabled": true
+		}
 	},
 	// Browsers that run the engine themselves download its files from here, through sources (GET /files/*).
 	"assets": {
