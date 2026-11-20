@@ -1,7 +1,7 @@
 // Builds TBTA's generation engine as a Worker-ready WebAssembly module.
-// Checks out CanIL-CA/tbta at TBTA_COMMIT into .tbta/, applies tbta.patch (encoding passed in as a
-// string, no threads, ES module output), builds with Emscripten, and copies the result into
-// apps/generator/engine/. Needs git (with access to the private repo), emcmake, cmake and ninja.
+// Checks out CanIL-CA/tbta at TBTA_COMMIT into .tbta/, builds its BrowserTest module with
+// Emscripten, and copies the result into apps/generator/engine/. Needs git (with access to the
+// private repo), emcmake, cmake and ninja.
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { write_gzipped_copy } from './gzipped_copy'
@@ -30,10 +30,9 @@ function check_out_tbta({ git }: { git: string }) {
 	}
 	run({ command: [git, 'fetch', '--quiet', '--depth', '1', 'origin', TBTA_COMMIT], cwd: TBTA_CLONE_DIR })
 	run({ command: [git, 'checkout', '--quiet', '--force', TBTA_COMMIT], cwd: TBTA_CLONE_DIR })
-	// Back to a pristine tree so the patch applies cleanly, keeping the build cache and the
-	// third-party sources CMake downloads (both slow to recreate).
+	// Back to a pristine tree, keeping the build cache and the third-party sources CMake downloads
+	// (both slow to recreate).
 	run({ command: [git, 'clean', '--quiet', '-fdx', '-e', '/build/', '-e', '/external/'], cwd: TBTA_CLONE_DIR })
-	run({ command: [git, 'apply', join(TOOL_DIR, 'tbta.patch')], cwd: TBTA_CLONE_DIR })
 	copyFileSync(join(TOOL_DIR, 'CMakeUserPresets.json'), join(TBTA_CLONE_DIR, 'CMakeUserPresets.json'))
 }
 

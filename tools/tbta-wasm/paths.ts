@@ -6,8 +6,10 @@ export const DOWNLOAD_DIR = join(TOOL_DIR, '.downloads')
 export const ENGINE_OUTPUT_DIR = join(TOOL_DIR, '..', '..', 'apps', 'generator', 'engine')
 
 export const TBTA_REPO_URL = 'https://github.com/CanIL-CA/tbta.git'
-export const TBTA_COMMIT = '32eac9c919f8346e31ae4a605d44607cd461d412'
-export const CMAKE_PRESET = 'Worker-WASM-Release'
+// The merge of CanIL-CA/tbta#45, which made the engine buildable for a Worker (and the browser).
+export const TBTA_COMMIT = '1836176092a76ffadc93a69c9619d1758c491bef'
+// Defined in CMakeUserPresets.json: tbta's own Worker-WASM-Release preset only matches Linux hosts.
+export const CMAKE_PRESET = 'Worker-WASM-Local'
 
 export const ENGINE_JS = 'tbta.js'
 export const ENGINE_WASM = 'tbta.wasm'
