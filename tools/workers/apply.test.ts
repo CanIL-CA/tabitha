@@ -119,6 +119,16 @@ describe('reconcile_workers', () => {
 		}])
 	})
 
+	it('watches a workspace dependency that lives under apps/ at its real path', async () => {
+		const sources_app = { worker_name: 'sources', app_dir: 'sources' }
+
+		const [plan] = await reconcile_workers({ credentials, apply: false, apps: [sources_app], fetch_impl: account_fetch({ workers: { sources: matching_config(['*']) } }) })
+
+		const path_includes = plan.field_changes.find(change => change.field === 'path_includes')?.to
+		expect(path_includes).toContain('apps/generator/*')
+		expect(path_includes).not.toContain('packages/generator/*')
+	})
+
 	it('reports Workers Builds preview builds being on, without trying to change them', async () => {
 		const config = { ...matching_config(), previews_enabled: true }
 		const requests: Request[] = []
