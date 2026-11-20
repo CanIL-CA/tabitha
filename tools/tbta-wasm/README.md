@@ -64,7 +64,7 @@ The POC shows that the engine generates the same text in a Worker and in a brows
 | Deploy | `bun run deploy` by hand; CI can't build the engine | Deployed by the pipeline like the other apps, once the engine and data come from a build. |
 | Sources panel | Experimental card on the verse page; merging would put it on production | A product decision on where generation appears and for whom. |
 | Offline (browser) | Engine and databases download per visit, with ETags | A caching and update story if offline use is a goal. |
-| Accuracy | Matches TBTA's stored text for Genesis 1:1-2 and Ruth 1:1-2. John 3:15-16 differs; not yet checked against native `tbta_utils` | A comparison against native TBTA over many verses. tbta's generation baselines (see below) may be the reference to compare against. |
+| Accuracy | Matches TBTA's stored text for Genesis 1:1-2 and Ruth 1:1-2. John 3:15-16 differs from the stored text, but native `tbta_utils` produces the same text as the engine here (checked 2026-11-19 on the English export and the Ontology it was built against), so the stored text looks older than the current rules, not the engine wrong. That is a guess; only these verses were checked | A comparison against native TBTA over many verses. tbta's generation baselines (see below) may be the reference to compare against. |
 | Tests and Windows | None, by design for a POC | Unit tests for the request handling and engine wrapper. The build tooling has to work on Windows too. |
 
 ### Related work in tbta
