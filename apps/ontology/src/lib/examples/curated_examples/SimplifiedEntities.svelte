@@ -1,35 +1,17 @@
 <script lang="ts">
-	import type { SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '#lib/types.js'
+	import { get_coded_feature_label, is_boundary_end, is_boundary_start } from '#lib/curated_example/format.js'
+	import type { CuratedExampleEncoding, CuratedExampleEntity } from '#lib/types.js'
 
 	type Props = {
-		entities: SimplifiedSemanticEncoding
+		entities: CuratedExampleEncoding
 	}
 
 	let { entities }: Props = $props()
 
-	const boundary_char_map: Record<string, string> = {
-		NP: '(',
-		VP: '(',
-		AdjP: '(',
-		AdvP: '(',
-		'Phrase end': ')',
-		Clause: '[',
-		'Clause end': ']',
-	}
-
-	const label_map: Record<string, string> = {
-		NP: 'NP',
-		VP: 'VP',
-		AdjP: 'AdjP',
-		AdvP: 'AdvP',
-		// for 'Proposition' - verb clause arguments are called 'Patient/Agent Propositions'
-		Clause: 'Prop',
-	}
-
 	/**
 	 * Find the parent boundary, or if the entity is a boundary, return itself
 	 */
-	function find_closest_boundary(index: number): SimplifiedEncodingEntity {
+	function find_closest_boundary(index: number): CuratedExampleEntity {
 		let inner_level = 0
 		for (let j = index; j >= 0; j--) {
 			const entity = entities[j]
@@ -49,34 +31,26 @@
 	}
 
 	function get_style_class(index: number): string {
-		const boundary_category = find_closest_boundary(index).category
-		return `entity-${boundary_category}`
-	}
-
-	function is_boundary_start(entity: SimplifiedEncodingEntity): boolean {
-		return entity.category in label_map
-	}
-
-	function is_boundary_end(entity: SimplifiedEncodingEntity): boolean {
-		return entity.category.endsWith('end')
+		return `entity-${find_closest_boundary(index).category_abbr}`
 	}
 </script>
 
-{#each entities as entity, i}
-	{@const boundary_char = boundary_char_map[entity.category]}
-	{@const label = entity.word || label_map[entity.category] || ''}
+{#each entities as entity, i (i)}
+	{@const is_boundary = is_boundary_start(entity) || is_boundary_end(entity)}
+	{@const label = is_boundary ? entity.category_abbr : entity.value}
 	{@const style_class = get_style_class(i)}
+	{@const coded_feature_label = get_coded_feature_label(entity)}
 
 	<span class="mb-1 py-2 not-italic text-base-content flex items-center">
-		{#if boundary_char}
+		{#if is_boundary}
 			<span class="text-3xl font-thin {style_class}">
-				{boundary_char}
+				{entity.value}
 			</span>
 		{/if}
 
-		{#if entity.feature}
+		{#if coded_feature_label}
 			<span class="text-md pt-2 font-medium {style_class}">
-				{label}-{entity.feature.value}
+				{label}-{coded_feature_label}
 			</span>
 		{:else}
 			<span class="text-md pt-2 font-normal {style_class}">
@@ -87,7 +61,7 @@
 {/each}
 
 <style>
-	.entity-Clause {
+	.entity-Prop {
 		opacity: 0.6;
 	}
 </style>

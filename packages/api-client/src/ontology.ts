@@ -1,4 +1,4 @@
-import type { ConceptSearchFilter, OntologyResult, ConceptKey, ConceptExample, EncodeCuratedExampleRequest, EncodeCuratedExampleResult } from '@tabitha/types'
+import type { ConceptSearchFilter, OntologyResult, ConceptKey, ConceptExample } from '@tabitha/types'
 import { create_http_client, type ClientOptions } from './http'
 
 export type OntologyClient = ReturnType<typeof create_ontology_client>
@@ -65,13 +65,6 @@ export function create_ontology_client(options: OntologyClientOptions) {
 			return await http.get<ConceptExample[]>('/examples', {
 				params: { concept: `${stem}-${sense}`, part_of_speech, source },
 			})
-		},
-
-		/**
-		 * Encode the source entities of a clause as a line of the curated examples format, or get why they cannot be encoded.
-		 */
-		async encode_curated_example(request: EncodeCuratedExampleRequest): Promise<EncodeCuratedExampleResult | null> {
-			return await http.post<EncodeCuratedExampleResult>('/curated_examples/encode', request)
 		},
 	}
 }

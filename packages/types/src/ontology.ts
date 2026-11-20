@@ -1,6 +1,5 @@
 import type { Reference } from './reference'
 import type { ConceptKey, SourceStatus } from './core'
-import type { SourceEntity } from './source'
 
 //===============
 // Core types
@@ -55,22 +54,6 @@ export type ConceptExample = {
 	context: ContextArguments
 	book_status: SourceStatus
 }
-
-//===============
-// curated-examples/encode API
-
-// `entities` start with the clause the example is about and end with that clause's closing bracket.
-export type EncodeCuratedExampleRequest = {
-	reference: Reference
-	sentence: string
-	entities: SourceEntity[]
-}
-
-// One line in the ontology's curated examples format, ready to append to a concept's curated examples,
-// or why the entities cannot be encoded. The reason is a normal result, so it does not fail the request.
-export type EncodeCuratedExampleResult =
-	| { encoded_example: string }
-	| { error: string }
 
 export type ContextArgumentName = string
 export type ContextArgumentValue = string

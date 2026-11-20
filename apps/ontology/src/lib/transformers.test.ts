@@ -6,8 +6,11 @@ import {
 	encode_curated_example,
 	transform_curated_examples,
 } from './transformers'
-import { curated_example_boundaries, curated_example_feature_codes } from './lookups'
-import type { EncodeCuratedExampleRequest, PartOfSpeech, SourceEntity } from '@tabitha/types'
+import type { CuratedExampleEntity } from './types'
+
+const entity = (overrides: Partial<CuratedExampleEntity>): CuratedExampleEntity => ({
+	category: '', category_abbr: '', value: '', feature_codes: '', features: [], ...overrides,
+})
 
 describe('transformers', () => {
 	describe('transform_curated_examples', () => {
@@ -28,15 +31,15 @@ describe('transformers', () => {
 			})
 			expect(result[0].sentence).toBe('The baby was beautiful.')
 			expect(result[0].encoding).toEqual([
-				{ category: 'NP', word: undefined, feature: { code: 'A', value: 'Agent' } },
-				{ category: 'Word', word: 'baby', feature: undefined },
-				{ category: 'Phrase end', word: undefined, feature: undefined },
-				{ category: 'VP', word: undefined, feature: undefined },
-				{ category: 'Word', word: 'be', feature: undefined },
-				{ category: 'Phrase end', word: undefined, feature: undefined },
-				{ category: 'AdjP', word: undefined, feature: { code: 'P', value: 'Predicative' } },
-				{ category: 'Word', word: 'beautiful', feature: undefined },
-				{ category: 'Phrase end', word: undefined, feature: undefined },
+				entity({ category: 'Noun Phrase', category_abbr: 'NP', value: '(', feature_codes: 'A', features: [{ name: 'Semantic Role', value: 'Most Agent-like' }] }),
+				entity({ value: 'baby' }),
+				entity({ value: ')' }),
+				entity({ category: 'Verb Phrase', category_abbr: 'VP', value: '(' }),
+				entity({ value: 'be' }),
+				entity({ value: ')' }),
+				entity({ category: 'Adjective Phrase', category_abbr: 'AdjP', value: '(', feature_codes: 'P', features: [{ name: 'Usage', value: 'Predicative' }] }),
+				entity({ value: 'beautiful' }),
+				entity({ value: ')' }),
 			])
 		})
 
@@ -56,161 +59,76 @@ describe('transformers', () => {
 		it('decodes an attributive patient clause with its feature', () => {
 			const raw = '6,8,1,37|(NPA|John|)|(VP|be|)|(APP|ready|[p|(NPA|John|)|(VP|read|)|(NPP|book|)|]|)|~John is ready to read that book.'
 			const clause = transform_curated_examples(raw)[0].encoding.find(({ category }) => category === 'Clause')
-			expect(clause?.feature).toEqual({ code: 'p', value: 'Attributive Patient' })
+			expect(clause).toEqual(entity({
+				category: 'Clause', category_abbr: 'Prop', value: '[', feature_codes: 'p',
+				features: [{ name: 'Type', value: 'Attributive Patient (Adjectival Object Complement)' }],
+			}))
 		})
 	})
 
 	describe('encode_curated_example', () => {
 		const reference = { type: 'Bible', id_primary: 'Exodus', id_secondary: '2', id_tertiary: '2' }
 
-		const entity = (overrides: Partial<SourceEntity>): SourceEntity => ({
-			category: '', category_abbr: '', value: '', concept: null, pairing_concept: null, pairing_type: null,
-			feature_codes: '', features: [], noun_list_index: null, ...overrides,
-		})
-		const feature = (f: { name: string; value: string }) => [f]
-		const open_clause = (type = 'Independent') => entity({ category: 'Clause', category_abbr: 'C', value: '{', features: [{ name: 'Type', value: type }] })
-		const open_phrase = ({ category, features = [] }: { category: SourceEntity['category']; features?: SourceEntity['features'] }) => entity({ category, category_abbr: 'P', value: '(', features })
-		const word = ({ category, stem, value = stem }: { category: PartOfSpeech; stem: string; value?: string }) => entity({ category, value, concept: { stem, sense: 'A', part_of_speech: category } })
-		const close_phrase = () => entity({ value: ')' })
-		const close_clause = () => entity({ value: '}' })
-
-		const noun_phrase = ({ stem, role }: { stem: string; role: string }) => [
-			open_phrase({ category: 'Noun Phrase', features: [{ name: 'Semantic Role', value: role }] }),
-			word({ category: 'Noun', stem }),
-			close_phrase(),
-		]
-		const verb_phrase = (value: string) => [open_phrase({ category: 'Verb Phrase' }), word({ category: 'Verb', stem: value }), close_phrase()]
-		const adj_phrase = ({ stem, usage = 'Predicative' }: { stem: string; usage?: string }) => [
-			open_phrase({ category: 'Adjective Phrase', features: [{ name: 'Usage', value: usage }] }),
-			word({ category: 'Adjective', stem }),
-			close_phrase(),
-		]
-
-		const be_beautiful = [
-			open_clause(),
-			...noun_phrase({ stem: 'baby', role: 'Most Agent-like' }),
-			...verb_phrase('be'),
-			...adj_phrase({ stem: 'beautiful' }),
-			close_clause(),
-		]
-
-		it('encodes the contents of the clause, without the clause itself', () => {
-			expect(encode_curated_example({ reference, sentence: 'The baby was beautiful.', entities: be_beautiful })).toEqual({
-				encoded_example: '4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful.',
-			})
+		const encode_options = (overrides: Partial<Parameters<typeof encode_curated_example>[0]> = {}) => ({
+			reference,
+			sentence: 'A sentence.',
+			encoding: transform_curated_examples('4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~x')[0].encoding,
+			...overrides,
 		})
 
-		it('encodes an argument clause with its own contents', () => {
-			const entities = [
-				open_clause(),
-				{ ...open_clause('Agent (Subject Complement)'), value: '[' },
-				...noun_phrase({ stem: 'John', role: 'Most Agent-like' }),
-				...verb_phrase('read'),
-				entity({ value: ']' }),
-				...verb_phrase('be'),
-				...adj_phrase({ stem: 'true' }),
-				close_clause(),
+		const error_for = (overrides: Partial<Parameters<typeof encode_curated_example>[0]>) => {
+			const result = encode_curated_example(encode_options(overrides))
+			return 'error' in result ? result.error : undefined
+		}
+
+		it('encodes a simplified encoding, with the sentence trimmed', () => {
+			const result = encode_curated_example(encode_options({ sentence: '  The baby was beautiful.  ' }))
+			expect(result).toEqual({ encoded_example: '4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful.' })
+		})
+
+		it.each([
+			'4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful.',
+			'4,17,2,2|(NPA|Xerxes|)|(VP|search|)|(NPP|(APA|beautiful|)|virgin|)|~Xerxes searched for a beautiful virgin.',
+			"4,40,6,29|(NPA|clothes|(NPN|of|flower|)|)|(VP|be|)|(APP|beautiful|(NPN|clothes|(NPN|of|Solomon|)|)|)|~The flower's clothes are more beautiful than Solomon's clothes.",
+			'6,8,1,67|[A|(NPA|John|)|(VP|read|)|(NPP|book|)|]|(VP|be|)|(APP|true|)|~It is true that John read that book.',
+			"4,41,14,21|[A|(NPA|man|)|(VP|born|)|(aP|never|)|]|(VP|be|)|(APP|good|)|(NPB|man|)|~It's better for that man that he was never born.",
+			'6,8,1,37|(NPA|John|)|(VP|be|)|(APP|ready|[p|(NPA|John|)|(VP|read|)|(NPP|book|)|]|)|~John is ready to read that book.',
+		])('gives back the line that transform_curated_examples decoded: %s', line => {
+			const [{ reference, encoding, sentence }] = transform_curated_examples(line)
+			expect(encode_curated_example({ reference, encoding, sentence })).toEqual({ encoded_example: line })
+		})
+
+		it('writes N for a noun phrase that has no code, and keeps a code that the format does not know', () => {
+			const encoding = [
+				entity({ category: 'Noun Phrase', category_abbr: 'NP', value: '(' }), entity({ value: 'man' }), entity({ value: ')' }),
+				entity({ category: 'Clause', category_abbr: 'Prop', value: '[', feature_codes: 'x' }), entity({ value: ']' }),
 			]
-
-			const result = encode_curated_example({ reference, sentence: 'It is true that John read.', entities })
-			expect(result).toEqual({ encoded_example: '4,2,2,2|[A|(NPA|John|)|(VP|read|)|]|(VP|be|)|~It is true that John read.' })
+			expect(encode_curated_example(encode_options({ encoding }))).toEqual({ encoded_example: '4,2,2,2|(NPN|man|)|[x|]|~A sentence.' })
 		})
 
-		it('writes a noun phrase with no semantic role, and an adverb phrase, as the format does', () => {
-			const entities = [
-				open_clause(),
-				...noun_phrase({ stem: 'man', role: 'Not Applicable' }),
-				open_phrase({ category: 'Adverb Phrase' }),
-				word({ category: 'Adverb', stem: 'never' }),
-				close_phrase(),
-				close_clause(),
-			]
-			const result = encode_curated_example({ reference, sentence: 'The man never.', entities })
-			expect(result).toEqual({ encoded_example: '4,2,2,2|(NPN|man|)|(aP|never|)|~The man never.' })
+		it('encodes only the features that have a code', () => {
+			const [{ encoding }] = transform_curated_examples('4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~x')
+			const with_degree = encoding.map(example_entity => example_entity.value === 'beautiful' ? { ...example_entity, features: [{ name: 'Degree', value: 'Comparative' }] } : example_entity)
+			expect(encode_curated_example(encode_options({ encoding: with_degree }))).toEqual(encode_curated_example(encode_options({ encoding })))
 		})
 
-		it('encodes an attributive patient clause inside an adjective phrase', () => {
-			const entities = [
-				open_clause(),
-				...noun_phrase({ stem: 'John', role: 'Most Agent-like' }),
-				...verb_phrase('be'),
-				open_phrase({ category: 'Adjective Phrase', features: feature({ name: 'Usage', value: 'Predicative' }) }),
-				word({ category: 'Adjective', stem: 'ready' }),
-				{ ...open_clause('Attributive Patient (Adjectival Object Complement)'), value: '[' },
-				...noun_phrase({ stem: 'John', role: 'Most Agent-like' }),
-				...verb_phrase('read'),
-				...noun_phrase({ stem: 'book', role: 'Most Patient-like' }),
-				entity({ value: ']' }),
-				close_phrase(),
-				close_clause(),
-			]
-			const result = encode_curated_example({ reference, sentence: 'John is ready to read that book.', entities })
-			expect(result).toEqual({ encoded_example: '4,2,2,2|(NPA|John|)|(VP|be|)|(APP|ready|[p|(NPA|John|)|(VP|read|)|(NPP|book|)|]|)|~John is ready to read that book.' })
-		})
-
-		it('ignores entities that are not words or brackets, and trims the sentence', () => {
-			const entities = [open_clause(), entity({ category: 'Format Marker', value: 'Paragraph' }), ...verb_phrase('rain'), entity({ category: 'period', value: '.' }), close_clause()]
-			const result = encode_curated_example({ reference, sentence: '  It rained.  ', entities })
-			expect(result).toEqual({ encoded_example: '4,2,2,2|(VP|rain|)|~It rained.' })
-		})
-
-		it('produces a line that transform_curated_examples decodes back', () => {
-			const result = encode_curated_example({ reference, sentence: 'The baby was beautiful.', entities: be_beautiful })
-			const [decoded] = transform_curated_examples('encoded_example' in result ? result.encoded_example : '')
-
-			expect(decoded.reference).toEqual(reference)
-			expect(decoded.sentence).toBe('The baby was beautiful.')
-			expect(decoded.encoding.map(({ category, word, feature }) => [category, word, feature?.value])).toEqual([
-				['NP', undefined, 'Agent'],
-				['Word', 'baby', undefined],
-				['Phrase end', undefined, undefined],
-				['VP', undefined, undefined],
-				['Word', 'be', undefined],
-				['Phrase end', undefined, undefined],
-				['AdjP', undefined, 'Predicative'],
-				['Word', 'beautiful', undefined],
-				['Phrase end', undefined, undefined],
-			])
-		})
-
-		describe('rejects what cannot be encoded', () => {
-			const message_for = (overrides: Partial<EncodeCuratedExampleRequest>) => {
-				const result = encode_curated_example({ reference, sentence: 'A sentence.', entities: be_beautiful, ...overrides })
-				return 'error' in result ? result.error : undefined
-			}
-
-			it.each([
-				['an empty sentence', { sentence: '  ' }, 'The English sentence is empty.'],
-				['a sentence with a pipe', { sentence: 'a | b' }, 'The English sentence cannot contain "|" or a line break.'],
-				['a sentence with a line break', { sentence: 'a\nb' }, 'The English sentence cannot contain "|" or a line break.'],
-				['an unknown book', { reference: { ...reference, id_primary: 'Hezekiah' } }, 'The reference Bible Hezekiah 2:2 cannot be used in a curated example.'],
-				['an unknown source type', { reference: { ...reference, type: 'Scroll' } }, 'The reference Scroll Exodus 2:2 cannot be used in a curated example.'],
-				['a non-numeric chapter', { reference: { ...reference, id_secondary: 'two' } }, 'The reference Bible Exodus two:2 cannot be used in a curated example.'],
-				['no entities', { entities: [] }, 'The entities must start with a clause and end with its closing bracket.'],
-				['entities that do not start with a clause', { entities: be_beautiful.slice(1) }, 'The entities must start with a clause and end with its closing bracket.'],
-				['entities with only the clause', { entities: [open_clause(), close_clause()] }, 'There is nothing to encode.'],
-				['an unclosed phrase', { entities: be_beautiful.filter((_, i) => i !== 3) }, 'An opening bracket has no closing bracket.'],
-				['a phrase closed twice', { entities: [open_clause(), ...verb_phrase('go'), close_phrase(), close_clause()] }, 'A closing bracket has no opening bracket.'],
-				['a word whose stem contains a pipe', { entities: [open_clause(), ...verb_phrase('a|b'), close_clause()] }, 'The word "a|b" cannot be used in a curated example.'],
-			])('%s', (_description, overrides, expected_message) => {
-				expect(message_for(overrides)).toBe(expected_message)
-			})
-
-			it('rejects a clause that is not an argument clause', () => {
-				const relative_clause = [open_clause('Restrictive Thing Modifier (Relative Clause)'), ...verb_phrase('go'), close_clause()]
-				const entities = [open_clause(), ...relative_clause, close_clause()]
-				expect(message_for({ entities })).toBe('A Clause with Type "Restrictive Thing Modifier (Relative Clause)" cannot be used in a curated example.')
-			})
-		})
-
-		it('uses only codes that transform_curated_examples knows', () => {
-			const decoder_codes_by_boundary: Record<string, string> = { 'Noun Phrase': 'NP', 'Adjective Phrase': 'AdjP', 'Clause': 'Clause' }
-			for (const [category, boundary] of Object.entries(curated_example_boundaries)) {
-				const known_codes = Object.keys(curated_example_feature_codes[decoder_codes_by_boundary[category]] ?? {})
-				for (const code of Object.values(boundary.feature?.codes ?? {})) {
-					expect(known_codes, `${category} code ${code}`).toContain(code)
-				}
-			}
+		it.each([
+			['an empty sentence', { sentence: '  ' }, 'The English sentence is empty.'],
+			['a sentence with a pipe', { sentence: 'a | b' }, 'The English sentence cannot contain "|" or a line break.'],
+			['a sentence with a line break', { sentence: 'a\nb' }, 'The English sentence cannot contain "|" or a line break.'],
+			['an unknown book', { reference: { ...reference, id_primary: 'Hezekiah' } }, 'The reference Bible Hezekiah 2:2 cannot be used in a curated example.'],
+			['an unknown source type', { reference: { ...reference, type: 'Scroll' } }, 'The reference Scroll Exodus 2:2 cannot be used in a curated example.'],
+			['a non-numeric chapter', { reference: { ...reference, id_secondary: 'two' } }, 'The reference Bible Exodus two:2 cannot be used in a curated example.'],
+			['an empty encoding', { encoding: [] }, 'There is nothing to encode.'],
+			['an unknown category', { encoding: [entity({ category: 'Section', value: '(' }), entity({ value: ')' })] }, 'A Section cannot be used in a curated example.'],
+			['a word that cannot be in an example', { encoding: [entity({ category: 'period', value: '.' })] }, 'A period cannot be used in a curated example.'],
+			['a word with a pipe', { encoding: [entity({ value: 'a|b' })] }, 'The word "a|b" cannot be used in a curated example.'],
+			['a word that is empty', { encoding: [entity({ value: '' })] }, 'The word "" cannot be used in a curated example.'],
+			['a phrase that is not closed', { encoding: [entity({ category: 'Verb Phrase', value: '(' })] }, 'An opening bracket has no closing bracket.'],
+			['a phrase that is closed twice', { encoding: [entity({ value: ')' })] }, 'A closing bracket has no opening bracket.'],
+			['a phrase that is closed like a clause', { encoding: [entity({ category: 'Verb Phrase', value: '(' }), entity({ value: ']' })] }, 'A closing bracket does not match its opening bracket.'],
+		])('rejects %s', (_description, overrides, expected_message) => {
+			expect(error_for(overrides)).toBe(expected_message)
 		})
 	})
 

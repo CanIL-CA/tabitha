@@ -1,7 +1,12 @@
 import {
-	curated_example_boundaries,
-	curated_example_category_codes,
-	curated_example_feature_codes,
+	closing_bracket_by_opening,
+	decode_token,
+	fallback_code_by_category,
+	is_boundary_end,
+	is_boundary_start,
+	start_token_by_category,
+} from '#lib/curated_example/format.js'
+import {
 	parts_of_speech,
 	semantic_category,
 	sources,
@@ -9,8 +14,8 @@ import {
 	theta_grid_arguments,
 	usage_info,
 } from '#lib/lookups.js'
-import type { Concept, CuratedExample, SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '#lib/types.js'
-import type { EncodeCuratedExampleRequest, EncodeCuratedExampleResult, PartOfSpeech, Reference, SourceEntity } from '@tabitha/types'
+import type { Concept, CuratedExample, CuratedExampleEncoding, CuratedExampleEntity, EncodedCuratedExample } from '#lib/types.js'
+import type { PartOfSpeech, Reference } from '@tabitha/types'
 
 /**
  * Transforms raw curated examples string from DB into structured CuratedExample objects.
@@ -48,29 +53,14 @@ export function transform_curated_examples(curated_examples_raw: string): Curate
 			sentence,
 		}
 
-		function decode_simplified_encoding(entities_encoded: string[]): SimplifiedSemanticEncoding {
-			return entities_encoded.map(decode_entity)
-
-			function decode_entity(encoded_entity: string): SimplifiedEncodingEntity {
-				// (NPA => { category: 'NP', value: '(', feature: { code: 'A', value: 'Most Agent-like' } }
-				// baby => { category: 'Word', value: 'baby', feature: undefined }
-				// ) => { category: 'Phrase end', value: ')', feature: undefined }
-				// (VP => { category: 'VP', value: '(', feature: undefined }
-				// (APP => { category: 'AdjP', value: '(', feature: { code: 'P', value: 'Predicative' } }
-				// [A => { category: 'Clause', value: '[', feature: { code: 'A', value: 'Agent' } }
-
-				const category =
-					Object.entries(curated_example_category_codes).find(([code]) =>
-						encoded_entity.startsWith(code),
-					)?.[1] || 'Word'
-				const feature_code = encoded_entity.at(-1) || ''
-				const feature_value = curated_example_feature_codes[category]?.[feature_code]
-				return {
-					category,
-					word: category === 'Word' ? encoded_entity : undefined,
-					feature: feature_value ? { code: feature_code, value: feature_value } : undefined,
-				}
-			}
+		function decode_simplified_encoding(entities_encoded: string[]): CuratedExampleEncoding {
+			// (NPA => { category: 'Noun Phrase', category_abbr: 'NP', value: '(', feature_codes: 'A', features: [{ name: 'Semantic Role', value: 'Most Agent-like' }] }
+			// baby => { category: '', category_abbr: '', value: 'baby', feature_codes: '', features: [] }
+			// ) => { category: '', category_abbr: '', value: ')', feature_codes: '', features: [] }
+			// (VP => { category: 'Verb Phrase', category_abbr: 'VP', value: '(', feature_codes: '', features: [] }
+			// (APP => { category: 'Adjective Phrase', category_abbr: 'AdjP', value: '(', feature_codes: 'P', features: [{ name: 'Usage', value: 'Predicative' }] }
+			// [A => { category: 'Clause', category_abbr: 'Prop', value: '[', feature_codes: 'A', features: [{ name: 'Type', value: 'Agent (Subject Complement)' }] }
+			return entities_encoded.map(decode_token)
 		}
 	}
 }
@@ -94,23 +84,26 @@ function decode_reference(encoded_reference: string): Reference {
 
 class CuratedExampleEncodingError extends Error {}
 
-const WORD_CATEGORIES = new Set<string>(parts_of_speech)
-const BOUNDARY_START_VALUES = new Set(['{', '[', '('])
-const BOUNDARY_END_VALUES = new Set(['}', ']', ')'])
 const NON_NEGATIVE_INTEGER = /^\d+$/
+const WORD_CATEGORIES = new Set<string>(parts_of_speech)
+
+type EncodeCuratedExampleOptions = {
+	readonly reference: Reference
+	readonly sentence: string
+	readonly encoding: CuratedExampleEncoding
+}
 
 /**
- * Turns the source entities of a clause into one line of the curated examples format, the reverse of transform_curated_examples.
- * The entities start with the clause the example is about and end with its closing bracket. The example holds what is inside them.
+ * Turns the entities of an example into one line of the curated examples format, the reverse of transform_curated_examples.
  *
  * Example output:
  * "4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful."
  */
-export function encode_curated_example({ reference, sentence, entities }: EncodeCuratedExampleRequest): EncodeCuratedExampleResult {
+export function encode_curated_example({ reference, sentence, encoding }: EncodeCuratedExampleOptions): EncodedCuratedExample {
 	try {
 		const encoded_reference = encode_reference(reference)
 		const encoded_sentence = validate_sentence(sentence)
-		const encoded_entities = encode_example_entities(entities)
+		const encoded_entities = encode_entities(encoding)
 		return { encoded_example: `${encoded_reference}|${encoded_entities.join('|')}|~${encoded_sentence}` }
 	} catch (error) {
 		if (error instanceof CuratedExampleEncodingError) return { error: error.message }
@@ -142,58 +135,40 @@ function encode_reference(reference: Reference): string {
 	return [type_key, book_key, Number(reference.id_secondary), Number(reference.id_tertiary)].join(',')
 }
 
-function encode_boundary_start(entity: SourceEntity): string {
-	const boundary = curated_example_boundaries[entity.category]
-	if (!boundary) throw new CuratedExampleEncodingError(`A ${entity.category || 'part'} cannot be used in a curated example.`)
+function encode_entity(entity: CuratedExampleEntity): string {
+	const { category, value, feature_codes } = entity
+	if (is_boundary_end(entity)) return value
 
-	const { feature } = boundary
-	if (!feature) return boundary.start
-
-	const feature_value = entity.features.find(({ name }) => name === feature.name)?.value ?? ''
-	const feature_code = feature.codes[feature_value] ?? feature.fallback_code
-	if (feature_code === undefined) {
-		throw new CuratedExampleEncodingError(`A ${entity.category} with ${feature.name} "${feature_value}" cannot be used in a curated example.`)
+	if (is_boundary_start(entity)) {
+		const start_token = start_token_by_category[category]
+		if (start_token === undefined) throw new CuratedExampleEncodingError(`A ${category || 'part'} cannot be used in a curated example.`)
+		return start_token + (feature_codes || fallback_code_by_category[category] || '')
 	}
 
-	return boundary.start + feature_code
+	if (category !== '' && !WORD_CATEGORIES.has(category)) throw new CuratedExampleEncodingError(`A ${category} cannot be used in a curated example.`)
+	if (!value || value.includes('|')) throw new CuratedExampleEncodingError(`The word "${value}" cannot be used in a curated example.`)
+	return value
 }
 
-function encode_word(entity: SourceEntity): string {
-	const stem = entity.concept?.stem
-	if (!stem || stem.includes('|')) {
-		throw new CuratedExampleEncodingError(`The word "${entity.value}" cannot be used in a curated example.`)
+function check_brackets_balanced(encoding: CuratedExampleEncoding) {
+	const open_brackets: string[] = []
+	for (const entity of encoding) {
+		if (is_boundary_start(entity)) open_brackets.push(entity.value)
+		if (!is_boundary_end(entity)) continue
+
+		const open_bracket = open_brackets.pop()
+		if (open_bracket === undefined) throw new CuratedExampleEncodingError('A closing bracket has no opening bracket.')
+		if (closing_bracket_by_opening[open_bracket] !== entity.value) throw new CuratedExampleEncodingError('A closing bracket does not match its opening bracket.')
 	}
 
-	return stem
+	if (open_brackets.length) throw new CuratedExampleEncodingError('An opening bracket has no closing bracket.')
 }
 
-function encode_example_entities(entities: SourceEntity[]): string[] {
-	const [first_entity, last_entity] = [entities.at(0), entities.at(-1)]
-	const is_clause_start = first_entity?.category === 'Clause' && BOUNDARY_START_VALUES.has(first_entity.value)
-	const is_end = last_entity !== undefined && BOUNDARY_END_VALUES.has(last_entity.value)
-	if (!is_clause_start || !is_end) {
-		throw new CuratedExampleEncodingError('The entities must start with a clause and end with its closing bracket.')
-	}
+function encode_entities(encoding: CuratedExampleEncoding): string[] {
+	if (!encoding.length) throw new CuratedExampleEncodingError('There is nothing to encode.')
+	check_brackets_balanced(encoding)
 
-	const open_boundaries: SourceEntity[] = []
-	const encoded_entities: string[] = []
-	for (const entity of entities.slice(1, -1)) {
-		if (BOUNDARY_START_VALUES.has(entity.value)) {
-			open_boundaries.push(entity)
-			encoded_entities.push(encode_boundary_start(entity))
-		} else if (BOUNDARY_END_VALUES.has(entity.value)) {
-			const start = open_boundaries.pop()
-			if (!start) throw new CuratedExampleEncodingError('A closing bracket has no opening bracket.')
-			encoded_entities.push(start.category === 'Clause' ? ']' : ')')
-		} else if (WORD_CATEGORIES.has(entity.category)) {
-			encoded_entities.push(encode_word(entity))
-		}
-	}
-
-	if (open_boundaries.length) throw new CuratedExampleEncodingError('An opening bracket has no closing bracket.')
-	if (!encoded_entities.length) throw new CuratedExampleEncodingError('There is nothing to encode.')
-
-	return encoded_entities
+	return encoding.map(encode_entity)
 }
 
 const categorization_decoders: Record<string, (categories_from_db: string) => string[]> = {

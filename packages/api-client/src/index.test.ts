@@ -592,30 +592,6 @@ describe('@tabitha/api-client', () => {
 			expect(searchParams.get('source')).toBe('My Bible')
 		})
 
-		test('encode_curated_example posts the clause to the encode endpoint and returns the result', async () => {
-			const request = {
-				reference: { type: 'Bible', id_primary: 'Exodus', id_secondary: '2', id_tertiary: '2' },
-				sentence: 'The baby was beautiful.',
-				entities: [],
-			}
-			const mock_result = { encoded_example: '4,2,2,2|(VP|be|)|~The baby was beautiful.' }
-			const mock_fetch = vi.fn().mockResolvedValue({
-				ok: true,
-				json: async () => mock_result,
-			})
-
-			const client = create_ontology_client({
-				base_url: ONTOLOGY_URL,
-				fetch: mock_fetch as unknown as typeof fetch,
-			})
-
-			const result = await client.encode_curated_example(request)
-			expect(mock_fetch).toHaveBeenCalledWith(`${ONTOLOGY_URL}/curated_examples/encode`, expect.objectContaining({
-				method: 'POST',
-				body: JSON.stringify(request),
-			}))
-			expect(result).toEqual(mock_result)
-		})
 	})
 
 	describe('create_sources_client', () => {
