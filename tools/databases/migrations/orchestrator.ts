@@ -11,6 +11,7 @@ import { to_d1_importable } from './ontology/live'
 import { plan_migration, type TaskFamily } from './plan'
 import { resolve_dated_file } from './resolve_dated_file'
 import { download_ontology_backup, read_ontology_version } from './live_ontology_backup'
+import { stale_status_csvs, stale_status_message } from './sources/status_freshness'
 import { load_state, mark_done, clear_state } from './state'
 import { validate_migration_output, type ValidationConfig } from './validate'
 
@@ -92,6 +93,11 @@ try {
 	// is actually executed.
 	const plan = await plan_migration(date)
 
+	// Verse status CSVs are a manual export, so tell the operator before the long steps start, and again at the end.
+	const status_dir = join(import.meta.dir, '../data/status')
+	const stale_status = plan.tasks.some(task => task.id === 'Sources' && task.changed) ? stale_status_csvs({ csv_dir: status_dir, date }) : []
+	if (stale_status.length > 0) log.warn(stale_status_message({ stale: stale_status, date }))
+
 	for (const task of plan.tasks) {
 		const migrated_step = `${task.id}:migrated` as const
 		const dumped_step = `${task.id}:dumped` as const
@@ -157,6 +163,8 @@ try {
 
 		log.warn(`After this branch merges, rebuild production's Ontology examples: bun run examples:rebuild production ${sources_task.output_file} ${sources_complex_file}`)
 	}
+
+	if (stale_status.length > 0) log.warn(stale_status_message({ stale: stale_status, date }))
 
 	await clear_state(date)
 
