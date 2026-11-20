@@ -5,9 +5,8 @@ import { verse_generation } from '#lib/generation/verse_generation.js'
 import { error, json } from '@sveltejs/kit'
 import { env } from 'cloudflare:workers'
 import type { RequestHandler } from './$types'
+import { AUDIENCE_NUMBERS } from '@tabitha/generator/engine'
 import type { Reference } from '@tabitha/types'
-
-const AUDIENCES = [1, 2, 3, 4]
 
 export async function POST({ locals: { db }, params: { type, id_primary, id_secondary, id_tertiary }, request }: Parameters<RequestHandler>[0]) {
 	// Undefined under `vite dev`, which has no service bindings
@@ -15,7 +14,7 @@ export async function POST({ locals: { db }, params: { type, id_primary, id_seco
 	if (!generator) return json({ error: 'Text generation is not available in this environment.' }, { status: 503 })
 
 	const { audience = 1 } = await request.json().catch(() => ({})) as { audience?: number }
-	if (!AUDIENCES.includes(audience)) error(400, `audience must be one of ${AUDIENCES.join(', ')}`)
+	if (!AUDIENCE_NUMBERS.includes(audience)) error(400, `audience must be one of ${AUDIENCE_NUMBERS.join(', ')}`)
 
 	const reference: Reference = { type, id_primary, id_secondary, id_tertiary }
 	const source = await get_source_data({ db, ...reference })

@@ -23,6 +23,18 @@ export const SEGMENTS = {
 
 export type Segment = keyof typeof SEGMENTS
 
+// TBTA's audiences for English, in the order of the English database's Properties.Audiences. The
+// number is what the engine takes; the name is how TBTA's own screens show it.
+export const AUDIENCES = [
+	{ number: 1, name: 'Churched Adults' },
+	{ number: 2, name: 'Unchurched Adults' },
+	{ number: 3, name: 'Unchurched Adults with Equivalent Statements' },
+	{ number: 4, name: 'Unchurched Children' },
+	{ number: 5, name: 'Literal - no implicit info' },
+]
+
+export const AUDIENCE_NUMBERS = AUDIENCES.map(audience => audience.number)
+
 // The engine's browser build opens every database under this folder (TBTA_BROWSER in TbtaLib).
 const DATA_DIR = '/persist'
 const BIBLE_SOURCE_TEXT = 4

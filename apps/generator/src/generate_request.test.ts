@@ -26,7 +26,7 @@ describe('parse_generate_request', () => {
 		['a missing encoding', { ...RUTH_1_1, encoding: undefined }],
 		['a blank encoding', { ...RUTH_1_1, encoding: '   ' }],
 		['a previous encoding that is not text', { ...RUTH_1_1, previous_encoding: 7 }],
-		['an audience outside 1 to 4', { ...RUTH_1_1, audience: 5 }],
+		['an audience outside 1 to 5', { ...RUTH_1_1, audience: 6 }],
 		['an audience given as text', { ...RUTH_1_1, audience: '1' }],
 		['an unknown segment', { ...RUTH_1_1, segment: 'first' }],
 		['a segment named after an inherited property', { ...RUTH_1_1, segment: 'toString' }],

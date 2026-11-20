@@ -2,10 +2,10 @@
 	import { browser_engine } from '#lib/generation/browser_engine.svelte.js'
 	import type { VerseGeneration } from '#lib/generation/verse_generation.js'
 	import Icon from '@iconify/svelte'
+	import { AUDIENCES } from '@tabitha/generator/engine'
 
 	let { generate_url, generation }: { generate_url: string, generation: VerseGeneration } = $props()
 
-	const AUDIENCES = [1, 2, 3, 4]
 	const RUN_ON_LABELS = { server: 'Server', browser: 'This browser' } as const
 
 	type RunOn = keyof typeof RUN_ON_LABELS
@@ -75,8 +75,8 @@
 				<label class="select select-sm w-auto">
 					<span class="label">Audience</span>
 					<select bind:value={audience} disabled={generating}>
-						{#each AUDIENCES as audience_option (audience_option)}
-							<option value={audience_option}>{audience_option}</option>
+						{#each AUDIENCES as { number, name } (number)}
+							<option value={number}>{number} · {name}</option>
 						{/each}
 					</select>
 				</label>
