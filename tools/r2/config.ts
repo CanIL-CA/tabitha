@@ -40,6 +40,13 @@ export const desired_buckets: DesiredBucket[] = [
 		bound_in: null,
 	},
 	{
+		name: 'db-generation',
+		access: { type: 'custom_domain', domain: 'db-generation.tabitha.bible', zone_id: 'be132ce1c4b86f60623d1cd0d0f38a58' },
+		reason:
+			"The Ontology and language databases TBTA text generation runs against, written by tbta's `prepare-target-for-web` workflow under <ontology-version>/ and downloaded by apps/generator's build (scripts/fetch_engine.ts) and by browsers that run the engine themselves. Public via a dedicated custom domain, not the shared r2.dev subdomain, because the address is part of the generator's build and needs to be stable; its own bucket, not db-backups, because ontology's /downloads lists all of db-backups and TBTA's updater reads the first Ontology it finds there. Keep the pinned Ontology version in apps/generator/scripts/engine_source.ts and the one before it.",
+		bound_in: null,
+	},
+	{
 		name: 'db-classic',
 		access: { type: 'none' },
 		reason: "Holds snapshots of databases used by the legacy TBTA app's command-line generation processes. CLI/ops-only -- no Worker binds it, so it stays private.",

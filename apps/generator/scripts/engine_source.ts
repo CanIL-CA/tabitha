@@ -8,5 +8,5 @@ export const ONTOLOGY_VERSION = '3.0.9627'
 export const LANGUAGE = 'English'
 
 export const ENGINE_ARCHIVE_URL = `https://github.com/CanIL-CA/tbta-public/releases/download/${TBTA_RELEASE}/TBTA-Worker-WASM.tar.gz`
-// The public address of the R2 bucket that workflow writes to.
-export const DATA_URL = `https://pub-d9a7e9b3c29848a08930fe26e58b6dd4.r2.dev/generation/${ONTOLOGY_VERSION}`
+// The public address of the db-generation R2 bucket (tools/r2/config.ts) that workflow writes to.
+export const DATA_URL = `https://db-generation.tabitha.bible/${ONTOLOGY_VERSION}`

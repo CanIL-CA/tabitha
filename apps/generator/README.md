@@ -14,7 +14,7 @@ Nothing is built here. [CanIL-CA/tbta](https://github.com/CanIL-CA/tbta)'s CI pr
 | File | Produced by | Downloaded from |
 | --- | --- | --- |
 | `tbta.js`, `tbta.wasm` | tbta's `wasm-engine` workflow, as `TBTA-Worker-WASM.tar.gz` | A release on [CanIL-CA/tbta-public](https://github.com/CanIL-CA/tbta-public/releases) |
-| `Ontology.sqlite`, `English.sqlite` | tbta's `prepare-target-for-web` workflow | `generation/<ontology-version>/` in the `poc` R2 bucket |
+| `Ontology.sqlite`, `English.sqlite` | tbta's `prepare-target-for-web` workflow | `<ontology-version>/` in the `db-generation` R2 bucket (`db-generation.tabitha.bible`, declared in `tools/r2/config.ts`) |
 
 `scripts/engine_source.ts` pins the TBTA release and the Ontology version. **To move to a new engine or Ontology, change the line there and merge.** The Ontology version has to be one the workflow has already prepared English for.
 
@@ -68,8 +68,7 @@ Genesis 1:1-2 and Ruth 1:1-2 match TBTA's stored text exactly. John 3:15-16 diff
 | Area | Today | Not decided yet |
 | --- | --- | --- |
 | Ontology changes | Nothing happens until someone runs tbta's prepare workflow and bumps `engine_source.ts` | Whether and how that should be automatic. Related: [tbta#37](https://github.com/CanIL-CA/tbta/issues/37), where an Ontology update reaches every target but a target's Sample upgrade only runs when it is opened. |
-| Languages | English only, fixed at deploy | Choosing the language and Ontology at run time. Where the databases would live and how many engines one Worker can hold (128 MB limit; English alone peaks at 86 MB) are open. |
-| Storage | The databases sit in a bucket named `poc` | Their long-term home and address. |
+| Languages | English only, fixed at deploy | Choosing the language and Ontology at run time. How many engines one Worker can hold (128 MB limit; English alone peaks at 86 MB) are open. |
 | Accuracy | A handful of verses compared | A comparison against native TBTA over many verses. tbta's generation baselines (`db-classic/baseline/` in R2, checked by its `test-generation` workflow) may be the reference; they don't cover the WebAssembly build today. |
 | Offline (browser) | Engine and databases download per visit, with ETags | A caching and update story, if offline use is a goal. |
 | Sources panel | The "Generate English text" card on the verse page | Where generation appears in sources, and for whom. |
