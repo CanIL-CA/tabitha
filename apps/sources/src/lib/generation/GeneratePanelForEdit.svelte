@@ -6,7 +6,7 @@
 	import type { GenerateSettings } from '#lib/types.ts'
 	import type { GenerationJob } from './verse_generation'
 	import type { Reference } from '@tabitha/types'
-	import { Validation } from '#lib/edit/validation.svelte.js'
+	import type { Validation } from '#lib/edit/validation.svelte.js'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { book_order_index } from '@tabitha/types/patterns'
 	import { encode_source_entities } from '#lib/encoding/semantic_encoding.ts'
@@ -44,9 +44,9 @@
 
 	function toggle_audience(number: number) {
 		if (generate_settings.audiences.includes(number)) {
-			generate_settings.audiences = generate_settings.audiences.filter((item) => item !== number)
+			generate_settings.audiences = generate_settings.audiences.filter(item => item !== number)
 		} else {
-			generate_settings.audiences = [...generate_settings.audiences, number]
+			generate_settings.audiences = [...generate_settings.audiences, number].toSorted()
 		}
 		store_settings()
 	}
