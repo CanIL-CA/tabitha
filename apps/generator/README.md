@@ -26,6 +26,63 @@ After downloading, the script checks that:
 
 A failed check fails the build, so a mismatched pair can't be deployed. The script also writes gzipped copies for browsers.
 
+## How a change reaches production
+
+```mermaid
+flowchart LR
+	subgraph tbta["CanIL-CA/tbta"]
+		release["Release workflow<br/>(calls wasm-engine)"]
+		dispatch["wasm-engine, dispatched<br/>with an existing tag"]
+		prep["prepare-target-for-web<br/>(dispatched by hand)"]
+	end
+	public[("tbta-public release<br/>TBTA-Worker-WASM.tar.gz")]
+	bucket[("db-generation bucket<br/>&lt;ontology-version&gt;/Ontology.sqlite<br/>&lt;ontology-version&gt;/English.sqlite<br/>manifest.json")]
+	pin["engine_source.ts<br/>TBTA_RELEASE + ONTOLOGY_VERSION"]
+	build["Workers Builds<br/>bun run build"]
+	worker["generator Worker"]
+	sources["sources<br/>(service binding)"]
+
+	release --> public
+	dispatch --> public
+	prep --> bucket
+	public --> build
+	bucket --> build
+	pin --> build
+	build --> worker --> sources
+```
+
+Nothing moves on its own. Each step is a deliberate act:
+
+| You want to | Do this | What happens next |
+| --- | --- | --- |
+| Ship an engine change from tbta | Release TBTA (its Release workflow builds the engine and attaches it), or dispatch `wasm-engine` with an existing tag. Then set `TBTA_RELEASE` here and merge. | The merge deploys the generator with the new engine. |
+| Pick up a new Ontology | Dispatch tbta's `prepare-target-for-web` for English against it. Then set `ONTOLOGY_VERSION` here and merge. | The merge deploys the generator with the new pair. |
+| Pick up a new English export from TBTA | Dispatch `prepare-target-for-web` with the new export as its input. | See "Open questions": the prepared file replaces the one at the same Ontology version. |
+| Change the Worker's own code | Merge it. | Workers Builds deploys the generator, and sources too when it imports what changed. |
+
+**What triggers a deploy.** Workers Builds builds the generator on a push to `main` that touches `apps/generator/*`, a workspace package it depends on, `package.json` or `bun.lock` (`tools/workers` derives this list). Sources watches `apps/generator/*` too, because it imports `AUDIENCES` and the engine loader from here. A new file in R2 or a new tbta release deploys nothing until a commit changes the pin.
+
+**What the tbta side checks.** `wasm-engine` builds the engine with Emscripten and generates a verse with it under Node, using the pair `manifest.json` in `db-generation` points at, before it attaches anything. On a tbta pull request that touches the engine, it builds and runs that check without attaching. `prepare-target-for-web` upgrades a TBTA target export to an Ontology, trims it, and uploads both databases, then updates `manifest.json`.
+
+## Questions you might have
+
+**How do I test a generator change before it merges?** Locally: `bun run dev` here runs the Worker with the pinned pair. A sources pull request's preview calls the *production* generator through its service binding, and the generator has no previews of its own, so a preview only shows a generator change if someone hand-deploys it (`bun run engine:fetch && bunx wrangler deploy` here, which replaces production until the next pipeline deploy).
+
+**How do I roll back?** Revert the commit that moved the pin. The build downloads the older engine or pair again, as long as it's still there (see "Open questions").
+
+**What breaks if tbta changes the engine's exported functions?** `src/engine.ts` calls `GenerateVerseFromEncoding` through `ccall` with a fixed argument list. If tbta changes that signature, the build's Genesis 1:1 check fails, so the change can't deploy until `engine.ts` matches.
+
+**Why can't the build use a draft release?** tbta's Release workflow creates draft pre-releases on tbta-public, and a draft's assets can't be downloaded anonymously. Publish the release before pinning it.
+
+**Who can write to `db-generation`?** tbta's workflows, with the `CLOUDFLARE_API_TOKEN_DB_BACKUPS` secret. The bucket is public to read through its r2.dev address. `tools/r2/config.ts` says why; [ADR 0026](../../docs/decisions/0026-generation-engine-built-in-tbta-ci.md) has the reasoning.
+
+**Does every language need its own engine?** No. The `.wasm` is the same for every language; the databases make the difference (see below).
+
+## Open questions
+
+- **Preparing again replaces files in place.** `prepare-target-for-web` writes `<ontology-version>/English.sqlite`, so a new English export prepared against the same Ontology version overwrites the one this app pins. The next generator build would pick it up with no change to `engine_source.ts`. Whether the key should also carry the export's date (so the pin names it) is not decided.
+- **Retention isn't enforced.** The plan is to keep the pinned pair and the one before it, so a rollback has something to download. Nothing prunes old pairs today, and nothing protects the previous one either.
+
 ## How the engine and the data fit together
 
 The `.wasm` has no databases in it. It is the same engine whatever language or Ontology it runs against. The databases are handed to it when it starts:
@@ -47,7 +104,7 @@ Running against a different Ontology or language therefore needs no rebuild of t
     - `book` is TBTA's book number (Genesis = 1, Ruth = 8, John = 43).
     - `encoding` is the verse's `semantic_encoding` from sources.
     - `previous_encoding` is the previous verse's, which the engine uses when a sentence continues across verses.
-    - `audience` is 1 to 4 (default 1).
+    - `audience` is 1 to 5 (default 1). `AUDIENCES` in `src/engine.ts` names them, in the order of the English database's `Properties.Audiences`; sources' panel shows those names.
     - `segment` is where generation stops: `complex_concept_insertion`, `last_structured` or `last` (default).
   - **Response:** `{ text }`, `400 { error }` for a bad request, or `422 { error, log }` when the engine produced nothing.
 - `POST /warm`: loads the engine without generating anything, returns `{ ready: true }`.
@@ -68,7 +125,7 @@ Genesis 1:1-2 and Ruth 1:1-2 match TBTA's stored text exactly. John 3:15-16 diff
 | Area | Today | Not decided yet |
 | --- | --- | --- |
 | Ontology changes | Nothing happens until someone runs tbta's prepare workflow and bumps `engine_source.ts` | Whether and how that should be automatic. Related: [tbta#37](https://github.com/CanIL-CA/tbta/issues/37), where an Ontology update reaches every target but a target's Sample upgrade only runs when it is opened. |
-| Languages | English only, fixed at deploy | Choosing the language and Ontology at run time. How many engines one Worker can hold (128 MB limit; English alone peaks at 86 MB) are open. |
+| Languages | English only, fixed at deploy | Generating a verse in a target language from its encoding with that language's lexicon and rules, which is what the engine already does for English (see [ADR 0026](../../docs/decisions/0026-generation-engine-built-in-tbta-ci.md#open-questions)). Open: how many engines one Worker can hold (128 MB limit; English alone peaks at 86 MB), how a request names its language, and whether the other languages' databases are complete enough. |
 | Accuracy | A handful of verses compared | A comparison against native TBTA over many verses. tbta's generation baselines (`db-classic/baseline/` in R2, checked by its `test-generation` workflow) may be the reference; they don't cover the WebAssembly build today. |
 | Offline (browser) | Engine and databases download per visit, with ETags | A caching and update story, if offline use is a goal. |
 | Sources panel | The "Generate English text" card on the verse page | Where generation appears in sources, and for whom. |
