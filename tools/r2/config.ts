@@ -40,6 +40,13 @@ export const desired_buckets: DesiredBucket[] = [
 		bound_in: null,
 	},
 	{
+		name: 'db-generation',
+		access: { type: 'r2_dev' },
+		reason:
+			"The Ontology and language databases TBTA text generation runs against, written by tbta's `prepare-target-for-web` workflow under <ontology-version>/ and downloaded by apps/generator's build (scripts/fetch_engine.ts) and by browsers that run the engine themselves. Public via the generic r2.dev URL, not a custom domain: the only consumer is the generator's build, which just needs anonymous HTTPS GETs, and a custom domain on the tabitha.bible zone puts Bot Fight Mode in front of it, which challenges GitHub's runners (403, 2026-11-20); its own bucket, not db-backups, because ontology's /downloads lists all of db-backups and TBTA's updater reads the first Ontology it finds there. Keep the pinned Ontology version in apps/generator/scripts/engine_source.ts and the one before it.",
+		bound_in: null,
+	},
+	{
 		name: 'db-classic',
 		access: { type: 'none' },
 		reason: "Holds snapshots of databases used by the legacy TBTA app's command-line generation processes. CLI/ops-only -- no Worker binds it, so it stays private.",

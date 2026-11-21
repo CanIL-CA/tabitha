@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import {
 	build_command,
 	desired_apps,
@@ -238,20 +238,41 @@ async function upload_stub_worker({ credentials, worker_name, fetch_impl }: {
 
 /** Derives the production watch paths from the app's own `package.json`, rather than
  * hand-maintaining a list per app: every declared workspace dependency (excluding
- * `build_irrelevant_packages`) becomes a `packages/<name>/*` entry, so a newly added dependency
- * is picked up automatically on the next `apply` run instead of silently going unwatched. */
+ * `build_irrelevant_packages`) becomes a `<its directory>/*` entry, so a newly added dependency
+ * is picked up automatically on the next `apply` run instead of silently going unwatched. A
+ * dependency can be another app (sources depends on apps/generator), so its directory is looked
+ * up rather than assumed to be under packages/. */
 async function derive_watch_paths(app_dir: string): Promise<string[]> {
 	const pkg = (await Bun.file(join(REPO_ROOT, 'apps', app_dir, 'package.json')).json()) as {
 		dependencies?: Record<string, string>
 		devDependencies?: Record<string, string>
 	}
+	const package_dirs = await workspace_package_dirs()
 	const all_deps = { ...pkg.dependencies, ...pkg.devDependencies }
-	const workspace_packages = Object.entries(all_deps)
+	const dependency_dirs = Object.entries(all_deps)
 		.filter(([name, version]) => version.startsWith('workspace:') && !build_irrelevant_packages.has(name))
-		.map(([name]) => name.replace('@tabitha/', ''))
+		.map(([name]) => {
+			const dir = package_dirs.get(name)
+			if (!dir) throw new Error(`apps/${app_dir} depends on ${name}, which no workspace in the root package.json declares`)
+			return dir
+		})
 		.sort()
 
-	return [`apps/${app_dir}/*`, ...workspace_packages.map(pkg_dir => `packages/${pkg_dir}/*`), 'package.json', 'bun.lock']
+	return [`apps/${app_dir}/*`, ...dependency_dirs.map(dir => `${dir}/*`), 'package.json', 'bun.lock']
+}
+
+/** Maps each workspace package's name to its repo-relative directory, using the root
+ * `package.json`'s `workspaces` globs. */
+async function workspace_package_dirs(): Promise<Map<string, string>> {
+	const root = (await Bun.file(join(REPO_ROOT, 'package.json')).json()) as { workspaces: string[] }
+	const dirs = new Map<string, string>()
+	for (const pattern of root.workspaces) {
+		for await (const manifest of new Bun.Glob(`${pattern}/package.json`).scan({ cwd: REPO_ROOT })) {
+			const { name } = (await Bun.file(join(REPO_ROOT, manifest)).json()) as { name: string }
+			dirs.set(name, dirname(manifest))
+		}
+	}
+	return dirs
 }
 
 function same_string_set({ a, b }: {

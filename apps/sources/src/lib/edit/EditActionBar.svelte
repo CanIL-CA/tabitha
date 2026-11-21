@@ -65,13 +65,8 @@
 		// TODO
 	}
 
-	function generate() {
-		// TODO
-	}
-
 	const KEYBOARD_SHORTCUTS: Record<string, () => void> = {
 		's': save,
-		'g': generate,
 		'z': undo,
 		'shift+z': redo,
 		'y': redo,
@@ -103,7 +98,7 @@
 					type="submit"
 					onclick={analyze_text}
 					disabled={phase1.analyzing}
-					class="btn btn-sm btn-primary min-w-30"
+					class="btn btn-sm btn-secondary min-w-30"
 				>
 					Analyze
 					{#if phase1.analyzing}
@@ -113,18 +108,6 @@
 					{/if}
 				</button>
 			{/if}
-
-			<div data-tip="coming soon" class="tooltip">
-				<button
-					onclick={generate}
-					disabled
-					title="Generate (Ctrl+G)"
-					class="btn btn-sm btn-secondary min-w-30"
-				>
-					Generate
-					<Icon icon="mdi:play-circle-outline" class="h-5 w-5" />
-				</button>
-			</div>
 
 			<div data-tip="coming soon" class="tooltip">
 				<button
@@ -141,7 +124,7 @@
 			<button
 				onclick={validate}
 				title="Validate"
-				class="btn btn-sm btn-primary min-w-30"
+				class="btn btn-sm btn-accent min-w-30"
 			>
 				Validate
 				<Icon icon="mdi:clipboard-check-outline" class="h-5 w-5" />

@@ -81,11 +81,12 @@ export async function POST({ locals: { db }, params: { project }, request }: Par
 
 async function select_by_stems({ db, project, words }: { db: D1DatabaseSession, project: string, words: string[] }): Promise<DbRowLexicon[]> {
 	const placeholders = words.map(() => '?').join(', ')
+	// `stem COLLATE NOCASE` matches the (project, stem NOCASE) index; `lower(stem)` would read every stem in the project
 	const sql = `
 		SELECT *
 		FROM Lexicon
 		WHERE project = ?
-			AND lower(stem) IN (${placeholders})
+			AND stem COLLATE NOCASE IN (${placeholders})
 	`
 	const { results } = await db.prepare(sql).bind(project, ...words).all<DbRowLexicon>()
 	return results ?? []
