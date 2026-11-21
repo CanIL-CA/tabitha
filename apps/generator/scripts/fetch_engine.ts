@@ -5,7 +5,7 @@ import { Database } from 'bun:sqlite'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { generate_verse, load_engine, type CreateEngine } from '@tabitha/generator/engine'
-import { DATA_URL, ENGINE_ARCHIVE_URL, LANGUAGE, ONTOLOGY_VERSION } from './engine_source'
+import { DATA_URL, ENGINE_ARCHIVE_URL, LANGUAGE, LANGUAGE_FILE, ONTOLOGY_VERSION } from './engine_source'
 
 const ENGINE_DIR = join(import.meta.dir, '..', 'engine')
 const ENGINE_JS = 'tbta.js'
@@ -21,7 +21,7 @@ const FETCHED_FROM_FILE = join(ENGINE_DIR, 'fetched_from.json')
 const SAMPLE_VERSE = { audience: 1, book: 1, chapter: 1, verse: 1, segment: 'last', previous_encoding: '' } as const
 const ROLLBACK_JOURNAL = 1
 
-type EngineSource = { engine_archive_url: string, data_url: string }
+type EngineSource = { engine_archive_url: string, data_url: string, language_file: string }
 
 async function download({ url }: { url: string }) {
 	console.info(`Downloading ${url}`)
@@ -98,7 +98,7 @@ export async function fetch_engine({ source }: { source: EngineSource }) {
 	const [archive, ontology, language] = await Promise.all([
 		download({ url: source.engine_archive_url }),
 		download({ url: `${source.data_url}/${ONTOLOGY_DB}` }),
-		download({ url: `${source.data_url}/${LANGUAGE_DB}` }),
+		download({ url: `${source.data_url}/${source.language_file}` }),
 	])
 
 	const problems = mismatches({ ontology, language })
@@ -118,4 +118,4 @@ export async function fetch_engine({ source }: { source: EngineSource }) {
 	writeFileSync(FETCHED_FROM_FILE, JSON.stringify(source))
 }
 
-if (import.meta.main) await fetch_engine({ source: { engine_archive_url: ENGINE_ARCHIVE_URL, data_url: DATA_URL } })
+if (import.meta.main) await fetch_engine({ source: { engine_archive_url: ENGINE_ARCHIVE_URL, data_url: DATA_URL, language_file: LANGUAGE_FILE } })

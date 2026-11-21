@@ -14,9 +14,9 @@ Nothing is built here. [CanIL-CA/tbta](https://github.com/CanIL-CA/tbta)'s CI pr
 | File | Produced by | Downloaded from |
 | --- | --- | --- |
 | `tbta.js`, `tbta.wasm` | tbta's `wasm-engine` workflow, as `TBTA-Worker-WASM.tar.gz` | A release on [CanIL-CA/tbta-public](https://github.com/CanIL-CA/tbta-public/releases) |
-| `Ontology.sqlite`, `English.sqlite` | tbta's `prepare-target-for-web` workflow | `<ontology-version>/` in the `db-generation` R2 bucket (public through its r2.dev address, declared in `tools/r2/config.ts`) |
+| `Ontology.sqlite`, `English.sqlite` | tbta's `prepare-target-for-web` workflow | `<ontology-version>/Ontology.sqlite` and `<ontology-version>/English_<export-date>.sqlite` in the `db-generation` R2 bucket (public through its r2.dev address, declared in `tools/r2/config.ts`) |
 
-`scripts/engine_source.ts` pins the TBTA release and the Ontology version. **To move to a new engine or Ontology, change the line there and merge.** The Ontology version has to be one the workflow has already prepared English for.
+`scripts/engine_source.ts` pins the TBTA release, the Ontology version and the export date of the English database. **To move to a new engine, Ontology or English export, change the line there and merge.** The workflow has to have prepared that combination already.
 
 After downloading, the script checks that:
 
@@ -37,7 +37,7 @@ flowchart LR
 	end
 	public[("tbta-public release<br/>TBTA-Worker-WASM.tar.gz")]
 	bucket[("db-generation bucket<br/>&lt;ontology-version&gt;/Ontology.sqlite<br/>&lt;ontology-version&gt;/English.sqlite<br/>manifest.json")]
-	pin["engine_source.ts<br/>TBTA_RELEASE + ONTOLOGY_VERSION"]
+	pin["engine_source.ts<br/>TBTA_RELEASE + ONTOLOGY_VERSION<br/>+ EXPORT_DATE"]
 	build["Workers Builds<br/>bun run build"]
 	worker["generator Worker"]
 	sources["sources<br/>(service binding)"]
@@ -51,18 +51,41 @@ flowchart LR
 	build --> worker --> sources
 ```
 
-Nothing moves on its own. Each step is a deliberate act:
+Nothing moves on its own, except the deploy after a merge. Today's steps:
 
-| You want to | Do this | What happens next |
-| --- | --- | --- |
-| Ship an engine change from tbta | Release TBTA (its Release workflow builds the engine and attaches it), or dispatch `wasm-engine` with an existing tag. Then set `TBTA_RELEASE` here and merge. | The merge deploys the generator with the new engine. |
-| Pick up a new Ontology | Dispatch tbta's `prepare-target-for-web` for English against it. Then set `ONTOLOGY_VERSION` here and merge. | The merge deploys the generator with the new pair. |
-| Pick up a new English export from TBTA | Dispatch `prepare-target-for-web` with the new export as its input. | See "Open questions": the prepared file replaces the one at the same Ontology version. |
-| Change the Worker's own code | Merge it. | Workers Builds deploys the generator, and sources too when it imports what changed. |
+| # | Step | Who | Automated? |
+| --- | --- | --- | --- |
+| 1 | Release TBTA: dispatch tbta's Release workflow with a tag and title. It builds the engine and attaches it to a draft pre-release on tbta-public. To attach the engine to an existing release instead, dispatch `wasm-engine` with that tag. | tbta maintainer | No |
+| 2 | Publish the draft release. A draft's assets can't be downloaded anonymously. | tbta maintainer | No |
+| 3 | Dispatch tbta's `prepare-target-for-web` for English, with the export's R2 path. It writes the pair and `manifest.json` to `db-generation`. | Whoever has a new export or Ontology | No |
+| 4 | Set `TBTA_RELEASE`, `ONTOLOGY_VERSION` and/or `EXPORT_DATE` in `engine_source.ts` and merge. | Whoever did 1 to 3 | No |
+| 5 | Workers Builds builds and deploys the generator, and sources when it imports what changed. | Pipeline | Yes |
+| 6 | Prune old pairs from `db-generation`. | Nobody yet | No (see "Open questions") |
+
+## What needs rebuilding when
+
+Three things get produced, and each changes for different reasons:
+
+| What changed | Engine | Databases | Worker redeploy |
+| --- | --- | --- | --- |
+| Generation code in tbta (`TbtaLib`, `BrowserTest`), its sqlite, or the Emscripten build | Yes | No | Yes (new `TBTA_RELEASE`) |
+| The engine's exported functions, such as `GenerateVerseFromEncoding`'s signature | Yes | No | Yes, and `src/engine.ts` has to match |
+| An analyst edits English's rules, lexicon or mappings, so TBTA delivers a new export | No | Yes (prepare English again) | Yes (new `EXPORT_DATE`; the Worker bundles the pair at build time) |
+| The Ontology changes (concepts, glosses) within version 3.x or 4.x | No | Yes (the Ontology, and English mapped to its version) | Yes (new `ONTOLOGY_VERSION`) |
+| The Ontology reaches version 5.0.0 | Yes: the engine refuses an Ontology of 5.0.0 or later | Yes | Yes |
+| A new target language | No | Yes (a new database) | Yes, and the Worker has to hold it (see "What this first version leaves out") |
+| Worker code, a pin, a workspace dependency, or `wrangler.jsonc` | No | No | Yes |
+| New or edited encodings in Sources, Bible text, or Sources migrations | No | No | No: the encoding arrives with each request |
+
+How these were checked in tbta's `main`:
+
+- **Rules are data, not engine code.** Each language database holds about thirty `Rules_*` tables (`Rules_PhraseStructure`, `Rules_Spellout`, `Rules_TenseAspectMood`, `Rules_Transfer`, `Rules_ComplexConcepts` and so on), plus its lexicon and mappings. `ExecuteRules.cpp` is the interpreter, so a rule edit reaches the generator as a new English database.
+- **The engine accepts an Ontology from 3.0.0 up to, but not including, 5.0.0** (`s_verOntologyBeginSupport` and `s_verOntologyEndSupport` in `TbtaLib/src/TA1Doc.cpp`, the same library the WebAssembly build links), and refuses anything outside that range ("too old" or "too new for this version of TBTA"). The check reads the `Version` table and doesn't inspect the schema. Within the range, the Ontology's version convention carries it: MINOR for an additive schema change, MAJOR for a breaking one ([ADR 0025](../../docs/decisions/0025-ontology-d1-single-source-of-truth.md)).
+- **The language database has to be mapped to the Ontology's version.** It stores that in its `OntologyVersion` table. When the Ontology is newer than the language database, TBTA runs its mapping update (`UpdateMappingsInTargetDB`), which is what the prepare workflow does for the web. This build refuses any other combination.
 
 **What triggers a deploy.** Workers Builds builds the generator on a push to `main` that touches `apps/generator/*`, a workspace package it depends on, `package.json` or `bun.lock` (`tools/workers` derives this list). Sources watches `apps/generator/*` too, because it imports `AUDIENCES` and the engine loader from here. A new file in R2 or a new tbta release deploys nothing until a commit changes the pin.
 
-**What the tbta side checks.** `wasm-engine` builds the engine with Emscripten and generates a verse with it under Node, using the pair `manifest.json` in `db-generation` points at, before it attaches anything. On a tbta pull request that touches the engine, it builds and runs that check without attaching. `prepare-target-for-web` upgrades a TBTA target export to an Ontology, trims it, and uploads both databases, then updates `manifest.json`.
+**What the tbta side checks.** `wasm-engine` builds the engine with Emscripten and generates a verse with it under Node, using the pair `manifest.json` in `db-generation` points at, before it attaches anything. On a tbta pull request that touches the engine, it builds and runs that check without attaching. `prepare-target-for-web` upgrades a TBTA target export to an Ontology, trims it, and uploads both databases, then updates `manifest.json`. **It never replaces a prepared database.** Each export of a language is its own file, named by its Ontology version and the export's date (`<ontology-version>/English_<export-date>.sqlite`), so the pin names exactly what a build downloads. The date comes from the target's file name (`English_2026-11-19.tbta.sqlite`), so a file without one is refused, and a file that already exists is refused unless the workflow is run with `overwrite`. `Ontology.sqlite` is written once per version, since it's the same bytes for every language.
 
 ## Questions you might have
 
@@ -80,8 +103,7 @@ Nothing moves on its own. Each step is a deliberate act:
 
 ## Open questions
 
-- **Preparing again replaces files in place.** `prepare-target-for-web` writes `<ontology-version>/English.sqlite`, so a new English export prepared against the same Ontology version overwrites the one this app pins. The next generator build would pick it up with no change to `engine_source.ts`. Whether the key should also carry the export's date (so the pin names it) is not decided.
-- **Retention isn't enforced.** The plan is to keep the pinned pair and the one before it, so a rollback has something to download. Nothing prunes old pairs today, and nothing protects the previous one either.
+- **Retention isn't enforced.** Prepared files are never replaced, so the bucket only grows. The plan is to keep the pinned pair and the one before it, so a rollback has something to download, and to prune the rest. Nothing prunes today.
 
 ## How the engine and the data fit together
 
