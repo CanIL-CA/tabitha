@@ -149,7 +149,7 @@ function describe_issue_target({ issue, source_entities }: DescribeIssueOptions)
 		case 'noun_list':
 			return describe_noun_list(issue)
 		case 'concept_level':
-			return { message: describe_concept_level(issue), entity_ids: [issue.entity_id] }
+			return { message: describe_concept_level(issue), entity_ids: issue.entity_ids }
 		case 'case_frame':
 			return { message: describe_case_frame(issue), entity_ids: issue.reason === 'no_categories' ? issue.entity_ids : [issue.entity_id] }
 	}
