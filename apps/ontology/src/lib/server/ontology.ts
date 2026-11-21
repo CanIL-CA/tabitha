@@ -52,9 +52,10 @@ export async function get_concepts_by_stems({ db, stems }: { db: D1DatabaseSessi
 		(_, index) => unique_stems.slice(index * MAX_STEMS_PER_QUERY, (index + 1) * MAX_STEMS_PER_QUERY),
 	)
 
+	// `stem COLLATE NOCASE` matches the NOCASE stem indexes; `lower(stem)` would scan the whole table
 	const [concept_rows, how_to_results] = await Promise.all([
-		Promise.all(stem_chunks.map(chunk_stems => select_by_stems<DbRowConcept>({ sql: `SELECT * FROM Concepts WHERE lower(stem) IN (${placeholders(chunk_stems)}) ORDER BY id`, stems: chunk_stems }))),
-		Promise.all(stem_chunks.map(chunk_stems => select_by_stems<SimplificationHint>({ sql: `SELECT * FROM Complex_Terms WHERE lower(stem) IN (${placeholders(chunk_stems)})`, stems: chunk_stems }))),
+		Promise.all(stem_chunks.map(chunk_stems => select_by_stems<DbRowConcept>({ sql: `SELECT * FROM Concepts WHERE stem COLLATE NOCASE IN (${placeholders(chunk_stems)}) ORDER BY id`, stems: chunk_stems }))),
+		Promise.all(stem_chunks.map(chunk_stems => select_by_stems<SimplificationHint>({ sql: `SELECT * FROM Complex_Terms WHERE stem COLLATE NOCASE IN (${placeholders(chunk_stems)})`, stems: chunk_stems }))),
 	])
 
 	return merge_how_to_results({ concepts: concept_rows.flat().map(transform), how_to_results: how_to_results.flat() })
