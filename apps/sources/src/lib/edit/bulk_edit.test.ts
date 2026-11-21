@@ -4,6 +4,7 @@ import {
 	apply_feature_value,
 	apply_noun_list_index,
 	apply_pairing,
+	apply_pairing_as_base,
 	apply_sense,
 	do_concepts_differ,
 	do_feature_values_differ,
@@ -211,6 +212,19 @@ describe('apply_pairing', () => {
 
 		expect(entities[0].pairing_concept).toBeNull()
 		expect(entities[0].pairing_type).toBeNull()
+	})
+})
+
+describe('apply_pairing_as_base', () => {
+	test('makes the chosen concept the concept and moves the old concept into the pairing', () => {
+		const entities = [make_entity({ id: 0, concept: make_concept({ stem: 'disciple' }) }), make_entity({ id: 1, concept: make_concept({ stem: 'disciple' }) })]
+
+		apply_pairing_as_base({ entities, base_concept: make_concept({ stem: 'follower' }), pairing_type: 'simple-complex' })
+		entities[0].concept!.sense = 'Z'
+
+		expect(entities[1].concept).toEqual(make_concept({ stem: 'follower' }))
+		expect(entities.map(({ pairing_concept }) => pairing_concept)).toEqual([make_concept({ stem: 'disciple' }), make_concept({ stem: 'disciple' })])
+		expect(entities.map(({ pairing_type }) => pairing_type)).toEqual(['simple-complex', 'simple-complex'])
 	})
 })
 

@@ -4,7 +4,8 @@
 	import { IS_CARDINAL_NUMBER } from '@tabitha/types/patterns'
 	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
-	import { apply_pairing, do_pairings_differ, do_concepts_differ } from '#lib/edit/bulk_edit.js'
+	import { get_ontology_senses } from '#lib/data/ontology_senses_context.svelte.js'
+	import { apply_pairing, apply_pairing_as_base, do_pairings_differ, do_concepts_differ } from '#lib/edit/bulk_edit.js'
 	import Icon from '@iconify/svelte'
 	import type { OntologyResult, SourceEntity, PairingType, ConceptKey } from '@tabitha/types'
 
@@ -12,6 +13,11 @@
 
 	const edit_history = get_edit_history()
 	const selected_entity = get_selected_entity()
+	const ontology_senses = get_ontology_senses()
+
+	const COMPLEX_LEVELS = ['2', '3']
+
+	let is_concept_complex = $derived(COMPLEX_LEVELS.includes(ontology_senses.sense_of(data.concept!)?.level))
 
 	let are_concepts_different = $derived(do_concepts_differ({
 		concepts: selected_entity.all.flatMap(({ concept }) => concept ?? []),
@@ -25,10 +31,11 @@
 	})
 
 	let pairing_type = $derived<PairingType>(data.pairing_type ?? 'simple-complex')
+	let is_pairing_concept_the_base = $derived(pairing_type === 'simple-complex' && is_concept_complex)
 
 	let ontology_filter = $derived.by<((result: OntologyResult) => boolean) | undefined>(() => {
 		if (pairing_type === 'simple-complex') {
-			return result => ['2', '3'].includes(result.level)
+			return result => COMPLEX_LEVELS.includes(result.level) !== is_concept_complex
 		} else if (pairing_type === 'metric-biblical') {
 			if (pairing_concept.part_of_speech === 'Noun') {
 				return result => result.gloss.startsWith('(biblical unit)')
@@ -51,6 +58,10 @@
 		if (pairing_concept.stem) {
 			const details = `${data.category} ${pairing_concept.stem}-${pairing_concept.sense}`
 			edit_history().record({ action: 'pairing', details, ids_before: selected_entity.ids })
+			if (is_pairing_concept_the_base) {
+				apply_pairing_as_base({ entities: selected_entity.all, base_concept: pairing_concept, pairing_type })
+				return
+			}
 			apply_pairing({ entities: selected_entity.all, pairing_concept, pairing_type })
 		}
 	}
