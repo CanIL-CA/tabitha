@@ -98,7 +98,7 @@
 					type="submit"
 					onclick={analyze_text}
 					disabled={phase1.analyzing}
-					class="btn btn-sm btn-primary min-w-30"
+					class="btn btn-sm btn-secondary min-w-30"
 				>
 					Analyze
 					{#if phase1.analyzing}
@@ -124,7 +124,7 @@
 			<button
 				onclick={validate}
 				title="Validate"
-				class="btn btn-sm btn-primary min-w-30"
+				class="btn btn-sm btn-accent min-w-30"
 			>
 				Validate
 				<Icon icon="mdi:clipboard-check-outline" class="h-5 w-5" />

@@ -25,14 +25,12 @@
 		previous_encoding: '',
 	})
 
+	let waiting_for_engine = $derived(browser_engine.status !== 'ready')
 	let generating = $state(false)
 	let error_message = $state('')
 
 	type GenerationResultDisplay = { text: string, error: string, audience: number }
 	let results = $state<GenerationResultDisplay[]>([])
-	let result_caption = $state('')
-
-	let waiting_for_engine = $derived(browser_engine.status !== 'ready')
 
 	onMount(() => {
 		// start loading the engine immediately so it's ready before the user needs it
@@ -65,9 +63,15 @@
 
 		results = []
 
+		if (edit_history().current.source_entities.length === 0) {
+			error_message = 'There is no encoding to generate.'
+		}
+
 		validation.show()
 		if (validation.errors.length) {
 			error_message = 'Must fix the encoding errors before generating.'
+		} else if (validation.warnings.length === 0) {
+			validation.hide()
 		}
 
 		if (generate_settings.audiences.length === 0) {
@@ -84,7 +88,7 @@
 				error: result.text ? '' : result.error ?? 'The engine produced no text.',
 			})
 		}
-		result_caption = `${Math.round(performance.now() - started)} ms`
+		console.info(`generation ran in ${Math.round(performance.now() - started)} ms`)
 		generating = false
 	}
 
@@ -108,14 +112,19 @@
 	<div class="card-body relative gap-3">
 		<div class="flex flex-wrap items-center gap-3">
 			<Icon icon="mdi:flask-outline" class="h-7 w-7 text-warning" aria-hidden="true" />
-			<h2 class="card-title text-base">Generate English text</h2>
+			<h2 class="card-title text-base">Generated English text</h2>
 			<span class="badge badge-warning">
 				<Icon icon="mdi:test-tube" class="h-4 w-4" aria-hidden="true" />
 				Experimental
 			</span>
 			<div class="ms-auto flex flex-wrap items-center gap-2">
 				<div class="join">
-					<button onclick={generate} disabled={generating || waiting_for_engine} class="btn btn-primary btn-sm join-item">
+					<button
+						onclick={generate}
+						title="Generate (Ctrl+G)"
+						disabled={generating || waiting_for_engine}
+						class="btn btn-primary btn-sm join-item"
+					>
 						{#if generating}
 							<span class="loading loading-spinner loading-xs"></span>
 							Generating…
@@ -126,7 +135,7 @@
 					</button>
 					
 					<details class="dropdown dropdown-end">
-						<summary class="btn btn-sm px-2 join-item">&#709;</summary>
+						<summary class="btn btn-primary btn-sm px-2 join-item">&#709;</summary>
 						<div class="menu dropdown-content bg-base-100 rounded-box p-2 shadow-sm">
 							<ul class="overflow-y-auto">
 								{#each AUDIENCES as { number, name } (number)}
@@ -153,9 +162,6 @@
 			{#if browser_engine.status === 'loading'}
 				<span class="loading loading-spinner loading-xs"></span>
 				Downloading the engine (about 2.7 MB) and starting it in this browser…
-			{:else if browser_engine.status === 'ready'}
-				<Icon icon="mdi:check-circle-outline" class="inline h-4 w-4" />
-				Engine running in this browser (started in {(browser_engine.load_ms / 1000).toFixed(1)} s).
 			{:else if browser_engine.status === 'failed'}
 				<Icon icon="mdi:alert-circle-outline" class="inline h-4 w-4" />
 				The engine could not start: {browser_engine.load_error}
@@ -183,9 +189,5 @@
 		{:else}
 			<p class="text-sm opacity-70">Generates the English text from this verse's encoding.</p>
 		{/each}
-
-		{#if results.length > 0}
-			<p class="text-xs opacity-60">{result_caption}</p>
-		{/if}
 	</div>
 </div>
