@@ -2,7 +2,7 @@
 // build itself is that check: it generates Genesis 1:1 before it accepts what it downloaded.
 import { Database } from 'bun:sqlite'
 import { afterEach, describe, expect, it } from 'bun:test'
-import { LANGUAGE, ONTOLOGY_VERSION } from './engine_source'
+import { LANGUAGE, LANGUAGE_FILE, ONTOLOGY_VERSION } from './engine_source'
 import { fetch_engine } from './fetch_engine'
 
 const WAL = 2
@@ -44,7 +44,7 @@ function source_serving({ files }: { files: Record<string, Uint8Array<ArrayBuffe
 			return bytes ? new Response(bytes) : new Response('Not found', { status: 404 })
 		},
 	})
-	return { engine_archive_url: `${server.url.origin}/engine.tar.gz`, data_url: `${server.url.origin}/data` }
+	return { engine_archive_url: `${server.url.origin}/engine.tar.gz`, data_url: `${server.url.origin}/data`, language_file: LANGUAGE_FILE }
 }
 
 afterEach(() => server?.stop(true))
@@ -54,7 +54,7 @@ describe('fetch_engine', () => {
 		const source = source_serving({ files: {
 			'/engine.tar.gz': await archive_of({ names: ['BrowserTest.js', 'BrowserTest.wasm'] }),
 			'/data/Ontology.sqlite': in_wal_mode({ bytes: ontology_db({ version: ONTOLOGY_VERSION }) }),
-			[`/data/${LANGUAGE}.sqlite`]: language_db({ mapped_to: ONTOLOGY_VERSION }),
+			[`/data/${LANGUAGE_FILE}`]: language_db({ mapped_to: ONTOLOGY_VERSION }),
 		} })
 
 		await expect(fetch_engine({ source })).rejects.toThrow('Ontology.sqlite is in WAL mode')
@@ -64,7 +64,7 @@ describe('fetch_engine', () => {
 		const source = source_serving({ files: {
 			'/engine.tar.gz': await archive_of({ names: ['BrowserTest.js', 'BrowserTest.wasm'] }),
 			'/data/Ontology.sqlite': ontology_db({ version: OLDER_VERSION }),
-			[`/data/${LANGUAGE}.sqlite`]: language_db({ mapped_to: ONTOLOGY_VERSION }),
+			[`/data/${LANGUAGE_FILE}`]: language_db({ mapped_to: ONTOLOGY_VERSION }),
 		} })
 
 		await expect(fetch_engine({ source })).rejects.toThrow(`Ontology.sqlite is version ${OLDER_VERSION}`)
@@ -74,7 +74,7 @@ describe('fetch_engine', () => {
 		const source = source_serving({ files: {
 			'/engine.tar.gz': await archive_of({ names: ['BrowserTest.js', 'BrowserTest.wasm'] }),
 			'/data/Ontology.sqlite': ontology_db({ version: ONTOLOGY_VERSION }),
-			[`/data/${LANGUAGE}.sqlite`]: language_db({ mapped_to: OLDER_VERSION }),
+			[`/data/${LANGUAGE_FILE}`]: language_db({ mapped_to: OLDER_VERSION }),
 		} })
 
 		await expect(fetch_engine({ source })).rejects.toThrow(`${LANGUAGE}.sqlite is mapped to Ontology ${OLDER_VERSION}`)
@@ -84,7 +84,7 @@ describe('fetch_engine', () => {
 		const source = source_serving({ files: {
 			'/engine.tar.gz': await archive_of({ names: ['README.txt'] }),
 			'/data/Ontology.sqlite': ontology_db({ version: ONTOLOGY_VERSION }),
-			[`/data/${LANGUAGE}.sqlite`]: language_db({ mapped_to: ONTOLOGY_VERSION }),
+			[`/data/${LANGUAGE_FILE}`]: language_db({ mapped_to: ONTOLOGY_VERSION }),
 		} })
 
 		await expect(fetch_engine({ source })).rejects.toThrow('The engine archive has no BrowserTest.js')
@@ -96,6 +96,6 @@ describe('fetch_engine', () => {
 			'/data/Ontology.sqlite': ontology_db({ version: ONTOLOGY_VERSION }),
 		} })
 
-		await expect(fetch_engine({ source })).rejects.toThrow(`/data/${LANGUAGE}.sqlite returned 404`)
+		await expect(fetch_engine({ source })).rejects.toThrow(`/data/${LANGUAGE_FILE} returned 404`)
 	})
 })
