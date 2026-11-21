@@ -60,7 +60,7 @@ Nothing moves on its own, except the deploy after a merge. Today's steps:
 | 3 | Dispatch tbta's `prepare-target-for-web` for English, with the export's R2 path. It writes the pair and `manifest.json` to `db-generation`. | Whoever has a new export or Ontology | No |
 | 4 | Set `TBTA_RELEASE`, `ONTOLOGY_VERSION` and/or `EXPORT_DATE` in `engine_source.ts` and merge. | Whoever did 1 to 3 | No |
 | 5 | Workers Builds builds and deploys the generator, and sources when it imports what changed. | Pipeline | Yes |
-| 6 | Prune old pairs from `db-generation`. | Nobody yet | No (see "Open questions") |
+| 6 | Prune `db-generation` after a pin bump merges: `bun run data:prune` here prints the plan, `-- --run` deletes it (see "Retention"). | Whoever bumped the pin | No |
 
 ## What needs rebuilding when
 
@@ -91,7 +91,7 @@ How these were checked in tbta's `main`:
 
 **How do I test a generator change before it merges?** Locally: `bun run dev` here runs the Worker with the pinned pair. A sources pull request's preview calls the *production* generator through its service binding, and the generator has no previews of its own, so a preview only shows a generator change if someone hand-deploys it (`bun run engine:fetch && bunx wrangler deploy` here, which replaces production until the next pipeline deploy).
 
-**How do I roll back?** Revert the commit that moved the pin. The build downloads the older engine or pair again, as long as it's still there (see "Open questions").
+**How do I roll back?** Revert the commit that moved the pin. The build downloads the older engine or pair again. The bucket keeps the current pin's files and the previous pin's (see "Retention"), so a revert of the latest pin bump always finds them.
 
 **What breaks if tbta changes the engine's exported functions?** `src/engine.ts` calls `GenerateVerseFromEncoding` through `ccall` with a fixed argument list. If tbta changes that signature, the build's Genesis 1:1 check fails, so the change can't deploy until `engine.ts` matches.
 
@@ -101,9 +101,17 @@ How these were checked in tbta's `main`:
 
 **Does every language need its own engine?** No. The `.wasm` is the same for every language; the databases make the difference (see below).
 
-## Open questions
+## Retention
 
-- **Retention isn't enforced.** Prepared files are never replaced, so the bucket only grows. The plan is to keep the pinned pair and the one before it, so a rollback has something to download, and to prune the rest. Nothing prunes today.
+Prepared files are never replaced, so `db-generation` only grows until someone prunes it. `bun run data:prune` (`scripts/prune_data.ts`) prints a plan, and `bun run data:prune -- --run` carries it out. It needs `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` (the ones in `tools/r2/.env` and `.env.local` work) and the repo's full git history.
+
+What it keeps:
+
+- **The current pin and the previous pin.** It reads both from the commits on `origin/main` that changed `engine_source.ts`, so reverting the latest pin bump always finds its files. Before the PR that adds `EXPORT_DATE` is on `main`, read this checkout's history with `-- --ref HEAD`.
+- **Anything newer than the current pin**, so an export that was prepared but isn't pinned yet isn't deleted.
+- `manifest.json`.
+
+It deletes the other dated English files and the `Ontology.sqlite` of any version no kept pin uses. Anything it doesn't recognize (another language's files, stray uploads) is listed and left alone. Run it after a pin bump merges. It isn't automatic yet: a scheduled or on-merge run is possible later, but it needs the R2 token as a secret and a full-history checkout.
 
 ## How the engine and the data fit together
 
