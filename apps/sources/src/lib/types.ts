@@ -10,6 +10,10 @@ export type ViewSettings = {
 	show_feature_codes: boolean
 }
 
+export type GenerateSettings = {
+	audiences: number[]
+}
+
 export type NavData = {
 	previous: Reference | null
 	current: Reference

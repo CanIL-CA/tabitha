@@ -17,6 +17,7 @@
 	import { get_sidebar_slot } from '#lib/sidebar_context.svelte.js'
 	import { getAllContexts } from 'svelte'
 	import { get_pairing_separator } from '#lib/encoding/semantic_encoding.ts'
+	import GeneratePanelForEdit from '#lib/generation/GeneratePanelForEdit.svelte'
 
 	let { data }: PageProps = $props()
 
@@ -101,11 +102,7 @@
 		</div>
 
 		<div class="flex flex-col gap-2">
-			<div class="ms-0.5">
-				<span class="label font-semibold">Generated English (coming soon)</span>
-			</div>
-
-			<textarea disabled class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+			<GeneratePanelForEdit reference={data.nav_data.current} {validation} />
 		</div>
 	</div>
 
