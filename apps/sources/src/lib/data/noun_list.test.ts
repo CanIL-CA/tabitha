@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { build_noun_list_rows } from './noun_list'
+import { build_noun_list_rows, compact_noun_list_indexes } from './noun_list'
 import { DEFAULTS } from '#lib/edit/default_entities.js'
 import type { ConceptKey } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
@@ -22,6 +22,31 @@ const make_entity = ({ id, concept, pairing_concept = null, noun_list_index }: {
 const TREE: ConceptKey = { stem: 'tree', sense: 'A', part_of_speech: 'Noun' }
 const ROCK: ConceptKey = { stem: 'rock', sense: 'B', part_of_speech: 'Noun' }
 const RIVER: ConceptKey = { stem: 'river', sense: 'A', part_of_speech: 'Noun' }
+
+describe('compact_noun_list_indexes', () => {
+	test('shifts higher indexes down to fill gaps, across the digit/letter boundary', () => {
+		const entities = compact_noun_list_indexes({
+			source_entities: [
+				make_entity({ id: 0, concept: TREE, noun_list_index: '2' }),
+				make_entity({ id: 1, concept: RIVER, noun_list_index: 'A' }),
+				make_entity({ id: 2, concept: ROCK, noun_list_index: '5' }),
+				make_entity({ id: 3, concept: TREE, noun_list_index: '2' }),
+			],
+		})
+		expect(entities.map(({ noun_list_index }) => noun_list_index)).toEqual(['1', '3', '2', '1'])
+	})
+
+	test('leaves entities without a noun list index untouched and yields no gap rows', () => {
+		const source_entities = compact_noun_list_indexes({
+			source_entities: [
+				make_entity({ id: 0, concept: TREE, noun_list_index: null }),
+				make_entity({ id: 1, concept: RIVER, noun_list_index: '4' }),
+			],
+		})
+		expect(source_entities[0].noun_list_index).toBeNull()
+		expect(build_noun_list_rows({ source_entities }).map(({ index }) => index)).toEqual(['1'])
+	})
+})
 
 describe('build_noun_list_rows', () => {
 	test('is empty when no entity has a noun list index', () => {

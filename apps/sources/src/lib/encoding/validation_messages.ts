@@ -9,6 +9,7 @@ type IssueTarget = {
 
 export type DescribedIssue = IssueTarget & {
 	show_label: string
+	issue: ValidationIssue
 }
 
 type DescribeIssueOptions = {
@@ -163,5 +164,5 @@ function build_show_label({ entity_ids, source_entities }: { entity_ids: number[
 
 export function describe_issue({ issue, source_entities }: DescribeIssueOptions): DescribedIssue {
 	const target = describe_issue_target({ issue, source_entities })
-	return { ...target, show_label: build_show_label({ entity_ids: target.entity_ids, source_entities }) }
+	return { ...target, show_label: build_show_label({ entity_ids: target.entity_ids, source_entities }), issue }
 }
