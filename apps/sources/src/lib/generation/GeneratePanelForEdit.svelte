@@ -65,17 +65,20 @@
 
 		if (edit_history().current.source_entities.length === 0) {
 			error_message = 'There is no encoding to generate.'
+			return
 		}
 
 		validation.show()
 		if (validation.errors.length) {
 			error_message = 'Must fix the encoding errors before generating.'
+			return
 		} else if (validation.warnings.length === 0) {
 			validation.hide()
 		}
 
 		if (generate_settings.audiences.length === 0) {
 			error_message = 'Must select at least one audience to generate.'
+			return
 		}
 
 		generating = true
@@ -162,32 +165,36 @@
 			{#if browser_engine.status === 'loading'}
 				<span class="loading loading-spinner loading-xs"></span>
 				Downloading the engine (about 2.7 MB) and starting it in this browser…
+			{:else if browser_engine.status === 'ready'}
+				<!-- TODO have this dynamically provided by the engine -->
+				<Icon icon="mdi:info-outline" class="inline h-4 w-4" />
+				Ontology version: 3.0.9627; English project: 2026-11-19
 			{:else if browser_engine.status === 'failed'}
 				<Icon icon="mdi:alert-circle-outline" class="inline h-4 w-4" />
 				The engine could not start: {browser_engine.load_error}
 			{/if}
 		</p>
 
-		{#if error_message}
+		{#if results.length > 0}
+			{#each results as { audience, text, error }}
+				{@const audience_name = AUDIENCES.find(({ number }) => number === audience)?.name ?? audience.toString()}
+				<span class="opacity-60 italic font-semibold">{audience_name}</span>
+				{#if text}
+					<p class="text-base">{text}</p>
+				{:else if error}
+					<div role="alert" class="alert alert-error alert-soft">
+						<Icon icon="mdi:alert-circle-outline" class="h-5 w-5" />
+						<span>{error}</span>
+					</div>
+				{/if}
+			{/each}
+		{:else if error_message}
 			<div role="alert" class="alert alert-error alert-soft">
 				<Icon icon="mdi:alert-circle-outline" class="h-5 w-5" />
 				<span>{error_message}</span>
 			</div>
-		{/if}
-
-		{#each results as { audience, text, error }}
-			{@const audience_name = AUDIENCES.find(({ number }) => number === audience)?.name ?? audience.toString()}
-			<span class="opacity-60 italic font-semibold">{audience_name}</span>
-			{#if text}
-				<p class="text-base">{text}</p>
-			{:else if error}
-				<div role="alert" class="alert alert-error alert-soft">
-					<Icon icon="mdi:alert-circle-outline" class="h-5 w-5" />
-					<span>{error}</span>
-				</div>
-			{/if}
 		{:else}
-			<p class="text-sm opacity-70">Generates the English text from this verse's encoding.</p>
-		{/each}
+			<p class="text-sm opacity-70">No text generated yet.</p>
+		{/if}
 	</div>
 </div>
