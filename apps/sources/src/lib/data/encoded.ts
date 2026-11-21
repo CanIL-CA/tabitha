@@ -16,8 +16,8 @@ export async function get_verse_encoding_availability({ db, references }: { db: 
 	const sql = `
 		SELECT LENGTH(COALESCE(semantic_encoding, '')) > 0 AS has_encoding
 		FROM Sources
-		WHERE type LIKE ?
-			AND id_primary LIKE ?
+		WHERE type = ? COLLATE NOCASE
+			AND id_primary = ? COLLATE NOCASE
 			AND id_secondary = ?
 			AND id_tertiary = ?
 	`

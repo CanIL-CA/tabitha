@@ -13,7 +13,7 @@ export async function get_all_book_statuses({ db, type }: { db: D1DatabaseSessio
 	const sql = `
 		SELECT status, id_primary
 		FROM ChapterStatus
-		WHERE type LIKE ?
+		WHERE type = ? COLLATE NOCASE
 	`
 	const { results } = await db.prepare(sql).bind(type).all<{ status: SourceStatus, id_primary: string }>()
 	const by_book = Map.groupBy(results, result => result.id_primary)
@@ -28,8 +28,8 @@ export async function get_book_status({ db, reference }: { db: D1DatabaseSession
 	const sql = `
 		SELECT status
 		FROM ChapterStatus
-		WHERE type LIKE ?
-			AND id_primary LIKE ?
+		WHERE type = ? COLLATE NOCASE
+			AND id_primary = ? COLLATE NOCASE
 	`
 
 	const { results } = await db.prepare(sql).bind(reference.type, reference.id_primary).all<{ status: SourceStatus }>()
@@ -56,8 +56,8 @@ export async function get_chapter_statuses_for_book({ db, reference }: { db: D1D
 	const sql = `
 		SELECT id_secondary, status
 		FROM ChapterStatus
-		WHERE type LIKE ?
-			AND id_primary LIKE ?
+		WHERE type = ? COLLATE NOCASE
+			AND id_primary = ? COLLATE NOCASE
 	`
 
 	const { results } = await db.prepare(sql).bind(reference.type, reference.id_primary).all<{ id_secondary: string, status: SourceStatus }>()
@@ -72,8 +72,8 @@ export async function get_chapter_status({ db, reference }: { db: D1DatabaseSess
 	const sql = `
 		SELECT status
 		FROM ChapterStatus
-		WHERE type LIKE ?
-			AND id_primary LIKE ?
+		WHERE type = ? COLLATE NOCASE
+			AND id_primary = ? COLLATE NOCASE
 			AND id_secondary = ?
 	`
 
@@ -90,8 +90,8 @@ export async function get_verse_statuses({ db, references }: { db: D1DatabaseSes
 	const sql = `
 		SELECT status
 		FROM Sources
-		WHERE type LIKE ?
-			AND id_primary LIKE ?
+		WHERE type = ? COLLATE NOCASE
+			AND id_primary = ? COLLATE NOCASE
 			AND id_secondary = ?
 			AND id_tertiary = ?
 	`
