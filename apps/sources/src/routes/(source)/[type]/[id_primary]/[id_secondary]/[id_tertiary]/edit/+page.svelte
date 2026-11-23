@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { CheckerToken } from '@tabitha/types'
 	import type { PageProps } from './$types'
 	import EditActionBar from '#lib/edit/EditActionBar.svelte'
 	import HistoryToast from '#lib/edit/HistoryToast.svelte'
@@ -16,8 +15,8 @@
 	import ContextBridge from '#lib/ContextBridge.svelte'
 	import { get_sidebar_slot } from '#lib/sidebar_context.svelte.js'
 	import { getAllContexts } from 'svelte'
-	import { get_pairing_separator } from '#lib/encoding/semantic_encoding.ts'
 	import GeneratePanelForEdit from '#lib/generation/GeneratePanelForEdit.svelte'
+	import Phase1Panel from '#lib/edit/Phase1Panel.svelte'
 
 	let { data }: PageProps = $props()
 
@@ -48,20 +47,6 @@
 		sidebar.content = selected_entity.current ? sidebar_content : undefined
 		return () => sidebar.content = undefined
 	})
-
-	function get_token_text(token: CheckerToken) {
-		if (token.type === 'Gap') return ''
-
-		let parts = [token.token]
-		if (token.pairing) {
-			const separator = get_pairing_separator({ pairing_type: token.pairing_type, style: 'phase1' })
-			parts = [...parts, separator, token.pairing.token]
-		}
-		if (token.pronoun) {
-			parts = [token.pronoun.token, '(', ...parts, ')']
-		}
-		return parts.join('') + ' '
-	}
 </script>
 
 {#snippet sidebar_content()}
@@ -74,7 +59,7 @@
 
 <HistoryToast />
 
-<main class="mx-8 mt-6 flex-1">
+<main class="mx-8 mt-4 flex-1">
 	{#if phase1.analyze_result?.status === 'error' && !phase1.error_dismissed}
 		{@const encoding_message = edit_history.current.source_entities.length > 0 ? 'the existing encoding was not replaced.' : 'no encoding was produced.'}
 		<div role="alert" class="alert alert-error mb-3">
@@ -90,64 +75,24 @@
 		</div>
 	{/if}
 
-	<div class="grid grid-cols-2 gap-8">
-		<div class="flex flex-col gap-2">
-			<div class="ms-0.5">
-				<span class="label font-semibold">Input Text (Phase 1)</span>
-			</div>
-
-			<textarea
-				bind:value={phase1.text}
-				class="textarea textarea-bordered textarea-lg text-base field-sizing-content w-full"></textarea>
+	<div class="grid grid-cols-2 gap-4">
+		<!--'self-start' prevents the panel from growing veritcally to match the other panel-->
+		<div class="self-start">
+			<Phase1Panel {phase1} />
 		</div>
 
-		<div class="flex flex-col gap-2">
+		<div class="self-start">
 			<GeneratePanelForEdit reference={data.nav_data.current} {validation} />
 		</div>
 	</div>
 
-	{#if phase1.analyze_result && phase1.token_messages.length}
-		<div class="divider my-2"></div>
-		<div>
-			{#each phase1.analyze_result.tokens as token, i}
-				{@const msg = phase1.token_messages.find(({ token_index }) => i === token_index)?.message}
-				{@const text = get_token_text(token)}
-				{#if !msg}
-					<span>{text}</span>
-				{:else if msg.label === 'error'}
-					<span class="text-error font-semibold">{text}</span>
-				{:else}
-					<span class="text-warning font-semibold">{text}</span>
-				{/if}
-			{/each}
-		</div>
-
-		<div>
-			{#each phase1.token_messages as token_message (token_message)}
-				{@const { message, token_index } = token_message}
-				{@const is_error = message.label === 'error'}
-				{@const token = get_token_text(phase1.analyze_result.tokens[token_index])}
-				<div class="alert alert-soft {is_error ? 'alert-error' : 'alert-warning'} shadow-lg my-1">
-					<div class="flex items-center gap-4">
-						<Icon icon="mdi:alert-circle-outline" class="h-5 w-5" />
-						<span>{message.message} <sup>(token: "{token}")</sup></span>
-						<button onclick={() => phase1.dismiss_message(token_message)} class="btn btn-xs btn-ghost italic">
-							Dismiss
-						</button>
-					</div>
-				</div>
-			{/each}
-		</div>
-	{/if}
-
 	{#if validation.is_shown}
-		<div class="divider my-2"></div>
-		<ValidationIssues {validation} />
+		<div class="mt-4">
+			<ValidationIssues {validation} />
+		</div>
 	{/if}
 
-	<div class="divider my-2"></div>
-
-	<div id="entity-container">
+	<div id="entity-container mt-4">
 		<SourceEntitiesEdit bind:source_entities={edit_history.current.source_entities} />
 	</div>
 </main>
