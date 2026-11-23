@@ -16,11 +16,11 @@
     "test:unit": "vitest run src"
   },
   "devDependencies": {
-    "@sveltejs/kit": "^3.2.0",
+    "@sveltejs/kit": "^3.4.0",
     "@tabitha/eslint-config": "workspace:*",
     "@tabitha/tsconfig": "workspace:*",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "typescript": "^6.0.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
