@@ -3,6 +3,7 @@
 	import Icon from '@iconify/svelte'
 	import { onMount } from 'svelte'
 	import { AUDIENCES } from '@tabitha/generator/engine'
+	import { EXPORT_DATE, LANGUAGE, ONTOLOGY_VERSION } from '@tabitha/generator/engine_source'
 	import type { GenerateSettings } from '#lib/types.ts'
 	import type { GenerationJob } from './verse_generation'
 	import type { Reference } from '@tabitha/types'
@@ -166,9 +167,8 @@
 				<span class="loading loading-spinner loading-xs"></span>
 				Downloading the engine (about 2.7 MB) and starting it in this browser…
 			{:else if browser_engine.status === 'ready'}
-				<!-- TODO have this dynamically provided by the engine -->
 				<Icon icon="mdi:info-outline" class="inline h-4 w-4" />
-				Ontology version: 3.0.9627; English project: 2026-11-19
+				Ontology version: {ONTOLOGY_VERSION}; {LANGUAGE} project: {EXPORT_DATE}
 			{:else if browser_engine.status === 'failed'}
 				<Icon icon="mdi:alert-circle-outline" class="inline h-4 w-4" />
 				The engine could not start: {browser_engine.load_error}
