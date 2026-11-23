@@ -112,7 +112,7 @@
 	<div class="pointer-events-none absolute inset-0 overflow-hidden rounded-box" aria-hidden="true">
 		<Icon icon="mdi:flask-outline" class="absolute -right-6 -bottom-8 h-40 w-40 text-warning opacity-15" />
 	</div>
-	<div class="card-body gap-3">
+	<div class="card-body relative gap-3">
 		<div class="flex flex-wrap items-center gap-3">
 			<Icon icon="mdi:flask-outline" class="h-7 w-7 text-warning" aria-hidden="true" />
 			<h2 class="card-title text-base">Generated English text</h2>
