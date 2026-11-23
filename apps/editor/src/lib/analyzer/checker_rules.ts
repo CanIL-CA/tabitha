@@ -249,8 +249,24 @@ const builtin_checker_rules: BuiltInRule[] = [
 		rule: {
 			trigger: token => token.type === TOKEN_TYPE.LOOKUP_WORD && token.lookup_results.length > 0 && !is_one_part_of_speech(token),
 			context: create_context_filter({}),
-			action: message_set_action(function* () {
-				yield { error: "The Analyzer cannot determine which part of speech '{stem}' is. Add '_noun', '_verb', '_adj', '_adv', '_adp', '_conj', or '_part' so it analyzes properly." }
+			action: message_set_action(({ trigger_token }) => {
+				const NOTE_MAP: Record<string, string> = {
+					'Noun': '_noun',
+					'Verb': '_verb',
+					'Adjective': '_adj',
+					'Adverb': '_adv',
+					'Adposition': '_adp',
+					'Conjunction': '_conj',
+					'Particle': '_part',
+				}
+				const possible_parts_of_speech = [...new Set(trigger_token.lookup_results.map(result => result.part_of_speech))]
+				const possible_notes = possible_parts_of_speech.map(pos => NOTE_MAP[pos as string] || '').filter(note => note).map(note => `'${note}'`)
+				if (possible_notes.length === 1) {
+					return
+				}
+				const [first, last] = [possible_notes.slice(0, -1), possible_notes.at(-1)!]
+				const notes_list = `${first.join(',')}, or ${last}`
+				return { error: `The Analyzer cannot determine which part of speech '{stem}' is. Add ${notes_list} so it analyzes properly.` }
 			}),
 		},
 	},
