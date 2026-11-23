@@ -89,7 +89,9 @@ How these were checked in tbta's `main`:
 
 ## Questions you might have
 
-**How do I test a generator change before it merges?** Locally: `bun run dev` here runs the Worker with the pinned pair. A sources pull request's preview calls the *production* generator through its service binding, and the generator has no previews of its own, so a preview only shows a generator change if someone hand-deploys it (`bun run engine:fetch && bunx wrangler deploy` here, which replaces production until the next pipeline deploy).
+**How do I try generation locally?** Run the generator beside sources: `bun run dev` from the repo root starts both, or `bun run dev:generator` and `bun run dev:sources` separately. Sources' `GENERATOR` binding reaches the local Worker through wrangler's dev registry, the same way it reaches the deployed one, so the verse and edit pages generate exactly as they do in production, with the pinned engine and pair. The Worker listens on `1966`, though nothing calls it by port. If the generator isn't running, sources says so instead of generating.
+
+**How do I test a generator change before it merges?** Locally, as above: the Worker runs whatever is in this checkout. A sources pull request's preview calls the *production* generator through its service binding, and the generator has no previews of its own, so a preview only shows a generator change if someone hand-deploys it (`bun run engine:fetch && bunx wrangler deploy` here, which replaces production until the next pipeline deploy).
 
 **How do I roll back?** Revert the commit that moved the pin. The build downloads the older engine or pair again. The bucket keeps the current pin's files and the previous pin's (see "Retention"), so a revert of the latest pin bump always finds them.
 

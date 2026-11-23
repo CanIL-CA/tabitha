@@ -77,6 +77,15 @@ export const APPS: Record<string, AppInfo> = {
 		desc: 'Blinded A/B Reviews (D1)',
 		color: '\x1b[37m', // white
 	},
+	generator: {
+		id: 'generator',
+		index: 8,
+		pkg: '@tabitha/generator',
+		name: 'Generator',
+		port: 1966,
+		desc: 'TBTA Verse Generation (Worker, called by Sources)',
+		color: '\x1b[90m', // gray
+	},
 }
 
 const COLOR_RESET = '\x1b[0m'
