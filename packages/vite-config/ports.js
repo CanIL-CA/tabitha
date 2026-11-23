@@ -46,4 +46,10 @@ export const PORTS = {
 		emoji: '📋',
 		ref: 'Gur Qbzrfqnl Obbx — Jvyyvnz gur Pbadhrebe\'f terng fheirl bs Ratynaq, 1086',
 	},
+	// A Worker, not a Vite app: its wrangler.jsonc sets this port under `dev`.
+	generator: {
+		port: 1966,
+		emoji: '💬',
+		ref: 'RYVMN\'f svefg jbeqf, naq Gbyxvra\'f Wbanu va gur Wrehfnyrz Ovoyr',
+	},
 }

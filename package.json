@@ -12,6 +12,7 @@
     "dev:menu": "bun scripts/dx/dev_menu.ts",
     "dev:copilot": "bun --filter @tabitha/copilot dev",
     "dev:editor": "bun --filter @tabitha/editor dev",
+    "dev:generator": "bun --filter @tabitha/generator dev",
     "dev:ontology": "bun --filter @tabitha/ontology dev",
     "dev:scheduler": "bun --filter @tabitha/scheduler dev",
     "dev:sources": "bun --filter @tabitha/sources dev",

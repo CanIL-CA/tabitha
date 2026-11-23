@@ -52,9 +52,11 @@ From the **monorepo root**:
 # Run Sources dev server only
 bun run dev:sources
 
-# Or run all apps concurrently
+# Or run all apps concurrently, the generator included
 bun run dev
 ```
+
+Text generation on the verse and edit pages calls the generator Worker through a service binding, locally too, so `dev:sources` alone can't generate. Start the generator beside it with `bun run dev:generator`, or use `bun run dev`.
 
 Or from within `apps/sources`:
 

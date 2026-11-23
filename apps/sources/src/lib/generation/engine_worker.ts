@@ -19,18 +19,26 @@ let engine_ready: Promise<EngineModule> | undefined
 
 async function download_gzipped({ name }: { name: string }) {
 	const response = await fetch(`${FILES_PATH}/${name}.gz`)
-	if (!response.ok || !response.body) throw new Error(`Downloading ${name} failed (${response.status})`)
+	if (!response.ok || !response.body) {
+		const { error } = await response.json().catch(() => ({})) as { error?: string }
+		throw new Error(error ?? `Downloading ${name} failed (${response.status})`)
+	}
 	const unzipped = response.body.pipeThrough(new DecompressionStream('gzip'))
 	return new Uint8Array(await new Response(unzipped).arrayBuffer())
 }
 
 async function start_engine() {
-	const [{ default: create_engine }, wasm_bytes, ontology, language] = await Promise.all([
-		import(/* @vite-ignore */ new URL(`${FILES_PATH}/tbta.js`, self.location.origin).href) as Promise<{ default: CreateEngine }>,
+	const engine_script = import(/* @vite-ignore */ new URL(`${FILES_PATH}/tbta.js`, self.location.origin).href) as Promise<{ default: CreateEngine }>
+	// A failed download carries the server's reason; a failed import doesn't, so report the download's.
+	const [wasm_bytes, ontology, language] = await Promise.all([
 		download_gzipped({ name: 'tbta.wasm' }),
 		download_gzipped({ name: 'Ontology.sqlite' }),
 		download_gzipped({ name: `${LANGUAGE}.sqlite` }),
-	])
+	]).catch(async (failure: unknown) => {
+		await engine_script.catch(() => undefined)
+		throw failure
+	})
+	const { default: create_engine } = await engine_script
 	const engine = await load_engine({
 		create_engine,
 		wasm_module: await WebAssembly.compile(wasm_bytes),
