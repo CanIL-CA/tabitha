@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte'
 	import { get_selected_entity } from '#lib/data/selected_entity.svelte.js'
+	import { compact_noun_list_indexes } from '#lib/data/noun_list.js'
+	import { get_edit_history } from '#lib/edit/history.svelte.js'
 	import type { Validation } from '#lib/edit/validation.svelte.js'
 	import type { DescribedIssue } from '#lib/encoding/validation_messages.js'
 
@@ -10,20 +12,36 @@
 	let { validation }: Props = $props()
 
 	const selected_entity = get_selected_entity()
+	const edit_history = get_edit_history()
 
 	function select_entities(entity_ids: number[]) {
 		selected_entity.select_ids({ ids: entity_ids })
 		document.querySelector(`[data-entity-index="${entity_ids[0]}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
 	}
+
+	function compact_noun_list() {
+		const { source_entities } = edit_history().current
+		edit_history().record({ action: 'noun_index', details: 'compact', ids_before: [] })
+		edit_history().current = { source_entities: compact_noun_list_indexes({ source_entities }) }
+	}
 </script>
 
-{#snippet issue_alert({ message, entity_ids, show_label }: DescribedIssue, alert_class: string)}
+{#snippet issue_alert({ message, entity_ids, show_label, issue }: DescribedIssue, alert_class: string)}
 	<div role="alert" class="alert alert-soft {alert_class} shadow-lg my-1">
 		<div class="flex items-center gap-4">
 			<Icon icon="mdi:alert-circle-outline" class="h-5 w-5" />
 			<span>{message}</span>
 			{#if entity_ids.length}
 				<button onclick={() => select_entities(entity_ids)} class="btn btn-xs btn-ghost italic">{show_label}</button>
+			{/if}
+			{#if issue.check === 'noun_list' && issue.reason === 'unused_index'}
+				<button
+					type="button"
+					onclick={compact_noun_list}
+					class="btn btn-xs btn-ghost italic"
+				>
+					Compact noun list
+				</button>
 			{/if}
 		</div>
 	</div>

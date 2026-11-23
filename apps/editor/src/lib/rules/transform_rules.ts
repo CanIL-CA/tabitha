@@ -801,6 +801,15 @@ const transform_rules_json: TransformRuleJson[] = [
 		'comment': "eg 'John, Mary and Peter', 'went to Jerusalem, to Bethlehem and to Hebron'. The comma ends the NP before it, and addressee commas are excluded since they are tagged comma_addressee",
 	},
 	{
+		'name': 'tag commas between relative clauses as list commas',
+		'trigger': { 'tag': { 'syntax': 'comma' } },
+		'context': {
+			'precededby': { 'tag': { 'clause_type': 'relative_clause' } },
+			'followedby': { 'tag': { 'clause_type': 'relative_clause' } },
+		},
+		'transform': { 'tag': { 'list_comma': 'relative_clause' } },
+	},
+	{
 		'name': 'tag "and/or/but" at start of subordinate clauses',
 		'trigger': { 'stem': 'and|or|but' },
 		'context': { 'precededby': { 'token': '[' } },

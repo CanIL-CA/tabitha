@@ -252,9 +252,9 @@ const ORDERED_PHRASE_POST_FILTERS: Array<[phrase_filter: TokenFilter, token_filt
 			{ 'tag': { 'phrase_type': 'NP', 'relation': 'genitive_norman|name' } },
 			{ 'type': TOKEN_TYPE.FUNCTION_WORD, 'tag': { 'relation': 'pre_head_of' } },
 			{ 'tag': { 'phrase_type': 'NP', 'role': 'noun_argument_np' } },
-			{ 'tag': { 'clause_type': 'relative_clause' } },
+			{ 'tag': [{ 'clause_type': 'relative_clause' }, { 'list_comma': 'relative_clause' }] },
 			{ 'tag': 'post_np_adposition' },	// ((X) years ago)
-			{ 'tag': 'list_comma' },	// ((John,) (Mary) (and Peter))
+			{ 'tag': { 'list_comma': 'np' } },	// ((John,) (Mary) (and Peter))
 		],
 	],
 	[

@@ -287,10 +287,30 @@ describe('check_concept_level', () => {
 			.toEqual(['concept_not_simple', 'pairing_concept_not_complex'])
 	})
 
+	test('combines every swapped pairing of the same concepts into one issue per reason', () => {
+		const swapped = { category: 'Noun', concept: COMPLEX, pairing_concept: SIMPLE, pairing_type: 'simple-complex' } as const
+		const entities = structured([word(swapped), word(swapped)])
+		expect(check_concept_level({ source_entities: entities, senses })).toEqual([
+			{ check: 'concept_level', entity_ids: [0, 1], concept: COMPLEX, level: 3, reason: 'concept_not_simple' },
+			{ check: 'concept_level', entity_ids: [0, 1], concept: SIMPLE, level: 1, reason: 'pairing_concept_not_complex' },
+		])
+	})
+
 	test('flags a complex concept outside a complex alternate', () => {
 		const entities = structured([word({ category: 'Noun', concept: COMPLEX })])
 		expect(check_concept_level({ source_entities: entities, senses })).toEqual([
-			{ check: 'concept_level', entity_id: 0, concept: COMPLEX, level: 3, reason: 'complex_outside_complex_context' },
+			{ check: 'concept_level', entity_ids: [0], concept: COMPLEX, level: 3, reason: 'complex_outside_complex_context' },
+		])
+	})
+
+	test('combines every use of a complex concept outside a complex alternate into one issue', () => {
+		const entities = structured([
+			word({ category: 'Noun', concept: COMPLEX }),
+			word({ category: 'Noun', concept: SIMPLE }),
+			word({ category: 'Noun', concept: COMPLEX }),
+		])
+		expect(check_concept_level({ source_entities: entities, senses })).toEqual([
+			{ check: 'concept_level', entity_ids: [0, 2], concept: COMPLEX, level: 3, reason: 'complex_outside_complex_context' },
 		])
 	})
 

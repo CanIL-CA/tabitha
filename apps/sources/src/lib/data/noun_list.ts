@@ -37,3 +37,29 @@ export function build_noun_list_rows({ source_entities }: { source_entities: Pag
 		return rows_by_index.get(index) ?? { index, noun: '', entity_ids: [] }
 	})
 }
+
+/**
+ * Shifts every noun list index down to fill the gaps left by unused indexes, keeping their order.
+ * Only indexes on an entity with a concept count as used, matching `build_noun_list_rows`.
+ */
+export function compact_noun_list_indexes({ source_entities }: { source_entities: PageSourceEntity[] }): PageSourceEntity[] {
+	const used_positions = new Set<number>()
+	for (const { concept, noun_list_index } of source_entities) {
+		if (!noun_list_index || !concept) continue
+		used_positions.add(calculate_noun_list_position(noun_list_index))
+	}
+
+	const new_index_by_old_index = new Map<string, string>()
+	;[...used_positions]
+		.sort((a, b) => a - b)
+		.forEach((old_position, new_position) => {
+			const old_index = calculate_noun_list_index(old_position)
+			const new_index = calculate_noun_list_index(new_position)
+			if (old_index && new_index) new_index_by_old_index.set(old_index, new_index)
+		})
+
+	return source_entities.map(entity => {
+		const new_index = entity.noun_list_index && new_index_by_old_index.get(entity.noun_list_index)
+		return new_index ? { ...entity, noun_list_index: new_index } : entity
+	})
+}
