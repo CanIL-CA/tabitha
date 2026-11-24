@@ -66,6 +66,12 @@ function coordinates_by_clause(sentences: Sentence[]): Record<string, string> {
 		.map(token => [token.sub_tokens.map(({ token }) => token).join(' '), token.tag['coordinate']]))
 }
 
+function no_partner_clauses(sentences: Sentence[]): string[] {
+	return sentences[0].clause.sub_tokens
+		.filter(token => token.type === TOKEN_TYPE.CLAUSE && token.tag['coordinate'] === 'no_partner')
+		.map(token => token.sub_tokens.map(({ token }) => token).join(' '))
+}
+
 function list_comma_tags(tokens: Token[]): Array<string | undefined> {
 	return tokens.filter(token => token.token === ',').map(token => token.tag['list_comma'])
 }
@@ -182,8 +188,20 @@ describe('no_partner tags', () => {
 		expect(no_partners(parse_with_lookups('John went to the house of James and in the store.'))).toEqual(['store'])
 	})
 
-	test('adjectives, adverbs and clauses are never tagged: John went quickly.', () => {
+	test('adjectives and adverbs are never tagged: John went quickly.', () => {
 		expect(no_partners(parse_with_lookups('John went quickly.'))).toEqual([])
+	})
+
+	test('a clause starting with and/or that has a partner is not tagged: John say [that Mary go] [and Peter go].', () => {
+		expect(no_partner_clauses(parse_sentences_with_lookups('John say [that Mary go] [and Peter go].'))).toEqual([])
+	})
+
+	test('a clause starting with and/or that is a different type than the clause before it has no partner: Peter slept [before John left] [and Mary left].', () => {
+		expect(no_partner_clauses(parse_sentences_with_lookups('Peter slept [before John left] [and Mary left].'))).toEqual(['[ and Mary left ]'])
+	})
+
+	test('a clause that does not start with and/or is not tagged: Peter slept [before John left] [Mary left].', () => {
+		expect(no_partner_clauses(parse_sentences_with_lookups('Peter slept [before John left] [Mary left].'))).toEqual([])
 	})
 
 	test('coordinated nouns still have all of their positions: John, Mary and Peter went.', () => {

@@ -134,6 +134,19 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
+		'name': 'Check for a clause starting with "and" or "but" that is not coordinated with the clause before it',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'coordinate': 'no_partner' } },
+		'context': {
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
+			'precededby': { 'type': TOKEN_TYPE.CLAUSE },
+			'notprecededby': { 'tag': { 'clause_type': 'relative_clause' } },
+		},
+		'warning': {
+			'on': 'subtokens:1',
+			'message': "This clause starts differently than the one before it, so may not have been coordinated properly.",
+		},
+	},
+	{
 		'name': 'Warn when there is no clause with (simple) after a clause with (complex)',
 		'comment': 'a simple alternate should (usually) follow a complex alternate',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'vocabulary_alternate': 'complex' } },

@@ -4,7 +4,7 @@ import type { Token } from '#lib/types.js'
 import type { SkipJson, TokenFilter, TokenFilterJsonBase } from '#lib/rules/types.js'
 
 export type CoordinatePosition = 'first' | 'coordinate' | 'last'
-// a Noun that has a coordinator next to it, but isn't coordinated with anything
+// a Noun or Clause that has a coordinator, but isn't coordinated with anything
 export type CoordinateTag = CoordinatePosition | 'no_partner'
 export type AlternateCoordinatePosition = CoordinatePosition | 'single'
 
@@ -161,10 +161,17 @@ export function is_coordinatable(token: Token): boolean {
 
 const IS_NOUN = create_token_filter({ 'category': 'Noun' })
 const PRECEDED_BY_NOUN_COORDINATOR = create_context_filter({ 'precededby': { 'tag': { 'syntax': 'coord_noun|comma' }, 'skip': 'np_modifiers_and_adpositions' } })
+const STARTS_WITH_CLAUSE_COORDINATOR = create_context_filter({ 'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }] })
+
+const HAS_COORDINATOR_CHECKS: ((tokens: Token[], index: number) => boolean)[] = [
+	(tokens, index) => IS_NOUN(tokens[index]) && PRECEDED_BY_NOUN_COORDINATOR(tokens, index).success,
+	(tokens, index) => STARTS_WITH_CLAUSE_COORDINATOR(tokens, index).success,
+]
 
 /**
  * eg in 'John, Mary and Peter went', John is first, Mary is coordinate, and Peter is last.
- * A Noun with a coordinator next to it that isn't coordinated with anything is no_partner, eg 'Bethlehem' in 'went to Jerusalem and Bethlehem'.
+ * A Noun or Clause with a coordinator that isn't coordinated with anything is no_partner,
+ * eg 'Bethlehem' in 'went to Jerusalem and Bethlehem', or '[and John leaving]' in 'argued [about Mary leaving] [and John leaving]'.
  * Any other token that isn't coordinated with anything has no position.
  */
 export function find_coordinate_position({ tokens, index }: { tokens: Token[], index: number }): CoordinateTag | undefined {
@@ -176,10 +183,7 @@ export function find_coordinate_position({ tokens, index }: { tokens: Token[], i
 	const position = POSITION_BY_NEIGHBORS[`${has_preceding}|${has_following}`]
 	if (position) return position
 
-	if (IS_NOUN(tokens[index]) && PRECEDED_BY_NOUN_COORDINATOR(tokens, index).success) {
-		return 'no_partner'
-	}
-	return undefined
+	return HAS_COORDINATOR_CHECKS.some(has_coordinator => has_coordinator(tokens, index)) ? 'no_partner' : undefined
 }
 
 const ALTERNATE_POSITION_BY_KEY: Record<string, AlternateCoordinatePosition> = {

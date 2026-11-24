@@ -612,6 +612,20 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
+		'name': 'Check for a clause starting with "and" or "or" that is not coordinated with the clause before it',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'coordinate': 'no_partner' } },
+		'context': {
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or' }],
+			'precededby': { 'type': TOKEN_TYPE.CLAUSE },
+			'notprecededby': { 'tag': { 'clause_type': 'relative_clause' } },
+		},
+		'warning': {
+			'on': 'subtokens:1',
+			'message': "This clause is not coordinated with the clause before it, since they start differently. If they should be coordinated, start this clause the same way, eg '[about X] [and about Y]'.",
+		},
+		'comment': "eg 'John argued [about Mary leaving] [and John leaving]'. The nested independent clause checks above cover a clause that is not preceded by another clause, or is preceded by a relative clause",
+	},
+	{
 		'name': 'Warn when there is no clause with (simple) after a clause with (complex)',
 		'comment': 'a simple alternate should (usually) follow a complex alternate',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'vocabulary_alternate': 'complex' } },
