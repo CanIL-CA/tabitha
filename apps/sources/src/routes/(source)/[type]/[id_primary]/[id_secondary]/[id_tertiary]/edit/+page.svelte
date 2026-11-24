@@ -88,7 +88,7 @@
 
 	{#if validation.is_shown}
 		<div class="mt-4">
-			<ValidationIssues {validation} />
+			<ValidationIssues {validation} reference={data.nav_data.current} />
 		</div>
 	{/if}
 
