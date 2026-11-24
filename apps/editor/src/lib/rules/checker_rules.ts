@@ -591,7 +591,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when not preceded by a clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE },
 		},
 		'error': {
@@ -603,7 +603,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when preceded by a relative clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'patient_clause_different_participant' } },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'relative_clause' } },
 		},
 		'error': {
@@ -612,10 +612,10 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 	},
 	{
-		'name': 'Check for a clause starting with "and" or "or" that is not coordinated with the clause before it',
+		'name': 'Check for a clause starting with "and" or "but" that is not coordinated with the clause before it',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'coordinate': 'no_partner' } },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|or' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE },
 			'notprecededby': { 'tag': { 'clause_type': 'relative_clause' } },
 		},

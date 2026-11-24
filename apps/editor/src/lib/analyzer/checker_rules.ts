@@ -113,7 +113,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when not preceded by a clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE, 'skip': { 'tag': { 'list_comma': 'relative_clause' } } },
 		},
 		'warning': {
@@ -125,7 +125,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when preceded by a relative clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'patient_clause_different_participant' } },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'relative_clause' } },
 		},
 		'warning': {
