@@ -1,6 +1,6 @@
 import type { CaseFrameStatus } from '@tabitha/types'
 import type { LookupResult, Tag } from '#lib/types.js'
-import type { RuleTriggerContext, TokenRule, TransformRuleJson, TokenFilterJsonBase, TokenContextFilterJson } from '#lib/rules/types.js'
+import type { RuleTriggerContext, TokenRule, TransformRuleJson, TokenFilterJsonBase, TokenContextFilter, TokenContextFilterJson } from '#lib/rules/types.js'
 
 export type RoleTag = string
 
@@ -13,6 +13,8 @@ export type ArgumentRoleRule = {
 	scope: 'clause' | 'relative_context' | 'self'
 	relative_context_index: number
 	trigger_rule: TokenRule
+	// relative to each argument rather than the main word, so each coordinated argument finds its own context to transform
+	argument_context: TokenContextFilter
 	missing_message: string
 	extra_message: string
 	main_word_tag: Tag | null
@@ -68,6 +70,7 @@ export type CaseFrameRuleJson = TransformRuleJson & {
 	main_word_tag?: Tag
 	check_self?: boolean
 	argument_context_index?: number
+	argument_context?: TokenContextFilterJson
 	missing_message?: string
 	extra_message?: string
 }

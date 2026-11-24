@@ -1,5 +1,6 @@
 import { LOOKUP_FILTERS } from '#lib/lookup_filters.js'
 import { TOKEN_TYPE, stem_with_sense, create_case_frame, format_token_message, token_has_tag } from '#lib/token.js'
+import { create_context_filter } from '#lib/rules/rules_parser.js'
 import { parse_transform_rule } from '../transform_rules'
 import { with_coordinated_arguments } from './coordination'
 import { UNBRACKETED_CLAUSE_MESSAGE, WHERE_RELATIVIZER_HINT, has_where_relativizer_argument, is_missing_brackets_around_clause } from './cascade_sources'
@@ -83,12 +84,14 @@ export function parse_case_frame_rule({ sense, role_tag, rule_json }: { sense: W
 	const missing_message = rule_json['missing_message'] ?? missing_argument_message(role_tag)
 	const extra_message = rule_json['extra_message'] ?? extra_argument_message(role_tag)
 	const scope = rule_json['check_self'] ? 'self' : 'argument_context_index' in rule_json ? 'relative_context' : 'clause'
+	const trigger_rule = { ...parse_transform_rule({ rule_json, index: 0 }), id: `case_frame:${sense}:${role_tag}` }
 
 	return [{
 		role_tag,
-		trigger_rule: { ...parse_transform_rule({ rule_json, index: 0 }), id: `case_frame:${sense}:${role_tag}` },
+		trigger_rule,
 		scope,
 		relative_context_index: rule_json['argument_context_index'] ?? -1,
+		argument_context: scope === 'clause' ? trigger_rule.context : create_context_filter(rule_json['argument_context']),
 		missing_message: missing_message.replaceAll('{role}', role_tag),
 		extra_message: extra_message.replaceAll('{role}', role_tag),
 		main_word_tag: rule_json['main_word_tag'] ?? null,
@@ -210,11 +213,14 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 			rule,
 			success: true,
 			argument_contexts: with_coordinated_arguments({
-				tokens,
-				trigger_index: argument_index,
-				trigger_token: tokens[argument_index],
-				rule_id: rule.trigger_rule.id,
-				...context_result,
+				matched_argument: {
+					tokens,
+					trigger_index: argument_index,
+					trigger_token: tokens[argument_index],
+					rule_id: rule.trigger_rule.id,
+					...context_result,
+				},
+				argument_context: rule.argument_context,
 			}),
 		})
 
@@ -242,11 +248,14 @@ function match_argument_rule({ main_trigger_context, rule }: { main_trigger_cont
 				rule,
 				success: true,
 				argument_contexts: with_coordinated_arguments({
-					tokens,
-					trigger_index: i,
-					trigger_token: tokens[i],
-					rule_id: rule.trigger_rule.id,
-					...context_result,
+					matched_argument: {
+						tokens,
+						trigger_index: i,
+						trigger_token: tokens[i],
+						rule_id: rule.trigger_rule.id,
+						...context_result,
+					},
+					argument_context: rule.argument_context,
 				}),
 			})
 		}

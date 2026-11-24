@@ -151,6 +151,7 @@ export function directly_after_verb_with_adposition(adposition: string): CaseFra
 			],
 		}),
 		'argument_context_index': 1,
+		'argument_context': { 'precededby': { 'token': adposition, 'skip': 'np_modifiers' } },
 		'context_transform': { 'function': { 'pre_np_adposition': 'verb_argument' } }, // make the adposition a function word
 		'missing_message': `'${adposition} X'`,
 	}
