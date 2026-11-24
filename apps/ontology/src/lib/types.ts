@@ -49,6 +49,7 @@ export type CuratedExample = {
  * - features: those of use to the example, including ones that have no code in the format, which are known only for an example made from a verse
  */
 export type CuratedExampleEntity = Pick<SourceEntity, 'category' | 'category_abbr' | 'value' | 'feature_codes' | 'features'>
+export type CuratedExampleEntityStructured = CuratedExampleEntity & { parent: number }
 
 export type CuratedExampleEncoding = CuratedExampleEntity[]
 

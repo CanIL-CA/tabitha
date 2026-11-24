@@ -14,7 +14,7 @@ import {
 	theta_grid_arguments,
 	usage_info,
 } from '#lib/lookups.js'
-import type { Concept, CuratedExample, CuratedExampleEncoding, CuratedExampleEntity, EncodedCuratedExample } from '#lib/types.js'
+import type { Concept, CuratedExample, CuratedExampleEncoding, CuratedExampleEntity, CuratedExampleEntityStructured, EncodedCuratedExample } from '#lib/types.js'
 import type { PartOfSpeech, Reference } from '@tabitha/types'
 
 /**
@@ -82,16 +82,21 @@ function decode_reference(encoded_reference: string): Reference {
 	}
 }
 
-class CuratedExampleEncodingError extends Error {}
-
-const NON_NEGATIVE_INTEGER = /^\d+$/
-const WORD_CATEGORIES = new Set<string>(parts_of_speech)
-
-type EncodeCuratedExampleOptions = {
-	readonly reference: Reference
-	readonly sentence: string
-	readonly encoding: CuratedExampleEncoding
+/**
+ * Where each entity sits: the index of the phrase or clause it is directly in, or -1 for none, which is what is directly in the clause the example is about.
+ * A closing bracket is in the boundary it closes.
+ */
+export function structure_curated_example_encoding(encoding: CuratedExampleEncoding): CuratedExampleEntityStructured[] {
+	const open_indexes: number[] = []
+	return encoding.map((entity, index) => {
+		const parent_index = open_indexes.at(-1) ?? -1
+		if (is_boundary_start(entity)) open_indexes.push(index)
+		if (is_boundary_end(entity)) open_indexes.pop()
+		return { ...entity, parent: parent_index }
+	})
 }
+
+class CuratedExampleEncodingError extends Error {}
 
 /**
  * Turns the entities of an example into one line of the curated examples format, the reverse of transform_curated_examples.
@@ -99,7 +104,7 @@ type EncodeCuratedExampleOptions = {
  * Example output:
  * "4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful."
  */
-export function encode_curated_example({ reference, sentence, encoding }: EncodeCuratedExampleOptions): EncodedCuratedExample {
+export function encode_curated_example({ reference, sentence, encoding }: { reference: Reference, sentence: string, encoding: CuratedExampleEncoding }): EncodedCuratedExample {
 	try {
 		const encoded_reference = encode_reference(reference)
 		const encoded_sentence = validate_sentence(sentence)
@@ -124,6 +129,8 @@ function validate_sentence(sentence: string): string {
  * @returns e.g., '4,2,2,2'
  */
 function encode_reference(reference: Reference): string {
+	const NON_NEGATIVE_INTEGER = /^\d+$/
+
 	const type_key = [...sources.keys()].indexOf(reference.type)
 	const book_key = Object.entries(sources.get(reference.type) ?? {}).find(([, book]) => book === reference.id_primary)?.[0]
 	const has_numeric_ids = NON_NEGATIVE_INTEGER.test(reference.id_secondary) && NON_NEGATIVE_INTEGER.test(reference.id_tertiary)
@@ -136,6 +143,8 @@ function encode_reference(reference: Reference): string {
 }
 
 function encode_entity(entity: CuratedExampleEntity): string {
+	const WORD_CATEGORIES = new Set<string>(parts_of_speech)
+
 	const { category, value, feature_codes } = entity
 	if (is_boundary_end(entity)) return value
 

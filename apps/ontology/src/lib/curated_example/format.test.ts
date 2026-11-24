@@ -12,15 +12,15 @@ import {
 	head_phrase_by_part_of_speech,
 	is_boundary_end,
 	is_boundary_start,
-	is_comparative_feature,
-	is_different_participant_feature,
-	is_same_participant_feature,
 	make_boundary_end,
 	make_boundary_start,
 	make_participant_feature,
 	make_word,
 	read_source_features,
 	start_token_by_category,
+	is_duplicate_example,
+	put_example,
+	split_example_lines,
 } from './format.js'
 
 describe('the curated example format', () => {
@@ -173,12 +173,49 @@ describe('the features that are worked out', () => {
 
 		expect(same).toEqual({ name: 'Participant', value: 'Same' })
 		expect(different).toEqual({ name: 'Participant', value: 'Different' })
-		expect([is_same_participant_feature(same), is_same_participant_feature(different)]).toEqual([true, false])
-		expect([is_different_participant_feature(same), is_different_participant_feature(different)]).toEqual([false, true])
-	})
-
-	it('recognizes a comparative degree', () => {
-		expect(is_comparative_feature({ name: 'Degree', value: 'Comparative' })).toBe(true)
-		expect(is_comparative_feature({ name: 'Usage', value: 'Predicative' })).toBe(false)
 	})
 })
+
+const FIRST = '4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful.'
+const SECOND = '4,17,2,2|(NPA|Xerxes|)|(VP|search|)|~Xerxes searched.'
+const NEW = '6,8,1,67|(NPA|John|)|(VP|go|)|~John went.'
+
+describe('split_example_lines', () => {
+	it('has a line for each example, whatever ends the lines, and none for blank lines', () => {
+		expect(split_example_lines(`${FIRST}\r\n\n${SECOND}\n`)).toEqual([FIRST, SECOND])
+		expect(split_example_lines('')).toEqual([])
+	})
+})
+
+describe('put_example', () => {
+	const curated_examples = `${FIRST}\n${SECOND}\n`
+
+	it('adds the example after the others, with a line ending', () => {
+		expect(put_example({ curated_examples, encoded_example: NEW, replaces: null })).toBe(`${FIRST}\n${SECOND}\n${NEW}\n`)
+		expect(put_example({ curated_examples: '', encoded_example: NEW, replaces: null })).toBe(`${NEW}\n`)
+	})
+
+	it('puts the example in the place of the one it replaces', () => {
+		expect(put_example({ curated_examples, encoded_example: NEW, replaces: 0 })).toBe(`${NEW}\n${SECOND}\n`)
+		expect(put_example({ curated_examples, encoded_example: NEW, replaces: 1 })).toBe(`${FIRST}\n${NEW}\n`)
+	})
+
+	it('adds the example when there is no example to replace', () => {
+		expect(put_example({ curated_examples, encoded_example: NEW, replaces: 5 })).toBe(`${FIRST}\n${SECOND}\n${NEW}\n`)
+	})
+})
+
+describe('is_duplicate_example', () => {
+	const curated_examples = `${FIRST}\n${SECOND}\n`
+
+	it('is whether the concept already has the example', () => {
+		expect(is_duplicate_example({ curated_examples, encoded_example: SECOND, replaces: null })).toBe(true)
+		expect(is_duplicate_example({ curated_examples, encoded_example: NEW, replaces: null })).toBe(false)
+	})
+
+	it('does not count the example that is being replaced', () => {
+		expect(is_duplicate_example({ curated_examples, encoded_example: FIRST, replaces: 0 })).toBe(false)
+		expect(is_duplicate_example({ curated_examples, encoded_example: FIRST, replaces: 1 })).toBe(true)
+	})
+})
+

@@ -96,29 +96,6 @@ function find_example_indexes({ structure, host_index }: { structure: Structure;
 	})
 }
 
-// Participants are identified by noun list index, since the index is what links mentions of the same participant. A noun without one falls back to its concept.
-function find_agent_identities({ structure, clause_index }: { structure: Structure; clause_index: number }): Set<string> {
-	const { source_entities, parent_indexes } = structure
-
-	const agent_phrase_indexes = source_entities.flatMap((entity, index) =>
-		parent_indexes[index] === clause_index && entity.category === NOUN_PHRASE && get_feature_value({ entity, name: SEMANTIC_ROLE.name }) === AGENT_ROLE ? [index] : [],
-	)
-	const identities = source_entities
-		.filter((entity, index) => entity.category === 'Noun' && agent_phrase_indexes.includes(parent_indexes[index]))
-		.map(({ noun_list_index, concept }) => noun_list_index ?? (concept ? `${concept.stem}-${concept.sense}` : ''))
-		.filter(identity => identity !== '')
-	return new Set(identities)
-}
-
-function is_same_participant({ structure, outer_clause_index, inner_clause_index }: { structure: Structure; outer_clause_index: number; inner_clause_index: number }): boolean {
-	const outer_agents = find_agent_identities({ structure, clause_index: outer_clause_index })
-	const inner_agents = find_agent_identities({ structure, clause_index: inner_clause_index })
-
-	return outer_agents.size > 0
-		&& outer_agents.size === inner_agents.size
-		&& [...outer_agents].every(agent => inner_agents.has(agent))
-}
-
 // The clause argument of an adjective is the same participant as the clause the adjective is in, or a different one.
 function find_participant_features({ structure, index }: { structure: Structure; index: number }): EntityFeature[] {
 	const parent_index = structure.parent_indexes[index]
@@ -128,6 +105,29 @@ function find_participant_features({ structure, index }: { structure: Structure;
 	const outer_clause_index = find_enclosing_clause_index({ structure, index: parent_index })
 	const is_same = is_same_participant({ structure, outer_clause_index, inner_clause_index: index })
 	return [make_participant_feature(is_same ? 'same' : 'different')]
+	
+	function is_same_participant({ structure, outer_clause_index, inner_clause_index }: { structure: Structure; outer_clause_index: number; inner_clause_index: number }): boolean {
+		const outer_agents = find_agent_identities({ structure, clause_index: outer_clause_index })
+		const inner_agents = find_agent_identities({ structure, clause_index: inner_clause_index })
+
+		return outer_agents.size > 0
+			&& outer_agents.size === inner_agents.size
+			&& [...outer_agents].every(agent => inner_agents.has(agent))
+	}
+
+	// Participants are identified by noun list index, since the index is what links mentions of the same participant. A noun without one falls back to its concept.
+	function find_agent_identities({ structure, clause_index }: { structure: Structure; clause_index: number }): Set<string> {
+		const { source_entities, parent_indexes } = structure
+
+		const agent_phrase_indexes = source_entities.flatMap((entity, index) =>
+			parent_indexes[index] === clause_index && entity.category === NOUN_PHRASE && get_feature_value({ entity, name: SEMANTIC_ROLE.name }) === AGENT_ROLE ? [index] : [],
+		)
+		const identities = source_entities
+			.filter((entity, index) => entity.category === 'Noun' && agent_phrase_indexes.includes(parent_indexes[index]))
+			.map(({ noun_list_index, concept }) => noun_list_index ?? (concept ? `${concept.stem}-${concept.sense}` : ''))
+			.filter(identity => identity !== '')
+		return new Set(identities)
+	}
 }
 
 function simplify_boundary_start({ structure, index }: { structure: Structure; index: number }): CuratedExampleEntity {

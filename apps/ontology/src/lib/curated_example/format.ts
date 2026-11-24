@@ -264,16 +264,11 @@ export function read_source_features({ part_name, source_category, source_featur
 //===============
 // The features that are worked out, for the code that works them out and reads them
 
-export const PARTICIPANT = get_feature({ part_name: 'Clause', feature_key: 'participant' })
-export const DEGREE = get_feature({ part_name: 'Word', feature_key: 'degree' })
+const PARTICIPANT = get_feature({ part_name: 'Clause', feature_key: 'participant' })
 
 export function make_participant_feature(participant: 'same' | 'different'): EntityFeature {
 	return { name: PARTICIPANT.name, value: PARTICIPANT.values[participant].label }
 }
-
-export const is_same_participant_feature = ({ name, value }: EntityFeature): boolean => name === PARTICIPANT.name && value === PARTICIPANT.values.same.label
-export const is_different_participant_feature = ({ name, value }: EntityFeature): boolean => name === PARTICIPANT.name && value === PARTICIPANT.values.different.label
-export const is_comparative_feature = ({ name }: EntityFeature): boolean => name === DEGREE.name
 
 //===============
 // How an entity is displayed
@@ -283,4 +278,29 @@ export function get_coded_feature_label({ category, features }: CuratedExampleEn
 	const feature = find_coded_feature(get_part(category))
 	const source_value = features.find(({ name }) => name === feature?.name)?.value
 	return Object.values(feature?.values ?? {}).find(value => get_source_value(value) === source_value)?.label
+}
+
+//===============
+// A concept keeps its curated examples as one text, with a line for each example.
+
+export const split_example_lines = (curated_examples: string): string[] => curated_examples.split(/\r?\n/).filter(line => line !== '')
+
+type PutExampleOptions = {
+	curated_examples: string
+	encoded_example: string
+	/** The index of the existing example that this one replaces, if it replaces one */
+	replaces: number | null
+}
+
+/** The curated examples with the example added, or in the place of the one it replaces. */
+export function put_example({ curated_examples, encoded_example, replaces }: PutExampleOptions): string {
+	const lines = split_example_lines(curated_examples)
+	const is_replacing = replaces !== null && replaces < lines.length
+	const put_lines = is_replacing ? lines.map((line, index) => index === replaces ? encoded_example : line) : [...lines, encoded_example]
+	return put_lines.join('\n') + '\n'
+}
+
+/** Whether the concept already has the example, not counting the one that it replaces. */
+export function is_duplicate_example({ curated_examples, encoded_example, replaces }: PutExampleOptions): boolean {
+	return split_example_lines(curated_examples).some((line, index) => index !== replaces && line === encoded_example)
 }
