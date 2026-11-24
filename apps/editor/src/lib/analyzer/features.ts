@@ -32,8 +32,18 @@ const feature_rules_json: FeatureRulesByCategoryJson = {
 			}],
 		]],
 		['Participant Tracking', [
-			['Routine', { }],
-			['First of Multiple Mentions', {
+			['Only Mention', { }],
+			['Routine', {
+				// any remaining 'determiner' represents 'Routine'
+				'context': { 'precededby': { 'tag': 'determiner', 'skip': 'np_modifiers' } },
+			}],
+			['Routine', {
+				'trigger': { 'level': '4', 'tag': { 'noun_category': 'person|locative' } },
+			}],
+			['Routine', {
+				'context': { 'precededby': { 'tag': { 'relation': 'genitive_saxon' }, 'skip': 'np_modifiers' } },
+			}],
+			['Only Mention', {
 				'context': { 'precededby': { 'tag': { 'determiner': 'indefinite_article' }, 'skip': 'np_modifiers' } },
 			}],
 			['Frame Inferable', {
