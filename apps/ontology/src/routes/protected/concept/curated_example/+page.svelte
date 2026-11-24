@@ -8,7 +8,7 @@
 	import ChangeDiffData from '#lib/changes/ChangeDiffData.svelte'
 	import PendingChange from '#lib/changes/PendingChange.svelte'
 	import { CuratedExampleEditor } from '#lib/curated_example/editor.svelte.js'
-	import SimplifiedEntities from '#lib/examples/curated_examples/SimplifiedEntities.svelte'
+	import CuratedExampleEntities from '#lib/curated_example/CuratedExampleEntities.svelte'
 	import { enqueue } from '#lib/offline/sync.js'
 	import { create_fallback_concept } from '#lib/transformers.js'
 	import type { SaveResult } from '#lib/types.js'
@@ -112,7 +112,7 @@
 				</p>
 
 				<div class="bg-base-100 rounded-box flex flex-wrap p-3">
-					<SimplifiedEntities
+					<CuratedExampleEntities
 						entities={editor.encoding}
 						highlighted_indexes={editor.hovered_unit_indexes}
 						is_clickable={index => editor.is_deletable(index)}

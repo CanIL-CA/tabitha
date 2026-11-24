@@ -12,7 +12,7 @@
 	import { Category } from './categorization'
 	import { CONCEPT_FILTERS } from '#lib/search/filters.js'
 	import { structure_curated_example_encoding } from '#lib/transformers.ts'
-	import SimplifiedEntities from '#lib/examples/curated_examples/SimplifiedEntities.svelte'
+	import CuratedExampleEntities from '#lib/curated_example/CuratedExampleEntities.svelte'
 	import type { Concept } from '#lib/types.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
@@ -95,7 +95,7 @@
 									</div>
 
 									<footer class="mt-4 px-4 flex justify-left bg-base-100">
-										<SimplifiedEntities entities={structured_entities} />
+										<CuratedExampleEntities entities={structured_entities} />
 									</footer>
 								</blockquote>
 							{/each}
