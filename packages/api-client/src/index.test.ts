@@ -591,7 +591,6 @@ describe('@tabitha/api-client', () => {
 			expect(searchParams.get('part_of_speech')).toBe('Verb')
 			expect(searchParams.get('source')).toBe('My Bible')
 		})
-
 	})
 
 	describe('create_sources_client', () => {

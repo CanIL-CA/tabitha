@@ -1,10 +1,41 @@
 import { describe, expect, test } from 'vitest'
 import { check_alternates, check_brackets, check_case_frames, check_concept_level, check_noun_list, check_phrase_structure, check_unset_features, validate_encoding } from './validation'
-import { close_clause, close_phrase, concept, open_clause, open_phrase, structured, word, type Features } from './test_entities'
+import { structure_entities } from './structured'
 import { DEFAULTS } from '#lib/edit/default_entities.js'
 import { group_senses_by_concept } from '#lib/data/ontology_senses.js'
-import type { ConceptKey, OntologyResult } from '@tabitha/types'
+import type { ConceptKey, OntologyResult, PairingType } from '@tabitha/types'
 import type { PageSourceEntity } from '#lib/types.js'
+
+type Features = Record<string, string>
+
+const to_features = (features: Features) => Object.entries(features).map(([name, value]) => ({ name, value }))
+
+const open_clause = (features: Features = {}): PageSourceEntity => ({
+	...DEFAULTS.EMPTY, category: 'Clause', category_abbr: 'C', value: '{', features: to_features(features),
+})
+const close_clause = (): PageSourceEntity => ({ ...DEFAULTS.EMPTY, value: '}' })
+const open_phrase = ({ category, features = {} }: { category: 'Noun Phrase' | 'Verb Phrase' | 'Adjective Phrase' | 'Adverb Phrase'; features?: Features }): PageSourceEntity => ({
+	...DEFAULTS.EMPTY, category, category_abbr: 'P', value: '(', features: to_features(features),
+})
+const close_phrase = (): PageSourceEntity => ({ ...DEFAULTS.EMPTY, value: ')' })
+
+const word = ({ category, concept, pairing_concept = null, pairing_type = null, noun_list_index = null, features = {} }: {
+	category: 'Noun' | 'Verb' | 'Adjective' | 'Adverb' | 'Adposition' | 'Conjunction'
+	concept: ConceptKey
+	pairing_concept?: ConceptKey | null
+	pairing_type?: PairingType | null
+	noun_list_index?: string | null
+	features?: Features
+}): PageSourceEntity => ({
+	...DEFAULTS.EMPTY, category, value: concept.stem, concept, pairing_concept, pairing_type, noun_list_index, features: to_features(features),
+})
+
+const structured = (entities: PageSourceEntity[]): PageSourceEntity[] => {
+	structure_entities(entities)
+	return entities
+}
+
+const concept = ({ stem, part_of_speech = 'Noun' }: { stem: string; part_of_speech?: ConceptKey['part_of_speech'] }): ConceptKey => ({ stem, sense: 'A', part_of_speech })
 
 const sense = ({ concept, level = '0', categories = [] }: { concept: ConceptKey; level?: string; categories?: string[] }): OntologyResult => ({
 	...concept, level, gloss: '', categorization: '', categories, status: 'in ontology', how_to_hints: [],
