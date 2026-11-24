@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { transform_curated_examples } from '#lib/transformers.js'
+import { structure_curated_example_encoding, transform_curated_examples } from '#lib/transformers.js'
 import { compare_case_frame, find_present_slots, get_slot_labels, suggest_categories } from './case_frame.js'
-import type { CuratedExampleEncoding } from '#lib/types.js'
+import type { CuratedExampleEntityStructured } from '#lib/types.js'
 import type { PartOfSpeech } from '@tabitha/types'
 
-const decode = (encoded_entities: string): CuratedExampleEncoding =>
-	transform_curated_examples(`4,2,2,2|${encoded_entities}|~A sentence.`)[0].encoding
+const decode = (encoded_entities: string): CuratedExampleEntityStructured[] =>
+	structure_curated_example_encoding(transform_curated_examples(`4,2,2,2|${encoded_entities}|~A sentence.`)[0].encoding)
 
 const THETA = { agent: 0, patient: 1, destination: 4, patient_proposition: 7, agent_proposition: 8 }
 const ADJECTIVE = { attributive: 0, without_argument: 1, nominal_argument: 2, same_participant: 3, different_participant: 4, comparative: 5 }
@@ -59,7 +59,7 @@ describe('find_present_slots', () => {
 		it('is predicative with a clause argument of the same or a different participant, when that is known', () => {
 			const encoding = decode('(NPA|John|)|(VP|be|)|(APP|ready|[p|(NPA|John|)|(VP|read|)|]|)')
 			const with_participant = (participant: string) => encoding.map(entity => entity.category === 'Clause' ? { ...entity, features: [...entity.features, { name: 'Participant', value: participant }] } : entity)
-			const slots = (participant_encoding: CuratedExampleEncoding) => find_present_slots({ part_of_speech: 'Adjective', stem: 'ready', encoding: participant_encoding })
+			const slots = (participant_encoding: CuratedExampleEntityStructured[]) => find_present_slots({ part_of_speech: 'Adjective', stem: 'ready', encoding: participant_encoding })
 
 			expect(slots(with_participant('Same'))).toEqual([ADJECTIVE.same_participant])
 			expect(slots(with_participant('Different'))).toEqual([ADJECTIVE.different_participant])
@@ -71,8 +71,8 @@ describe('find_present_slots', () => {
 			expect(find_present_slots({ part_of_speech: 'Adjective', stem: 'ready', encoding })).toEqual([ADJECTIVE.without_argument, ADJECTIVE.comparative])
 		})
 
-		it('has no usage in an adjective phrase within an adjective phrase', () => {
-			expect(adjective_slots('(APP|good|(APA|ready|)|)')).toEqual([])
+		it('is attributive in an adjective phrase within an adjective phrase', () => {
+			expect(adjective_slots('(APP|good|(APA|ready|)|)')).toEqual([ADJECTIVE.attributive])
 		})
 	})
 

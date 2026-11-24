@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+	import { page } from '$app/state'
+	import { make_curated_example_url } from '#lib/curated_example/links.js'
 	import { get_source_data, get_sources_url } from '#lib/examples/index.js'
 	import Icon from '@iconify/svelte'
 	import { SourceEntitiesPlain } from '@tabitha/ui'
@@ -40,10 +42,18 @@
 	<h4 class="flex justify-between">
 		Semantic encoding (Phase 2)
 
-		<a href={get_sources_url(reference)} target="_blank" rel="noreferrer" class="link link-accent link-hover text-sm flex items-end">
-			all source details
-			<Icon icon="fe:link-external" class="h-6 w-6" />
-		</a>
+		<span class="flex gap-4">
+			{#if page.data.user?.permissions.has_protected_access}
+				<a href={make_curated_example_url({ concept: selected_concept, reference })} class="link link-accent link-hover text-sm flex items-end">
+					make a curated example
+					<Icon icon="mdi:plus-circle-outline" class="h-5 w-5" />
+				</a>
+			{/if}
+			<a href={get_sources_url(reference)} target="_blank" rel="noreferrer" class="link link-accent link-hover text-sm flex items-end">
+				all source details
+				<Icon icon="fe:link-external" class="h-6 w-6" />
+			</a>
+		</span>
 	</h4>
 
 	{#if source.status !== 'Ready to Translate'}

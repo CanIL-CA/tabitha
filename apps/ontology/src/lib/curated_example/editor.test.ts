@@ -76,6 +76,16 @@ describe('CuratedExampleEditor', () => {
 			expect(editor.encoding.map(({ value }) => value)).toEqual(['(', 'John', ')', '(', 'give', ')', '(', 'book', ')'])
 		})
 
+		it('keeps finding the right units after something earlier in the example is deleted', () => {
+			const editor = create_editor()
+			editor.delete_unit(1)
+			expect(editor.encoding).toHaveLength(9)
+
+			editor.delete_unit(7)
+			expect(editor.encoding.map(({ value }) => value)).toEqual(['(', 'give', ')', '(', 'book', ')'])
+			expect(editor.deletable_roots).toEqual([3])
+		})
+
 		it('does not delete what holds the word', () => {
 			const editor = create_editor()
 			expect(editor.is_deletable(4)).toBe(false)

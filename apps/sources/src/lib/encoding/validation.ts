@@ -399,14 +399,14 @@ const ARGUMENT_ROLE_LOOKUP_BY_CATEGORY: Record<string, ArgumentRoleLookup> = {
 
 const OPTIONAL_CATEGORY = /^\((.*)\)$/
 
-export function get_argument_role(entity: PageSourceEntity): string | undefined {
+function get_argument_role(entity: PageSourceEntity): string | undefined {
 	const lookup = ARGUMENT_ROLE_LOOKUP_BY_CATEGORY[entity.category]
 	if (!lookup) return undefined
 
 	return lookup.roles[get_feature_value({ entity, feature_name: lookup.feature_name })]
 }
 
-export function find_enclosing_clause({ source_entities, entity }: { source_entities: PageSourceEntity[]; entity: PageSourceEntity }): PageSourceEntity | undefined {
+function find_enclosing_clause({ source_entities, entity }: { source_entities: PageSourceEntity[]; entity: PageSourceEntity }): PageSourceEntity | undefined {
 	const parent = source_entities[entity.parent_id]
 	if (!parent) return undefined
 
@@ -644,7 +644,7 @@ function find_frame_mismatch({ source_entities, word_concept }: { source_entitie
 }
 
 // The arguments or usages a word shows in the structure, which don't depend on what the ontology says about the word.
-export function find_present_case_frame({ source_entities, word }: { source_entities: PageSourceEntity[]; word: PageSourceEntity }): string[] {
+function find_present_case_frame({ source_entities, word }: { source_entities: PageSourceEntity[]; word: PageSourceEntity }): string[] {
 	const build_profile = CASE_FRAME_PROFILE_BUILDERS[word.category]
 	return build_profile?.({ source_entities, word, categories: [] })?.present ?? []
 }

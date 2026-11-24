@@ -1,6 +1,6 @@
 import { compare_case_frame, find_present_slots, get_slot_labels, has_case_frame, suggest_categories } from './case_frame.js'
 import { is_boundary_end, is_boundary_start, is_duplicate_example, put_example } from './format.js'
-import { encode_curated_example } from '#lib/transformers.js'
+import { encode_curated_example, structure_curated_example_encoding } from '#lib/transformers.js'
 import type { CuratedExampleEntityStructured, EncodedCuratedExample } from '#lib/types.js'
 import type { ConceptKey, Reference } from '@tabitha/types'
 
@@ -193,7 +193,8 @@ export function find_unit_root({ encoding, deletable_roots, index }: { encoding:
 	return find_unit_root({ encoding, deletable_roots, index: encoding[index].parent })
 }
 
+/** The encoding without the unit, with where each entity sits worked out again, since the entities after the unit are at new indexes. */
 export function remove_unit({ encoding, root }: { encoding: Encoding; root: number }): Encoding {
 	const unit = find_unit({ encoding, index: root })
-	return unit ? encoding.filter((_, index) => !unit.includes(index)) : encoding
+	return unit ? structure_curated_example_encoding(encoding.filter((_, index) => !unit.includes(index))) : encoding
 }
