@@ -1,4 +1,4 @@
-import type { CaseFrameIssue, ValidationIssue } from './validation'
+import type { ValidationIssue } from './validation'
 import type { PageSourceEntity } from '#lib/types.js'
 import type { Reference } from '@tabitha/types'
 
