@@ -159,6 +159,13 @@ const checker_rules_json: CheckerRuleJson[] = [
 			'message': 'A simple vocabulary alternate typically directly follows a complex alternate, but no simple alternate was found.',
 		},
 	},
+	{
+		'name': 'Warn to set the proper "yes" rhetorical type',
+		'trigger': { 'token': '(yesrhetorical)' },
+		'warning': {
+			'message': "The analyzer can't determine the type of 'yes-rhetorical' question, so make sure it's set to the right value.",
+		},
+	},
 ]
 
 const builtin_checker_rules: BuiltInRule[] = [
