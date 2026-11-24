@@ -31,7 +31,17 @@ export async function generate_verse_text({ generator, book, chapter, verse, enc
 		headers: { 'content-type': 'application/json' },
 		body: JSON.stringify({ book, chapter, verse, encoding, previous_encoding, audience }),
 	}) as Response
+	if (generator_not_running(response)) return { status: 503, body: { error: GENERATOR_NOT_RUNNING } }
 	return { status: response.status, body: await response.json() as { text?: string, error?: string } }
+}
+
+export const GENERATOR_NOT_RUNNING = "The generator isn't running. From the repo root, start it with `bun run dev:generator`, or start everything with `bun run dev`."
+
+// In local dev the binding reaches the generator through wrangler's dev registry. When it isn't
+// running, the binding itself answers with a plain-text 503 ('Worker "generator" not found');
+// the generator answers its own errors in JSON.
+export function generator_not_running(response: Response) {
+	return response.status === 503 && !response.headers.get('content-type')?.startsWith('application/json')
 }
 
 // The engine's files, for browsers that run it themselves (see engine_worker.ts).

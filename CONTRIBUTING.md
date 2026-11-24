@@ -87,6 +87,7 @@ graph TD
 | **`copilot`** | `9000` | [http://localhost:9000](http://localhost:9000) | AI translation guidance, theological constraint checking, and LLM calls via `@tabitha/ai` and the Cloudflare AI Gateway. |
 | **`www`** | `1455` | [http://localhost:1455](http://localhost:1455) | Public-facing marketing/informational site. |
 | **`survey`** | `1086` | [http://localhost:1086](http://localhost:1086) | Link-only blinded A/B reviews: reviewers score two outputs per item, and only the results link shows which was which. Backed by Cloudflare D1 SQLite. See [ADR 0024](docs/decisions/0024-survey-app.md). |
+| **`generator`** | `1966` | — | Plain Worker (not SvelteKit) that generates English verse text with TBTA's engine compiled to WebAssembly. Sources reaches it through a service binding, locally too, so start it alongside sources to try generation. See [`apps/generator/README.md`](apps/generator/README.md). |
 | **`scheduler`** | — | — | Cron-only plain Worker (not SvelteKit) that triggers each app's scheduled work through a service binding. See [`apps/scheduler/README.md`](apps/scheduler/README.md) and [ADR 0018](docs/decisions/0018-scheduled-work-via-scheduler-worker.md). |
 
 ### Shared Packages (`packages/`)
@@ -148,7 +149,7 @@ bun run check:doctor
 ### 3. Start Development Servers
 
 ```bash
-# Start all 7 web apps concurrently
+# Start all 7 web apps and the generator Worker concurrently
 bun run dev
 
 # Interactive launcher (choose presets e.g. Editor + Ontology)
@@ -162,6 +163,9 @@ bun run dev:targets
 bun run dev:copilot
 bun run dev:www
 bun run dev:survey
+
+# The generator Worker, which sources' text generation calls
+bun run dev:generator
 
 # The cron-only scheduler Worker (wrangler dev --test-scheduled; see apps/scheduler/README.md)
 bun run dev:scheduler

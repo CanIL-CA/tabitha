@@ -9,24 +9,24 @@ type Preset = {
 
 const PRESETS: Record<string, Preset> = {
 	'1': {
-		name: '🌟 All 7 Applications',
-		description: 'Full Stack: Editor, Ontology, Sources, Targets, Copilot, Www, Survey',
-		apps: ['ontology', 'targets', 'sources', 'editor', 'copilot', 'www', 'survey'],
+		name: '🌟 All 8 Applications',
+		description: 'Full Stack: Editor, Ontology, Sources, Targets, Copilot, Www, Survey, Generator',
+		apps: ['ontology', 'targets', 'sources', 'editor', 'copilot', 'www', 'survey', 'generator'],
 	},
 	'2': {
 		name: '📚 Core Linguistics Engine',
-		description: 'Ontology + Sources + Targets',
-		apps: ['ontology', 'sources', 'targets'],
+		description: 'Ontology + Sources + Targets + Generator',
+		apps: ['ontology', 'sources', 'targets', 'generator'],
 	},
 	'3': {
 		name: '✍️  Editor Workbench',
-		description: 'Editor + Ontology + Sources + Targets',
-		apps: ['editor', 'ontology', 'sources', 'targets'],
+		description: 'Editor + Ontology + Sources + Targets + Generator',
+		apps: ['editor', 'ontology', 'sources', 'targets', 'generator'],
 	},
 	'4': {
 		name: '🤖 Copilot AI Lab',
-		description: 'Copilot + Sources + Targets + Ontology',
-		apps: ['copilot', 'ontology', 'sources', 'targets'],
+		description: 'Copilot + Sources + Targets + Ontology + Generator',
+		apps: ['copilot', 'ontology', 'sources', 'targets', 'generator'],
 	},
 	'5': {
 		name: '🎯 Custom Selection',

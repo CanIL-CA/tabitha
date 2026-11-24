@@ -11,6 +11,7 @@ import type { PageSourceEntity } from '#lib/types.js'
 export type ValidationSeverity = 'error' | 'warning'
 
 type EntityRef = { entity_id: number }
+type EntityRefs = { entity_ids: number[] }
 
 export type AlternateIssue = EntityRef & {
 	check: 'alternate'
@@ -19,11 +20,10 @@ export type AlternateIssue = EntityRef & {
 	expected: { direction: 'before' | 'after'; values: string[] }
 }
 
-export type MultipleConceptsIssue = {
+export type MultipleConceptsIssue = EntityRefs & {
 	check: 'noun_list'
 	reason: 'multiple_concepts'
 	noun_list_index: string
-	entity_ids: number[]
 	nouns: string[]
 }
 
@@ -37,7 +37,8 @@ export type NounListIssue = MultipleConceptsIssue | UnusedIndexIssue
 
 export type ConceptLevelReason = 'complex_outside_complex_context' | 'concept_not_simple' | 'pairing_concept_not_complex'
 
-export type ConceptLevelIssue = EntityRef & {
+// Reported once for a concept and reason, with every entity that uses it, since the problem is the concept's level rather than any one use.
+export type ConceptLevelIssue = EntityRefs & {
 	check: 'concept_level'
 	concept: ConceptKey
 	level: number
@@ -61,9 +62,8 @@ export type CaseFrameMismatchIssue = CaseFrameBase & EntityRef & {
 }
 
 // Reported once for a concept, with every entity that uses it, since the missing categories are the same for all of them.
-export type NoCategoriesIssue = CaseFrameBase & {
+export type NoCategoriesIssue = CaseFrameBase & EntityRefs & {
 	reason: 'no_categories'
-	entity_ids: number[]
 }
 
 export type CaseFrameIssue = CaseFrameMismatchIssue | NoCategoriesIssue
@@ -339,7 +339,9 @@ function find_level_expectations({ source_entities, entity }: { source_entities:
 	return [{ concept, allowed_levels: SIMPLE_LEVELS, reason: 'complex_outside_complex_context' }]
 }
 
-export function check_concept_level({ source_entities, senses }: ValidateEncodingOptions): ConceptLevelIssue[] {
+type EntityLevelIssue = Omit<ConceptLevelIssue, 'entity_ids'> & EntityRef
+
+function find_entity_level_issues({ source_entities, senses }: ValidateEncodingOptions): EntityLevelIssue[] {
 	return source_entities.flatMap(entity =>
 		find_level_expectations({ source_entities, entity }).flatMap(({ concept, allowed_levels, reason }) => {
 			const level = get_concept_level({ senses, concept })
@@ -348,6 +350,19 @@ export function check_concept_level({ source_entities, senses }: ValidateEncodin
 			return [{ check: 'concept_level' as const, entity_id: entity.id, concept, level, reason }]
 		}),
 	)
+}
+
+export function check_concept_level({ source_entities, senses }: ValidateEncodingOptions): ConceptLevelIssue[] {
+	const issues = find_entity_level_issues({ source_entities, senses })
+	const issues_by_concept_and_reason = Map.groupBy(issues, ({ concept, reason }) => `${reason}|${concept.stem}|${concept.sense}|${concept.part_of_speech}`)
+
+	return [...issues_by_concept_and_reason.values()].map(group => ({
+		check: 'concept_level',
+		concept: group[0].concept,
+		level: group[0].level,
+		reason: group[0].reason,
+		entity_ids: group.map(({ entity_id }) => entity_id),
+	}))
 }
 
 //===============

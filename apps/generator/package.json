@@ -8,7 +8,8 @@
 		"#engine/*": "./engine/*"
 	},
 	"exports": {
-		"./engine": "./src/engine.ts"
+		"./engine": "./src/engine.ts",
+		"./engine_source": "./scripts/engine_source.ts"
 	},
 	"scripts": {
 		"check": "bun --check",

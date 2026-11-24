@@ -1,4 +1,5 @@
 import { load_ontology_senses } from '#lib/data/ontology_senses.js'
+import { compact_noun_list_indexes } from '#lib/data/noun_list.js'
 import { get_source_data } from '#lib/data/read.js'
 import { load_source_feature_map } from '#lib/encoding/features.js'
 import { structure_semantic_encoding, transform_semantic_encoding } from '#lib/encoding/semantic_encoding.js'
@@ -11,7 +12,9 @@ export async function load({ locals: { db }, parent }: Parameters<PageServerLoad
 	const source = (await get_source_data({ db, ...nav_data.current }))!
 
 	const transformed_semantic_encoding = await transform_semantic_encoding({ db, semantic_encoding: source.semantic_encoding })
-	const parsed_semantic_encoding = structure_semantic_encoding(transformed_semantic_encoding)
+	const parsed_semantic_encoding = compact_noun_list_indexes({
+		source_entities: structure_semantic_encoding(transformed_semantic_encoding),
+	})
 
 	const features = await load_source_feature_map(db)
 	const ontology_senses = await load_ontology_senses(parsed_semantic_encoding)

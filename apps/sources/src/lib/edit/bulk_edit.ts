@@ -62,6 +62,15 @@ export const apply_pairing = ({ entities, pairing_concept, pairing_type }: Pairi
 	}
 }
 
+/** The chosen concept becomes each entity's concept and the concept it had becomes the pairing. */
+export const apply_pairing_as_base = ({ entities, base_concept, pairing_type }: { entities: readonly PageSourceEntity[], base_concept: ConceptKey, pairing_type: PairingType }) => {
+	for (const entity of entities) {
+		entity.pairing_concept = entity.concept && { ...entity.concept }
+		entity.pairing_type = pairing_type
+		entity.concept = { ...base_concept }
+	}
+}
+
 export const do_pairings_differ = ({ entities }: { entities: readonly PageSourceEntity[] }): boolean =>
 	count_distinct(entities.map(({ pairing_concept, pairing_type }) => [concept_key(pairing_concept), pairing_type])) > 1
 

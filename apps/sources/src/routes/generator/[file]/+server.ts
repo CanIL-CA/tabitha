@@ -1,5 +1,4 @@
-import { fetch_engine_file } from '#lib/generation/generator.js'
-import { json } from '@sveltejs/kit'
+import { fetch_engine_file, generator_not_running, GENERATOR_NOT_RUNNING } from '#lib/generation/generator.js'
 import { env } from 'cloudflare:workers'
 import type { RequestHandler } from './$types'
 
@@ -9,11 +8,8 @@ const CACHE_CONTROL = 'public, no-cache'
 const PASSED_HEADERS = ['content-type', 'etag']
 
 export async function GET({ params: { file }, request }: Parameters<RequestHandler>[0]) {
-	// Undefined under `vite dev`, which has no service bindings
-	const generator = env.GENERATOR as typeof env.GENERATOR | undefined
-	if (!generator) return json({ error: 'Text generation is not available in this environment.' }, { status: 503 })
-
-	const response = await fetch_engine_file({ generator, name: file, if_none_match: request.headers.get('if-none-match') })
+	const response = await fetch_engine_file({ generator: env.GENERATOR, name: file, if_none_match: request.headers.get('if-none-match') })
+	if (generator_not_running(response)) return Response.json({ error: GENERATOR_NOT_RUNNING }, { status: 503 })
 	const headers = new Headers({ 'cache-control': CACHE_CONTROL })
 	for (const name of PASSED_HEADERS) {
 		const value = response.headers.get(name)

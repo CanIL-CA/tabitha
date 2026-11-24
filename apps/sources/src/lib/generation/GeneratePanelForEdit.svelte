@@ -3,6 +3,7 @@
 	import Icon from '@iconify/svelte'
 	import { onMount } from 'svelte'
 	import { AUDIENCES } from '@tabitha/generator/engine'
+	import { EXPORT_DATE, LANGUAGE, ONTOLOGY_VERSION } from '@tabitha/generator/engine_source'
 	import type { GenerateSettings } from '#lib/types.ts'
 	import type { GenerationJob } from './verse_generation'
 	import type { Reference } from '@tabitha/types'
@@ -108,7 +109,7 @@
 
 <svelte:window onkeydown={handle_keyboard_shortcut} />
 
-<div class="card card-dash relative mb-4 border-warning bg-warning/10">
+<div class="card card-dash border-warning bg-warning/10">
 	<div class="pointer-events-none absolute inset-0 overflow-hidden rounded-box" aria-hidden="true">
 		<Icon icon="mdi:flask-outline" class="absolute -right-6 -bottom-8 h-40 w-40 text-warning opacity-15" />
 	</div>
@@ -138,7 +139,7 @@
 					</button>
 					
 					<details class="dropdown dropdown-end">
-						<summary class="btn btn-primary btn-sm px-2 join-item">&#709;</summary>
+						<summary class="btn btn-primary {generating || waiting_for_engine ? 'btn-disabled' : ''} btn-sm px-2 join-item">&#709;</summary>
 						<div class="menu dropdown-content bg-base-100 rounded-box p-2 shadow-sm">
 							<ul class="overflow-y-auto">
 								{#each AUDIENCES as { number, name } (number)}
@@ -166,9 +167,8 @@
 				<span class="loading loading-spinner loading-xs"></span>
 				Downloading the engine (about 2.7 MB) and starting it in this browser…
 			{:else if browser_engine.status === 'ready'}
-				<!-- TODO have this dynamically provided by the engine -->
 				<Icon icon="mdi:info-outline" class="inline h-4 w-4" />
-				Ontology version: 3.0.9627; English project: 2026-11-19
+				Ontology version: {ONTOLOGY_VERSION}; {LANGUAGE} project: {EXPORT_DATE}
 			{:else if browser_engine.status === 'failed'}
 				<Icon icon="mdi:alert-circle-outline" class="inline h-4 w-4" />
 				The engine could not start: {browser_engine.load_error}

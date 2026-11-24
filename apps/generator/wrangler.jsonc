@@ -5,6 +5,11 @@
 	"compatibility_date": "2026-10-06",
 	// Called by the other apps through a service binding, never from a browser.
 	"workers_dev": false,
+	// PORTS.generator in @tabitha/vite-config/ports. Sources' binding finds it through wrangler's
+	// dev registry, not the port; pinning it keeps it off 8787, which the scheduler uses.
+	"dev": {
+		"port": 1966
+	},
 	"observability": {
 		"enabled": true,
 		"head_sampling_rate": 1,
