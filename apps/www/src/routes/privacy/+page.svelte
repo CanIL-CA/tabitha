@@ -10,7 +10,7 @@
 
 <div class="page-kicker">The project</div>
 <h1>Privacy Policy</h1>
-<p class="page-dek">Last updated: October 27, 2026</p>
+<p class="page-dek">Last updated: November 25, 2026</p>
 
 <div class="page-body">
 	<p>
@@ -28,10 +28,10 @@
 		separately collect, sell, or use this data for advertising.
 	</p>
 
-	<h2>Account data (ontology)</h2>
+	<h2>Account data (ontology and sources)</h2>
 	<p>
-		ontology.tabitha.bible lets members of the project's linguistics team sign in with Google to
-		access editing tools reserved for authorized contributors. Signing in shares your name, email
+		ontology.tabitha.bible and sources.tabitha.bible let members of the project's linguistics team
+		sign in with Google to access editing tools reserved for authorized contributors. Signing in shares your name, email
 		address, and profile picture with us, as provided by your Google account. We use this only to
 		identify you, attribute the edits you make, and check whether your account is authorized for
 		those editing tools — never for marketing, and never shared with third parties beyond the
@@ -53,9 +53,10 @@
 
 	<h2>Cookies and tracking</h2>
 	<p>
-		Outside of the sign-in session ontology.tabitha.bible sets for signed-in users, the cookie it
-		sets so each page reads data at least as recent as the last one you loaded (it holds a database
-		version marker, nothing about you), and the cookie survey.tabitha.bible sets to keep your
+		Outside of the sign-in sessions ontology.tabitha.bible and sources.tabitha.bible set for signed-in
+		users, the cookie ontology.tabitha.bible sets so each page reads data at least as recent as the
+		last one you loaded (it holds a database version marker, nothing about you), and the cookie
+		survey.tabitha.bible sets to keep your
 		answers, this site doesn't use cookies, run third-party analytics scripts, or use any third-party advertising or
 		tracking pixels.
 	</p>
@@ -98,8 +99,8 @@
 	<ul>
 		<li><strong>Cloudflare</strong> hosts and serves every page on this domain.</li>
 		<li>
-			<strong>Google</strong> provides the Sign in with Google flow ontology.tabitha.bible uses for
-			account authentication, governed by Google's own privacy policy.
+			<strong>Google</strong> provides the Sign in with Google flow ontology.tabitha.bible and
+			sources.tabitha.bible use for account authentication, governed by Google's own privacy policy.
 		</li>
 		<li>
 			<strong>GitHub</strong> hosts the project's public source code and issue tracker; interacting

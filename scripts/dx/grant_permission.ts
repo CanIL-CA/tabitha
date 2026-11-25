@@ -9,21 +9,37 @@ import {
 	write_workerd_hash_cache,
 } from './db_load'
 
-// Only apps/ontology has a Users/Permissions model today. Its D1 migrations never seed real user
-// grants (those only ever exist in production) -- so every fresh local `db:load:ontology` starts
-// with nobody holding any permission. This grants your own account access locally, in
-// the same Auth D1 file `db:load`/`vite dev` actually reads from -- resolved the same reliable way
-// db_load.ts does, rather than guessing a file name.
-async function grant_permission({ email: raw_email, permissions }: {
+// The apps that sign in against DB_Auth (ADR 0027). Each name is both a `Permissions.app` value and
+// the app whose local Auth D1 is granted in: locally, every app has its own copy of DB_Auth.
+export const AUTH_APPS = ['ontology', 'sources'] as const
+export type AuthApp = typeof AUTH_APPS[number]
+
+export function parse_auth_app({ args }: { args: string[] }): AuthApp {
+	const app = args.find(arg => arg.startsWith('--app='))?.slice('--app='.length)
+	if (!app) {
+		throw new Error(`--app is required, since DB_Auth holds grants for every app: --app=${AUTH_APPS.join('|')}`)
+	}
+	if (!AUTH_APPS.includes(app as AuthApp)) {
+		throw new Error(`"${app}" doesn't sign in against DB_Auth. Known: ${AUTH_APPS.join(', ')}`)
+	}
+	return app as AuthApp
+}
+
+// The D1 migrations never seed real user grants (those only ever exist in production) -- so every
+// fresh local `db:load:<app>` starts with nobody holding any permission. This grants your own account
+// access locally, in the same Auth D1 file `db:load`/`vite dev` actually reads from -- resolved the
+// same reliable way db_load.ts does, rather than guessing a file name.
+async function grant_permission({ app, email: raw_email, permissions }: {
+	app: AuthApp
 	email: string
 	permissions?: string[]
 }) {
 	const email = raw_email.toLowerCase()
-	const config = apps_config.ontology
+	const config = apps_config[app]
 	const wrangler = parse_wrangler_jsonc(config.wrangler_path)
 	const auth_db = wrangler?.d1_databases?.find(d1 => d1.binding === 'DB_Auth')
 	if (!auth_db) {
-		console.error('❌ Could not find a DB_Auth binding in apps/ontology/wrangler.jsonc')
+		console.error(`❌ Could not find a DB_Auth binding in apps/${app}/wrangler.jsonc`)
 		process.exit(1)
 	}
 
@@ -40,17 +56,17 @@ async function grant_permission({ email: raw_email, permissions }: {
 	}
 
 	if (!hash) {
-		console.error('❌ Could not resolve the local Auth database file. Run `bun run db:load:ontology` first.')
+		console.error(`❌ Could not resolve the local Auth database file. Run \`bun run db:load:${app}\` first.`)
 		process.exit(1)
 	}
 
 	const db = new Database(join(d1_state_dir, `${hash}.sqlite`))
 
 	const app_permissions = db.prepare('SELECT id, permission FROM Permissions WHERE app = ?')
-		.all('ontology') as { id: number, permission: string }[]
+		.all(app) as { id: number, permission: string }[]
 
 	if (app_permissions.length === 0) {
-		console.error('❌ No permissions found for "ontology" in the local Auth DB. Run `bun run db:load:ontology` first.')
+		console.error(`❌ No permissions found for "${app}" in the local Auth DB. Run \`bun run db:load:${app}\` first.`)
 		process.exit(1)
 	}
 
@@ -60,7 +76,7 @@ async function grant_permission({ email: raw_email, permissions }: {
 
 	const unknown = permissions?.filter(p => !app_permissions.some(a => a.permission === p)) ?? []
 	for (const permission of unknown) {
-		console.warn(`⚠️  Unknown permission "${permission}" for app "ontology", skipping. Known: ${app_permissions.map(p => p.permission).join(', ')}`)
+		console.warn(`⚠️  Unknown permission "${permission}" for app "${app}", skipping. Known: ${app_permissions.map(p => p.permission).join(', ')}`)
 	}
 
 	// 'email' is no longer a primary key, and so a REPLACE doesn't trigger anymore
@@ -76,16 +92,17 @@ async function grant_permission({ email: raw_email, permissions }: {
 		}
 	}
 
-	db.close()
+	db.close(true)
 	console.log(`✅ ${email} now has: ${to_grant.map(p => p.permission).join(', ')} (${granted} newly granted).`)
 }
 
 if (import.meta.main) {
-	const [email, ...permissions] = process.argv.slice(2)
-	if (!email) {
-		console.error('Usage: bun scripts/dx/grant_permission.ts <email> [permission...]')
-		console.error('       With no permissions listed, grants every "ontology" permission.')
+	const args = process.argv.slice(2)
+	const [email, ...permissions] = args.filter(arg => !arg.startsWith('--'))
+	if (!email || !args.some(arg => arg.startsWith('--app='))) {
+		console.error(`Usage: bun scripts/dx/grant_permission.ts --app=${AUTH_APPS.join('|')} <email> [permission...]`)
+		console.error('       With no permissions listed, grants every one the app has.')
 		process.exit(1)
 	}
-	await grant_permission({ email, permissions: permissions.length ? permissions : undefined })
+	await grant_permission({ app: parse_auth_app({ args }), email, permissions: permissions.length ? permissions : undefined })
 }

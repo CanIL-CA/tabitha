@@ -39,7 +39,7 @@ test("a concept's sidebar shows its ontology data without the browser calling on
 })
 
 test("changing a concept in the editor shows the new stem's senses, which the page never loaded", async ({ page }) => {
-	await page.goto('/Bible/Genesis/1/1/edit')
+	await page.goto('/protected/edit/Bible/Genesis/1/1')
 	await wait_for_hydration({ page })
 	await page.getByText('make', { exact: true }).first().click()
 	await open_sidebar_detail({ page, title: 'Concept Details' })

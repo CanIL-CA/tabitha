@@ -6,7 +6,7 @@ Standard Playwright specs (`bun run test:e2e`), with one addition: `/protected/*
 
 `auth.setup.ts` runs once before the suite (wired in via `playwright.config.js`'s `globalSetup`) and calls `support/sign_in.ts`'s `sign_in_as()`, which:
 
-1. Runs `bun run db:grant e2e-test@tabitha.local`, giving that fixture account every Ontology permission in your local Auth D1 — the same command described in the root `CONTRIBUTING.md`.
+1. Runs `bun run db:grant --app=ontology e2e-test@tabitha.local`, giving that fixture account every Ontology permission in your local Auth D1 — the same command described in the root `CONTRIBUTING.md`.
 2. Opens that same local Auth D1 through wrangler's `getPlatformProxy()`, and builds a test-only Better Auth instance from the app's own configuration plus Better Auth's [`testUtils`](https://www.better-auth.com/docs/plugins/test-utils) plugin.
 3. Saves the user (reusing it if an earlier run already did), creates a real session row, and adds the session cookie to the browser context, which is saved to `e2e/.auth/user.json` (gitignored).
 
@@ -36,4 +36,4 @@ See `e2e/offline_queue.spec.ts` for a full example.
 
 - Confirm `BETTER_AUTH_SECRET` in `.env.local` matches what the running dev server loaded (a stale copy from a different environment won't verify).
 - Confirm the local Auth D1 has Better Auth's tables (`bun run db:status`, or re-run `bun run db:load:ontology`). A `no such table: user` error from `auth.setup.ts` means the migrations weren't applied.
-- Re-run `bun run db:grant e2e-test@tabitha.local` by hand and check its output — if the local Auth D1 was just reloaded from a snapshot, grants reset with it.
+- Re-run `bun run db:grant --app=ontology e2e-test@tabitha.local` by hand and check its output — if the local Auth D1 was just reloaded from a snapshot, grants reset with it.

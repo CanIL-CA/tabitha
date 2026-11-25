@@ -173,6 +173,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@tabitha/api-client": "workspace:*",
+        "@tabitha/auth": "workspace:*",
         "@tabitha/cors": "workspace:*",
         "@tabitha/d1": "workspace:*",
         "@tabitha/generator": "workspace:*",
@@ -183,6 +184,7 @@
         "@tabitha/ui": "workspace:*",
         "@tabitha/usage": "workspace:*",
         "@tailwindcss/typography": "^0.5.20",
+        "better-auth": "1.7.22",
         "daisyui": "^5.8.0",
         "svelte": "^5.57.3",
         "tailwindcss": "^4.3.5",

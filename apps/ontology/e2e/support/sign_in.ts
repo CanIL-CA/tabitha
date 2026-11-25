@@ -35,7 +35,7 @@ export async function sign_in_as({ context, email, permissions = [] }: {
 	email: string
 	permissions?: string[]
 }) {
-	execFileSync('bun', [join(root_dir, 'scripts/dx/grant_permission.ts'), email, ...permissions], { stdio: 'inherit' })
+	execFileSync('bun', [join(root_dir, 'scripts/dx/grant_permission.ts'), '--app=ontology', email, ...permissions], { stdio: 'inherit' })
 
 	// The same local D1 the dev server reads. getPlatformProxy()'s default persist path is relative to
 	// the working directory, so it's pinned to the app's own state.

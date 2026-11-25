@@ -101,3 +101,20 @@ export type Phase1SearchResults = {
 	hits: Phase1SearchHit[]
 	total_count: number
 }
+
+//===============
+// User types
+
+export type UserPermissions = {
+	has_protected_access: boolean
+	can_update: boolean
+}
+
+export type SourcesUser = {
+	id: number | undefined
+	email: string
+	name: string
+	permissions: UserPermissions
+}
+
+export type UserInfo = Pick<SourcesUser, 'id' | 'permissions'>

@@ -176,15 +176,16 @@ bun run dev:scheduler
 
 dev ports are not random.
 
-### 4. Ontology Local Permissions (first time only)
+### 4. Local Permissions for Ontology and Sources (first time only)
 
-`bun run setup` loads schema and app data, but never seeds real user grants — those only exist in production, so a fresh local Auth DB starts with nobody authorized. Sign in to Ontology (`http://localhost:3056`) with Google once; a `401` on any `/protected` page is expected. Fix it with:
+`bun run setup` loads schema and app data, but never seeds real user grants — those only exist in production, so a fresh local Auth DB starts with nobody authorized. Sign in to Ontology (`http://localhost:3056`) or Sources (`http://localhost:1947`) with Google once; a `401` on any `/protected` page is expected. Fix it with:
 
 ```bash
-bun run db:grant your.email@example.com
+bun run db:grant --app=ontology your.email@example.com
+bun run db:grant --app=sources your.email@example.com
 ```
 
-Grants every Ontology permission to that email in your local Auth D1 only — production is untouched. Re-run after any `bun run db:load`/`db:load:ontology`, since it rebuilds the local Auth D1, which resets local grants and signs you out: local Better Auth users and sessions live in the same Auth D1.
+Grants every permission the app has to that email in your local Auth D1 only — production is untouched. Each app has its own local Auth D1 (production has one, shared by both), so grant in each app you work on. Re-run after any `bun run db:load`/`db:load:<app>`, since it rebuilds that app's local Auth D1, which resets local grants and signs you out: local Better Auth users and sessions live in the same Auth D1.
 
 ### 5. Local R2 Objects (e.g. Ontology's `/downloads` page)
 
@@ -438,11 +439,11 @@ The process for the Auth db is a bit different and described below.
 To change its schema:
 
 1. Add the next numbered file in `packages/auth/migrations/`, whichever app it's for. Never edit a migration that has been applied, and never drop a table that holds real data: `User_Permissions` holds the real grants.
-2. Rebuild your local Auth D1 from the migrations and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
+2. Rebuild each app's local Auth D1 from the migrations (`ontology` and `sources` each have their own) and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
 
    ```bash
-   bun run db:load:ontology
-   bun run db:grant your.email@example.com
+   bun run db:load:<app>
+   bun run db:grant --app=<app> your.email@example.com
    ```
 
 3. Apply it to the remote database before the code that needs it merges, from `apps/ontology`:
@@ -451,10 +452,10 @@ To change its schema:
    bunx wrangler d1 migrations apply DB_Auth --remote
    ```
 
-To give people Ontology access in production, use the remote counterpart of `db:grant`. It needs Cloudflare access to the account, prints the SQL and stops unless `--apply` is passed, and is safe to re-run:
+To give people Ontology or Sources access in production, use the remote counterpart of `db:grant`, naming the app the same way. It needs Cloudflare access to the account, prints the SQL and stops unless `--apply` is passed, and is safe to re-run:
 
 ```bash
-bun run db:grant:remote --apply 'person@example.org=Their Name' 'other@example.org=Other Name'
+bun run db:grant:remote --app=ontology --apply 'person@example.org=Their Name' 'other@example.org=Other Name'
 ```
 
 Each email is its own user (emails are stored lowercase), so someone with two addresses is listed twice. By default it grants only `PROTECTED_ACCESS`. Concept permissions are a special case, so name them explicitly: `--permissions=PROTECTED_ACCESS,ADD_CONCEPT,UPDATE_CONCEPT,DELETE_CONCEPT`.

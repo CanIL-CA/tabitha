@@ -24,7 +24,7 @@ If Sources copied this code, two apps would write the same tables with configura
 ### `@tabitha/auth`
 
 - **`migrations/`** is the new home of `DB_Auth`'s schema. `0001_better_auth.sql` and `0002_permission_tables.sql` move here from `apps/ontology/migrations/auth` unchanged, so production's `d1_migrations` table still matches them. Each app's `wrangler.jsonc` points `migrations_dir` at `node_modules/@tabitha/auth/migrations`, reaching the package by name instead of a `../../` path. Both apps need it, because each builds its own local `DB_Auth` (see Consequences). Production gets `wrangler d1 migrations apply DB_Auth --remote` once, from either app, before code that needs a new migration merges.
-- **One migration list for every app.** `Permissions` rows use hand-picked IDs, so new permissions for any app are added here, in order, and never in an app's own folder. The first new migration adds Sources' permissions under `app = 'sources'`.
+- **One migration list for every app.** `Permissions` rows use hand-picked IDs, so new permissions for any app are added here, in order, and never in an app's own folder. `0003` adds Sources' `PROTECTED_ACCESS` (5) and `UPDATE_SOURCE` (6).
 - **`create_auth_options()`** is Ontology's current configuration, with the app-specific parts passed in: `allowed_hosts` and `cookie_prefix`. Google stays the only provider, `basePath` stays `/auth`, OAuth tokens stay encrypted, IP tracking stays off, and the OAuth proxy stays on for Previews. It returns Better Auth's own options and does not wrap Better Auth in an interface of our own ([0014](./0014-no-preemptive-vendor-abstraction-layer.md)).
 - **`get_user_permissions({ db_auth, email, app })`** returns the user's `Users.id` and the permission strings for that app. Each app turns the strings into its own flags (`can_add`, `can_update`, …) in its own code, so the package never needs to know an app's permission names.
 - **One Better Auth version.** `better-auth` is a dependency of the package, pinned to one version, so both apps always run the version that matches the schema.
@@ -35,8 +35,8 @@ The package has two consumers, below the Rule of Three. The reason for extractin
 
 - **Its own Google OAuth client.** Sources gets a "Sources (prod)" client with `https://sources.tabitha.bible/auth/callback/google` and `http://localhost:1947/auth/callback/google` registered, its own `GOOGLE_OAUTH_CLIENT_ID` in `wrangler.jsonc` `vars`, and its own `GOOGLE_OAUTH_CLIENT_SECRET` secret.
 - **Its own `BETTER_AUTH_SECRET`.** Sources' Previews share Sources' production secret, the same way Ontology's do ([0020](./0020-per-pr-worker-previews.md)), so the OAuth proxy works.
-- **Its own sign-in and cookies.** Each app signs users in separately. Cookies are per host in production, and each app sets its own `cookie_prefix` so the apps don't overwrite each other's cookies on `localhost`, where browsers ignore the port.
-- **Its own idea of what's protected.** In Sources, `/protected/*` requires `PROTECTED_ACCESS` for `sources`, and the editing pages move under it. Sources' public read APIs stay open: Ontology calls them through a service binding without a user ([0023](./0023-cross-app-calls-via-service-bindings.md)).
+- **Its own sign-in and cookies.** Each app signs users in separately. Cookies are per host in production, and each app sets its own `cookie_prefix` so the apps don't overwrite each other's cookies on `localhost`, where browsers ignore the port. Ontology keeps Better Auth's default, `better-auth`, so its signed-in users stay signed in; Sources uses `sources`.
+- **Its own idea of what's protected.** In Sources, `/protected/*` requires `PROTECTED_ACCESS` for `sources`, and the edit page moves under it, to `/protected/edit/<type>/<book>/<chapter>/<verse>`; its old URL redirects there. Verse pages, `/generate` and `/analyze` stay public. `UPDATE_SOURCE` is granted and exposed as `can_update`, ready for saving edits, but nothing checks it yet. Sources' public read APIs stay open: Ontology calls them through a service binding without a user ([0023](./0023-cross-app-calls-via-service-bindings.md)).
 
 ### Sources' wiring
 
@@ -50,7 +50,7 @@ The same shape as Ontology's ([0021](./0021-better-auth-sessions-in-d1.md)):
 
 ### Tooling
 
-`grant_permission.ts` and `grant_remote_permission.ts` take the app to grant for. `db_load.ts` builds a local `DB_Auth` for Sources, and `setup:env` generates Sources' local `BETTER_AUTH_SECRET`.
+`grant_permission.ts` and `grant_remote_permission.ts` require the app to grant for (`--app=ontology` or `--app=sources`). There's no default: every app's grants live in the same database, so a grant names its app. `db_load.ts` builds a local `DB_Auth` for Sources, and `setup:env` generates Sources' local `BETTER_AUTH_SECRET`.
 
 ## Alternatives considered
 
