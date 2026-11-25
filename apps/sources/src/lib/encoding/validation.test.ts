@@ -374,15 +374,35 @@ describe('check_case_frames', () => {
 	test('flags a verb with no ontology categories', () => {
 		const entities = structured(clause_with_arguments(['Most Agent-like']))
 		expect(check_case_frames({ source_entities: entities, senses: {} })).toEqual([
-			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2], category: 'Verb', concept: GIVE },
+			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2], category: 'Verb', concept: GIVE, present: ['Agent-like'] },
 		])
 	})
 
-	test('reports a concept with no categories once, listing every entity that uses it', () => {
+	test('reports a concept with no categories once per way it is used, listing every entity that uses it that way', () => {
 		const entities = structured([...clause_with_arguments([]), ...clause_with_arguments([])])
 		expect(check_case_frames({ source_entities: entities, senses: {} })).toEqual([
-			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2, 7], category: 'Verb', concept: GIVE },
+			{ check: 'case_frame', reason: 'no_categories', entity_ids: [2, 7], category: 'Verb', concept: GIVE, present: [] },
 		])
+	})
+
+	test('reports a concept with no categories separately for each different set of arguments', () => {
+		const entities = structured([
+			...clause_with_arguments(['Most Agent-like']),
+			...clause_with_arguments(['Most Agent-like']),
+			...clause_with_arguments(['Most Agent-like', 'Most Patient-like']),
+		])
+		expect(check_case_frames({ source_entities: entities, senses: {} })).toMatchObject([
+			{ reason: 'no_categories', entity_ids: [2, 9], present: ['Agent-like'] },
+			{ reason: 'no_categories', entity_ids: [16], present: ['Agent-like', 'Patient-like'] },
+		])
+	})
+
+	test('treats the same arguments in a different order as one way of using the concept', () => {
+		const entities = structured([
+			...clause_with_arguments(['Most Agent-like', 'Most Patient-like']),
+			...clause_with_arguments(['Most Patient-like', 'Most Agent-like']),
+		])
+		expect(check_case_frames({ source_entities: entities, senses: {} })).toHaveLength(1)
 	})
 
 	describe('with a pairing', () => {

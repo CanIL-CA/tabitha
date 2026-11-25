@@ -117,7 +117,8 @@ function describe_case_frame(issue: CaseFrameIssue): string {
 	switch (issue.reason) {
 		case 'no_categories': {
 			const categories_label = issue.category === 'Verb' ? 'theta grid' : 'usage'
-			return `${label} has no ${categories_label} info in the ontology.`
+			const used_with = issue.present.length ? `used with ${issue.present.join(', ')}` : 'used with nothing detected'
+			return `${label} has no ${categories_label} info in the ontology, and is ${used_with} here.`
 		}
 		case 'frame_mismatch': {
 			const differences = [

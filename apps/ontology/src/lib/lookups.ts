@@ -205,34 +205,3 @@ export const levels = new Map<string, string>([
 ])
 
 export const parts_of_speech: PartOfSpeech[] = ['Noun', 'Verb', 'Adjective', 'Adverb', 'Adposition', 'Conjunction', 'Particle', 'Phrasal']
-
-export const curated_example_category_codes: Record<string, string> = {
-	'(NP': 'NP',
-	'(VP': 'VP',
-	'(AP': 'AdjP',
-	'(aP': 'AdvP',
-	'[': 'Clause',
-	')': 'Phrase end',
-	']': 'Clause end',
-}
-
-export const curated_example_feature_codes: Record<string, Record<string, string>> = {
-	'NP': {
-		'A': 'Agent',
-		'P': 'Patient',
-		'd': 'Destination',
-		's': 'Source',
-		'S': 'State',
-		'I': 'Instrument',
-		'B': 'Beneficiary',
-		'D': 'Addressee',
-	},
-	'AdjP': {
-		'A': 'Attributive',
-		'P': 'Predicative',
-	},
-	'Clause': {
-		'A': 'Agent',
-		'P': 'Patient',
-	},
-}

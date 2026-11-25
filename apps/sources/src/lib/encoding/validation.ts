@@ -61,9 +61,10 @@ export type CaseFrameMismatchIssue = CaseFrameBase & EntityRef & {
 	unexpected: string[]
 }
 
-// Reported once for a concept, with every entity that uses it, since the missing categories are the same for all of them.
+// Reported once for each way a concept is used (its `present` arguments or usages), with every entity that uses it that way, since the categories to add are the same for all of them.
 export type NoCategoriesIssue = CaseFrameBase & EntityRefs & {
 	reason: 'no_categories'
+	present: string[]
 }
 
 export type CaseFrameIssue = CaseFrameMismatchIssue | NoCategoriesIssue
@@ -642,14 +643,24 @@ function find_frame_mismatch({ source_entities, word_concept }: { source_entitie
 	return [{ check: 'case_frame', reason: 'frame_mismatch', entity_id: word.id, category: word.category, concept, present, current_categories, missing_required, unexpected }]
 }
 
-function find_missing_categories_issues(word_concepts: WordConcept[]): NoCategoriesIssue[] {
-	const word_concepts_by_concept = Map.groupBy(word_concepts, ({ concept }) => `${concept.stem}|${concept.sense}|${concept.part_of_speech}`)
+// The arguments or usages a word shows in the structure, which don't depend on what the ontology says about the word.
+function find_present_case_frame({ source_entities, word }: { source_entities: PageSourceEntity[]; word: PageSourceEntity }): string[] {
+	const build_profile = CASE_FRAME_PROFILE_BUILDERS[word.category]
+	return build_profile?.({ source_entities, word, categories: [] })?.present ?? []
+}
 
-	return [...word_concepts_by_concept.values()].map(group => ({
+type UsedWordConcept = WordConcept & { present: string[] }
+
+function find_missing_categories_issues({ source_entities, word_concepts }: { source_entities: PageSourceEntity[]; word_concepts: WordConcept[] }): NoCategoriesIssue[] {
+	const used_word_concepts: UsedWordConcept[] = word_concepts.map(word_concept => ({ ...word_concept, present: find_present_case_frame({ source_entities, word: word_concept.word }) }))
+	const groups = Map.groupBy(used_word_concepts, ({ concept, present }) => `${concept.stem}|${concept.sense}|${concept.part_of_speech}|${[...present].sort().join(',')}`)
+
+	return [...groups.values()].map(group => ({
 		check: 'case_frame',
 		reason: 'no_categories',
 		category: group[0].word.category,
 		concept: group[0].concept,
+		present: group[0].present,
 		entity_ids: [...new Set(group.map(({ word }) => word.id))],
 	}))
 }
@@ -659,7 +670,7 @@ export function check_case_frames({ source_entities, senses }: ValidateEncodingO
 
 	return [
 		...word_concepts.filter(has_categories).flatMap(word_concept => find_frame_mismatch({ source_entities, word_concept })),
-		...find_missing_categories_issues(word_concepts.filter(word_concept => !has_categories(word_concept))),
+		...find_missing_categories_issues({ source_entities, word_concepts: word_concepts.filter(word_concept => !has_categories(word_concept)) }),
 	]
 }
 

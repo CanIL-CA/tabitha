@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+	import { page } from '$app/state'
 	import Icon from '@iconify/svelte'
+	import { edit_curated_example_url } from '#lib/curated_example/links.js'
 	import { Examples } from '#lib/examples/index.js'
 	import Details from './Details.svelte'
 	import Meaning from './Meaning.svelte'
@@ -9,7 +11,8 @@
 	import PendingChange from '#lib/changes/PendingChange.svelte'
 	import { Category } from './categorization'
 	import { CONCEPT_FILTERS } from '#lib/search/filters.js'
-	import SimplifiedEntities from '#lib/examples/curated_examples/SimplifiedEntities.svelte'
+	import { structure_curated_example_encoding } from '#lib/transformers.ts'
+	import CuratedExampleEntities from '#lib/curated_example/CuratedExampleEntities.svelte'
 	import type { Concept } from '#lib/types.js'
 	import type { PartOfSpeech } from '@tabitha/types'
 
@@ -70,18 +73,29 @@
 						{/snippet}
 
 						<Details colors="bg-base-200" summary={curated_summary}>
-							{#each curated_examples as { sentence, reference, encoding }}
+							{#each curated_examples as { sentence, reference, encoding }, index}
+								{@const structured_entities = structure_curated_example_encoding(encoding)}
 								<blockquote class="mb-0">
-									<span>
-										{sentence}
-									</span>
-									<cite data-tip="Source: {reference.type}" class="tooltip tooltip-right tooltip-info block w-fit text-start text-xs">
-										({reference.id_primary}
-										{reference.id_secondary}:{reference.id_tertiary})
-									</cite>
+									<div class="flex items-start gap-2">
+										{#if page.data.user?.permissions.has_protected_access}
+											<a title="Edit this curated example" href={edit_curated_example_url({ concept, index })} class="btn btn-xs btn-ghost not-prose">
+												<Icon icon="mdi:edit-outline" class="h-4 w-4" />
+											</a>
+										{/if}
 
-									<footer class="mt-4 px-4 flex gap-2 justify-left bg-base-100">
-										<SimplifiedEntities entities={encoding} />
+										<div>
+											<span>
+												{sentence}
+											</span>
+											<cite data-tip="Source: {reference.type}" class="tooltip tooltip-right tooltip-info block w-fit text-start text-xs">
+												({reference.id_primary}
+												{reference.id_secondary}:{reference.id_tertiary})
+											</cite>
+										</div>
+									</div>
+
+									<footer class="mt-4 px-4 flex justify-left bg-base-100">
+										<CuratedExampleEntities entities={structured_entities} />
 									</footer>
 								</blockquote>
 							{/each}

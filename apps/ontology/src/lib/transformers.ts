@@ -1,13 +1,20 @@
 import {
-	curated_example_category_codes,
-	curated_example_feature_codes,
+	closing_bracket_by_opening,
+	decode_token,
+	fallback_code_by_category,
+	is_boundary_end,
+	is_boundary_start,
+	start_token_by_category,
+} from '#lib/curated_example/format.js'
+import {
+	parts_of_speech,
 	semantic_category,
 	sources,
 	theta_grid,
 	theta_grid_arguments,
 	usage_info,
 } from '#lib/lookups.js'
-import type { Concept, CuratedExample, SimplifiedEncodingEntity, SimplifiedSemanticEncoding } from '#lib/types.js'
+import type { Concept, CuratedExample, CuratedExampleEncoding, CuratedExampleEntity, CuratedExampleEntityStructured, EncodedCuratedExample } from '#lib/types.js'
 import type { PartOfSpeech, Reference } from '@tabitha/types'
 
 /**
@@ -26,6 +33,8 @@ export function transform_curated_examples(curated_examples_raw: string): Curate
 	// be-V:
 	//   6,8,1,67|[A|(NPA|John|)|(VP|read|)|(NPP|book|)|]|(VP|be|)|(APP|true|)|~It is true that John read that book.
 	//   4,41,14,21|[A|(NPA|man|)|(VP|born|)|(aP|never|)|]|(VP|be|)|(APP|good|)|(NPB|man|)|~It's better for that man that he was never born.
+	// ready-B:
+	//   6,8,1,37|(NPA|John|)|(VP|be|)|(APP|ready|[p|(NPA|John|)|(VP|read|)|(NPP|book|)|]|)|~John is ready to read that book.
 
 	return encoded_examples.map(decode)
 
@@ -44,29 +53,14 @@ export function transform_curated_examples(curated_examples_raw: string): Curate
 			sentence,
 		}
 
-		function decode_simplified_encoding(entities_encoded: string[]): SimplifiedSemanticEncoding {
-			return entities_encoded.map(decode_entity)
-
-			function decode_entity(encoded_entity: string): SimplifiedEncodingEntity {
-				// (NPA => { category: 'NP', value: '(', feature: { code: 'A', value: 'Most Agent-like' } }
-				// baby => { category: 'value', value: 'baby', feature: undefined }
-				// ) => { category: 'Phrase end', value: ')', feature: undefined }
-				// (VP => { category: 'VP', value: '(', feature: undefined }
-				// (APP => { category: 'AdjP', value: '(', feature: { code: 'P', value: 'Predicative' } }
-				// [A => { category: 'Clause', value: '[', feature: { code: 'A', value: 'Agent' } }
-
-				const category =
-					Object.entries(curated_example_category_codes).find(([code]) =>
-						encoded_entity.startsWith(code),
-					)?.[1] || 'Word'
-				const feature_code = encoded_entity.at(-1) || ''
-				const feature_value = curated_example_feature_codes[category]?.[feature_code]
-				return {
-					category,
-					word: category === 'Word' ? encoded_entity : undefined,
-					feature: feature_value ? { code: feature_code, value: feature_value } : undefined,
-				}
-			}
+		function decode_simplified_encoding(entities_encoded: string[]): CuratedExampleEncoding {
+			// (NPA => { category: 'Noun Phrase', category_abbr: 'NP', value: '(', feature_codes: 'A', features: [{ name: 'Semantic Role', value: 'Most Agent-like' }] }
+			// baby => { category: '', category_abbr: '', value: 'baby', feature_codes: '', features: [] }
+			// ) => { category: '', category_abbr: '', value: ')', feature_codes: '', features: [] }
+			// (VP => { category: 'Verb Phrase', category_abbr: 'VP', value: '(', feature_codes: '', features: [] }
+			// (APP => { category: 'Adjective Phrase', category_abbr: 'AdjP', value: '(', feature_codes: 'P', features: [{ name: 'Usage', value: 'Predicative' }] }
+			// [A => { category: 'Clause', category_abbr: 'Prop', value: '[', feature_codes: 'A', features: [{ name: 'Type', value: 'Agent (Subject Complement)' }] }
+			return entities_encoded.map(decode_token)
 		}
 	}
 }
@@ -86,6 +80,104 @@ function decode_reference(encoded_reference: string): Reference {
 		id_secondary: String(id_secondary),
 		id_tertiary: String(id_tertiary),
 	}
+}
+
+/**
+ * Where each entity sits: the index of the phrase or clause it is directly in, or -1 for none, which is what is directly in the clause the example is about.
+ * A closing bracket is in the boundary it closes.
+ */
+export function structure_curated_example_encoding(encoding: CuratedExampleEncoding): CuratedExampleEntityStructured[] {
+	const open_indexes: number[] = []
+	return encoding.map((entity, index) => {
+		const parent_index = open_indexes.at(-1) ?? -1
+		if (is_boundary_start(entity)) open_indexes.push(index)
+		if (is_boundary_end(entity)) open_indexes.pop()
+		return { ...entity, parent: parent_index }
+	})
+}
+
+class CuratedExampleEncodingError extends Error {}
+
+/**
+ * Turns the entities of an example into one line of the curated examples format, the reverse of transform_curated_examples.
+ *
+ * Example output:
+ * "4,2,2,2|(NPA|baby|)|(VP|be|)|(APP|beautiful|)|~The baby was beautiful."
+ */
+export function encode_curated_example({ reference, sentence, encoding }: { reference: Reference, sentence: string, encoding: CuratedExampleEncoding }): EncodedCuratedExample {
+	try {
+		const encoded_reference = encode_reference(reference)
+		const encoded_sentence = validate_sentence(sentence)
+		const encoded_entities = encode_entities(encoding)
+		return { encoded_example: `${encoded_reference}|${encoded_entities.join('|')}|~${encoded_sentence}` }
+	} catch (error) {
+		if (error instanceof CuratedExampleEncodingError) return { error: error.message }
+		throw error
+	}
+}
+
+function validate_sentence(sentence: string): string {
+	const trimmed_sentence = sentence.trim()
+	if (!trimmed_sentence) throw new CuratedExampleEncodingError('The English sentence is empty.')
+	if (/[|\r\n]/.test(trimmed_sentence)) throw new CuratedExampleEncodingError('The English sentence cannot contain "|" or a line break.')
+
+	return trimmed_sentence
+}
+
+/**
+ * The reverse of decode_reference
+ * @returns e.g., '4,2,2,2'
+ */
+function encode_reference(reference: Reference): string {
+	const NON_NEGATIVE_INTEGER = /^\d+$/
+
+	const type_key = [...sources.keys()].indexOf(reference.type)
+	const book_key = Object.entries(sources.get(reference.type) ?? {}).find(([, book]) => book === reference.id_primary)?.[0]
+	const has_numeric_ids = NON_NEGATIVE_INTEGER.test(reference.id_secondary) && NON_NEGATIVE_INTEGER.test(reference.id_tertiary)
+	if (book_key === undefined || !has_numeric_ids) {
+		const reference_label = `${reference.type} ${reference.id_primary} ${reference.id_secondary}:${reference.id_tertiary}`
+		throw new CuratedExampleEncodingError(`The reference ${reference_label} cannot be used in a curated example.`)
+	}
+
+	return [type_key, book_key, Number(reference.id_secondary), Number(reference.id_tertiary)].join(',')
+}
+
+function encode_entity(entity: CuratedExampleEntity): string {
+	const WORD_CATEGORIES = new Set<string>(parts_of_speech)
+
+	const { category, value, feature_codes } = entity
+	if (is_boundary_end(entity)) return value
+
+	if (is_boundary_start(entity)) {
+		const start_token = start_token_by_category[category]
+		if (start_token === undefined) throw new CuratedExampleEncodingError(`A ${category || 'part'} cannot be used in a curated example.`)
+		return start_token + (feature_codes || fallback_code_by_category[category] || '')
+	}
+
+	if (category !== '' && !WORD_CATEGORIES.has(category)) throw new CuratedExampleEncodingError(`A ${category} cannot be used in a curated example.`)
+	if (!value || value.includes('|')) throw new CuratedExampleEncodingError(`The word "${value}" cannot be used in a curated example.`)
+	return value
+}
+
+function check_brackets_balanced(encoding: CuratedExampleEncoding) {
+	const open_brackets: string[] = []
+	for (const entity of encoding) {
+		if (is_boundary_start(entity)) open_brackets.push(entity.value)
+		if (!is_boundary_end(entity)) continue
+
+		const open_bracket = open_brackets.pop()
+		if (open_bracket === undefined) throw new CuratedExampleEncodingError('A closing bracket has no opening bracket.')
+		if (closing_bracket_by_opening[open_bracket] !== entity.value) throw new CuratedExampleEncodingError('A closing bracket does not match its opening bracket.')
+	}
+
+	if (open_brackets.length) throw new CuratedExampleEncodingError('An opening bracket has no closing bracket.')
+}
+
+function encode_entities(encoding: CuratedExampleEncoding): string[] {
+	if (!encoding.length) throw new CuratedExampleEncodingError('There is nothing to encode.')
+	check_brackets_balanced(encoding)
+
+	return encoding.map(encode_entity)
 }
 
 const categorization_decoders: Record<string, (categories_from_db: string) => string[]> = {

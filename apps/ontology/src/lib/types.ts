@@ -1,4 +1,4 @@
-import type { OntologyStatus, ConceptKey, SimplificationHint, Reference, PartOfSpeech } from '@tabitha/types'
+import type { OntologyStatus, ConceptKey, SimplificationHint, Reference, PartOfSpeech, SourceEntity } from '@tabitha/types'
 
 export type DbRowExample = {
 	ref_type: string
@@ -36,22 +36,26 @@ export type Concept = Omit<DbRowConcept, 'level' | 'curated_examples' | 'part_of
 
 export type CuratedExample = {
 	reference: Reference
-	encoding: SimplifiedSemanticEncoding
+	encoding: CuratedExampleEncoding
 	sentence: string
 }
 
-export type SimpleEncodingFeature = {
-	code: string
-	value: string
-}
+/**
+ * An entity of a curated example is a source entity with only what an example uses, so that it can be used the same way:
+ * - category: for a phrase or clause, the category of the source entity. For a word, its part of speech, or '' when it was read from an encoded line, which does not say.
+ * - category_abbr: what a phrase or clause shows as
+ * - value: the bracket of a phrase or clause (or ')' or ']' for the end of one), or the stem of a word
+ * - feature_codes: the code that follows the start token of a phrase or clause, which is not the positional codes of a source entity
+ * - features: those of use to the example, including ones that have no code in the format, which are known only for an example made from a verse
+ */
+export type CuratedExampleEntity = Pick<SourceEntity, 'category' | 'category_abbr' | 'value' | 'feature_codes' | 'features'>
+export type CuratedExampleEntityStructured = CuratedExampleEntity & { parent: number }
 
-export type SimplifiedEncodingEntity = {
-	category: string
-	word: string | undefined
-	feature: SimpleEncodingFeature | undefined
-}
+export type CuratedExampleEncoding = CuratedExampleEntity[]
 
-export type SimplifiedSemanticEncoding = SimplifiedEncodingEntity[]
+export type EncodedCuratedExample =
+	| { encoded_example: string }
+	| { error: string }
 
 export type ContextArgumentMap = Map<string, string[]>
 export type Option = string
