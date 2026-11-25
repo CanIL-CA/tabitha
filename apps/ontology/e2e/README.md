@@ -17,7 +17,7 @@ See [`docs/decisions/0021-better-auth-sessions-in-d1.md`](../../../docs/decision
 ## 📋 Requirements
 
 - `apps/ontology/.env.local` must have a real `BETTER_AUTH_SECRET` (from `bun run setup:env`) — the same secret the dev server uses, since the session cookie is signed with it.
-- The local Auth D1 must exist with Better Auth's tables (`bun run db:load:ontology` loads it and applies `migrations/auth/`).
+- The local Auth D1 must exist with Better Auth's tables (`bun run db:load:ontology` loads it and applies `@tabitha/auth`'s migrations).
 - `bun` must be on `PATH` (same requirement as `bun run db:grant`/`db:load` generally).
 
 ## Simulating offline: fail the request

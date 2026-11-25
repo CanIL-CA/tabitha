@@ -2,7 +2,8 @@ import { BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET,
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE_BINDINGS_DISABLED, PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { building, version } from '$app/env'
 import { get_user_info } from '#lib/server/auth.js'
-import { create_auth, type Auth } from '#lib/server/better_auth.js'
+import { ONTOLOGY_AUTH_SETTINGS } from '#lib/server/better_auth.js'
+import { create_auth, type Auth } from '@tabitha/auth'
 import { bookmark_cookie, read_bookmark } from '#lib/server/d1_bookmark.js'
 import { use_service_bindings } from '@tabitha/api-client'
 import { create_cors_handle } from '@tabitha/cors'
@@ -72,6 +73,7 @@ let auth: Auth | undefined
 
 function get_auth(): Auth {
 	auth ??= create_auth({
+		...ONTOLOGY_AUTH_SETTINGS,
 		db_auth: with_timeout({ db: env.DB_Auth }),
 		secret: env.BETTER_AUTH_SECRET || BETTER_AUTH_SECRET,
 		google_client_id: env.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID,

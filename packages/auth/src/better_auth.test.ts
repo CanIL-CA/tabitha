@@ -7,11 +7,13 @@ const SETTINGS = {
 	secret: 'secret',
 	google_client_id: 'client-id',
 	google_client_secret: 'client-secret',
+	allowed_hosts: ['app.tabitha.bible', 'localhost:1234'],
+	cookie_prefix: 'app',
 }
 
 describe('create_auth_options', () => {
 	it('signs in through the OAuth proxy when given a production URL, as on production and Previews', () => {
-		const { plugins } = create_auth_options({ ...SETTINGS, oauth_proxy_url: 'https://ontology.tabitha.bible' })
+		const { plugins } = create_auth_options({ ...SETTINGS, oauth_proxy_url: 'https://app.tabitha.bible' })
 
 		expect(plugins.map(plugin => plugin.id)).toEqual(['oauth-proxy'])
 	})
@@ -28,5 +30,12 @@ describe('create_auth_options', () => {
 
 	it("keeps Better Auth under /auth, the path of Google's registered callback", () => {
 		expect(create_auth_options(SETTINGS).basePath).toBe('/auth')
+	})
+
+	it("uses the app's own hosts and cookie prefix", () => {
+		const options = create_auth_options(SETTINGS)
+
+		expect(options.baseURL.allowedHosts).toEqual(['app.tabitha.bible', 'localhost:1234'])
+		expect(options.advanced.cookiePrefix).toBe('app')
 	})
 })

@@ -97,6 +97,7 @@ graph TD
 | **`@tabitha/types`** | Universal TypeScript interfaces for linguistic concepts, clauses, tokens, references, and API payloads. |
 | **`@tabitha/ui`** | Shared Svelte 5 components (buttons, badges, concept cards, headers, layouts) styled with daisyUI 5. |
 | **`@tabitha/api-client`** | Typed HTTP client for inter-service communication across applications. Server-side calls go through service bindings ([ADR 0023](docs/decisions/0023-cross-app-calls-via-service-bindings.md)). |
+| **`@tabitha/auth`** | `DB_Auth`'s schema (D1 migrations in `packages/auth/migrations/`), the Better Auth configuration, and the per-app permission lookup, shared by every app that signs in ([ADR 0027](docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)). |
 | **`@tabitha/cors`** | Shared CORS middleware for Cloudflare Worker request handlers. |
 | **`@tabitha/noindex`** | `X-Robots-Tag: noindex` SvelteKit handle for the tool and API apps. |
 | **`@tabitha/complex-terms`** | Reads the how-to Google Sheet into `Complex_Terms` rows, for both Ontology's scheduled sync and the Ontology migration. |
@@ -432,11 +433,11 @@ The process for the Auth db is a bit different and described below.
 
 #### Auth
 
-`DB_Auth` is owned by D1 migrations, in `apps/ontology/migrations/auth/` ([ADR 0021](docs/decisions/0021-better-auth-sessions-in-d1.md)), not by a snapshot. It is a single, undated database shared by production and Previews, so a schema change reaches it as its own step.
+`DB_Auth` is owned by D1 migrations, in `packages/auth/migrations/` ([ADR 0021](docs/decisions/0021-better-auth-sessions-in-d1.md), [ADR 0027](docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)), not by a snapshot. It is a single, undated database shared by production and Previews, so a schema change reaches it as its own step.
 
 To change its schema:
 
-1. Add the next numbered file in `apps/ontology/migrations/auth/`. Never edit a migration that has been applied, and never drop a table that holds real data: `User_Permissions` holds the real grants.
+1. Add the next numbered file in `packages/auth/migrations/`, whichever app it's for. Never edit a migration that has been applied, and never drop a table that holds real data: `User_Permissions` holds the real grants.
 2. Rebuild your local Auth D1 from the migrations and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
 
    ```bash

@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // Relative, not #lib: Playwright's loader resolves package.json subpath imports without mapping .js to .ts.
-import { create_auth_options } from '../../src/lib/server/better_auth.js'
+import { ONTOLOGY_AUTH_SETTINGS } from '../../src/lib/server/better_auth.js'
+import { create_auth_options } from '@tabitha/auth'
 import type { D1Database } from '@cloudflare/workers-types'
 import type { BrowserContext } from '@playwright/test'
 import { betterAuth } from 'better-auth'
@@ -47,6 +48,7 @@ export async function sign_in_as({ context, email, permissions = [] }: {
 		// https://www.better-auth.com/docs/plugins/test-utils
 		const test_auth = betterAuth({
 			...create_auth_options({
+				...ONTOLOGY_AUTH_SETTINGS,
 				db_auth: proxy.env.DB_Auth,
 				secret: proxy.env.BETTER_AUTH_SECRET || read_env_var('BETTER_AUTH_SECRET'),
 				// Never called: sessions are created directly, not through Google.

@@ -69,9 +69,10 @@
 			"binding": "DB_Auth",
 			"database_name": "Auth",
 			"database_id": "c547b234-05fd-4923-ab0e-689d993894ad",
-			// Owns DB_Auth's whole schema; db:load builds the local database from these. Production gets
+			// @tabitha/auth owns DB_Auth's whole schema, reached by package name rather than a ../../ path
+			// (ADR 0027); db:load builds the local database from it. Production gets
 			// `wrangler d1 migrations apply DB_Auth --remote` before the code that needs them merges.
-			"migrations_dir": "migrations/auth"
+			"migrations_dir": "node_modules/@tabitha/auth/migrations"
 		}
 	],
 	"r2_buckets": [
