@@ -143,7 +143,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		},
 		'warning': {
 			'on': 'subtokens:1',
-			'message': "This clause starts differently than the one before it, so may not have been coordinated properly.",
+			'message': 'This clause starts differently than the one before it, so may not have been coordinated properly.',
 		},
 	},
 	{

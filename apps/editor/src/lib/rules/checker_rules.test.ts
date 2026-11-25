@@ -556,8 +556,8 @@ describe('Suggest repeating the adposition before a coordinated noun after an ad
 	})
 })
 
-describe('Check for a clause starting with "and" or "or" that is not coordinated with the clause before it', () => {
-	const UNCOORDINATED_CLAUSE_RULE = CHECKER_RULES.filter(rule => rule.name === 'Check for a clause starting with "and" or "or" that is not coordinated with the clause before it')
+describe('Check for a clause starting with "and" or "but" that is not coordinated with the clause before it', () => {
+	const UNCOORDINATED_CLAUSE_RULE = CHECKER_RULES.filter(rule => rule.name === 'Check for a clause starting with "and" or "but" that is not coordinated with the clause before it')
 
 	const create_word_token = (token: string) => create_lookup_token_for_test({ token })
 	const create_clause = ({ words, tag }: { words: string[], tag: Record<string, string> }) => create_clause_token({
