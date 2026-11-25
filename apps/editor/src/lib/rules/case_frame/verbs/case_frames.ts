@@ -62,6 +62,7 @@ const default_verb_case_frame_json: RoleRuleJson<VerbRoleTag> = {
 			],
 		}),
 		'argument_context_index': 1,
+		'argument_context': { 'precededby': { 'token': 'for', 'skip': 'np_modifiers' } },
 		'context_transform': { 'function': { 'pre_np_adposition': 'verb_argument' } },
 		'comment': '"for" could mean other things as well. TODO These should be set in the transform rules',
 	},

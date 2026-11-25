@@ -1,4 +1,4 @@
-import { TOKEN_TYPE, create_token, flatten_sentence } from '../token'
+import { TOKEN_TYPE, create_clause_token, create_token, flatten_sentence } from '../token'
 import { ERRORS } from '../parser/error_messages'
 import { apply_rules } from './rules_processor'
 import { describe, expect, test } from 'vitest'
@@ -553,5 +553,65 @@ describe('Suggest repeating the adposition before a coordinated noun after an ad
 		])
 
 		expect_no_message(checked_tokens[3])
+	})
+})
+
+describe('Check for a clause starting with "and" or "but" that is not coordinated with the clause before it', () => {
+	const UNCOORDINATED_CLAUSE_RULE = CHECKER_RULES.filter(rule => rule.name === 'Check for a clause starting with "and" or "but" that is not coordinated with the clause before it')
+
+	const create_word_token = (token: string) => create_lookup_token_for_test({ token })
+	const create_clause = ({ words, tag }: { words: string[], tag: Record<string, string> }) => create_clause_token({
+		sub_tokens: [create_token({ token: '[', type: TOKEN_TYPE.PUNCTUATION }), ...words.map(create_word_token), create_token({ token: ']', type: TOKEN_TYPE.PUNCTUATION })],
+		tag,
+	})
+	const create_period_token = () => create_token({ token: '.', type: TOKEN_TYPE.PUNCTUATION })
+	const check = (tokens: Token[]) => apply_rules({ sentences: [create_sentence_for_test(tokens)], rules: UNCOORDINATED_CLAUSE_RULE }).flatMap(flatten_sentence)
+	const find_token = ({ tokens, token }: { tokens: Token[], token: string }) => tokens.find(checked => checked.token === token)
+
+	test('flags a clause that is a different type than the clause before it: John argued [about Mary leaving] [and John leaving].', () => {
+		const checked_tokens = check([
+			create_word_token('John'),
+			create_word_token('argued'),
+			create_clause({ words: ['about', 'Mary', 'leaving'], tag: { 'clause_type': 'patient_clause_different_participant' } }),
+			create_clause({ words: ['and', 'John', 'leaving'], tag: { 'clause_type': 'patient_clause_different_participant', 'coordinate': 'no_partner' } }),
+			create_period_token(),
+		])
+
+		expect_message_to_match({ token: find_token({ tokens: checked_tokens, token: 'and' }), message_type: 'warning', regex: /^This clause is not coordinated with the clause before it/ })
+	})
+
+	test('does not flag a coordinated clause: John said [that Mary left] [and Peter stayed].', () => {
+		const checked_tokens = check([
+			create_word_token('John'),
+			create_word_token('said'),
+			create_clause({ words: ['that', 'Mary', 'left'], tag: { 'clause_type': 'patient_clause_different_participant', 'coordinate': 'first' } }),
+			create_clause({ words: ['and', 'Peter', 'stayed'], tag: { 'clause_type': 'patient_clause_different_participant', 'coordinate': 'last' } }),
+			create_period_token(),
+		])
+
+		expect_no_message(find_token({ tokens: checked_tokens, token: 'and' }))
+	})
+
+	test('does not flag a clause after a relative clause, which is a nested independent clause instead: The man [who left] [and Mary stayed].', () => {
+		const checked_tokens = check([
+			create_word_token('The'),
+			create_word_token('man'),
+			create_clause({ words: ['who', 'left'], tag: { 'clause_type': 'relative_clause' } }),
+			create_clause({ words: ['and', 'Mary', 'stayed'], tag: { 'clause_type': 'patient_clause_different_participant', 'coordinate': 'no_partner' } }),
+			create_period_token(),
+		])
+
+		expect_no_message(find_token({ tokens: checked_tokens, token: 'and' }))
+	})
+
+	test('does not flag a clause without a clause before it, which is a nested independent clause instead: John left [and Mary stayed].', () => {
+		const checked_tokens = check([
+			create_word_token('John'),
+			create_word_token('left'),
+			create_clause({ words: ['and', 'Mary', 'stayed'], tag: { 'clause_type': 'patient_clause_different_participant', 'coordinate': 'no_partner' } }),
+			create_period_token(),
+		])
+
+		expect_no_message(find_token({ tokens: checked_tokens, token: 'and' }))
 	})
 })

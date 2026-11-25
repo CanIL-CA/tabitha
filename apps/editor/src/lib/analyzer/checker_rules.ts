@@ -113,7 +113,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when not preceded by a clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE, 'skip': { 'tag': { 'list_comma': 'relative_clause' } } },
 		},
 		'warning': {
@@ -125,12 +125,25 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when preceded by a relative clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'patient_clause_different_participant' } },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'relative_clause' } },
 		},
 		'warning': {
 			'on': 'subtokens:0',
 			'message': 'This may be an unintentional nested independent clause. Check if you need to split the sentence in two.',
+		},
+	},
+	{
+		'name': 'Check for a clause starting with "and" or "but" that is not coordinated with the clause before it',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'coordinate': 'no_partner' } },
+		'context': {
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
+			'precededby': { 'type': TOKEN_TYPE.CLAUSE },
+			'notprecededby': { 'tag': { 'clause_type': 'relative_clause' } },
+		},
+		'warning': {
+			'on': 'subtokens:1',
+			'message': 'This clause starts differently than the one before it, so may not have been coordinated properly.',
 		},
 	},
 	{
@@ -144,6 +157,13 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'warning': {
 			'on': 'subtokens:0',
 			'message': 'A simple vocabulary alternate typically directly follows a complex alternate, but no simple alternate was found.',
+		},
+	},
+	{
+		'name': 'Warn to set the proper "yes" rhetorical type',
+		'trigger': { 'token': '(yesrhetorical)' },
+		'warning': {
+			'message': "The analyzer can't determine the type of 'yes-rhetorical' question, so make sure it's set to the right value.",
 		},
 	},
 ]

@@ -408,6 +408,19 @@ const transform_rules_json: TransformRuleJson[] = [
 		'comment': '"quantity" is the modifier of the noun that follows, so it is handled a bit differently',
 	},
 	{
+		'name': "a repeated 'of' coordinated with an 'of' after an adjective is the same subgroup function word",
+		'trigger': { 'token': 'of' },
+		'context': {
+			'precededby': [
+				{ 'token': 'of', 'tag': { 'relation': 'subgroup' }, 'skip': 'np_modifiers' },
+				{ 'category': 'Noun' },
+				{ 'token': 'and|or|,' },
+			],
+		},
+		'transform': { 'function': { 'relation': 'subgroup' }, 'remove_tag': 'pre_np_adposition' },
+		'comment': "eg 'afraid of Mary and of Peter', so both nouns are coordinated arguments of the adjective, rather than 'Peter' being a genitive of 'Mary'",
+	},
+	{
 		'name': 'certain Noun-Noun combinations are "made_of"',
 		'trigger': { 'category': 'Noun', 'stem': 'bamboo|bronze|gold|iron|leather|marble|metal|plastic|silver|wood' },
 		'context': { 'followedby': { 'category': 'Noun' } },
@@ -652,7 +665,7 @@ const transform_rules_json: TransformRuleJson[] = [
 		'name': 'remove head_np tag from nouns after a repeated "of" in coordinated genitives',
 		'trigger': { 'tag': { 'syntax': 'head_np' } },
 		'context': {
-			'precededby': [{ 'category': 'Noun' }, { 'token': 'and|or|,' }, { 'token': 'of', 'skip': 'np_modifiers' }],
+			'precededby': [{ 'category': 'Noun' }, { 'token': 'and|or|,' }, { 'token': 'of', 'tag': { 'relation': 'genitive_norman' }, 'skip': 'np_modifiers' }],
 		},
 		'transform': { 'remove_tag': ['syntax', 'role'] },
 		'comment': "eg 'the brother of James and of John'. John is coordinated with James, not an argument of the Verb",

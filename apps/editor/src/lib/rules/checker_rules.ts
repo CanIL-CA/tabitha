@@ -591,7 +591,7 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when not preceded by a clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'notprecededby': { 'type': TOKEN_TYPE.CLAUSE },
 		},
 		'error': {
@@ -603,13 +603,27 @@ const checker_rules_json: CheckerRuleJson[] = [
 		'name': 'Check for nested independent clauses with "and" or "but", when preceded by a relative clause',
 		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'patient_clause_different_participant' } },
 		'context': {
-			'subtokens': [{ 'token': '[' }, { 'token': 'and|but' }],
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
 			'precededby': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'clause_type': 'relative_clause' } },
 		},
 		'error': {
 			'on': 'subtokens:0',
 			'message': 'Cannot have a nested independent clause. Instead, split the sentence into two.',
 		},
+	},
+	{
+		'name': 'Check for a clause starting with "and" or "but" that is not coordinated with the clause before it',
+		'trigger': { 'type': TOKEN_TYPE.CLAUSE, 'tag': { 'coordinate': 'no_partner' } },
+		'context': {
+			'subtokens': [{ 'token': '[' }, { 'token': 'and|or|but' }],
+			'precededby': { 'type': TOKEN_TYPE.CLAUSE },
+			'notprecededby': { 'tag': { 'clause_type': 'relative_clause' } },
+		},
+		'warning': {
+			'on': 'subtokens:1',
+			'message': "This clause is not coordinated with the clause before it, since they start differently. If they should be coordinated, start this clause the same way, eg '[about X] [and about Y]'.",
+		},
+		'comment': "eg 'John argued [about Mary leaving] [and John leaving]'. The nested independent clause checks above cover a clause that is not preceded by another clause, or is preceded by a relative clause",
 	},
 	{
 		'name': 'Warn when there is no clause with (simple) after a clause with (complex)',
