@@ -25,9 +25,9 @@
     "@tabitha/vite-config": "workspace:*",
     "@types/bun": "^1.4.4",
     "@types/node": "^26.6.6",
-    "eslint": "^10.14.0",
-    "svelte": "^5.57.3",
-    "turbo": "^2.11.11",
+    "eslint": "^10.15.0",
+    "svelte": "^5.58.0",
+    "turbo": "^2.11.13",
     "typescript": "^6.0.3",
     "vite": "8.3.8"
   }
