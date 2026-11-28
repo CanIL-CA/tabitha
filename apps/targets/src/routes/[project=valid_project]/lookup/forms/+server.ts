@@ -11,25 +11,41 @@ import type { DbRowLexicon } from '#lib/types.js'
 const MAX_WORDS_PER_QUERY = 99
 const MAX_WORDS_PER_BATCH = 1000
 
+// D1 rejects a LIKE pattern over 50 bytes, so only a wildcard search uses LIKE. An exact word, however
+// long, matches with `=` and instr(), which are case-insensitive here to agree with LIKE.
+const WORD_MATCHERS = {
+	wildcard: {
+		stem_condition: 'stem LIKE ?',
+		forms_condition: 'forms LIKE ?',
+		forms_value: (word: string) => `%|${word}|%`,
+	},
+	exact: {
+		stem_condition: 'stem = ? COLLATE NOCASE',
+		forms_condition: 'instr(lower(forms), ?) > 0',
+		forms_value: (word: string) => `|${word.toLowerCase()}|`,
+	},
+}
+
 export async function GET({ locals: { db }, params: { project }, url: { searchParams } }: Parameters<RequestHandler>[0]) {
 	const word = normalize_wildcards(searchParams.get('word') ?? '')
+	const { stem_condition, forms_condition, forms_value } = WORD_MATCHERS[word.includes('%') ? 'wildcard' : 'exact']
 
 	const stem_sql = `
 		SELECT *
 		FROM Lexicon
 		WHERE project = ?
-			AND stem LIKE ?
+			AND ${stem_condition}
 	`
 	const forms_sql = `
 		SELECT *
 		FROM Lexicon
 		WHERE project = ?
-			AND forms LIKE ?
+			AND ${forms_condition}
 	`
 
 	const [{ results: stem_matches }, { results: forms_matches }, form_name_by_position, lexical_feature_map] = await Promise.all([
-		db.prepare(stem_sql).bind(project, `${word}`).all<DbRowLexicon>(),
-		db.prepare(forms_sql).bind(project, `%|${word}|%`).all<DbRowLexicon>(),
+		db.prepare(stem_sql).bind(project, word).all<DbRowLexicon>(),
+		db.prepare(forms_sql).bind(project, forms_value(word)).all<DbRowLexicon>(),
 		get_form_name_by_position({ db, project }),
 		load_lexical_feature_map({ db, project }),
 	])
@@ -93,14 +109,15 @@ async function select_by_stems({ db, project, words }: { db: D1DatabaseSession, 
 }
 
 async function select_by_forms({ db, project, words }: { db: D1DatabaseSession, project: string, words: string[] }): Promise<DbRowLexicon[]> {
-	const forms_filters = words.map(() => 'forms LIKE ?').join(' OR ')
+	const { forms_condition, forms_value } = WORD_MATCHERS.exact
+	const forms_filters = words.map(() => forms_condition).join(' OR ')
 	const sql = `
 		SELECT *
 		FROM Lexicon
 		WHERE project = ?
 			AND (${forms_filters})
 	`
-	const { results } = await db.prepare(sql).bind(project, ...words.map(word => `%|${word}|%`)).all<DbRowLexicon>()
+	const { results } = await db.prepare(sql).bind(project, ...words.map(forms_value)).all<DbRowLexicon>()
 	return results ?? []
 }
 

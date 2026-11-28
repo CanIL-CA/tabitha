@@ -86,3 +86,24 @@ for (const { test_word, expected_forms } of test_data) {
 		expect(returned_forms).toEqual(expect.arrayContaining(expected_forms.map(form => expect.objectContaining(form))))
 	})
 }
+
+// Longer than D1's 50-byte limit on a LIKE pattern once wrapped as `%|word|%`
+const LONG_WORD = 'the-book-of-the-chronicles-of-the-kings-of-israel'
+
+test('/English/lookup/forms?word=<a word too long for a LIKE pattern>', async ({ request }) => {
+	const response = await request.get(`/English/lookup/forms?word=${LONG_WORD}`)
+
+	expect(response.status()).toBe(200)
+	expect(await response.json()).toEqual([])
+})
+
+test('POST /English/lookup/forms with a word too long for a LIKE pattern', async ({ request }) => {
+	const response = await request.post('/English/lookup/forms', { data: { words: [LONG_WORD, 'built'] } })
+
+	expect(response.status()).toBe(200)
+	const forms_by_word = await response.json()
+	expect(forms_by_word[LONG_WORD]).toEqual([])
+	expect(forms_by_word.built).toEqual(expect.arrayContaining([
+		expect.objectContaining({ stem: 'build', part_of_speech: 'Verb', form: 'Past' }),
+	]))
+})
