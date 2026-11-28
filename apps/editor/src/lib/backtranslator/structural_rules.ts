@@ -225,6 +225,12 @@ const structural_rules_json: BuiltInRule[] = [
 				// move 'named' to the end of the inner phrase and add the implicit markers
 				const named_phrase_start = find_phrase_start({ tokens, start_index: named_index })
 				const named_phrase_end = find_phrase_end({ tokens, start_index: named_index })
+
+				if (named_phrase_start === -1 || named_phrase_end === -1) {
+					// 'named' was found outside an NP (eg 'a man named _explainName Othniel'), and continuing may cause errors
+					return trigger_index + 1
+				}
+
 				const new_implicit_phrase = [
 					create_token({ token: '<<', type: TOKEN_TYPE.PUNCTUATION }),
 					...tokens.slice(named_phrase_start, named_index),
