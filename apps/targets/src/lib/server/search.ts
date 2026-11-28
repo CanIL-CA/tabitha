@@ -24,8 +24,11 @@ export async function search_text({ db, project, parsed_q }: {
 		return []
 	}
 
-	const query_conditions = parsed_q.or_terms.map(or_term => {
-		const and_conditions = or_term.and_terms.map(() => 'text LIKE ?').join(' AND ')
+	// Every term matches anywhere in the text, so wildcards around it add nothing
+	const or_terms = parsed_q.or_terms.map(or_term => or_term.and_terms.map(term => term.replaceAll(/^%|%$/g, '')))
+
+	const query_conditions = or_terms.map(and_terms => {
+		const and_conditions = and_terms.map(term => to_term_matcher(term).condition).join(' AND ')
 		return `(${and_conditions})`
 	}).join(' OR ')
 
@@ -35,8 +38,7 @@ export async function search_text({ db, project, parsed_q }: {
 		WHERE project = ? AND (${query_conditions})
 	`
 
-	// Remove wildcards around each query term, as they will be added back in by default
-	const q_values = parsed_q.or_terms.flatMap(or_term => or_term.and_terms.map(term => term.replaceAll(/^%|%$/g, '')).map(term => `%${term}%`))
+	const q_values = or_terms.flat().map(term => to_term_matcher(term).value(term))
 
 	const { results: matches } = await db.prepare(query).bind(project, ...q_values).all<DbRowText>()
 
@@ -54,6 +56,17 @@ export async function search_text({ db, project, parsed_q }: {
 				texts: group.map(({ text, audience }) => ({ text, audience })),
 			})).toArray()
 	}
+}
+
+// D1 rejects a LIKE pattern over 50 bytes, so only a term with an inner wildcard uses LIKE. Any other
+// term, however long, matches with instr(), made case-insensitive to agree with LIKE.
+const TERM_MATCHERS = {
+	wildcard: { condition: 'text LIKE ?', value: (term: string) => `%${term}%` },
+	substring: { condition: 'instr(lower(text), ?) > 0', value: (term: string) => term.toLowerCase() },
+}
+
+function to_term_matcher(term: string) {
+	return TERM_MATCHERS[term.includes('%') ? 'wildcard' : 'substring']
 }
 
 export function normalize_wildcards(possible_wildcard: string): string {
