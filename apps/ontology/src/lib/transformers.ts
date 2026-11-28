@@ -336,19 +336,15 @@ function encode_usage_categorization(part_of_speech: string): (categories: strin
 	return function encode_categories(categories: string[]): string {
 		const usages = usage_info[part_of_speech as PartOfSpeech] || []
 
-		if (categories.length === 0) {
-			return '_'.repeat(usages.length)
-		}
-
-		return categories.map(encode_usage).join('')
+		return usages.map((_usage, position) => encode_usage(position)).join('')
 
 		/**
-		 * @param sentence the full usage sentence starting with 'always', 'sometimes', or 'never'
+		 * An unset usage (a gap left by the usage editor, null once stored as JSON) is encoded as never.
 		 * @param position the position within the categorization string
 		 * @returns the categorization character [ABC|abc|_]
 		 */
-		function encode_usage(sentence: string, position: number): string {
-			return encode_frequency({ sentence, character: get_usage_character(position) })
+		function encode_usage(position: number): string {
+			return encode_frequency({ sentence: categories[position] ?? 'never', character: get_usage_character(position) })
 		}
 
 		/**
