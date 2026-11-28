@@ -74,13 +74,13 @@
     "update:interactive": "bun update --interactive --latest --recursive"
   },
   "devDependencies": {
-    "@playwright/test": "^1.65.0",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@playwright/test": "^1.65.1",
+    "@vitest/coverage-v8": "^5.1.1",
     "markdownlint-cli2": "^0.24.1",
     "monocart-coverage-reports": "^3.2.1",
     "sharp": "^0.35.5",
     "syncpack": "^15.3.3",
-    "turbo": "^2.11.11",
+    "turbo": "^2.11.13",
     "vitest-monocart-coverage": "^5.0.0"
   }
 }

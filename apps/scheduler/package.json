@@ -15,12 +15,12 @@
 		"precommit": "bun run check && bun run check:lint && bun run build && bun run test"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^5.20261112.1",
+		"@cloudflare/workers-types": "^5.20261119.1",
 		"@tabitha/eslint-config": "workspace:*",
 		"@tabitha/tsconfig": "workspace:*",
-		"eslint": "^10.14.0",
+		"eslint": "^10.15.0",
 		"typescript": "^6.0.3",
-		"vitest": "^5.1.0",
-		"wrangler": "^4.161.0"
+		"vitest": "^5.1.1",
+		"wrangler": "^4.165.0"
 	}
 }
