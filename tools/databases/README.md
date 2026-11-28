@@ -130,7 +130,7 @@ bun run refresh:preview
 
 #### Auth
 
-The Auth database isn't part of this pipeline. Its whole schema (permission tables and Better Auth's tables) is owned by D1 migrations in `apps/ontology/migrations/auth/`, which `db:load` applies to an empty local database ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)).
+The Auth database isn't part of this pipeline. Its whole schema (permission tables and Better Auth's tables) is owned by D1 migrations in `packages/auth/migrations/`, which `db:load` applies to an empty local database ([ADR 0021](../../docs/decisions/0021-better-auth-sessions-in-d1.md)).
 
 #### Status Update (Live D1)
 

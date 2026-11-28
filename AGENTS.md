@@ -441,7 +441,8 @@ import system_instruction from './review_prompt.md?raw'
    - `@tabitha/vite-config` — Shared Vite, SvelteKit, Vitest, and Playwright configurations.
    - `@tabitha/eslint-config` — ESLint flat configurations.
    - `@tabitha/tsconfig` — Base TypeScript compiler configurations.
-   - `@tabitha/d1` — `with_timeout` wrapper for D1 bindings and sessions, so a stuck query fails instead of hanging the request.
+   - `@tabitha/auth` — `DB_Auth`'s schema (D1 migrations), the Better Auth configuration, and the per-app permission lookup, for every app that signs in against the shared Auth database ([ADR 0027](docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)).
+   - `@tabitha/d1` — `with_timeout` wrapper for D1 bindings and sessions, so a stuck query fails instead of hanging the request, and a read that fails with a transient error is retried.
    - `@tabitha/service-worker` — Shared service worker (`register_service_worker`) for the apps that work offline.
 
 3. **Dependency Direction**:

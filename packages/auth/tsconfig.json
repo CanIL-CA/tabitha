@@ -1,0 +1,6 @@
+{
+	"extends": "@tabitha/tsconfig/base.json",
+	"include": [
+		"src/**/*"
+	]
+}

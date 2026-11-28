@@ -27,7 +27,8 @@ Guidelines for architecting shared packages and adhering to coding standards acr
 | **`@tabitha/vite-config`** | Centralized Vite, SvelteKit, Vitest, and Playwright configuration generators. |
 | **`@tabitha/eslint-config`** | Standardized ESLint 9 flat configuration. |
 | **`@tabitha/tsconfig`** | Base TypeScript compiler configurations (`base.json`, `svelte.json`). |
-| **`@tabitha/d1`** | `with_timeout` wrapper for D1 bindings and sessions, so a stuck query fails instead of hanging the request. |
+| **`@tabitha/auth`** | `DB_Auth`'s schema (D1 migrations in `migrations/`), the Better Auth configuration (`create_auth`), and the per-app permission lookup (`get_user_permissions`). ADR 0027. |
+| **`@tabitha/d1`** | `with_timeout` wrapper for D1 bindings and sessions, so a stuck query fails instead of hanging the request, and a read that fails with a transient error is retried. |
 | **`@tabitha/service-worker`** | Shared service worker (`register_service_worker`) for the apps that work offline. |
 
 ---

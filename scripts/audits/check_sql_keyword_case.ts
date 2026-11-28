@@ -8,7 +8,7 @@ const DOC_LINK = 'CONTRIBUTING.md'
 
 // Files a tool generates, which keep the generator's casing. Regenerating would undo any edit.
 const GENERATED_FILES = new Set([
-	'apps/ontology/migrations/auth/0001_better_auth.sql',
+	'packages/auth/migrations/0001_better_auth.sql',
 ])
 
 // Skipped so the audit's own fixtures, which spell out lowercase SQL on purpose, don't fail it.

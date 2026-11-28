@@ -21,20 +21,20 @@ import { randomBytes } from 'node:crypto'
  * 	wrangler_path: string
  * 	entries: Array<{ binding?: string, database_name: string, database_id: string }>
  * 	d1_state_dir: string
+ * 	persist_path: string
  * }} options
  * @returns {Promise<Record<string, string>>}
  */
-export async function resolve_workerd_hashes({ app_dir, wrangler_path, entries, d1_state_dir }) {
+export async function resolve_workerd_hashes({ app_dir, wrangler_path, entries, d1_state_dir, persist_path }) {
 	const require_from_app = createRequire(join(app_dir, 'package.json'))
 	const wrangler_entry = require_from_app.resolve('wrangler')
 	const { getPlatformProxy } = await import(pathToFileURL(wrangler_entry).href)
 
 	const proxy = await getPlatformProxy({
 		configPath: wrangler_path,
-		// getPlatformProxy()'s default persist path is relative to process.cwd(), not to configPath's
-		// directory -- since this script always runs from the repo root, that default would silently
-		// create/read a separate, wrong `.wrangler/state` at the repo root instead of the app's own.
-		persist: { path: join(app_dir, '.wrangler', 'state', 'v3') },
+		// The shared local state every app's dev server uses (@tabitha/vite-config/local-state), passed
+		// in rather than imported so this file stays runnable by a plain `node` on Windows.
+		persist: { path: persist_path },
 	})
 	/** @type {Record<string, string>} */
 	const resolved = {}
@@ -72,7 +72,7 @@ export async function resolve_workerd_hashes({ app_dir, wrangler_path, entries, 
 }
 
 // CLI entry point, used only on Windows via a `node` subprocess (see db_load.ts). Reads
-// { app_dir, wrangler_path, entries, d1_state_dir } as JSON on stdin, prints the resolved
+// { app_dir, wrangler_path, entries, d1_state_dir, persist_path } as JSON on stdin, prints the resolved
 // hash map as JSON on stdout.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
 	const input = JSON.parse(await new Promise(resolve => {
@@ -80,6 +80,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
 		process.stdin.on('data', chunk => { data += chunk })
 		process.stdin.on('end', () => resolve(data))
 	}))
-	const resolved = await resolve_workerd_hashes({ app_dir: input.app_dir, wrangler_path: input.wrangler_path, entries: input.entries, d1_state_dir: input.d1_state_dir })
+	const resolved = await resolve_workerd_hashes({ app_dir: input.app_dir, wrangler_path: input.wrangler_path, entries: input.entries, d1_state_dir: input.d1_state_dir, persist_path: input.persist_path })
 	process.stdout.write(JSON.stringify(resolved))
 }

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { Database } from 'bun:sqlite'
 import { $ } from 'bun'
 import type { AiGatewayConfig } from '@tabitha/ai'
+import { LOCAL_D1_STATE_DIR } from '@tabitha/vite-config/local-state'
 import { parse_wrangler_jsonc } from './db_load'
 import { dev_defaults, forced_local_value, parse_env_file } from './setup_env'
 import { probe_gateway_token, type GatewayTokenStatus } from './lib/ai_gateway_token'
@@ -399,7 +400,7 @@ async function check_local_databases(): Promise<DiagnosticResult[]> {
 		if (!app.db_check) continue
 
 		const wrangler = parse_wrangler_jsonc(join(process.cwd(), 'apps', app.name, 'wrangler.jsonc'))
-		const d1_state_dir = join(process.cwd(), 'apps', app.name, '.wrangler', 'state', 'v3', 'd1', 'miniflare-D1DatabaseObject')
+		const d1_state_dir = LOCAL_D1_STATE_DIR
 
 		const entries = (wrangler?.d1_databases ?? []).filter(d1 =>
 			'binding_prefix' in app.db_check! ? d1.binding?.startsWith(app.db_check!.binding_prefix) : d1.binding === app.db_check!.binding,

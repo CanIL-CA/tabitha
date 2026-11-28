@@ -11,6 +11,7 @@
     ".": "./index.js",
     "./playwright": "./playwright.js",
     "./ports": "./ports.js",
+    "./local-state": "./local_state.js",
     "./cloudflare-workers": {
       "types": "./cloudflare_workers.d.ts"
     }

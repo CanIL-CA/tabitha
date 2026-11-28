@@ -217,3 +217,66 @@ describe('with_timeout', () => {
 		expect(statement.describe()).toBe('SELECT ? [1]')
 	})
 })
+
+// A database that fails its first `failures` queries with `error`, then answers. `executed` counts
+// what reached the database, which for a write is what the caller would see in its rows.
+function flaky_d1({ failures, error }: { failures: number, error: string }) {
+	const executed: string[] = []
+	const db = fake_d1({
+		respond: async query => {
+			executed.push(query.sql)
+			if (executed.length <= failures) throw new Error(error)
+			return { rows: [query.sql] }
+		},
+	})
+	return { db: with_timeout({ db }), executed }
+}
+
+// Local dev: two dev servers sharing one D1 file make workerd fail a session read's bookmark on a
+// lock instead of waiting (ADR 0027). Production: Cloudflare lists these as safe to retry for
+// idempotent queries (https://developers.cloudflare.com/d1/observability/debug-d1/).
+const TRANSIENT_ERRORS = [
+	'D1_ERROR: Failed to get session commit token: internal error; reference = abc123',
+	'D1_ERROR: Network connection lost.',
+	'D1_ERROR: Replica disconnected from primary.',
+	'D1_ERROR: D1 DB reset because its code was updated.',
+	'D1_ERROR: Internal error while starting up D1 DB storage caused object to be reset.',
+]
+
+describe('with_timeout retrying reads', () => {
+	it.each(TRANSIENT_ERRORS)('retries a read that fails with "%s"', async error => {
+		const { db } = flaky_d1({ failures: 1, error })
+
+		await expect(db.prepare('SELECT permission FROM Permissions').all()).resolves.toEqual({ rows: ['SELECT permission FROM Permissions'] })
+	})
+
+	it('retries a read whose SQL starts on a later line, as template literals do', async () => {
+		const { db } = flaky_d1({ failures: 2, error: TRANSIENT_ERRORS[0] })
+
+		await expect(db.withSession().prepare(`
+			SELECT u.id
+			FROM Users u
+		`).bind('user@example.com').first()).resolves.toBeDefined()
+	})
+
+	it('gives up after three attempts, passing the last error through', async () => {
+		const { db, executed } = flaky_d1({ failures: 3, error: TRANSIENT_ERRORS[1] })
+
+		await expect(db.prepare('SELECT 1').raw()).rejects.toThrow('Network connection lost')
+		expect(executed).toHaveLength(3)
+	})
+
+	it('never repeats a write, which may have taken effect before failing', async () => {
+		const { db, executed } = flaky_d1({ failures: 1, error: TRANSIENT_ERRORS[1] })
+
+		await expect(db.prepare('INSERT INTO Users (email) VALUES (?)').bind('user@example.com').run()).rejects.toThrow('Network connection lost')
+		expect(executed).toHaveLength(1)
+	})
+
+	it('does not retry an error that will fail again the same way', async () => {
+		const { db, executed } = flaky_d1({ failures: 1, error: 'D1_ERROR: no such table: Permissions' })
+
+		await expect(db.prepare('SELECT * FROM Permissions').all()).rejects.toThrow('no such table')
+		expect(executed).toHaveLength(1)
+	})
+})

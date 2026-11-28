@@ -3,12 +3,14 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // Relative, not #lib: Playwright's loader resolves package.json subpath imports without mapping .js to .ts.
-import { create_auth_options } from '../../src/lib/server/better_auth.js'
+import { ONTOLOGY_AUTH_SETTINGS } from '../../src/lib/server/better_auth.js'
+import { create_auth_options } from '@tabitha/auth'
 import type { D1Database } from '@cloudflare/workers-types'
 import type { BrowserContext } from '@playwright/test'
 import { betterAuth } from 'better-auth'
 import { testUtils } from 'better-auth/plugins'
 import { getPlatformProxy } from 'wrangler'
+import { LOCAL_PERSIST_PATH } from '@tabitha/vite-config/local-state'
 
 // See e2e/README.md for why this exists and how it works.
 
@@ -25,6 +27,19 @@ function read_env_var(name: string): string {
 	throw new Error(`Missing ${name} in apps/ontology/.env.local -- run \`bun run setup:env\` first.`)
 }
 
+// Every app's e2e suite runs at once against the one local DB_Auth, and workerd fails a write that
+// loses a lock race at once (SQLITE_BUSY) rather than waiting for the lock.
+async function retry_when_busy<T>({ attempt }: { attempt: () => Promise<T> }): Promise<T> {
+	for (let tries = 1; ; tries++) {
+		try {
+			return await attempt()
+		} catch (error) {
+			if (tries >= 5 || !String(error).includes('SQLITE_BUSY')) throw error
+			await new Promise(resolve => setTimeout(resolve, 100 * tries))
+		}
+	}
+}
+
 /**
  * Grants `email` Ontology permissions (all of them when none are listed), then signs it in on
  * `context` with a real session in the local Auth D1, created by Better Auth's test utilities.
@@ -34,19 +49,19 @@ export async function sign_in_as({ context, email, permissions = [] }: {
 	email: string
 	permissions?: string[]
 }) {
-	execFileSync('bun', [join(root_dir, 'scripts/dx/grant_permission.ts'), email, ...permissions], { stdio: 'inherit' })
+	execFileSync('bun', [join(root_dir, 'scripts/dx/grant_permission.ts'), '--app=ontology', email, ...permissions], { stdio: 'inherit' })
 
-	// The same local D1 the dev server reads. getPlatformProxy()'s default persist path is relative to
-	// the working directory, so it's pinned to the app's own state.
+	// The same local D1 the dev server reads: every app's, since they share one local state folder.
 	const proxy = await getPlatformProxy<{ DB_Auth: D1Database, BETTER_AUTH_SECRET?: string }>({
 		configPath: join(app_dir, 'wrangler.jsonc'),
-		persist: { path: join(app_dir, '.wrangler', 'state', 'v3') },
+		persist: { path: LOCAL_PERSIST_PATH },
 	})
 
 	try {
 		// https://www.better-auth.com/docs/plugins/test-utils
 		const test_auth = betterAuth({
 			...create_auth_options({
+				...ONTOLOGY_AUTH_SETTINGS,
 				db_auth: proxy.env.DB_Auth,
 				secret: proxy.env.BETTER_AUTH_SECRET || read_env_var('BETTER_AUTH_SECRET'),
 				// Never called: sessions are created directly, not through Google.
@@ -58,10 +73,15 @@ export async function sign_in_as({ context, email, permissions = [] }: {
 		})
 		const { test, internalAdapter } = await test_auth.$context
 
-		const existing = await internalAdapter.findUserByEmail(email)
-		const user = existing?.user ?? await test.saveUser(test.createUser({ email, name: email }))
+		const cookies = await retry_when_busy({
+			attempt: async () => {
+				const existing = await internalAdapter.findUserByEmail(email)
+				const user = existing?.user ?? await test.saveUser(test.createUser({ email, name: email }))
+				return test.getCookies({ userId: user.id })
+			},
+		})
 
-		await context.addCookies(await test.getCookies({ userId: user.id }))
+		await context.addCookies(cookies)
 	} finally {
 		await proxy.dispose()
 	}

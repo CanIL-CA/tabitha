@@ -57,6 +57,6 @@ describe('find_sql_keyword_findings', () => {
 	})
 
 	it('skips generated files', () => {
-		expect(keywords_of({ file_path: 'apps/ontology/migrations/auth/0001_better_auth.sql', content: 'create table "user" ("id" text);' })).toEqual([])
+		expect(keywords_of({ file_path: 'packages/auth/migrations/0001_better_auth.sql', content: 'create table "user" ("id" text);' })).toEqual([])
 	})
 })

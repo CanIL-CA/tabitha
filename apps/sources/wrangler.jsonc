@@ -18,6 +18,9 @@
 			"enabled": true
 		}
 	},
+	"vars": {
+		"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com" // TaBiThA (prod), shared by every app (ADR 0027)
+	},
 	"routes": [
 		{
 			"pattern": "sources.tabitha.bible",
@@ -60,6 +63,14 @@
 			"binding": "DB_Sources",
 			"database_name": "Sources_2026-11-19",
 			"database_id": "1e83c13a-71b1-44ed-8277-b47e40135830"
+		},
+		{
+			"binding": "DB_Auth",
+			"database_name": "Auth",
+			"database_id": "c547b234-05fd-4923-ab0e-689d993894ad",
+			// Shared with ontology; @tabitha/auth owns its schema (ADR 0027). Declared here so db:load builds
+			// Sources' own local copy. Production's is migrated once, from either app.
+			"migrations_dir": "node_modules/@tabitha/auth/migrations"
 		}
 	],
 	// Anonymous feature-usage events -- see docs/decisions/0017-usage-analytics-engine.md for the
@@ -79,6 +90,14 @@
 	// them with `wrangler preview --name pr-<N>` (docs/decisions/0020-per-pr-worker-previews.md).
 	// A Preview inherits nothing from the top level, so every var and binding it needs is redeclared.
 	"previews": {
+		// Production's client, not a preview one: Google rejects wildcard redirect URIs, so a Preview
+		// signs in through production's registered callback via Better Auth's OAuth proxy
+		// (OAUTH_REDIRECT_PROXY_URL, from the committed .env). The proxy only accepts payloads encrypted
+		// with its own BETTER_AUTH_SECRET, so a Preview's BETTER_AUTH_SECRET and GOOGLE_OAUTH_CLIENT_SECRET
+		// (set once with `wrangler preview base-config secret put`) must be production's too.
+		"vars": {
+			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com" // TaBiThA (prod)
+		},
 		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
 		// production, and recording is a no-op without the binding.
 		"services": [
@@ -110,6 +129,13 @@
 				"binding": "DB_Sources",
 				"database_name": "Sources_2026-11-19",
 				"database_id": "1e83c13a-71b1-44ed-8277-b47e40135830"
+			},
+			// Shared with production, as ontology's Previews do: a Preview sign-in writes its Better Auth
+			// user and session rows there.
+			{
+				"binding": "DB_Auth",
+				"database_name": "Auth",
+				"database_id": "c547b234-05fd-4923-ab0e-689d993894ad"
 			}
 		]
 	}

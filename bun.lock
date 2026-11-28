@@ -116,6 +116,7 @@
       "dependencies": {
         "@tabitha/ai": "workspace:*",
         "@tabitha/api-client": "workspace:*",
+        "@tabitha/auth": "workspace:*",
         "@tabitha/complex-terms": "workspace:*",
         "@tabitha/cors": "workspace:*",
         "@tabitha/d1": "workspace:*",
@@ -172,6 +173,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@tabitha/api-client": "workspace:*",
+        "@tabitha/auth": "workspace:*",
         "@tabitha/cors": "workspace:*",
         "@tabitha/d1": "workspace:*",
         "@tabitha/generator": "workspace:*",
@@ -182,6 +184,7 @@
         "@tabitha/ui": "workspace:*",
         "@tabitha/usage": "workspace:*",
         "@tailwindcss/typography": "^0.5.20",
+        "better-auth": "1.7.26",
         "daisyui": "^5.8.1",
         "svelte": "^5.58.0",
         "tailwindcss": "^4.3.5",
@@ -337,6 +340,21 @@
         "@tabitha/eslint-config": "workspace:*",
         "@tabitha/tsconfig": "workspace:*",
         "@vitest/coverage-v8": "^5.1.1",
+        "eslint": "^10.15.0",
+        "typescript": "^6.0.3",
+        "vitest": "^5.1.1",
+      },
+    },
+    "packages/auth": {
+      "name": "@tabitha/auth",
+      "version": "1.0.0",
+      "dependencies": {
+        "better-auth": "1.7.26",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20261119.1",
+        "@tabitha/eslint-config": "workspace:*",
+        "@tabitha/tsconfig": "workspace:*",
         "eslint": "^10.15.0",
         "typescript": "^6.0.3",
         "vitest": "^5.1.1",
@@ -1042,6 +1060,8 @@
     "@tabitha/alerts": ["@tabitha/alerts@workspace:tools/alerts"],
 
     "@tabitha/api-client": ["@tabitha/api-client@workspace:packages/api-client"],
+
+    "@tabitha/auth": ["@tabitha/auth@workspace:packages/auth"],
 
     "@tabitha/complex-terms": ["@tabitha/complex-terms@workspace:packages/complex-terms"],
 

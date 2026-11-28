@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { Database } from 'bun:sqlite'
 import { strip_jsonc_comments } from '@tabitha/types/patterns'
+import { LOCAL_PERSIST_PATH } from '@tabitha/vite-config/local-state'
 import { read_pinned_snapshots } from './db_load'
 
 const script_dir = dirname(fileURLToPath(import.meta.url))
@@ -129,7 +130,7 @@ export async function inspect_databases(): Promise<DbStatus[]> {
 		const d1_configs = parse_wrangler_d1_configs(app_name)
 		if (d1_configs.length === 0) continue
 
-		const d1_dir = join(root_dir, 'apps', app_name, '.wrangler', 'state', 'v3', 'd1')
+		const d1_dir = join(LOCAL_PERSIST_PATH, 'd1')
 		const sqlite_files = find_sqlite_files(d1_dir)
 
 		for (const d1 of d1_configs) {

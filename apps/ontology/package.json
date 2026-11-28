@@ -32,6 +32,7 @@
   "dependencies": {
     "@tabitha/ai": "workspace:*",
     "@tabitha/api-client": "workspace:*",
+    "@tabitha/auth": "workspace:*",
     "@tabitha/complex-terms": "workspace:*",
     "@tabitha/cors": "workspace:*",
     "@tabitha/d1": "workspace:*",
