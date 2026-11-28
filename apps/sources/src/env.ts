@@ -11,4 +11,5 @@ export const variables = defineEnvVars({
 	GOOGLE_OAUTH_CLIENT_ID: { static: true },
 	GOOGLE_OAUTH_CLIENT_SECRET: { static: true },
 	OAUTH_REDIRECT_PROXY_URL: { static: true },
+	AUTH_COOKIE_DOMAIN: { static: true },
 })

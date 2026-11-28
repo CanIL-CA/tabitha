@@ -19,7 +19,7 @@
 		}
 	},
 	"vars": {
-		"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // Ontology (prod)
+		"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // TaBiThA (prod), shared by every app (ADR 0027)
 		"CLOUDFLARE_ACCOUNT_ID": "8582954a9e4c6f0259c6236be794d7d3",
 		"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
 		"GEMINI_LOCATION": "global"
@@ -120,7 +120,7 @@
 		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
 		// production, and recording is a no-op without the binding.
 		"vars": {
-			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // Ontology (prod)
+			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com", // TaBiThA (prod), shared by every app (ADR 0027)
 			"CLOUDFLARE_ACCOUNT_ID": "8582954a9e4c6f0259c6236be794d7d3",
 			"GEMINI_PROJECT_ID": "gen-lang-client-0319586327",
 			"GEMINI_LOCATION": "global"

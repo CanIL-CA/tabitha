@@ -132,14 +132,12 @@ Useful Commands:
   • bun run test:e2e         Run Playwright end-to-end tests
   • bun run db:load          Reload all D1 databases from snapshots
   • bun run r2:load          Reseed local R2 bucket(s) from the local D1 database(s)
-  • bun run db:grant --app=<app> <email>
-                             Grant yourself Ontology or Sources permissions locally (see below)
+  • bun run db:grant <email>  Grant yourself Ontology and Sources permissions locally (see below)
 
 ⚠️  Ontology and Sources: after signing in with Google locally for the first time,
    a 401 on /protected pages is expected -- your local Auth DB starts with no
-   user grants. Fix it once per app with:
-   bun run db:grant --app=ontology your.email@example.com
-   bun run db:grant --app=sources your.email@example.com
+   user grants. Fix it once, for every app, with:
+   bun run db:grant your.email@example.com
 
 🧪 60-Second Golden Path Smoke Test:
   1. Start all dev servers: \`bun run dev\`

@@ -66,12 +66,10 @@ bun run dev
 
 ### Sign-in and the edit page
 
-The edit page is at `/protected/edit/<type>/<book>/<chapter>/<verse>` and needs a signed-in user with Sources' `PROTECTED_ACCESS`. Its old URL, `/<type>/<book>/<chapter>/<verse>/edit`, redirects there. Everything else, the verse pages and every API included, stays public. Sign-in is [Better Auth](https://www.better-auth.com/) with Google, against the `DB_Auth` database Ontology also uses, through [`@tabitha/auth`](../../packages/auth/) ([ADR 0027](../../docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)). Sources signs users in separately from Ontology, with its own cookies.
-
-Locally, Sources has its own copy of `DB_Auth`, so grant yourself access in it after signing in once:
+The edit page is at `/protected/edit/<type>/<book>/<chapter>/<verse>` and needs a signed-in user with Sources' `PROTECTED_ACCESS`. Its old URL, `/<type>/<book>/<chapter>/<verse>/edit`, redirects there. Everything else, the verse pages and every API included, stays public. Sign-in is [Better Auth](https://www.better-auth.com/) with Google, against the `DB_Auth` database Ontology also uses, through [`@tabitha/auth`](../../packages/auth/) ([ADR 0027](../../docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)). Signing in to Sources or Ontology signs in to both: they share one Google client, one `BETTER_AUTH_SECRET` and one session cookie on `tabitha.bible`. Permissions stay per app. Locally it works the same way: every app shares one local `DB_Auth`, so grant yourself access once after signing in:
 
 ```bash
-bun run db:grant --app=sources your.email@example.com
+bun run db:grant your.email@example.com
 ```
 
 Sources' permissions are `PROTECTED_ACCESS` (reach the edit page) and `UPDATE_SOURCE`, which nothing checks yet.

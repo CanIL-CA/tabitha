@@ -181,11 +181,10 @@ dev ports are not random.
 `bun run setup` loads schema and app data, but never seeds real user grants — those only exist in production, so a fresh local Auth DB starts with nobody authorized. Sign in to Ontology (`http://localhost:3056`) or Sources (`http://localhost:1947`) with Google once; a `401` on any `/protected` page is expected. Fix it with:
 
 ```bash
-bun run db:grant --app=ontology your.email@example.com
-bun run db:grant --app=sources your.email@example.com
+bun run db:grant your.email@example.com
 ```
 
-Grants every permission the app has to that email in your local Auth D1 only — production is untouched. Each app has its own local Auth D1 (production has one, shared by both), so grant in each app you work on. Re-run after any `bun run db:load`/`db:load:<app>`, since it rebuilds that app's local Auth D1, which resets local grants and signs you out: local Better Auth users and sessions live in the same Auth D1.
+Grants every Ontology and Sources permission to that email in your local Auth D1 only — production is untouched. Add `--app=ontology` or `--app=sources` to grant only one app's. Every app shares one local Auth D1, as in production ([ADR 0027](docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)), so signing in to one local app signs you in to all of them. Re-run after any `bun run db:load`/`db:load:<app>` that loads Ontology or Sources, since it rebuilds the local Auth D1, which resets local grants and signs you out: local Better Auth users and sessions live in the same Auth D1.
 
 ### 5. Local R2 Objects (e.g. Ontology's `/downloads` page)
 
@@ -428,7 +427,7 @@ The `PATCH` bumps are handled automatically through the changes tracking system.
 
 ### Making local changes to Database schemas
 
-Locally, every app reads its D1 databases from Miniflare SQLite files under `apps/<app>/.wrangler/state/`. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`), or using the pin in `tools/databases/manifest.json`'s `pinned_snapshots` (Ontology). Auth, Survey and Ontology (below) are owned by Wrangler migration files. Sources and Targets are built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change to those has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
+Locally, every app reads its D1 databases from Miniflare SQLite files under `.wrangler/state/` at the repo root, one folder shared by every app, so a database two apps bind (`DB_Auth`) is one database locally, as in production. `bun run db:load` fills those files from the SQL snapshots in `tools/databases/snapshots/`, matching each snapshot to the `database_name` in the app's `wrangler.jsonc` (`<database_name>.tabitha.sqlite.sql`), or using the pin in `tools/databases/manifest.json`'s `pinned_snapshots` (Ontology). Auth, Survey and Ontology (below) are owned by Wrangler migration files. Sources and Targets are built by the ETL scripts in `tools/databases/migrations/`, on top of the tables the TBTA export already ships. So a schema change to those has two parts: change your local database so you can build against it, and change the migration script so the next migration run builds the same schema.
 
 The process for the Auth db is a bit different and described below.
 
@@ -439,11 +438,11 @@ The process for the Auth db is a bit different and described below.
 To change its schema:
 
 1. Add the next numbered file in `packages/auth/migrations/`, whichever app it's for. Never edit a migration that has been applied, and never drop a table that holds real data: `User_Permissions` holds the real grants.
-2. Rebuild each app's local Auth D1 from the migrations (`ontology` and `sources` each have their own) and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
+2. Rebuild the local Auth D1 from the migrations and grant your permissions again, since the rebuild also resets local Better Auth users and sessions:
 
    ```bash
-   bun run db:load:<app>
-   bun run db:grant --app=<app> your.email@example.com
+   bun run db:load:ontology
+   bun run db:grant your.email@example.com
    ```
 
 3. Apply it to the remote database before the code that needs it merges, from `apps/ontology`:

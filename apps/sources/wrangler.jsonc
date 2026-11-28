@@ -19,8 +19,7 @@
 		}
 	},
 	"vars": {
-		// TODO(ADR 0027): replace with the "Sources (prod)" Google OAuth client's ID, which also goes in .env
-		"GOOGLE_OAUTH_CLIENT_ID": "SOURCES_PROD_GOOGLE_OAUTH_CLIENT_ID"
+		"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com" // TaBiThA (prod), shared by every app (ADR 0027)
 	},
 	"routes": [
 		{
@@ -97,7 +96,7 @@
 		// with its own BETTER_AUTH_SECRET, so a Preview's BETTER_AUTH_SECRET and GOOGLE_OAUTH_CLIENT_SECRET
 		// (set once with `wrangler preview base-config secret put`) must be production's too.
 		"vars": {
-			"GOOGLE_OAUTH_CLIENT_ID": "SOURCES_PROD_GOOGLE_OAUTH_CLIENT_ID"
+			"GOOGLE_OAUTH_CLIENT_ID": "839335496347-0tb9fcocvv3gcvr9d4derj2l76uirgab.apps.googleusercontent.com" // TaBiThA (prod)
 		},
 		// "analytics_engine_datasets" is intentionally left undeclared: usage is only tracked in
 		// production, and recording is a no-op without the binding.

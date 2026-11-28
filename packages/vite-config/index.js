@@ -6,6 +6,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
+import { LOCAL_PERSIST_PATH } from './local_state.js'
 import { PARAGLIDE_OPTIONS } from './paraglide.js'
 import { record_server_coverage } from './server_coverage.js'
 
@@ -47,7 +48,9 @@ export function create_app_vite_config({
 		plugins: [
 			tailwindcss(),
 			sveltekit({
-				adapter: adapter(),
+				// One local state folder for every app (./local_state.js), so a database two apps bind is
+				// one database locally too.
+				adapter: adapter({ platformProxy: { persist: { path: LOCAL_PERSIST_PATH } } }),
 				// Needed for the `<style lang="postcss">` blocks that use Tailwind's @apply.
 				preprocess: vitePreprocess(),
 				// Users might leave a tab open indefinitely, so poll for new deployments more often

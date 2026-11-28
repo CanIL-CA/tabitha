@@ -10,7 +10,7 @@
 
 <div class="page-kicker">The project</div>
 <h1>Privacy Policy</h1>
-<p class="page-dek">Last updated: November 25, 2026</p>
+<p class="page-dek">Last updated: November 27, 2026</p>
 
 <div class="page-body">
 	<p>
@@ -53,8 +53,9 @@
 
 	<h2>Cookies and tracking</h2>
 	<p>
-		Outside of the sign-in sessions ontology.tabitha.bible and sources.tabitha.bible set for signed-in
-		users, the cookie ontology.tabitha.bible sets so each page reads data at least as recent as the
+		Outside of the sign-in session cookie set for signed-in users of ontology.tabitha.bible and
+		sources.tabitha.bible (one cookie for the tabitha.bible domain, so signing in to one signs you
+		in to both), the cookie ontology.tabitha.bible sets so each page reads data at least as recent as the
 		last one you loaded (it holds a database version marker, nothing about you), and the cookie
 		survey.tabitha.bible sets to keep your
 		answers, this site doesn't use cookies, run third-party analytics scripts, or use any third-party advertising or

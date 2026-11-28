@@ -55,6 +55,10 @@ export function forced_local_value(key: string): string | undefined {
 	// or preview); set locally, Google would be sent a redirect_uri it has no client registered for
 	if (key === 'OAUTH_REDIRECT_PROXY_URL') return ''
 
+	// Browsers reject a cookie for tabitha.bible from localhost, where a host-only cookie already
+	// reaches every app's port
+	if (key === 'AUTH_COOKIE_DOMAIN') return ''
+
 	// Trust cross-app localhost origins for CORS in local dev only
 	if (key === 'PUBLIC_CORS_ALLOW_LOCALHOST') return 'true'
 
@@ -69,9 +73,22 @@ export function forced_local_value(key: string): string | undefined {
 	return undefined
 }
 
-function generate_local_env_content({ template_content, existing_content }: {
+/**
+ * The one local BETTER_AUTH_SECRET every app shares, so a session one app signs is valid in the
+ * others, as in production (ADR 0027): the first app's existing one, or a new random one.
+ */
+export function local_auth_secret({ env_local_contents }: { env_local_contents: string[] }): string {
+	for (const content of env_local_contents) {
+		const value = parse_env_file(content).get('BETTER_AUTH_SECRET')
+		if (value) return value
+	}
+	return randomBytes(32).toString('hex')
+}
+
+function generate_local_env_content({ template_content, existing_content, auth_secret }: {
 	template_content: string
 	existing_content?: string
+	auth_secret: string
 }): string {
 	const existing_vars = existing_content ? parse_env_file(existing_content) : new Map<string, string>()
 	const lines = template_content.split('\n')
@@ -112,16 +129,15 @@ function generate_local_env_content({ template_content, existing_content }: {
 			continue
 		}
 
-		// Priority 3: If the developer already supplied a custom value in existing .env.local, preserve it
-		if (existing_value) {
-			output_lines.push(`${key}=${existing_value}`)
+		// Priority 3: Every app gets the same local BETTER_AUTH_SECRET
+		if (key === 'BETTER_AUTH_SECRET') {
+			output_lines.push(`BETTER_AUTH_SECRET=${auth_secret}`)
 			continue
 		}
 
-		// Priority 4: If BETTER_AUTH_SECRET is blank, generate a dedicated random secret for local dev & testing
-		if (key === 'BETTER_AUTH_SECRET') {
-			const dev_secret = randomBytes(32).toString('hex')
-			output_lines.push(`BETTER_AUTH_SECRET=${dev_secret}`)
+		// Priority 4: If the developer already supplied a custom value in existing .env.local, preserve it
+		if (existing_value) {
+			output_lines.push(`${key}=${existing_value}`)
 			continue
 		}
 
@@ -140,6 +156,13 @@ export async function setup_env() {
 
 	let configured_count = 0
 
+	const auth_secret = local_auth_secret({
+		env_local_contents: app_dirs
+			.map(app_dir => join(apps_dir, app_dir.name, '.env.local'))
+			.filter(env_local => existsSync(env_local))
+			.map(env_local => readFileSync(env_local, 'utf-8')),
+	})
+
 	for (const app_dir of app_dirs) {
 		const app_name = app_dir.name
 		const app_path = join(apps_dir, app_name)
@@ -154,7 +177,7 @@ export async function setup_env() {
 		const template_content = readFileSync(env_template, 'utf-8')
 		const existing_content = existsSync(env_local) ? readFileSync(env_local, 'utf-8') : undefined
 
-		const new_content = generate_local_env_content({ template_content, existing_content })
+		const new_content = generate_local_env_content({ template_content, existing_content, auth_secret })
 		writeFileSync(env_local, new_content, 'utf-8')
 
 		console.log(`   🔗 ${app_name}: Configured .env.local with local port discovery & preserved secrets.`)

@@ -3,7 +3,9 @@ import { sign_in_as } from './support/sign_in'
 
 // Mints a signed-in session once for the whole suite, as apps/ontology/e2e/auth.setup.ts does.
 
-const TEST_USER_EMAIL = 'e2e-test@tabitha.local'
+// Each app's suite has its own test user: the suites run at once against one local DB_Auth, where
+// two of them creating the same user would race.
+const TEST_USER_EMAIL = 'e2e-sources@tabitha.local'
 const STORAGE_STATE_PATH = 'e2e/.auth/user.json'
 
 export default async function global_setup() {

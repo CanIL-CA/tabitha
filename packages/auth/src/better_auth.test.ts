@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { D1Database } from '@cloudflare/workers-types'
-import { create_auth_options } from './better_auth'
+import { COOKIE_PREFIX, create_auth_options } from './better_auth'
 
 const SETTINGS = {
 	db_auth: {} as D1Database,
@@ -8,7 +8,6 @@ const SETTINGS = {
 	google_client_id: 'client-id',
 	google_client_secret: 'client-secret',
 	allowed_hosts: ['app.tabitha.bible', 'localhost:1234'],
-	cookie_prefix: 'app',
 }
 
 describe('create_auth_options', () => {
@@ -32,10 +31,23 @@ describe('create_auth_options', () => {
 		expect(create_auth_options(SETTINGS).basePath).toBe('/auth')
 	})
 
-	it("uses the app's own hosts and cookie prefix", () => {
-		const options = create_auth_options(SETTINGS)
+	it("uses the app's own hosts", () => {
+		expect(create_auth_options(SETTINGS).baseURL.allowedHosts).toEqual(['app.tabitha.bible', 'localhost:1234'])
+	})
 
-		expect(options.baseURL.allowedHosts).toEqual(['app.tabitha.bible', 'localhost:1234'])
-		expect(options.advanced.cookiePrefix).toBe('app')
+	it('keeps a host-only cookie without a cookie domain, as in local dev', () => {
+		const { advanced } = create_auth_options(SETTINGS)
+
+		expect(advanced).toMatchObject({ cookiePrefix: COOKIE_PREFIX })
+		expect(advanced).not.toHaveProperty('crossSubDomainCookies')
+	})
+
+	it('sets the session cookie for every app on the cookie domain, as on production and Previews', () => {
+		const { advanced } = create_auth_options({ ...SETTINGS, cookie_domain: 'tabitha.bible' })
+
+		expect(advanced).toMatchObject({
+			cookiePrefix: COOKIE_PREFIX,
+			crossSubDomainCookies: { enabled: true, domain: 'tabitha.bible' },
+		})
 	})
 })

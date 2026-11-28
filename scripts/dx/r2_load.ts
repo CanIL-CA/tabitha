@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
 import { $ } from 'bun'
 import { Database } from 'bun:sqlite'
+import { LOCAL_D1_STATE_DIR, LOCAL_STATE_DIR } from '@tabitha/vite-config/local-state'
 import { apps_config, parse_wrangler_jsonc } from './db_load'
 
 type R2SeedEntry = {
@@ -52,7 +53,7 @@ export async function load_r2(target_app: string = 'all') {
 		}
 
 		const db_hash = createHash('sha256').update(d1.database_id).digest('hex')
-		const local_d1_file = join(config.app_dir, '.wrangler/state/v3/d1/miniflare-D1DatabaseObject', `${db_hash}.sqlite`)
+		const local_d1_file = join(LOCAL_D1_STATE_DIR, `${db_hash}.sqlite`)
 		if (!existsSync(local_d1_file)) {
 			console.error(`❌ No local D1 database found for "${d1.database_name}" -- run \`bun run db:load:${entry.app}\` first.`)
 			continue
@@ -72,7 +73,7 @@ export async function load_r2(target_app: string = 'all') {
 			// .cmd/.ps1 split on Windows.
 			const wrangler_entry = join(config.app_dir, 'node_modules/wrangler/bin/wrangler.js')
 			const cd_args = entry.content_disposition ? ['--content-disposition', entry.content_disposition] : []
-			await $`bun ${wrangler_entry} r2 object put ${bucket.bucket_name}/${object_key} --file ${staged_file} ${cd_args} --local`
+			await $`bun ${wrangler_entry} r2 object put ${bucket.bucket_name}/${object_key} --file ${staged_file} ${cd_args} --local --persist-to ${LOCAL_STATE_DIR}`
 				.cwd(config.app_dir)
 				.quiet()
 

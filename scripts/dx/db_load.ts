@@ -6,6 +6,7 @@ import { platform } from 'node:os'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { strip_jsonc_comments } from '@tabitha/types/patterns'
+import { LOCAL_D1_STATE_DIR, LOCAL_PERSIST_PATH, LOCAL_STATE_DIR } from '@tabitha/vite-config/local-state'
 import { resolve_workerd_hashes as resolve_workerd_hashes_impl } from './resolve_workerd_hashes.mjs'
 
 const script_dir = dirname(fileURLToPath(import.meta.url))
@@ -87,16 +88,16 @@ export function write_workerd_hash_cache(cache: Record<string, string>) {
 // Bun's child_process.spawn can't pipe stdio to the workerd process getPlatformProxy() spawns
 // internally on Windows (unresolved upstream: oven-sh/bun#13543), so on win32 this runs the
 // implementation via the system `node` binary instead of in-process under Bun -- see ADR 0011.
-export async function resolve_workerd_hashes({ config, entries, d1_state_dir }: {
+export async function resolve_workerd_hashes({ config, entries }: {
 	config: AppConfig
 	entries: D1DatabaseEntry[]
-	d1_state_dir: string
 }): Promise<Record<string, string>> {
+	const options = { app_dir: config.app_dir, wrangler_path: config.wrangler_path, entries, d1_state_dir: LOCAL_D1_STATE_DIR, persist_path: LOCAL_PERSIST_PATH }
 	if (platform() !== 'win32') {
-		return resolve_workerd_hashes_impl({ app_dir: config.app_dir, wrangler_path: config.wrangler_path, entries, d1_state_dir })
+		return resolve_workerd_hashes_impl(options)
 	}
 	const helper = join(script_dir, 'resolve_workerd_hashes.mjs')
-	const input = JSON.stringify({ app_dir: config.app_dir, wrangler_path: config.wrangler_path, entries, d1_state_dir })
+	const input = JSON.stringify(options)
 	const output = execFileSync('node', [helper], { input, encoding: 'utf-8' })
 	// Because this takes from stdout, it also reads any console logs from node itself.
 	// eg. 'Using secrets defined in app\ontology\.env'
@@ -127,7 +128,7 @@ function apply_pending_migrations({ app_dir, binding }: {
 	app_dir: string
 	binding: string
 }) {
-	execFileSync('bun', ['x', 'wrangler', 'd1', 'migrations', 'apply', binding, '--local'], { cwd: app_dir, stdio: ['ignore', 'inherit', 'inherit'] })
+	execFileSync('bun', ['x', 'wrangler', 'd1', 'migrations', 'apply', binding, '--local', '--persist-to', LOCAL_STATE_DIR], { cwd: app_dir, stdio: ['ignore', 'inherit', 'inherit'] })
 }
 
 // Every file Miniflare might open for a database: the hash of its id, the alternate hashes db_load
@@ -169,6 +170,9 @@ export async function load_database(target_app: string = 'all') {
 
 	let success_count = 0
 	let total_databases = 0
+	// Every app shares one local state folder, so a database two apps bind (DB_Auth) is loaded once
+	const loaded_database_ids = new Set<string>()
+	const d1_state_dir = LOCAL_D1_STATE_DIR
 
 	for (const app_key of apps_to_process) {
 		const config = apps_config[app_key]
@@ -183,7 +187,6 @@ export async function load_database(target_app: string = 'all') {
 			continue
 		}
 
-		const d1_state_dir = join(config.app_dir, '.wrangler', 'state', 'v3', 'd1', 'miniflare-D1DatabaseObject')
 		mkdirSync(d1_state_dir, { recursive: true })
 
 		// Initialize Miniflare metadata.sqlite if missing
@@ -203,15 +206,20 @@ export async function load_database(target_app: string = 'all') {
 		})
 		if (needs_resolution.length > 0) {
 			console.log(`   🔍 Resolving Miniflare storage file(s) for: ${needs_resolution.map(d => d.binding || d.database_name).join(', ')}...`)
-			const resolved = await resolve_workerd_hashes({ config, entries: needs_resolution, d1_state_dir })
+			const resolved = await resolve_workerd_hashes({ config, entries: needs_resolution })
 			Object.assign(workerd_hash_cache, resolved)
 			write_workerd_hash_cache(workerd_hash_cache)
 		}
 
 		for (const d1 of wrangler.d1_databases) {
-			total_databases++
 			const db_name = d1.database_name
 			const db_id = d1.database_id
+			if (loaded_database_ids.has(db_id)) {
+				console.log(`⏭️  "${db_name}" is already loaded, shared with another app.\n`)
+				continue
+			}
+			loaded_database_ids.add(db_id)
+			total_databases++
 			console.log(`⏳ Loading database "${db_name}" (${db_id}) for ${app_key}...`)
 
 			const pinned_snapshot = d1.binding ? pinned_snapshots[d1.binding] : undefined

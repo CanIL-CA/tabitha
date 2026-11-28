@@ -1,4 +1,4 @@
-import { BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$app/env/private'
+import { AUTH_COOKIE_DOMAIN, BETTER_AUTH_SECRET, GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_PROXY_URL } from '$app/env/private'
 import { PUBLIC_CORS_ALLOW_LOCALHOST, PUBLIC_RATE_LIMIT_DISABLED, PUBLIC_SERVICE_BINDINGS_DISABLED, PUBLIC_SOURCES_API_HOST, PUBLIC_TARGETS_API_HOST } from '$app/env/public'
 import { building, version } from '$app/env'
 import { get_user_info } from '#lib/server/auth.js'
@@ -79,6 +79,7 @@ function get_auth(): Auth {
 		google_client_id: env.GOOGLE_OAUTH_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID,
 		google_client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET || GOOGLE_OAUTH_CLIENT_SECRET,
 		oauth_proxy_url: OAUTH_REDIRECT_PROXY_URL || undefined,
+		cookie_domain: AUTH_COOKIE_DOMAIN || undefined,
 	})
 
 	return auth

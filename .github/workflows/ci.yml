@@ -306,7 +306,7 @@ jobs:
       - name: Inspect D1 SQLite Storage Inventory
         run: |
           echo "=== 🗄️ D1 Miniflare Database Storage Inventory ==="
-          ls -lh apps/*/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/ 2>/dev/null || true
+          ls -lh .wrangler/state/v3/d1/miniflare-D1DatabaseObject/ 2>/dev/null || true
 
       # Chromium only changes with Playwright, so key the cache on its version: keying on bun.lock
       # missed the cache (and re-downloaded the browser) on every unrelated dependency bump.
@@ -376,7 +376,7 @@ jobs:
         if: steps.e2e.outcome == 'failure'
         run: |
           echo "=== ⚠️ Playwright E2E Failure Storage State ==="
-          find apps/*/.wrangler -name "*.sqlite" -exec ls -lh {} + 2>/dev/null || true
+          find .wrangler -name "*.sqlite" -exec ls -lh {} + 2>/dev/null || true
 
       - name: Upload Playwright Test Artifacts
         if: always()
@@ -386,7 +386,7 @@ jobs:
           path: |
             apps/*/playwright-report/
             apps/*/test-results/
-            apps/*/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/
+            .wrangler/state/v3/d1/miniflare-D1DatabaseObject/
           # These paths are diagnostic-only (Playwright's report/test-results dirs, D1 state) --
           # a passing run has nothing to upload, which is expected, not a problem to warn about.
           if-no-files-found: ignore

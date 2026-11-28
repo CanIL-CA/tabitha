@@ -42,12 +42,12 @@
 
 ### 1. Configure Local Auth
 
-`apps/ontology/.env.local` is created by the monorepo's onboarding step (`bun run setup`, from the root), including a generated dev `BETTER_AUTH_SECRET`. It also seeds `GOOGLE_OAUTH_CLIENT_ID` with the team's *dev* Web client from the verified Google project ([Google Auth Platform → Clients](https://console.cloud.google.com/auth/clients)), never production's client from `.env`. Fill in that client's `GOOGLE_OAUTH_CLIENT_SECRET` there. The client has `http://localhost:3056/auth/callback/google` as an authorized redirect URI. `bun run doctor` (and `bun run dev`, at startup) warns if the ID is blank or production's.
+`apps/ontology/.env.local` is created by the monorepo's onboarding step (`bun run setup`, from the root), including a generated dev `BETTER_AUTH_SECRET`. It also seeds `GOOGLE_OAUTH_CLIENT_ID` with the team's *dev* Web client from the verified Google project ([Google Auth Platform → Clients](https://console.cloud.google.com/auth/clients)), never production's client from `.env`. Fill in that client's `GOOGLE_OAUTH_CLIENT_SECRET` there. The client, "TaBiThA (dev)", is shared by every app that signs in, and has each app's callback as an authorized redirect URI: `http://localhost:3056/auth/callback/google` for Ontology and `http://localhost:1947/auth/callback/google` for Sources ([ADR 0027](../../docs/decisions/0027-shared-auth-db-via-tabitha-auth.md)). `bun run doctor` (and `bun run dev`, at startup) warns if the ID is blank or production's.
 
 Keeping the dev client working:
 
 - The ID is committed in `scripts/dx/setup_env.ts` (`dev_defaults`); the client and its secret live in the verified Google project, and the secret is shared by hand.
-- Keep the authorized redirect URI in sync with the ontology dev port (`PORTS.ontology` in `@tabitha/vite-config`). Changing the port breaks local sign-in for everyone until the client is updated.
+- Keep the authorized redirect URIs in sync with each app's dev port (`PORTS` in `@tabitha/vite-config`). Changing the port breaks local sign-in for everyone until the client is updated.
 - Google deletes OAuth clients unused for 6 months (restorable for 30 days). If the client is ever recreated, update `dev_defaults`; `setup:env` keeps an existing non-production value, so each developer must also replace the old ID in their `.env.local`.
 
 (If `.env.local` doesn't exist yet, or is missing a var after pulling a `.env` template change, run `bun run setup:env` from the root to (re)generate it.)

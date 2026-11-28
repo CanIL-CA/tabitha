@@ -9,7 +9,7 @@
 		"check:lint": "eslint .",
 		"check:lint:fix": "eslint . --fix",
 		"build": "wrangler deploy --dry-run --outdir dist",
-		"dev": "wrangler dev --test-scheduled",
+		"dev": "wrangler dev --test-scheduled --persist-to ../../.wrangler/state",
 		"test": "bun run test:unit",
 		"test:unit": "vitest run src",
 		"precommit": "bun run check && bun run check:lint && bun run build && bun run test"
