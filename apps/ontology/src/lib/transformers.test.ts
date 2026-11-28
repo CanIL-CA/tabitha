@@ -182,6 +182,17 @@ describe('transformers', () => {
 			expect(reencoded).toBe('Ab_')
 		})
 
+		// the usage editor leaves holes for rows nobody clicked, which arrive as null once the change is stored as JSON
+		it('encodes an unset usage as never', () => {
+			const categories = JSON.parse('[null, "always used in Noun-Noun Phrases", null]')
+			expect(encode_categorization({ part_of_speech: 'Adposition', categories })).toBe('_B_')
+		})
+
+		it('encodes usages past the end of the categories as never', () => {
+			expect(encode_categorization({ part_of_speech: 'Adposition', categories: ['always used in Adjunct Phrases'] })).toBe('A__')
+			expect(encode_categorization({ part_of_speech: 'Adjective', categories: ['Generic', 'always used attributively'] })).toBe('GA_____')
+		})
+
 		it('handles fallback for unknown part of speech', () => {
 			expect(decode_categorization({ part_of_speech: 'Unknown', categorization: 'xyz' })).toEqual(['x', 'y', 'z'])
 			expect(encode_categorization({ part_of_speech: 'Unknown', categories: ['xyz'] })).toBe('')
